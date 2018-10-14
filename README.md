@@ -1,6 +1,7 @@
 # ACnotM
 
-A res used to record code practice.
+A repositorie used to record code practice.
 
-龟派刷题。
+龟派刷题流。
 
+目前使用python3在刷leetcode。
