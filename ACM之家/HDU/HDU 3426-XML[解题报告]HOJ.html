@@ -1,0 +1,445 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-23</div>
+<div class="tit"><h1 class="entry-title">HDU 3426-XML[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观302次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5452" href="http://www.acmerblog.com/hdu-3426-xml-5452.html#comments" title="《HDU 3426-XML[解题报告]HOJ》上的评论">28 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">XML</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+In this problem, you are asked to determine if a given document satisfies the syntax of an XML-like language.
+<p>A simple XML-like document can be parsed as a sequence of the following:</p>
+<p>   1. Plain text—ASCII codes between 32 and 127 (inclusive), with none of the following symbols: &lt;, &gt;, &amp;<br/>   2. The sequences:<br/>    *  &amp;lt;<br/>    * &amp;gt;<br/>    * &amp;amp;<br/>      These encode a &lt;, &gt;, or &amp; respectively.<br/>   3. &amp;xHEX; HEX must be any even (positive) number of upper or lower case hexadecimal digits, and this represents the bytes given.<br/>   4. &lt;tag&gt; Tag can be any lowercase alphanumeric string. This tag is pushed onto the context stack.<br/>   5. &lt;tag/&gt; This tag is not pushed onto the context stack (there is no closing context).<br/>   6. &lt;/tag&gt; This tag removes the &lt;tag&gt; context from the stack, which must be topmost on the stack.</p>
+<p>By the time the entire document is parsed, the context stack is empty for a valid document. We should also note that the empty string is considered valid. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+You will be given a number of documents to process. Each document is given as one line oftext which may be empty. The input is terminated by the end of file. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+You will be given a number of documents to process. Each document is given as one line oftext which may be empty. The input is terminated by the end of file.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+the quick brown fox.
+the &lt;i&gt;&lt;b&gt;quick&lt;/b&gt; brown&lt;/i&gt; fox.
+&lt;doc&gt;fox &amp;amp; socks.&lt;/doc&gt;
+3x+5&amp;gt;7
+Null: &amp;x00;
+&lt;doc&gt;the quick brown fox.
+the &lt;i&gt;quick &lt;b&gt;brown&lt;/i&gt;&lt;/b&gt; fox
+fox &amp; socks.
+3x+5&gt;7
+Null: &amp;x0;</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+valid
+valid
+valid
+valid
+valid
+invalid
+invalid
+invalid
+invalid
+invalid</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include &lt;stdio.h&gt;
+#include &lt;iostream&gt;
+#include &lt;sstream&gt;
+#include &lt;vector&gt;
+using namespace std;
+
+
+vector&lt;string&gt; st;
+
+int tag_type(const string&amp; s) {
+	int cnt=0;	
+	for(int i=0; i&lt;s.size(); ++i) {
+		if(s[i]=='/') { cnt++; continue; }
+		if(!((s[i]&lt;='z' &amp;&amp; s[i]&gt;='a') || (s[i]&gt;='0' &amp;&amp; s[i]&lt;='9'))) return 0;
+	}
+	if(s.size()-cnt==0) return 0;
+	if(s[0]=='/' &amp;&amp; cnt == 1) return 2;
+	if(s[s.size()-1]=='/' &amp;&amp; cnt == 1) return 3;
+	if(cnt == 0) return 1;
+	return 0;
+}
+bool hex(const string&amp; s) {
+	if(s.size() &lt;= 1 || s.size()%2==0) return false;
+	if(s[0] != 'x') return false;
+	for(int i=1; i&lt;s.size(); ++i)
+		if( !((s[i]&lt;='F' &amp;&amp; s[i] &gt;='A') || (s[i]&lt;='9' &amp;&amp; s[i]&gt;='0') || (s[i]&lt;='f' &amp;&amp; s[i]&gt;='a')) ) return false;
+	return true;
+}
+bool bad_qoute(const string&amp; s) {
+	return !(s=="lt" || s=="gt" || s=="amp" || hex(s));
+}
+bool bad_txt(const string&amp; s) {
+	string qoute;
+	for(int i=0; i&lt;s.size(); ++i)
+		if(s[i]=='&amp;') {
+			for(int j=i+1; j&lt;s.size() &amp;&amp; s[j] != ';'; ++j) qoute += s[j];
+			if(bad_qoute(qoute)) return true;
+			qoute="";
+		} 
+		else if(s[i]=='&lt;' || s[i] =='&gt;') return true;
+		else if(s[i]&gt;127 || s[i]&lt;32) return true;
+	return false;
+}
+void get_l(stringstream&amp; os, string&amp; s, char del) {
+	char t;
+	while(!os.eof()) {
+		os &gt;&gt; t;
+		if(t==del) return;
+		s += t;
+	}	
+}
+int main() {
+	string ln;
+	while(getline(cin, ln)) {
+		stringstream ss(ln);
+		st.clear();
+		string s;
+		int inv=0;
+		while(!ss.eof()) {
+			s="";
+			getline(ss,s,'&lt;');
+			// cout &lt;&lt; "txt: " &lt;&lt; s &lt;&lt; endl;
+			if(bad_txt(s)) {
+				inv=1;
+				break;
+			}
+			if(ss.eof()) break;
+			s="";
+			getline(ss,s,'&gt;');
+			if(ss.eof()) {
+				inv=4;
+				break;
+			}
+			// cout &lt;&lt; "tag: " &lt;&lt; s &lt;&lt; endl;
+			int tty = tag_type(s);
+			if(tty==0) {
+				inv=2;
+				break;
+			} 
+			else if(tty==1) st.push_back(s);
+			else if(tty==2) {				
+				if(st.size()==0 || st.back() != s.substr(1)) {
+					inv=3;
+					break;
+				}
+				else st.pop_back();
+			}
+		}
+		// cout &lt;&lt; inv &lt;&lt; endl;
+		if(inv || st.size() &gt; 0) puts("invalid");
+		else puts("valid");
+	}
+	return 0;
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-76799">
+<article class="comment" id="comment-76799">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530910" rel="external nofollow">新用户732908</a></span> on <a href="http://www.acmerblog.com/hdu-3426-xml-5452.html#comment-76799" rel="nofollow"><time datetime="2017-04-12T07:34:17+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>总有一些敏感 的职业，招进一些不称职的人。。就极端了。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76798">
+<article class="comment" id="comment-76798">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530910" rel="external nofollow">新用户732908</a></span> on <a href="http://www.acmerblog.com/hdu-3426-xml-5452.html#comment-76798" rel="nofollow"><time datetime="2017-04-12T07:34:17+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>总有一些敏感 的职业，招进一些不称职的人。。就极端了。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76797">
+<article class="comment" id="comment-76797">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530910" rel="external nofollow">新用户732908</a></span> on <a href="http://www.acmerblog.com/hdu-3426-xml-5452.html#comment-76797" rel="nofollow"><time datetime="2017-04-12T07:34:17+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>总有一些敏感 的职业，招进一些不称职的人。。就极端了。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76796">
+<article class="comment" id="comment-76796">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530910" rel="external nofollow">新用户732908</a></span> on <a href="http://www.acmerblog.com/hdu-3426-xml-5452.html#comment-76796" rel="nofollow"><time datetime="2017-04-12T07:34:17+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>总有一些敏感 的职业，招进一些不称职的人。。就极端了。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76795">
+<article class="comment" id="comment-76795">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530910" rel="external nofollow">新用户732908</a></span> on <a href="http://www.acmerblog.com/hdu-3426-xml-5452.html#comment-76795" rel="nofollow"><time datetime="2017-04-12T07:34:17+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>总有一些敏感 的职业，招进一些不称职的人。。就极端了。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76794">
+<article class="comment" id="comment-76794">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530910" rel="external nofollow">新用户732908</a></span> on <a href="http://www.acmerblog.com/hdu-3426-xml-5452.html#comment-76794" rel="nofollow"><time datetime="2017-04-12T07:34:17+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>总有一些敏感 的职业，招进一些不称职的人。。就极端了。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76793">
+<article class="comment" id="comment-76793">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530910" rel="external nofollow">新用户732908</a></span> on <a href="http://www.acmerblog.com/hdu-3426-xml-5452.html#comment-76793" rel="nofollow"><time datetime="2017-04-12T07:34:17+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>总有一些敏感 的职业，招进一些不称职的人。。就极端了。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76792">
+<article class="comment" id="comment-76792">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530910" rel="external nofollow">新用户732908</a></span> on <a href="http://www.acmerblog.com/hdu-3426-xml-5452.html#comment-76792" rel="nofollow"><time datetime="2017-04-12T07:34:17+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>总有一些敏感 的职业，招进一些不称职的人。。就极端了。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76805">
+<article class="comment" id="comment-76805">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530910" rel="external nofollow">新用户732908</a></span> on <a href="http://www.acmerblog.com/hdu-3426-xml-5452.html#comment-76805" rel="nofollow"><time datetime="2017-04-12T07:34:17+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>总有一些敏感 的职业，招进一些不称职的人。。就极端了。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76804">
+<article class="comment" id="comment-76804">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530910" rel="external nofollow">新用户732908</a></span> on <a href="http://www.acmerblog.com/hdu-3426-xml-5452.html#comment-76804" rel="nofollow"><time datetime="2017-04-12T07:34:17+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>总有一些敏感 的职业，招进一些不称职的人。。就极端了。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76803">
+<article class="comment" id="comment-76803">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530910" rel="external nofollow">新用户732908</a></span> on <a href="http://www.acmerblog.com/hdu-3426-xml-5452.html#comment-76803" rel="nofollow"><time datetime="2017-04-12T07:34:17+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>总有一些敏感 的职业，招进一些不称职的人。。就极端了。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76802">
+<article class="comment" id="comment-76802">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530910" rel="external nofollow">新用户732908</a></span> on <a href="http://www.acmerblog.com/hdu-3426-xml-5452.html#comment-76802" rel="nofollow"><time datetime="2017-04-12T07:34:17+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>总有一些敏感 的职业，招进一些不称职的人。。就极端了。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76801">
+<article class="comment" id="comment-76801">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530910" rel="external nofollow">新用户732908</a></span> on <a href="http://www.acmerblog.com/hdu-3426-xml-5452.html#comment-76801" rel="nofollow"><time datetime="2017-04-12T07:34:17+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>总有一些敏感 的职业，招进一些不称职的人。。就极端了。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76800">
+<article class="comment" id="comment-76800">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530910" rel="external nofollow">新用户732908</a></span> on <a href="http://www.acmerblog.com/hdu-3426-xml-5452.html#comment-76800" rel="nofollow"><time datetime="2017-04-12T07:34:17+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>总有一些敏感 的职业，招进一些不称职的人。。就极端了。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48914">
+<article class="comment" id="comment-48914">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">943965021</a></span> on <a href="http://www.acmerblog.com/hdu-3426-xml-5452.html#comment-48914" rel="nofollow"><time datetime="2015-07-03T03:24:56+00:00" pubdate="">2015年7月3日 at 上午3:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>问题3中，GetRightPosition()和GetLeftPosition()与STL中的upper_bound()和lower_boune()的代码实现一样吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29602">
+<article class="comment" id="comment-29602">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fanxianxian</a></span> on <a href="http://www.acmerblog.com/hdu-3426-xml-5452.html#comment-29602" rel="nofollow"><time datetime="2015-06-13T06:23:15+00:00" pubdate="">2015年6月13日 at 上午6:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>simple, however efficient. A lot of instances it is difficult to get that a??perfect balancea?? among usability and appearance. I must say that youa??ve done a exceptional task with this. Also, the blog masses quite fast for me on Web explore.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48911">
+<article class="comment" id="comment-48911">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ruoshui</a></span> on <a href="http://www.acmerblog.com/hdu-3426-xml-5452.html#comment-48911" rel="nofollow"><time datetime="2015-05-05T00:29:11+00:00" pubdate="">2015年5月5日 at 上午12:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>理解错了。。。。。谢谢楼主~~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29601">
+<article class="comment" id="comment-29601">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yunyang088</a></span> on <a href="http://www.acmerblog.com/hdu-3426-xml-5452.html#comment-29601" rel="nofollow"><time datetime="2015-04-25T19:23:15+00:00" pubdate="">2015年4月25日 at 下午7:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好。代码比书上的简练！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48917">
+<article class="comment" id="comment-48917">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">starcuan</a></span> on <a href="http://www.acmerblog.com/hdu-3426-xml-5452.html#comment-48917" rel="nofollow"><time datetime="2015-03-15T14:38:30+00:00" pubdate="">2015年3月15日 at 下午2:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>原来欧几里德定理应用这么多</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48912">
+<article class="comment" id="comment-48912">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">geoksz</a></span> on <a href="http://www.acmerblog.com/hdu-3426-xml-5452.html#comment-48912" rel="nofollow"><time datetime="2015-02-26T03:58:35+00:00" pubdate="">2015年2月26日 at 上午3:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有些说不通吧，只有1个孩子肯定是男孩了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48909">
+<article class="comment" id="comment-48909">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zrw</a></span> on <a href="http://www.acmerblog.com/hdu-3426-xml-5452.html#comment-48909" rel="nofollow"><time datetime="2015-02-13T06:45:41+00:00" pubdate="">2015年2月13日 at 上午6:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题别太纠结了，不同的编译器结果不一</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48916">
+<article class="comment" id="comment-48916">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">WalkCoder</a></span> on <a href="http://www.acmerblog.com/hdu-3426-xml-5452.html#comment-48916" rel="nofollow"><time datetime="2014-10-15T02:19:19+00:00" pubdate="">2014年10月15日 at 上午2:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为避免精度问题，PI值请使用arccos(-1)。应该是acos</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58524">
+<article class="comment" id="comment-58524">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jandk</a></span> on <a href="http://www.acmerblog.com/hdu-3426-xml-5452.html#comment-58524" rel="nofollow"><time datetime="2014-08-21T11:23:04+00:00" pubdate="">2014年8月21日 at 上午11:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个是代码高亮功能，那就再换一个颜色</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48910">
+<article class="comment" id="comment-48910">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">cyyuen</a></span> on <a href="http://www.acmerblog.com/hdu-3426-xml-5452.html#comment-48910" rel="nofollow"><time datetime="2014-07-19T22:49:57+00:00" pubdate="">2014年7月19日 at 下午10:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>网站不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48913">
+<article class="comment" id="comment-48913">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fastislow</a></span> on <a href="http://www.acmerblog.com/hdu-3426-xml-5452.html#comment-48913" rel="nofollow"><time datetime="2014-07-17T21:36:22+00:00" pubdate="">2014年7月17日 at 下午9:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个还不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48915">
+<article class="comment" id="comment-48915">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Cloudy</a></span> on <a href="http://www.acmerblog.com/hdu-3426-xml-5452.html#comment-48915" rel="nofollow"><time datetime="2014-06-22T08:49:30+00:00" pubdate="">2014年6月22日 at 上午8:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>约瑟夫也用说这么长……很成熟的一个问题了，分治的方法解起来o(n)就可以了，有兴趣可以看看具体数学的第一章，关于约瑟夫问题推导出了一系列的结论，很漂亮</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29603">
+<article class="comment" id="comment-29603">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dreams</a></span> on <a href="http://www.acmerblog.com/hdu-3426-xml-5452.html#comment-29603" rel="nofollow"><time datetime="2014-06-16T19:45:51+00:00" pubdate="">2014年6月16日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>较好的写法是 start+(end-start)/2</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48918">
+<article class="comment" id="comment-48918">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">haojunyu</a></span> on <a href="http://www.acmerblog.com/hdu-3426-xml-5452.html#comment-48918" rel="nofollow"><time datetime="2014-04-06T04:03:39+00:00" pubdate="">2014年4月6日 at 上午4:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>原来如此 了解了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

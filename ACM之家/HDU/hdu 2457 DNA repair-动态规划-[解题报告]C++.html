@@ -1,0 +1,493 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>01-26</div>
+<div class="tit"><h1 class="entry-title">hdu 2457 DNA repair-动态规划-[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a></span><span class="i4">围观1193次</span><span class="i3"><a class="ds-thread-count" data-thread-key="3921" href="http://www.acmerblog.com/hdu-2457-dna-repair-3921.html#comments" title="《hdu 2457 DNA repair-动态规划-[解题报告]C++》上的评论">27 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">DNA repair</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Biologists finally invent techniques of repairing DNA that contains segments causing kinds of inherited diseases. For the sake of simplicity, a DNA is represented as a string containing characters ‘A’, ‘G’ , ‘C’ and ‘T’. The repairing techniques are simply to change some characters to eliminate all segments causing diseases. For example, we can repair a DNA "AAGCAG" to "AGGCAC" to eliminate the initial causing disease segments "AAG", "AGC" and "CAG" by changing two characters. Note that the repaired DNA can still contain only characters ‘A’, ‘G’, ‘C’ and ‘T’.
+<p>You are to help the biologists to repair a DNA by changing least number of characters. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input consists of multiple test cases. Each test case starts with a line containing one integers N (1 ≤ N ≤ 50), which is the number of DNA segments causing inherited diseases.<br/>The following N lines gives N non-empty strings of length not greater than 20 containing only characters in "AGCT", which are the DNA segments causing inherited disease.<br/>The last line of the test case is a non-empty string of length not greater than 1000 containing only characters in "AGCT", which is the DNA to be repaired.
+<p>The last test case is followed by a line containing one zeros. </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input consists of multiple test cases. Each test case starts with a line containing one integers N (1 ≤ N ≤ 50), which is the number of DNA segments causing inherited diseases.<br/>The following N lines gives N non-empty strings of length not greater than 20 containing only characters in "AGCT", which are the DNA segments causing inherited disease.<br/>The last line of the test case is a non-empty string of length not greater than 1000 containing only characters in "AGCT", which is the DNA to be repaired.
+<p>The last test case is followed by a line containing one zeros.</p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+AAA
+AAG
+AAAG    
+2
+A
+TG
+TGAATG
+4
+A
+G
+C
+T
+AGT
+0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case 1: 1
+Case 2: 4
+Case 3: -1</pre>
+<p> <!-- problem end --></p>
+<p>          AC自动机+DP。按着自动机跑，（其实是生成新的满足题目要求的串，然后找改变最少的。）但是不能跑到是单词的地方，如果跑到单词的话那么说明改变后的串含有病毒了，不满足题意。然后就是应该怎么跑的问题了，现在我们从自动机的根节点开始跑，如果跑到下一个节点和当前串的字母不一样的话，那么当前位置生成的串是和原串在该位置是有差异的，dp+1，否者的话dp不变。所以dp[ i ][ j ]表示的是匹配到当前匹配串的位置时，跑到自动机的 j 节点需要改变的最少字母数。</p>
+<pre class="brush:cpp ">#include &lt;algorithm&gt;
+#include &lt;iostream&gt;
+#include &lt;sstream&gt;
+#include &lt;cstdlib&gt;
+#include &lt;climits&gt;
+#include &lt;cstring&gt;
+#include &lt;cstdio&gt;
+#include &lt;string&gt;
+#include &lt;vector&gt;
+#include &lt;cctype&gt;
+#include &lt;queue&gt;
+#include &lt;cmath&gt;
+#include &lt;set&gt;
+#include &lt;map&gt;
+#define CLR(a, b) memset(a, b, sizeof(a))
+using namespace std;
+
+const int MAX_NODE = 22 * 55 * 2;
+const int INF = 0x3f3f3f3f;
+const int CHILD_NUM = 4;
+const int N = 1010;
+
+class ACAutomaton
+{
+private:
+    int chd[MAX_NODE][CHILD_NUM];
+    int dp[N][MAX_NODE];
+    int fail[MAX_NODE];
+    bool val[MAX_NODE];
+    int Q[MAX_NODE];
+    int ID[128];
+    int sz;
+public:
+    void Initialize()
+    {
+        fail[0] = 0;
+        ID['A'] = 0;ID['G'] = 1;
+        ID['C'] = 2;ID['T'] = 3;
+    }
+    void Reset()
+    {
+        CLR(chd[0] , 0);sz = 1;
+    }
+    void Insert(char *a)
+    {
+        int p = 0;
+        for ( ; *a ; a ++)
+        {
+            int c = ID[*a];
+            if (!chd[p][c])
+            {
+                CLR(chd[sz] , 0);
+                val[sz] = false;
+                chd[p][c] = sz ++;
+            }
+            p = chd[p][c];
+        }
+        val[p] = true;
+    }
+    void Construct()
+    {
+        int *s = Q , *e = Q;
+        for (int i = 0 ; i &lt; CHILD_NUM ; i ++)
+        {
+            if (chd[0][i])
+            {
+                fail[ chd[0][i] ] = 0;
+                *e ++ = chd[0][i];
+            }
+        }
+        while (s != e)
+        {
+            int u = *s++;
+            for (int i = 0 ; i &lt; CHILD_NUM ; i ++)
+            {
+                int &amp;v = chd[u][i];
+                if (v)
+                {
+                    *e ++ = v;
+                    fail[v] = chd[ fail[u] ][i];
+                    val[v] |= val[fail[v]];
+                }
+                else
+                {
+                    v = chd[ fail[u] ][i];
+                }
+            }
+        }
+    }
+    int Work(char *ch)
+    {
+        int len, S, T, ret;
+        len = strlen(ch);
+        CLR(dp, INF);dp[0][0] = 0;
+        for(int i = 0; i &lt; len; i ++)
+            for(int j = 0; j &lt; sz; j ++)
+            {
+                if(val[j]) continue;
+                if(dp[i][j] == INF) continue;
+                for(int k = 0; k &lt; 4; k ++)
+                {
+                    T = chd[j][k];
+                    if(val[T]) continue;
+                    dp[i + 1][T] = min(dp[i + 1][T], dp[i][j] + (ID[ch[i]] != k));
+                }
+        }ret = INF;
+        for(int i = 0; i &lt; sz; i ++)
+        {
+            ret = min(ret, dp[len][i]);
+        }
+        return ret == INF ? -1 : ret;
+    }
+} AC;
+
+char ch[N];
+
+int main()
+{
+    //freopen("input.txt", "r", stdin);
+    AC.Initialize();
+    int n, t, cas = 1;
+    while (scanf("%d", &amp;n), n)
+    {
+        AC.Reset();
+        for (int i = 0 ; i &lt; n ; i ++)
+        {
+            char temp[55];
+            scanf("%s", temp);
+            AC.Insert(temp);
+        }
+        scanf("%s", ch);
+        AC.Construct();
+        printf("Case %d: %d\n", cas ++, AC.Work(ch));
+    }
+    return 0;
+}</pre>
+<p>解题转自：http://blog.csdn.net/ok_again/article/details/12562273</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-84515">
+<article class="comment" id="comment-84515">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528275" rel="external nofollow">新用户904318</a></span> on <a href="http://www.acmerblog.com/hdu-2457-dna-repair-3921.html#comment-84515" rel="nofollow"><time datetime="2017-04-13T01:15:54+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我是来吐槽的……虽然不知道吐槽什么……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-84514">
+<article class="comment" id="comment-84514">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528275" rel="external nofollow">新用户904318</a></span> on <a href="http://www.acmerblog.com/hdu-2457-dna-repair-3921.html#comment-84514" rel="nofollow"><time datetime="2017-04-13T01:15:54+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我是来吐槽的……虽然不知道吐槽什么……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-84513">
+<article class="comment" id="comment-84513">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528275" rel="external nofollow">新用户904318</a></span> on <a href="http://www.acmerblog.com/hdu-2457-dna-repair-3921.html#comment-84513" rel="nofollow"><time datetime="2017-04-13T01:15:54+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我是来吐槽的……虽然不知道吐槽什么……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-84512">
+<article class="comment" id="comment-84512">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528275" rel="external nofollow">新用户904318</a></span> on <a href="http://www.acmerblog.com/hdu-2457-dna-repair-3921.html#comment-84512" rel="nofollow"><time datetime="2017-04-13T01:15:54+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我是来吐槽的……虽然不知道吐槽什么……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-84511">
+<article class="comment" id="comment-84511">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528275" rel="external nofollow">新用户904318</a></span> on <a href="http://www.acmerblog.com/hdu-2457-dna-repair-3921.html#comment-84511" rel="nofollow"><time datetime="2017-04-13T01:15:54+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我是来吐槽的……虽然不知道吐槽什么……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-84510">
+<article class="comment" id="comment-84510">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528275" rel="external nofollow">新用户904318</a></span> on <a href="http://www.acmerblog.com/hdu-2457-dna-repair-3921.html#comment-84510" rel="nofollow"><time datetime="2017-04-13T01:15:54+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我是来吐槽的……虽然不知道吐槽什么……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-84509">
+<article class="comment" id="comment-84509">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528275" rel="external nofollow">新用户904318</a></span> on <a href="http://www.acmerblog.com/hdu-2457-dna-repair-3921.html#comment-84509" rel="nofollow"><time datetime="2017-04-13T01:15:54+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我是来吐槽的……虽然不知道吐槽什么……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-84508">
+<article class="comment" id="comment-84508">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528275" rel="external nofollow">新用户904318</a></span> on <a href="http://www.acmerblog.com/hdu-2457-dna-repair-3921.html#comment-84508" rel="nofollow"><time datetime="2017-04-13T01:15:54+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我是来吐槽的……虽然不知道吐槽什么……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-84507">
+<article class="comment" id="comment-84507">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528275" rel="external nofollow">新用户904318</a></span> on <a href="http://www.acmerblog.com/hdu-2457-dna-repair-3921.html#comment-84507" rel="nofollow"><time datetime="2017-04-13T01:15:54+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我是来吐槽的……虽然不知道吐槽什么……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-84506">
+<article class="comment" id="comment-84506">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528275" rel="external nofollow">新用户904318</a></span> on <a href="http://www.acmerblog.com/hdu-2457-dna-repair-3921.html#comment-84506" rel="nofollow"><time datetime="2017-04-13T01:15:54+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我是来吐槽的……虽然不知道吐槽什么……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-84505">
+<article class="comment" id="comment-84505">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528275" rel="external nofollow">新用户904318</a></span> on <a href="http://www.acmerblog.com/hdu-2457-dna-repair-3921.html#comment-84505" rel="nofollow"><time datetime="2017-04-13T01:15:54+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我是来吐槽的……虽然不知道吐槽什么……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-84504">
+<article class="comment" id="comment-84504">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528275" rel="external nofollow">新用户904318</a></span> on <a href="http://www.acmerblog.com/hdu-2457-dna-repair-3921.html#comment-84504" rel="nofollow"><time datetime="2017-04-13T01:15:54+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我是来吐槽的……虽然不知道吐槽什么……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-84503">
+<article class="comment" id="comment-84503">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528275" rel="external nofollow">新用户904318</a></span> on <a href="http://www.acmerblog.com/hdu-2457-dna-repair-3921.html#comment-84503" rel="nofollow"><time datetime="2017-04-13T01:15:54+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我是来吐槽的……虽然不知道吐槽什么……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-84502">
+<article class="comment" id="comment-84502">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528275" rel="external nofollow">新用户904318</a></span> on <a href="http://www.acmerblog.com/hdu-2457-dna-repair-3921.html#comment-84502" rel="nofollow"><time datetime="2017-04-13T01:15:54+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我是来吐槽的……虽然不知道吐槽什么……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22133">
+<article class="comment" id="comment-22133">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">howhaw</a></span> on <a href="http://www.acmerblog.com/hdu-2457-dna-repair-3921.html#comment-22133" rel="nofollow"><time datetime="2015-03-02T01:52:14+00:00" pubdate="">2015年3月2日 at 上午1:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>太变态了。我用hash居然超时了。这样break掉居然都行啊。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-22136">
+<article class="comment" id="comment-22136">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xrjervis</a></span> on <a href="http://www.acmerblog.com/hdu-2457-dna-repair-3921.html#comment-22136" rel="nofollow"><time datetime="2015-02-11T23:31:04+00:00" pubdate="">2015年2月11日 at 下午11:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好。代码比书上的简练！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22141">
+<article class="comment" id="comment-22141">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">asdass</a></span> on <a href="http://www.acmerblog.com/hdu-2457-dna-repair-3921.html#comment-22141" rel="nofollow"><time datetime="2015-02-07T21:51:40+00:00" pubdate="">2015年2月7日 at 下午9:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>失误失误，转载错了。已经改正，抱歉。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-22142">
+<article class="comment" id="comment-22142">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xuelanghu</a></span> on <a href="http://www.acmerblog.com/hdu-2457-dna-repair-3921.html#comment-22142" rel="nofollow"><time datetime="2014-12-23T07:35:07+00:00" pubdate="">2014年12月23日 at 上午7:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Thanks for using the time to examine this, I truly feel strongly about it and enjoy finding out far more on this subject matter. If achievable, as you achieve knowledge</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22139">
+<article class="comment" id="comment-22139">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">anthozoan77</a></span> on <a href="http://www.acmerblog.com/hdu-2457-dna-repair-3921.html#comment-22139" rel="nofollow"><time datetime="2014-12-20T11:42:14+00:00" pubdate="">2014年12月20日 at 上午11:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题其实还可以找循环节。参照欧拉定理（也就是费马定理的推广）,a^(phi(m)) mod m = 1</p>
+<p><a href="http://zh.wikipedia.org/wiki/%E6%AC%A7%E6%8B%89%E5%AE%9A%E7%90%86_(%E6%95%B0%E8%AE%BA)" rel="nofollow">http://zh.wikipedia.org/wiki/%E6%AC%A7%E6%8B%89%E5%AE%9A%E7%90%86_(%E6%95%B0%E8%AE%BA)</a></p>
+<p>所以先算b mod phi(10)，这个部分都是可以约掉的。基本上O(1)的时间就出解了。当然，这也是因为这个问题模数太小的原因。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-22135">
+<article class="comment" id="comment-22135">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Amber</a></span> on <a href="http://www.acmerblog.com/hdu-2457-dna-repair-3921.html#comment-22135" rel="nofollow"><time datetime="2014-08-29T00:45:48+00:00" pubdate="">2014年8月29日 at 上午12:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#!/usr/bin/env  python<br/>
+def cou(n):<br/>
+        arr =  <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/82/one_org.gif"/><br/>
+        i = 1<br/>
+        while(i&lt;n):<br/>
+                arr.append(arr[i-1]+selfcount(i))<br/>
+                i+=1<br/>
+        return arr[n-1]</p>
+<p>def selfcount(n):<br/>
+        count = 0<br/>
+        while(n):<br/>
+                if n%10 == 1:<br/>
+                        count += 1<br/>
+                n /= 10<br/>
+        return count</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22137">
+<article class="comment" id="comment-22137">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">123zxc</a></span> on <a href="http://www.acmerblog.com/hdu-2457-dna-repair-3921.html#comment-22137" rel="nofollow"><time datetime="2014-08-23T07:36:12+00:00" pubdate="">2014年8月23日 at 上午7:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有限自动机在ACM中是必须掌握的算法，实际上在面试当中几乎不可能让你单独的去实现这个算法，如果有题目要用到有限自动机来降低时间复杂度，那么这种面试题应该属于很难的级别了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-45313">
+<article class="comment" id="comment-45313">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">PriceKiller</a></span> on <a href="http://www.acmerblog.com/hdu-2457-dna-repair-3921.html#comment-45313" rel="nofollow"><time datetime="2014-08-10T16:14:30+00:00" pubdate="">2014年8月10日 at 下午4:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有两个重复的话结果是正确的，但解法不够严谨，后面重复的覆盖掉前面的，由于题目数据限制也比较严，所以能提交通过。已更新算法</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22132">
+<article class="comment" id="comment-22132">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lanifer</a></span> on <a href="http://www.acmerblog.com/hdu-2457-dna-repair-3921.html#comment-22132" rel="nofollow"><time datetime="2014-07-16T18:40:22+00:00" pubdate="">2014年7月16日 at 下午6:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个系列很不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-22138">
+<article class="comment" id="comment-22138">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Monkey_Sun</a></span> on <a href="http://www.acmerblog.com/hdu-2457-dna-repair-3921.html#comment-22138" rel="nofollow"><time datetime="2014-07-12T03:56:49+00:00" pubdate="">2014年7月12日 at 上午3:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>和编译器有关吧，我用的g++正常。头文件可能还需要一个&lt;string.h&gt;</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22143">
+<article class="comment" id="comment-22143">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">TimeFight</a></span> on <a href="http://www.acmerblog.com/hdu-2457-dna-repair-3921.html#comment-22143" rel="nofollow"><time datetime="2014-06-30T17:58:46+00:00" pubdate="">2014年6月30日 at 下午5:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>居然是机试，还和13年重复。题目不难</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-22134">
+<article class="comment" id="comment-22134">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sharp</a></span> on <a href="http://www.acmerblog.com/hdu-2457-dna-repair-3921.html#comment-22134" rel="nofollow"><time datetime="2014-06-14T13:38:02+00:00" pubdate="">2014年6月14日 at 下午1:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22140">
+<article class="comment" id="comment-22140">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">GDUTtian</a></span> on <a href="http://www.acmerblog.com/hdu-2457-dna-repair-3921.html#comment-22140" rel="nofollow"><time datetime="2014-03-22T05:02:08+00:00" pubdate="">2014年3月22日 at 上午5:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是O(m+n)，不小心打错了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

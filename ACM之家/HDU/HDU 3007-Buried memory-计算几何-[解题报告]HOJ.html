@@ -1,0 +1,433 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>02-27</div>
+<div class="tit"><h1 class="entry-title">HDU 3007-Buried memory-计算几何-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/math/probability" rel="category tag" title="查看概率计算中的全部文章">概率计算</a>, <a href="http://www.acmerblog.com/category/geometry/analytic-geometry" rel="category tag" title="查看解析几何中的全部文章">解析几何</a></span><span class="i4">围观872次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4779" href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comments" title="《HDU 3007-Buried memory-计算几何-[解题报告]HOJ》上的评论">31 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Buried memory</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Each person had do something foolish along with his or her growth.But,when he or she did this that time,they could not predict that this thing is a mistake and they will want this thing would rather not happened.<br/>   The world king Sconbin is not the exception.One day,Sconbin was sleeping,then swakened by one nightmare.It turned out that his love letters to Dufein were made public in his dream.These foolish letters might ruin his throne.Sconbin decided to destroy the letters by the military exercises’s opportunity.The missile is the best weapon.Considered the execution of the missile,Sconbin chose to use one missile with the minimum destruction.<br/>    Sconbin had writen N letters to Dufein, she buried these letters on different places.Sconbin got the places by difficult,he wants to know where is the best place launch the missile,and the smallest radius of the burst area. Let’s help Sconbin to get the award. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+There are many test cases.Each case consists of a positive integer N(N&lt;500,^V^,our great king might be a considerate lover) on a line followed by N lines giving the coordinates of N letters.Each coordinates have two numbers,x coordinate and y coordinate.N=0 is the end of the input file. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+There are many test cases.Each case consists of a positive integer N(N&lt;500,^V^,our great king might be a considerate lover) on a line followed by N lines giving the coordinates of N letters.Each coordinates have two numbers,x coordinate and y coordinate.N=0 is the end of the input file.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3
+1.00 1.00
+2.00 2.00
+3.00 3.00
+0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+2.00 2.00 1.41</pre>
+<p> <!-- problem end --></p>
+<p>题意：给出平面上的一些点，要求用一个最小的圆，把所有的点包围起来。</p>
+<p>最小覆盖圆， 增量法<br/>
+假设圆O是前i-1个点得最小覆盖圆，加入第i个点，如果在圆内或边上则什么也不做。否,新得到的最小覆盖圆肯定经过第i个点。<br/>
+然后以第i个点为基础（半径为0），重复以上过程依次加入第j个点，若第j个点在圆外，则最小覆盖圆必经过第j个点。<br/>
+重复以上步骤（因为最多需要三个点来确定这个最小覆盖圆，所以重复三次）。遍历完所有点之后，所得到的圆就是覆盖所有点得最小圆。</p>
+<p>证明可以考虑这么做：<br/>
+最小圆必定是可以通过不断放大半径，直到所有以任意点为圆心，半径为半径的圆存在交点，此时的半径就是最小圆。所以上述定理可以通过这个思想得到。这个做法复杂度是O(n)的，当加入圆的顺序随机时，因为三点定一圆，所以不在圆内概率是3/i,求出期望可得是O(n)。</p>
+<pre class="brush:cpp ">#include&lt;iostream&gt;
+#include&lt;cmath&gt;
+#include&lt;cstdio&gt;
+#include&lt;algorithm&gt; 
+using namespace std;
+const double eps=1e-8;
+struct Point{
+	double x,y; 
+}p[505];
+double dis(const Point &amp;a,const Point &amp;b)
+{
+	return sqrt((a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y)); 
+} 
+Point circumcenter(const Point &amp;a,const Point &amp;b,const Point &amp;c)
+{ //返回三角形的外心 
+	Point ret; 
+	double a1=b.x-a.x,b1=b.y-a.y,c1=(a1*a1+b1*b1)/2;
+	double a2=c.x-a.x,b2=c.y-a.y,c2=(a2*a2+b2*b2)/2;
+	double d=a1*b2-a2*b1;
+	ret.x=a.x+(c1*b2-c2*b1)/d;
+	ret.y=a.y+(a1*c2-a2*c1)/d;
+	return ret; 
+} 
+void min_cover_circle(Point *p,int n,Point &amp;c,double &amp;r){ //c为圆心，r为半径 
+	random_shuffle(p,p+n); // 
+	c=p[0]; r=0;
+	for(int i=1;i&lt;n;i++)
+	{
+		if(dis(p[i],c)&gt;r+eps)  //第一个点
+		{ 
+			c=p[i]; r=0;
+			for(int j=0;j&lt;i;j++)
+				if(dis(p[j],c)&gt;r+eps) //第二个点
+				{
+					c.x=(p[i].x+p[j].x)/2;
+					c.y=(p[i].y+p[j].y)/2;
+					r=dis(p[j],c);
+					for(int k=0;k&lt;j;k++)
+						if(dis(p[k],c)&gt;r+eps) //第三个点
+						{//求外接圆圆心，三点必不共线 
+							c=circumcenter(p[i],p[j],p[k]); 
+							r=dis(p[i],c); 
+						} 
+				}  
+		}    
+	} 
+} 
+int main(){
+	int n;
+	Point c;
+	double r; 
+	while(scanf("%d",&amp;n)==1 &amp;&amp; n){
+		for(int i=0;i&lt;n;i++)
+			scanf("%lf%lf",&amp;p[i].x,&amp;p[i].y);
+		min_cover_circle(p,n,c,r);                    
+		printf("%.2lf %.2lf %.2lf\n",c.x,c.y,r);                   
+	} 
+	return 0;
+}</pre>
+<p>
+ </p>
+<p>参考：http://blog.csdn.net/vsooda/article/details/8543450</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-80052">
+<article class="comment" id="comment-80052">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513572" rel="external nofollow">新用户808197</a></span> on <a href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comment-80052" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>讯息量特大，一时半会儿都要消化不良</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80051">
+<article class="comment" id="comment-80051">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513572" rel="external nofollow">新用户808197</a></span> on <a href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comment-80051" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>讯息量特大，一时半会儿都要消化不良</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80050">
+<article class="comment" id="comment-80050">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513572" rel="external nofollow">新用户808197</a></span> on <a href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comment-80050" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>讯息量特大，一时半会儿都要消化不良</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80049">
+<article class="comment" id="comment-80049">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513572" rel="external nofollow">新用户808197</a></span> on <a href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comment-80049" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>讯息量特大，一时半会儿都要消化不良</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80048">
+<article class="comment" id="comment-80048">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513572" rel="external nofollow">新用户808197</a></span> on <a href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comment-80048" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>讯息量特大，一时半会儿都要消化不良</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80047">
+<article class="comment" id="comment-80047">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513572" rel="external nofollow">新用户808197</a></span> on <a href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comment-80047" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>讯息量特大，一时半会儿都要消化不良</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80046">
+<article class="comment" id="comment-80046">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513572" rel="external nofollow">新用户808197</a></span> on <a href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comment-80046" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>讯息量特大，一时半会儿都要消化不良</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80045">
+<article class="comment" id="comment-80045">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513572" rel="external nofollow">新用户808197</a></span> on <a href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comment-80045" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>讯息量特大，一时半会儿都要消化不良</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80044">
+<article class="comment" id="comment-80044">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513572" rel="external nofollow">新用户808197</a></span> on <a href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comment-80044" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>讯息量特大，一时半会儿都要消化不良</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80043">
+<article class="comment" id="comment-80043">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513572" rel="external nofollow">新用户808197</a></span> on <a href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comment-80043" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>讯息量特大，一时半会儿都要消化不良</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80042">
+<article class="comment" id="comment-80042">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513572" rel="external nofollow">新用户808197</a></span> on <a href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comment-80042" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>讯息量特大，一时半会儿都要消化不良</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80041">
+<article class="comment" id="comment-80041">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513572" rel="external nofollow">新用户808197</a></span> on <a href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comment-80041" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>讯息量特大，一时半会儿都要消化不良</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80040">
+<article class="comment" id="comment-80040">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513572" rel="external nofollow">新用户808197</a></span> on <a href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comment-80040" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>讯息量特大，一时半会儿都要消化不良</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80039">
+<article class="comment" id="comment-80039">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513572" rel="external nofollow">新用户808197</a></span> on <a href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comment-80039" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>讯息量特大，一时半会儿都要消化不良</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80038">
+<article class="comment" id="comment-80038">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513572" rel="external nofollow">新用户808197</a></span> on <a href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comment-80038" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>讯息量特大，一时半会儿都要消化不良</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80037">
+<article class="comment" id="comment-80037">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513572" rel="external nofollow">新用户808197</a></span> on <a href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comment-80037" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>讯息量特大，一时半会儿都要消化不良</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80036">
+<article class="comment" id="comment-80036">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513572" rel="external nofollow">新用户808197</a></span> on <a href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comment-80036" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>讯息量特大，一时半会儿都要消化不良</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26439">
+<article class="comment" id="comment-26439">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gnipuohz</a></span> on <a href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comment-26439" rel="nofollow"><time datetime="2015-07-05T04:31:43+00:00" pubdate="">2015年7月5日 at 上午4:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚开始学，非常好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-57789">
+<article class="comment" id="comment-57789">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">skyand</a></span> on <a href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comment-57789" rel="nofollow"><time datetime="2015-06-28T03:55:49+00:00" pubdate="">2015年6月28日 at 上午3:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>思考人生吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26438">
+<article class="comment" id="comment-26438">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">edward2414</a></span> on <a href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comment-26438" rel="nofollow"><time datetime="2015-03-18T02:13:45+00:00" pubdate="">2015年3月18日 at 上午2:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错的网站，建议添加些比赛信息</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-26432">
+<article class="comment" id="comment-26432">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sgx_go</a></span> on <a href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comment-26432" rel="nofollow"><time datetime="2015-03-01T16:29:27+00:00" pubdate="">2015年3月1日 at 下午4:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一句可以忽略不计了吧。从第二句开始分析，说明这个花色下的所有牌都会在其它里面出现，那么还剩下♠️和♦️。第三句，可以排除2和7，因为在两种花色里有。现在是第四句，因为♠️还剩下多个，只有是♦️B才能知道答案。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26435">
+<article class="comment" id="comment-26435">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">liuyuedeyu</a></span> on <a href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comment-26435" rel="nofollow"><time datetime="2015-02-04T06:19:30+00:00" pubdate="">2015年2月4日 at 上午6:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-26442">
+<article class="comment" id="comment-26442">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jiakcstudio</a></span> on <a href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comment-26442" rel="nofollow"><time datetime="2015-01-11T13:59:51+00:00" pubdate="">2015年1月11日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还是有些难度的！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26434">
+<article class="comment" id="comment-26434">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">missliuxin</a></span> on <a href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comment-26434" rel="nofollow"><time datetime="2014-09-18T18:34:58+00:00" pubdate="">2014年9月18日 at 下午6:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>比较基础，找些自信</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-26436">
+<article class="comment" id="comment-26436">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gnipuohz</a></span> on <a href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comment-26436" rel="nofollow"><time datetime="2014-09-12T14:11:25+00:00" pubdate="">2014年9月12日 at 下午2:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这一题的代码这样提交时错误的~少考虑了很多情况</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26431">
+<article class="comment" id="comment-26431">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">CCat</a></span> on <a href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comment-26431" rel="nofollow"><time datetime="2014-08-31T19:33:02+00:00" pubdate="">2014年8月31日 at 下午7:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>顺利测试通过了，多谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-26433">
+<article class="comment" id="comment-26433">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hunangangli</a></span> on <a href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comment-26433" rel="nofollow"><time datetime="2014-08-21T14:12:27+00:00" pubdate="">2014年8月21日 at 下午2:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>赞一个！权限已更新:）</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63070">
+<article class="comment" id="comment-63070">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lin</a></span> on <a href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comment-63070" rel="nofollow"><time datetime="2014-05-15T10:41:25+00:00" pubdate="">2014年5月15日 at 上午10:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>I go through some of your put up and I uncovered a good deal of expertise from it. Many thanks for posting this sort of exciting posts</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-26440">
+<article class="comment" id="comment-26440">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">leowww</a></span> on <a href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comment-26440" rel="nofollow"><time datetime="2014-05-12T01:55:23+00:00" pubdate="">2014年5月12日 at 上午1:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Good task for the group. Hold it up for every yeara??s winner. This is a excellent oppotunity for a lot more enhancement. Indeed, obtaining far better and much better is constantly the crucial. Just like my pal suggests on the truth about ab muscles, he just keeps obtaining much better.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26441">
+<article class="comment" id="comment-26441">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bluesky</a></span> on <a href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comment-26441" rel="nofollow"><time datetime="2014-04-12T19:53:41+00:00" pubdate="">2014年4月12日 at 下午7:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>编辑的时候有些不小心了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-26437">
+<article class="comment" id="comment-26437">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Monkey_Sun</a></span> on <a href="http://www.acmerblog.com/hdu-3007-buried-memory-4779.html#comment-26437" rel="nofollow"><time datetime="2014-04-10T06:57:43+00:00" pubdate="">2014年4月10日 at 上午6:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>顺利测试通过了，多谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

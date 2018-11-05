@@ -1,0 +1,269 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>02-14</div>
+<div class="tit"><h1 class="entry-title">hdu 2723 Electronic Document Security[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观234次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4321" href="http://www.acmerblog.com/hdu-2723-electronic-document-security-4321.html#comments" title="《hdu 2723 Electronic Document Security[解题报告]C++》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Electronic Document Security</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+The Tyrell corporation uses a state-of-the-art electronic document system that controls all aspects of document creation, viewing, editing, and distribution. Document security is handled via access control lists (ACLs). An ACL defines a set of entities that have access to the document, and for each entity defines the set of rights that it has. Entities are denoted by uppercase letters; an entity might be a single individual or an entire division. Rights are denoted by lowercase letters; examples of rights are a for append, d for delete, e for edit, and r for read.
+<p>The ACL for a document is stored along with that document, but there is also a separate ACL log stored on a separate log server. All documents start with an empty ACL, which grants no rights to anyone. Every time the ACL for a document is changed, a new entry is written to the log. An entry is of the form ExR, where E is a nonempty set of entities, R is a nonempty set of rights, and x is either "+", "�", or "=". Entry E+R says to grant all the rights in R to all the entities in E, entry E�R says to remove all the rights in R from all the entities in E, and entry E=R says that all the entities in E have exactly the rights in R and no others. An entry might be redundant in the sense that it grants an entity a right it already has and/or denies an entity a right that it doesn’t have. A log is simply a list of entries separated by commas, ordered chronologically from oldest to most recent. Entries are cumulative, with newer entries taking precedence over older entries if there is a conflict.</p>
+<p>Periodically the Tyrell corporation will run a security check by using the logs to compute the current ACL for each document and then comparing it with the ACL actually stored with the document. A mismatch indicates a security breach. Your job is to write a program that, given an ACL log, computes the current ACL. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input consists of one or more ACL logs, each 3�79 characters long and on a line by itself, followed by a line containing only "#" that signals the end of the input. Logs will be in the format defined above and will not contain any whitespace. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input consists of one or more ACL logs, each 3�79 characters long and on a line by itself, followed by a line containing only "#" that signals the end of the input. Logs will be in the format defined above and will not contain any whitespace.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+MC-p,SC+c
+YB=rde,B-dq,AYM+e
+GQ+tju,GH-ju,AQ-z,Q=t,QG-t
+JBL=fwa,H+wf,LD-fz,BJ-a,P=aw
+#</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+1:CSc
+2:AeBerMeYder
+3:
+4:BHJfwLPaw</pre>
+<p> <!-- problem end --></p>
+<p>地址：<a href="http://acm.hdu.edu.cn/showproblem.php?pid=2723">http://acm.hdu.edu.cn/showproblem.php?pid=2723</a></p>
+<p>题意：为了对一个文件进行访问控制，会给每个文件建立一个访问控制列表（ACL），每个列表里有若干个entity（类似于用户组），每个entity有若干个right（权限）。给出一个文件的权限更改日志，日志是ExR形式的短语构成，E是这次操作影响的entity（多个），R是right，x是一个操作符，可以为+、-、=。为+的时候表示把权限加到entity上，为-的时候表示从entity减去相应权限，为=的时候表示把entity设为相应权限。最后输出每个entity对应的权限，没有权限的不输出，2个相邻的entity如果有相同的权限，合并输出。</p>
+<p>mark：这其实就是个阅读题。数据量很小，读懂了几乎就是实现的问题，因为只有26个字母所以用位运算写爽爆了。很2b地wa了2次，一次是sscanf没处理好，一次是数组开小了，而且第三次提交的时候虽然A了，但是看错行以为wa，瞪了1小时不知道错哪儿直到小朋友提醒才发现。。。</p>
+<p>代码：</p>
+<pre class="brush:cpp "># include &lt;stdio.h&gt;
+# include &lt;string.h&gt;
+
+
+int ACL[30], out[30][2] ;
+char str[100] ;
+char entity[100], right[100] ;
+
+
+void gao(char s[])
+{
+    char *p = s, op ;
+    int ent, rit, i, j ;
+    memset (ACL, 0, sizeof(ACL)) ;
+    while (*p)
+    {
+        sscanf (p, "%[A-Z]%c%[a-z]%*c", entity, &amp;op, right) ;
+        p += strlen(entity) + strlen(right) + 2 ;
+        for (i = 0 ; entity[i] ; i++)
+        {
+            ent = entity[i]-'A' ;
+            for (rit = 0, j = 0 ; right[j] ; j++) rit |= (1&lt;&lt;(right[j]-'a')) ;
+            
+            if (op == '+') ACL[ent] |= rit ;
+            else if (op == '-') ACL[ent] &amp;= ~rit ;
+            else //op == '='
+                ACL[ent] = rit ;
+        }
+    }
+}
+
+
+int main ()
+{
+    int nCase = 1 ;
+    int i, j, cnt ;
+    while (~scanf ("%s", str) &amp;&amp; strcmp(str, "#"))
+    {
+        gao(str) ;
+        memset (str, 0, sizeof(str)) ;
+        printf ("%d:", nCase++) ;
+        for (i = 0, cnt = 0 ; i &lt; 26 ; i++) if (ACL[i])
+            out[cnt][0] = i, out[cnt++][1] = ACL[i] ;
+        for (i = 0 ; i &lt; cnt ; i++)
+        {
+            printf ("%c", out[i][0]+'A') ;
+            if (i==cnt-1 || (i&lt;cnt-1 &amp;&amp; out[i][1] != out[i+1][1]))
+                for (j = 0 ; j &lt; 26 ; j++) if (out[i][1] &amp; (1&lt;&lt;j))
+                    printf ("%c", j+'a') ;
+        }
+        printf ("\n") ;
+    }
+    return 0 ;
+}</pre>
+<p> </p>
+<p>解题转自：http://www.cnblogs.com/lzsz1212/archive/2013/09/13/3318691.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-82086">
+<article class="comment" id="comment-82086">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466658" rel="external nofollow">新用户008280</a></span> on <a href="http://www.acmerblog.com/hdu-2723-electronic-document-security-4321.html#comment-82086" rel="nofollow"><time datetime="2017-04-12T19:45:08+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>巴拉拉小魔仙之奇迹舞步太好看了，  ，贝贝的歌声很美</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-62892">
+<article class="comment" id="comment-62892">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wall_</a></span> on <a href="http://www.acmerblog.com/hdu-2723-electronic-document-security-4321.html#comment-62892" rel="nofollow"><time datetime="2015-06-13T23:27:19+00:00" pubdate="">2015年6月13日 at 下午11:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的模板</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-24672">
+<article class="comment" id="comment-24672">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">calvert1991</a></span> on <a href="http://www.acmerblog.com/hdu-2723-electronic-document-security-4321.html#comment-24672" rel="nofollow"><time datetime="2015-04-18T12:04:26+00:00" pubdate="">2015年4月18日 at 下午12:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好，找的就是这一题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-57428">
+<article class="comment" id="comment-57428">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">super157</a></span> on <a href="http://www.acmerblog.com/hdu-2723-electronic-document-security-4321.html#comment-57428" rel="nofollow"><time datetime="2015-04-16T17:52:59+00:00" pubdate="">2015年4月16日 at 下午5:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>厉害啊，我遇见数学问题就头疼！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-62895">
+<article class="comment" id="comment-62895">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xin</a></span> on <a href="http://www.acmerblog.com/hdu-2723-electronic-document-security-4321.html#comment-62895" rel="nofollow"><time datetime="2015-03-26T17:09:41+00:00" pubdate="">2015年3月26日 at 下午5:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真心不错，力顶作者</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-24671">
+<article class="comment" id="comment-24671">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Emlar</a></span> on <a href="http://www.acmerblog.com/hdu-2723-electronic-document-security-4321.html#comment-24671" rel="nofollow"><time datetime="2015-03-21T03:22:20+00:00" pubdate="">2015年3月21日 at 上午3:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>simple, however efficient. A lot of instances it is difficult to get that a??perfect balancea?? among usability and appearance. I must say that youa??ve done a exceptional task with this. Also, the blog masses quite fast for me on Web explore.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-24668">
+<article class="comment" id="comment-24668">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">reking</a></span> on <a href="http://www.acmerblog.com/hdu-2723-electronic-document-security-4321.html#comment-24668" rel="nofollow"><time datetime="2015-01-31T05:41:50+00:00" pubdate="">2015年1月31日 at 上午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>如何解决overload的问题呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-24674">
+<article class="comment" id="comment-24674">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">final</a></span> on <a href="http://www.acmerblog.com/hdu-2723-electronic-document-security-4321.html#comment-24674" rel="nofollow"><time datetime="2014-12-11T02:53:22+00:00" pubdate="">2014年12月11日 at 上午2:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>写的很好~~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-24670">
+<article class="comment" id="comment-24670">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wuzirui</a></span> on <a href="http://www.acmerblog.com/hdu-2723-electronic-document-security-4321.html#comment-24670" rel="nofollow"><time datetime="2014-10-21T08:05:47+00:00" pubdate="">2014年10月21日 at 上午8:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>处凡愚而不减，在圣贤而不增；<br/>住烦恼而不乱，居禅定而不寂。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-62894">
+<article class="comment" id="comment-62894">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">cyyuen</a></span> on <a href="http://www.acmerblog.com/hdu-2723-electronic-document-security-4321.html#comment-62894" rel="nofollow"><time datetime="2014-10-11T05:32:08+00:00" pubdate="">2014年10月11日 at 上午5:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>请问printAllCombination的时间复杂度怎么分析呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-24669">
+<article class="comment" id="comment-24669">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zclzcllove</a></span> on <a href="http://www.acmerblog.com/hdu-2723-electronic-document-security-4321.html#comment-24669" rel="nofollow"><time datetime="2014-09-12T11:27:24+00:00" pubdate="">2014年9月12日 at 上午11:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>确实有点难度，搞了好久。int溢出要注意</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-24673">
+<article class="comment" id="comment-24673">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">vincent_ynh</a></span> on <a href="http://www.acmerblog.com/hdu-2723-electronic-document-security-4321.html#comment-24673" rel="nofollow"><time datetime="2014-06-13T19:24:42+00:00" pubdate="">2014年6月13日 at 下午7:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>样例输出和程序输出不吻合，修改一下样例输出吧。我用的是VC编译器，会提示我的i和j变量重复定义</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-57429">
+<article class="comment" id="comment-57429">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xuelanghu</a></span> on <a href="http://www.acmerblog.com/hdu-2723-electronic-document-security-4321.html#comment-57429" rel="nofollow"><time datetime="2014-06-07T20:14:46+00:00" pubdate="">2014年6月7日 at 下午8:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>失误失误，转载错了。已经改正，抱歉。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-24675">
+<article class="comment" id="comment-24675">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ktcer</a></span> on <a href="http://www.acmerblog.com/hdu-2723-electronic-document-security-4321.html#comment-24675" rel="nofollow"><time datetime="2014-04-16T15:20:07+00:00" pubdate="">2014年4月16日 at 下午3:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢支持！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-62893">
+<article class="comment" id="comment-62893">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yunyang088</a></span> on <a href="http://www.acmerblog.com/hdu-2723-electronic-document-security-4321.html#comment-62893" rel="nofollow"><time datetime="2014-04-06T12:38:31+00:00" pubdate="">2014年4月6日 at 下午12:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>顺利测试通过了，多谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

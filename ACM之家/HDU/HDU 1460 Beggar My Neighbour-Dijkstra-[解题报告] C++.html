@@ -1,0 +1,266 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-11</div>
+<div class="tit"><h1 class="entry-title">HDU 1460 Beggar My Neighbour-Dijkstra-[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph/shortest-path" rel="category tag" title="查看最短路径中的全部文章">最短路径</a>, <a href="http://www.acmerblog.com/category/basis/tanxin" rel="category tag" title="查看贪心中的全部文章">贪心</a></span><span class="i4">围观588次</span><span class="i3"><a class="ds-thread-count" data-thread-key="1989" href="http://www.acmerblog.com/hdu-1460-Beggar-My-Neighbour-1989.html#comments" title="《HDU 1460 Beggar My Neighbour-Dijkstra-[解题报告] C++》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Beggar My Neighbour</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+"Beggar My Neighbour” (sometimes known as "Strip Jack Naked”) is a traditional card game, designed to help teach beginners something about cards and their values. A standard deck is shuffled and dealt face down to the two players, the first card to the non-dealer, the second to the dealer, and so on until each player has 26 cards. The dealer receives the last card. The non-dealer starts the game by playing the top card of her deck (the second last card dealt) face up on the table. The dealer then covers it by playing her top card face up. Play continues in this fashion until a “face” card (Ace, King, Queen or Jack) is played. The next player must then “cover” that card, by playing one card for a Jack, two for a Queen, three for a King and four for an Ace. If a face card is played at any stage during this sequence, play switches and the other player must cover that card. When this sequence has ended, the player who exposed the last face card takes the entire heap, placing it face down under her existing deck. She then starts the next round by playing one card face up as before, and play continues until one player cannot play when called upon to do so, because they have no more cards.
+<p>Write a program that will simulate playing this game. Remember that a standard deck (or pack) of cards contains 52 cards. These are divided into 4 suits – Spades, Hearts, Diamonds and Clubs. Within each suit there are 13 cards – Ace (A), 2-9, Ten (T), Jack (J), Queen (Q) and King (K). </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+Input will consist of a series of decks of cards. Each deck will give the cards in order as they would be dealt (that is in the example deck below, the non-dealer would start the game by playing the H2). Decks will occupy 4 lines with 13 cards on each. The designation of each card will be the suit (S, H, D, C) followed by the rank (A, 2-9, T, J, Q, K). There will be exactly one space between cards. The file will be terminated by a line consisting of a single #. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+Output will consist of a series of lines, one for each deck in the input. Each line will consist of the number of the winning player (1 is the dealer, 2 is the first to play) and the number of cards in the winner’s hand (ignoring any on the stack), right justified in a field of width 3.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+HA H3 H4 CA SK S5 C5 S6 C4 D5 H7 HJ HQ
+D4 D7 SJ DT H6 S9 CT HK C8 C9 D6 CJ C6
+S8 D8 C2 S2 S3 C7 H5 DJ S4 DQ DK D9 D3
+H9 DA SA CK CQ C3 HT SQ H8 S7 ST H2 D2
+#</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+1 44</pre>
+<p> <!-- problem end --></p>
+<p>题意：给出了城市数n,以及街道数m（街道是双向均可通行的）, 对于每一条街mi,给出它的两端的城市，以及所能承载的最大货物运输量。</p>
+<p>要求输出，从城市1到城市n，最多能运输多少货物。</p>
+<p>
+</p>
+<p>分析：无向、带权图的单源最短路问题。 但这里路径的定义变成了：这条路上权值最小的那段路 的权值（而非所有段的权值之和）。</p>
+<p>我们的任务就是求出：每一条从1到n的路上，“路径” 的最大值。 这样，就成了求单源最长“路径”。</p>
+<p>
+</p>
+<pre class="brush:cpp ">//hoj 1653
+//Dijkstra 单源最短路
+//注意此题中路长的定义变成了，各段路的权值的最小值
+
+#include &lt;iostream&gt;
+#include &lt;cstdio&gt;
+#include &lt;memory.h&gt;
+#include &lt;climits&gt;
+#define N 1005
+#define MinN 0
+using namespace std;
+
+int map[N][N];
+
+bool used[N];
+int dis[N];
+int main()
+{
+    int caseNum;
+    scanf("%d",&amp;caseNum);
+    for(int t=1; t&lt;=caseNum; t++) {
+
+        memset(map,0,sizeof(map));  //初始化为零，是因为不相邻的两个点间的通货能力为0（不要惯性思维初始化为无穷大）
+        int n,m;
+        scanf("%d %d",&amp;n,&amp;m);
+        for(int i=0; i&lt;m; i++) {
+            int s,e;
+            scanf("%d %d",&amp;s,&amp;e);
+            scanf("%d",&amp;map[s][e]);
+            map[e][s]=map[s][e];
+
+        }
+
+        memset(used,0,sizeof(used));
+
+        for(int i=1; i&lt;=n; i++) {
+            dis[i]=map[1][i];        //dis[i]储存点i到源点1的路径
+        }
+
+        used[1]=1;
+        int count=n;
+
+        while(count--) {
+            int m=MinN;
+            int v;
+            for(int i=2; i&lt;=n; i++) {
+                if(!used[i]&amp;&amp;m&lt;dis[i]) {  //找到与源点1通货能力最大的，且尚未访问过的点。这是一种贪心的思想。
+                    m=dis[i];
+                    v=i;
+                }
+            }
+            used[v]=1;
+            for(int j=1; j&lt;=n; j++) {
+                dis[j]=max(dis[j],min(dis[v],map[v][j])); //转移方程
+                //min(dis[v],map[v][j])获得的是从1到v再到j这条路的“路径”。
+                //max()用来更新点1到点j的最长路径。这条路可能是从1直接到j，也可能是从1到v再到j      
+            }
+            printf("Scenario #%d:\n",t);
+            printf("%d\n\n",dis[n]);
+        }
+        return 0;
+    }</pre>
+<p>解题报告转自：http://blog.csdn.net/zhuang19922011/article/details/8034990</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-41075">
+<article class="comment" id="comment-41075">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">nwling</a></span> on <a href="http://www.acmerblog.com/hdu-1460-Beggar-My-Neighbour-1989.html#comment-41075" rel="nofollow"><time datetime="2015-06-23T08:51:03+00:00" pubdate="">2015年6月23日 at 上午8:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>代码过于复杂了吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-13525">
+<article class="comment" id="comment-13525">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">everos</a></span> on <a href="http://www.acmerblog.com/hdu-1460-Beggar-My-Neighbour-1989.html#comment-13525" rel="nofollow"><time datetime="2015-05-12T00:14:15+00:00" pubdate="">2015年5月12日 at 上午12:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>处凡愚而不减，在圣贤而不增；<br/>住烦恼而不乱，居禅定而不寂。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-61615">
+<article class="comment" id="comment-61615">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">aaa</a></span> on <a href="http://www.acmerblog.com/hdu-1460-Beggar-My-Neighbour-1989.html#comment-61615" rel="nofollow"><time datetime="2015-04-07T08:51:38+00:00" pubdate="">2015年4月7日 at 上午8:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第63行是不是漏了 return 1 + dis_right; ?</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-13526">
+<article class="comment" id="comment-13526">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zcmu_sls</a></span> on <a href="http://www.acmerblog.com/hdu-1460-Beggar-My-Neighbour-1989.html#comment-13526" rel="nofollow"><time datetime="2014-11-27T04:23:59+00:00" pubdate="">2014年11月27日 at 上午4:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给你一组数据吧：29 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 1000。此时的数据量还是很小的，耗时却不短。这种方法确实可以，当然或许还有其他的优化方案，但是优化只能针对某些数据，不太可能在所有情况下都能在可接受的时间内求解出答案。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-61611">
+<article class="comment" id="comment-61611">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">21435048</a></span> on <a href="http://www.acmerblog.com/hdu-1460-Beggar-My-Neighbour-1989.html#comment-61611" rel="nofollow"><time datetime="2014-11-09T21:33:47+00:00" pubdate="">2014年11月9日 at 下午9:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>受益匪浅！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-54842">
+<article class="comment" id="comment-54842">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NextLife</a></span> on <a href="http://www.acmerblog.com/hdu-1460-Beggar-My-Neighbour-1989.html#comment-54842" rel="nofollow"><time datetime="2014-11-08T20:48:35+00:00" pubdate="">2014年11月8日 at 下午8:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>神奇的网站</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-41074">
+<article class="comment" id="comment-41074">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mcitdkj</a></span> on <a href="http://www.acmerblog.com/hdu-1460-Beggar-My-Neighbour-1989.html#comment-41074" rel="nofollow"><time datetime="2014-10-31T04:10:54+00:00" pubdate="">2014年10月31日 at 上午4:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给力，赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-41077">
+<article class="comment" id="comment-41077">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zzzzzz</a></span> on <a href="http://www.acmerblog.com/hdu-1460-Beggar-My-Neighbour-1989.html#comment-41077" rel="nofollow"><time datetime="2014-08-15T22:09:15+00:00" pubdate="">2014年8月15日 at 下午10:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>通不过。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-61613">
+<article class="comment" id="comment-61613">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jue</a></span> on <a href="http://www.acmerblog.com/hdu-1460-Beggar-My-Neighbour-1989.html#comment-61613" rel="nofollow"><time datetime="2014-08-12T19:53:00+00:00" pubdate="">2014年8月12日 at 下午7:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>使用代码高亮的插件，再修改下css</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-61614">
+<article class="comment" id="comment-61614">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lint</a></span> on <a href="http://www.acmerblog.com/hdu-1460-Beggar-My-Neighbour-1989.html#comment-61614" rel="nofollow"><time datetime="2014-07-26T08:45:44+00:00" pubdate="">2014年7月26日 at 上午8:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>看见的晚了，只能提交一次唉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-41076">
+<article class="comment" id="comment-41076">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lanifer</a></span> on <a href="http://www.acmerblog.com/hdu-1460-Beggar-My-Neighbour-1989.html#comment-41076" rel="nofollow"><time datetime="2014-07-14T08:26:11+00:00" pubdate="">2014年7月14日 at 上午8:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可是看了很多算法书什么的都是说的(start-end)/2哎。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-61612">
+<article class="comment" id="comment-61612">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zzzzzz</a></span> on <a href="http://www.acmerblog.com/hdu-1460-Beggar-My-Neighbour-1989.html#comment-61612" rel="nofollow"><time datetime="2014-03-28T12:17:56+00:00" pubdate="">2014年3月28日 at 下午12:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为\n\n</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-61616">
+<article class="comment" id="comment-61616">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">CCat</a></span> on <a href="http://www.acmerblog.com/hdu-1460-Beggar-My-Neighbour-1989.html#comment-61616" rel="nofollow"><time datetime="2014-03-26T13:03:40+00:00" pubdate="">2014年3月26日 at 下午1:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正在学习搜索，很好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-41078">
+<article class="comment" id="comment-41078">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dream</a></span> on <a href="http://www.acmerblog.com/hdu-1460-Beggar-My-Neighbour-1989.html#comment-41078" rel="nofollow"><time datetime="2014-02-07T05:45:02+00:00" pubdate="">2014年2月7日 at 上午5:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这道题目虽然简单，但是小编做的很到位，应该会给很多人启发吧！对于面试当中不给开辟额外空间的问题不是绝对的，实际上至少是允许少数变量存在的。之前遇到相似的问题也是恍然大悟，今天看到小编这篇文章相见恨晚。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

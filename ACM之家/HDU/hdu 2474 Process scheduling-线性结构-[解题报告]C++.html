@@ -1,0 +1,261 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>01-26</div>
+<div class="tit"><h1 class="entry-title">hdu 2474 Process scheduling-线性结构-[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/data-struct/linear" rel="category tag" title="查看线性结构中的全部文章">线性结构</a></span><span class="i4">围观749次</span><span class="i3"><a class="ds-thread-count" data-thread-key="3938" href="http://www.acmerblog.com/hdu-2474-process-scheduling-3938.html#comments" title="《hdu 2474 Process scheduling-线性结构-[解题报告]C++》上的评论">12 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Process scheduling</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Process scheduling is a very important problem in operating system design. Each process requires some amount of resources to run. The process will release all the resources allocated to it when completes. Different resource allocating strategy varies much in efficiency. Even some unsuitable strategy can result in dead lock.<br/>Now there are n processes and m kinds of resources. At the beginning, each process has been allocated some amount of resources for each kind. However, the allocated resources might not be enough. They still need some extra resources for each kind. And you are given the available resources for each kind in the computer now. Can you tell whether it is possible to schedule these processes in a suitable order so that all of them can be executed successfully? </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+There are four parts in the input.<br/>The first part contains two positive integers n(n&lt;=50000) and m(m&lt;=3) representing the number of processes and the number of resources.<br/>The second part is the following m lines. Each of the m lines contains n integers. These integers make the allocation table.<br/>The third part is also the following m lines. Each of the m lines contains n integers. These integers make the request table.<br/>The last line containing m integers is the fourth part. This part tells you the amount of available resources for each kind currently.<br/>You may assume all integers that appear are less than or equal to 10^9. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+There are four parts in the input.<br/>The first part contains two positive integers n(n&lt;=50000) and m(m&lt;=3) representing the number of processes and the number of resources.<br/>The second part is the following m lines. Each of the m lines contains n integers. These integers make the allocation table.<br/>The third part is also the following m lines. Each of the m lines contains n integers. These integers make the request table.<br/>The last line containing m integers is the fourth part. This part tells you the amount of available resources for each kind currently.<br/>You may assume all integers that appear are less than or equal to 10^9.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+4 3
+1 6 2 0
+0 1 1 0
+0 2 1 2
+2 0 1 4
+2 0 0 2
+2 1 3 0
+0 1 1
+4 3
+2 5 2 0
+0 1 1 0
+1 1 1 2
+1 1 1 4
+2 0 0 2
+1 2 3 0
+0 1 1</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Yes
+No</pre>
+<p> <!-- problem end --></p>
+<p><span style="font-family:Courier New">    这题关键是数据量太大，如果用普通的银行家算法，最坏情况下时间复杂度为O(N*N*M)，显然会超时。正确的解法是对每种资源分别考虑，建立M个队列。进程对每种资源的需求数量从小到大存入队列，这样每次只需检查队列头部的进程即可。排序时间复杂度O(M*N*logN),每个进程至多出队M次，时间复杂度为O(N*M*M)。</span></p>
+<p><span style="font-family:Courier New">    由于杭电的数据太弱，所以这个算法体现不出效果…</span></p>
+<p><span style="font-family:Courier New"></span></p>
+<pre class="brush:cpp ">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;math.h&gt;
+#include &lt;string.h&gt;
+#include &lt;memory.h&gt;
+#include &lt;string&gt;
+#include &lt;vector&gt;
+#include &lt;map&gt;
+#include &lt;set&gt;
+#include &lt;queue&gt;
+#include &lt;algorithm&gt;
+#include &lt;iostream&gt;
+#include &lt;sstream&gt;
+
+using namespace std;
+
+int allo[3][50005], reqs[3][50005], avai[3], indx[3];
+pair&lt;int, int&gt; queu[3][50005];
+bool flag[3][50005];
+int n, m;
+
+int main() {
+    int i, j, k, cunt;
+    bool sign;
+    while (scanf("%d %d", &amp;n, &amp;m) != EOF) {
+        for (i = 0; i &lt; m; i++)
+            for (j = 0; j &lt; n; j++)
+                scanf("%d", &amp;allo[i][j]);
+        for (i = 0; i &lt; m; i++)
+            for (j = 0; j &lt; n; j++) {
+                scanf("%d", &amp;reqs[i][j]);
+                queu[i][j].first = reqs[i][j];
+                queu[i][j].second = j;
+            }
+        for (i = 0; i &lt; m; i++)
+            scanf("%d", &amp;avai[i]);
+        for (i = 0; i &lt; m; i++)
+            sort(queu[i], queu[i] + n);
+        sign = true;
+        cunt = 0;
+        memset(indx, 0, sizeof(indx));
+        memset(flag, 0, sizeof(flag));
+        while (sign) {
+            sign = false;
+            for (i = 0; i &lt; m; i++) {
+                for (j = indx[i]; j &lt; n; j++) {
+                    if (queu[i][j].first &gt; avai[i])
+                        break;
+                    flag[i][queu[i][j].second] = true;
+                    for (k = 0; k &lt; m; k++) {
+                        if (!flag[k][queu[i][j].second])
+                            break;
+                    }
+                    if (k == m) {
+                        sign = true;
+                        cunt++;
+                        for (k = 0; k &lt; m; k++) {
+                            avai[k] += allo[k][queu[i][j].second];
+                            if (avai[k] &gt; 1000000000)
+                                avai[k] = 1000000000;
+                        }
+                    }
+                }
+                indx[i] = j;
+            }
+        }
+        if (cunt == n) puts("Yes");
+        else puts("No");
+    }
+    return 0;
+}</pre>
+<p>解题转自：http://blog.csdn.net/racebug2010/article/details/6717955</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-84414">
+<article class="comment" id="comment-84414">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512494" rel="external nofollow">新用户655951</a></span> on <a href="http://www.acmerblog.com/hdu-2474-process-scheduling-3938.html#comment-84414" rel="nofollow"><time datetime="2017-04-13T01:15:53+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不能因为你穷，就觉得十四亿人里没有付得起钱的冤大头。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-45371">
+<article class="comment" id="comment-45371">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">melody12ab</a></span> on <a href="http://www.acmerblog.com/hdu-2474-process-scheduling-3938.html#comment-45371" rel="nofollow"><time datetime="2015-07-05T16:45:34+00:00" pubdate="">2015年7月5日 at 下午4:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题别太纠结了，不同的编译器结果不一样</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22250">
+<article class="comment" id="comment-22250">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tufei</a></span> on <a href="http://www.acmerblog.com/hdu-2474-process-scheduling-3938.html#comment-22250" rel="nofollow"><time datetime="2015-04-19T00:03:24+00:00" pubdate="">2015年4月19日 at 上午12:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个解法好像不对</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-62607">
+<article class="comment" id="comment-62607">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">20122256</a></span> on <a href="http://www.acmerblog.com/hdu-2474-process-scheduling-3938.html#comment-62607" rel="nofollow"><time datetime="2015-04-10T04:32:03+00:00" pubdate="">2015年4月10日 at 上午4:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-62606">
+<article class="comment" id="comment-62606">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">895350909</a></span> on <a href="http://www.acmerblog.com/hdu-2474-process-scheduling-3938.html#comment-62606" rel="nofollow"><time datetime="2015-03-18T20:02:13+00:00" pubdate="">2015年3月18日 at 下午8:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>1234百位上出现的次数应该是200吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-22248">
+<article class="comment" id="comment-22248">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Monkey_Sun</a></span> on <a href="http://www.acmerblog.com/hdu-2474-process-scheduling-3938.html#comment-22248" rel="nofollow"><time datetime="2015-02-01T09:31:30+00:00" pubdate="">2015年2月1日 at 上午9:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是穷举，但是代码有优化（v数组），并不是2^n。测试数据应该没问题，之前有超时的代码。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22249">
+<article class="comment" id="comment-22249">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">slowlight</a></span> on <a href="http://www.acmerblog.com/hdu-2474-process-scheduling-3938.html#comment-22249" rel="nofollow"><time datetime="2014-08-30T03:42:28+00:00" pubdate="">2014年8月30日 at 上午3:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>说的就是无向图啊，有向图的算法也是类似的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-45369">
+<article class="comment" id="comment-45369">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">a997930294</a></span> on <a href="http://www.acmerblog.com/hdu-2474-process-scheduling-3938.html#comment-45369" rel="nofollow"><time datetime="2014-08-26T11:54:56+00:00" pubdate="">2014年8月26日 at 上午11:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>居然看懂了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-45368">
+<article class="comment" id="comment-45368">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bluesky</a></span> on <a href="http://www.acmerblog.com/hdu-2474-process-scheduling-3938.html#comment-45368" rel="nofollow"><time datetime="2014-07-09T20:37:36+00:00" pubdate="">2014年7月9日 at 下午8:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>全是智力分析的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-45367">
+<article class="comment" id="comment-45367">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hunangangli</a></span> on <a href="http://www.acmerblog.com/hdu-2474-process-scheduling-3938.html#comment-45367" rel="nofollow"><time datetime="2014-07-03T16:39:14+00:00" pubdate="">2014年7月3日 at 下午4:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学习了！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-45372">
+<article class="comment" id="comment-45372">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Tree</a></span> on <a href="http://www.acmerblog.com/hdu-2474-process-scheduling-3938.html#comment-45372" rel="nofollow"><time datetime="2014-06-23T21:32:03+00:00" pubdate="">2014年6月23日 at 下午9:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>清华也会出这么无聊的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-45370">
+<article class="comment" id="comment-45370">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">_Tree</a></span> on <a href="http://www.acmerblog.com/hdu-2474-process-scheduling-3938.html#comment-45370" rel="nofollow"><time datetime="2014-03-19T03:13:49+00:00" pubdate="">2014年3月19日 at 上午3:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>目前为止见过的最易懂的一个，多谢分享</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,396 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>11-08</div>
+<div class="tit"><h1 class="entry-title">POJ 1035 Spell checker [解题报告] Java</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/zhuanti/java-poj" rel="category tag" title="查看Java解POJ中的全部文章">Java解POJ</a>, <a href="http://www.acmerblog.com/category/problemset/poj2" rel="category tag" title="查看POJ-北大中的全部文章">POJ-北大</a>, <a href="http://www.acmerblog.com/category/basis/sort" rel="category tag" title="查看排序中的全部文章">排序</a></span><span class="i4">围观882次</span><span class="i3"><a class="ds-thread-count" data-thread-key="236" href="http://www.acmerblog.com/POJ-1035-Spell-checker-blog-236.html#comments" title="《POJ 1035 Spell checker [解题报告] Java》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Spell checker</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+You, as a member of a development team for a new spell checking program, are to write a module that will check the correctness of given words using a known dictionary of all correct words in all their forms.<br/>
+<br/>If the word is absent in the dictionary then it can be replaced by correct words (from the dictionary) that can be obtained by one of the following operations:<br/>
+<br/>?deleting of one letter from the word;<br/>
+<br/>?replacing of one letter in the word with an arbitrary letter;<br/>
+<br/>?inserting of one arbitrary letter into the word.<br/>
+<br/>Your task is to write the program that will find all possible replacements from the dictionary for every given word.
+ </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first part of the input file contains all words from the dictionary. Each word occupies its own line. This part is finished by the single character ‘#’ on a separate line. All words are different. There will be at most 10000 words in the dictionary.<br/>
+<br/>The next part of the file contains all words that are to be checked. Each word occupies its own line. This part is also finished by the single character ‘#’ on a separate line. There will be at most 50 words that are to be checked.<br/>
+<br/>All words in the input file (words from the dictionary and words to be checked) consist only of small alphabetic characters and each one contains 15 characters at most.<br/>
+</div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+Write to the output file exactly one line for every checked word in the order of their appearance in the second part of the input file. If the word is correct (i.e. it exists in the dictionary) write the message: “<checked word=""> is correct”. If the word is not correct then write this word first, then write the character ‘:’ (colon), and after a single space write all its possible replacements, separated by spaces. The replacements should be written in the order of their appearance in the dictionary (in the first part of the input file). If there are no replacements for this word then the line feed should immediately follow the colon.</checked></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+i
+is
+has
+have
+be
+my
+more
+contest
+me
+too
+if
+award
+#
+me
+aware
+m
+contest
+hav
+oo
+or
+i
+fi
+mre
+#</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+me is correct
+aware: award
+m: i my me
+contest is correct
+hav: has have
+oo: too
+or:
+i is correct
+fi: i
+mre: more me</pre>
+<div class="mybigtile mysubmit"> <a href="http://poj.org/submit?problem_id=1035">提交代码</a>   <a href="http://poj.org/bbs?problem_id=1035">问题讨论</a>   <a href="http://poj.org/problemstatus?problem_id=1035">数据统计</a> </div>
+<div>
+<p class="mytitle"> 解题代码:</p>
+</div>
+<pre class="brush:java">//* @author 
+import java.io.*; 
+import java.util.*; 
+
+public class Main 
+{ 
+    static ArrayList&lt; Item&gt; dicts = new ArrayList&lt; Item&gt;(); 
+
+    public static void main(String[] args) throws Exception 
+    { 
+        readFile(); 
+    } 
+
+    static void readFile() throws Exception 
+    { 
+        BufferedReader br = new BufferedReader( 
+            //new FileReader("in.in")); 
+            new InputStreamReader(System.in)); 
+        StringTokenizer st = null; 
+        String temp = null; 
+        int iCount = 1; 
+        while(!(temp=br.readLine()).equals("#")) 
+            dicts.add(new Item(iCount++,temp)); 
+        int flag = 0; 
+        while(!(temp=br.readLine()).equals("#")) 
+        { 
+            if(flag!=0) 
+                System.out.println(); 
+            process(temp); 
+            flag++; 
+        } 
+    } 
+
+    static void process(String str) 
+    { 
+        ArrayList&lt; Item&gt; result = new ArrayList&lt; Item&gt;(); 
+        ArrayList&lt; Item&gt; temp = null; 
+        if(isHave(str)) 
+        { 
+            System.out.print(str+" is correct"); 
+            return; 
+        } 
+        temp = getArrayList(str.length()+1); 
+        for(Item it : temp) 
+            if(judge(str,it.str)) 
+                result.add(it); 
+        temp = getArrayList(str.length()-1); 
+        for(Item it : temp) 
+            if(judge(str,it.str)) 
+                result.add(it); 
+
+        temp = getArrayList(str.length()); 
+        for(Item it : temp) 
+            if(judge1(str,it.str)) 
+                result.add(it); 
+
+        Collections.sort(result); 
+        System.out.print(str+":"); 
+        if(result.size()!=0) 
+            System.out.print(" "); 
+        int flag = 0; 
+        for(Item it : result) 
+        { 
+            if(flag!=0) 
+                System.out.print(" "); 
+            System.out.print(it.str); 
+            flag++; 
+        } 
+    } 
+
+    static boolean judge1(String src,String dest) 
+    { 
+        int i = 0; 
+        int count = 0; 
+        while(i&lt; src.length()) 
+        { 
+            if(src.charAt(i)!=dest.charAt(i)) 
+            { 
+                count++; 
+            } 
+            if(count&gt;1) 
+                return false; 
+            i++; 
+        } 
+        return true; 
+    } 
+
+    static boolean judge(String src,String dest) 
+    { 
+        String min = dest; 
+        String max = src; 
+        if(src.length()&lt; dest.length()) 
+        { 
+            min = src; 
+            max = dest; 
+        } 
+        int count = 0; 
+        int i = 0; 
+        int j = 0; 
+        while(i&lt; max.length()&amp;&amp;j&lt; min.length()) 
+        { 
+            if(max.charAt(i)!=min.charAt(j)) 
+            { 
+                count++; 
+                i++; 
+            } 
+            else 
+            { 
+                i++; 
+                j++; 
+            } 
+            if(count&gt;1) 
+                return false; 
+        } 
+        return true; 
+    } 
+
+    static boolean isHave(String str) 
+    { 
+        for(Item it : dicts) 
+        { 
+            if(it.str.equals(str)) 
+                return true; 
+        } 
+        return false; 
+    } 
+
+    static ArrayList&lt; Item&gt; getArrayList(int n) 
+    { 
+        ArrayList&lt; Item&gt; result = new ArrayList&lt; Item&gt;(); 
+        for(Item it : dicts) 
+        { 
+            if(it.str.length()==n) 
+                result.add(it); 
+        } 
+        return result; 
+    } 
+
+    static void display() 
+    { 
+    } 
+
+    static class Item implements Comparable&lt; Item&gt; 
+    { 
+        int index; 
+        String str; 
+        Item(int i,String s) 
+        { 
+            index = i; 
+            str = s; 
+        } 
+        public int compareTo(Item it) 
+        { 
+            if(index&gt;it.index) 
+                return 1; 
+            else if(index&lt; it.index) 
+                return -1; 
+            else  
+                return 0; 
+        } 
+    } 
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-3983">
+<article class="comment" id="comment-3983">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NextLife</a></span> on <a href="http://www.acmerblog.com/POJ-1035-Spell-checker-blog-236.html#comment-3983" rel="nofollow"><time datetime="2015-05-30T02:04:53+00:00" pubdate="">2015年5月30日 at 上午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我表示楼主不要乱抄题，你写的另一个题吧，直接扒了代码没跑吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-3982">
+<article class="comment" id="comment-3982">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">anshansh</a></span> on <a href="http://www.acmerblog.com/POJ-1035-Spell-checker-blog-236.html#comment-3982" rel="nofollow"><time datetime="2015-05-18T19:20:16+00:00" pubdate="">2015年5月18日 at 下午7:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>贴的有些代码的头文件不见了，这是为啥</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-3985">
+<article class="comment" id="comment-3985">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">123456789_xd</a></span> on <a href="http://www.acmerblog.com/POJ-1035-Spell-checker-blog-236.html#comment-3985" rel="nofollow"><time datetime="2015-03-24T21:58:37+00:00" pubdate="">2015年3月24日 at 下午9:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>厉害，支持</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-3984">
+<article class="comment" id="comment-3984">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Xun_Brooklyn</a></span> on <a href="http://www.acmerblog.com/POJ-1035-Spell-checker-blog-236.html#comment-3984" rel="nofollow"><time datetime="2014-11-18T05:51:55+00:00" pubdate="">2014年11月18日 at 上午5:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>打字员路过。。。。。。算法是啥。。。能干嘛。。。。。。。。能吃么。。哎</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-52476">
+<article class="comment" id="comment-52476">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Amber</a></span> on <a href="http://www.acmerblog.com/POJ-1035-Spell-checker-blog-236.html#comment-52476" rel="nofollow"><time datetime="2014-11-16T05:58:26+00:00" pubdate="">2014年11月16日 at 上午5:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序输出是对的，呈三角型。原程序是按C++写的，已经改成了C的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-3981">
+<article class="comment" id="comment-3981">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangduanjing</a></span> on <a href="http://www.acmerblog.com/POJ-1035-Spell-checker-blog-236.html#comment-3981" rel="nofollow"><time datetime="2014-09-30T01:04:42+00:00" pubdate="">2014年9月30日 at 上午1:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>后面的是python代码啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-52478">
+<article class="comment" id="comment-52478">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jandk</a></span> on <a href="http://www.acmerblog.com/POJ-1035-Spell-checker-blog-236.html#comment-52478" rel="nofollow"><time datetime="2014-08-15T03:59:19+00:00" pubdate="">2014年8月15日 at 上午3:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学习了。找到这题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-3986">
+<article class="comment" id="comment-3986">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">we</a></span> on <a href="http://www.acmerblog.com/POJ-1035-Spell-checker-blog-236.html#comment-3986" rel="nofollow"><time datetime="2014-05-10T18:15:28+00:00" pubdate="">2014年5月10日 at 下午6:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>想问下computeLSPArray那里，if(len!=0) len=lps[len-1]是什么意思</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-52477">
+<article class="comment" id="comment-52477">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">GordonTJ</a></span> on <a href="http://www.acmerblog.com/POJ-1035-Spell-checker-blog-236.html#comment-52477" rel="nofollow"><time datetime="2014-03-15T10:06:27+00:00" pubdate="">2014年3月15日 at 上午10:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-60347">
+<article class="comment" id="comment-60347">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jintianya</a></span> on <a href="http://www.acmerblog.com/POJ-1035-Spell-checker-blog-236.html#comment-60347" rel="nofollow"><time datetime="2014-02-26T22:52:38+00:00" pubdate="">2014年2月26日 at 下午10:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很有意思，可惜我很菜啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-52475">
+<article class="comment" id="comment-52475">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">siaswj</a></span> on <a href="http://www.acmerblog.com/POJ-1035-Spell-checker-blog-236.html#comment-52475" rel="nofollow"><time datetime="2014-02-26T01:19:58+00:00" pubdate="">2014年2月26日 at 上午1:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一题还是比较考验智商~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-60346">
+<article class="comment" id="comment-60346">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">20134055016</a></span> on <a href="http://www.acmerblog.com/POJ-1035-Spell-checker-blog-236.html#comment-60346" rel="nofollow"><time datetime="2014-02-23T04:15:12+00:00" pubdate="">2014年2月23日 at 上午4:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，赞一个！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-3987">
+<article class="comment" id="comment-3987">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">haojunyu</a></span> on <a href="http://www.acmerblog.com/POJ-1035-Spell-checker-blog-236.html#comment-3987" rel="nofollow"><time datetime="2014-01-04T05:43:22+00:00" pubdate="">2014年1月4日 at 上午5:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法很不错啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-52474">
+<article class="comment" id="comment-52474">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Yaunxi</a></span> on <a href="http://www.acmerblog.com/POJ-1035-Spell-checker-blog-236.html#comment-52474" rel="nofollow"><time datetime="2013-11-29T05:09:58+00:00" pubdate="">2013年11月29日 at 上午5:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>simple, however efficient. A lot of instances it is difficult to get that a??perfect balancea?? among usability and appearance. I must say that youa??ve done a exceptional task with this. Also, the blog masses quite fast for me on Web explore.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

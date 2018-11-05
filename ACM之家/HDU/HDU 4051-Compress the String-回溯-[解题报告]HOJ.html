@@ -1,0 +1,410 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>04-16</div>
+<div class="tit"><h1 class="entry-title">HDU 4051-Compress the String-回溯-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/search/backtracking" rel="category tag" title="查看回溯和剪枝中的全部文章">回溯和剪枝</a>, <a href="http://www.acmerblog.com/category/search" rel="category tag" title="查看搜索中的全部文章">搜索</a></span><span class="i4">围观521次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7054" href="http://www.acmerblog.com/hdu-4051-compress-the-string-7054.html#comments" title="《HDU 4051-Compress the String-回溯-[解题报告]HOJ》上的评论">23 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Compress the String</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Dan is playing a game with Ben. Ben gives Dan a long string S, and Dan needs to compress S to a list or short strings: s[1], s[2], …, s[N]. S only contains lowercase letters. Each s[i] can contain lowercase letters and digits, but only digits between i+1 and N, inclusive, are allowed for s[i]. For example, when N = 4, allowed digits for s[2] will be ’3′ and ’4′. 
+<p>In order to decompress such a list of strings into a single string, we’ll apply string decompress algorithm for each string one by one, in reverse order (from s[N] to s[1]). The decompressing algorithm for a string is easy: just replace each digit in the string by the corresponding decompressed string with that digit as index. That is to say, for digit i in the string, it will be replaced by the decompressed string s[i]. Because we are applying decompressing algorithm in reverse order, s[i] will always be decompressed before it is used to replace a digit in other strings. When all the strings are decompressed, the decompressed string of s[1] will be the final result. If the decompressing result is S, we say S can be compressed to this list of strings. </p>
+<p>Now Ben decides the number of short strings Dan can use (N), as well as the length limit for each short string. Dan needs to decide whether it is possible to compress S to N short strings under this limit.  </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+There are multiple test cases (no more than 150). For each case, there will be three lines. The first line gives an integer N (1 ≤ N ≤ 4), which is the number of short strings Dan can use. The second line gives N integers L[1], … L[N] (1 ≤ L[i] ≤ 4), which means the length of string s[i] should be at most L[i]. The third line gives the string S. The length of S will be between 1 and 500, inclusive. S will only contain lowercase letters.  </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+There are multiple test cases (no more than 150). For each case, there will be three lines. The first line gives an integer N (1 ≤ N ≤ 4), which is the number of short strings Dan can use. The second line gives N integers L[1], … L[N] (1 ≤ L[i] ≤ 4), which means the length of string s[i] should be at most L[i]. The third line gives the string S. The length of S will be between 1 and 500, inclusive. S will only contain lowercase letters. </div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+1
+aa
+4
+4 4 4 4
+ttttttttttttttt</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+No
+Yes</pre>
+<p> <!-- problem end --><br/>
+题意：题目给定了一种压缩方法，对于一个仅由小写字母组成的长串Str，我们可以用若干小串s[1],s[2]…,s[N]，来表示它，其中s[i]中只包含小写字母和[i+1,N]的整数，解压的时候按从s[N]到s[1]的顺序解压，解压s[i]时用s[k]来替换s[i]中的数字k，最终s[1]就是Str。现在给定Str，N及s[1],s[2]…s[N]的最大程度，问Str能否用这种压缩方法来表示
+</p><div></div>
+<div>解法：搜索加剪枝，按从s[N]到s[1]的顺序来构造，对于每个s[i]构造一组模糊解，即只确定它的每一位是字符还是某个数字，全部构造完之后代入Str验证。还有一些剪枝比方说如果在目前已构造的串的前提下若生成串最长也无法达到Str则回溯，若目前构造的串串长已经超过Str则回溯之类之类的 还有一个比较诡异的地方：我代码的某个地方如果交换一下搜索顺序则会从AC变成WA…</div>
+<div></div>
+<div>代码：
+<div>#include &lt;stdio.h&gt;</div>
+<div>#include &lt;string.h&gt;</div>
+<div>#include &lt;map&gt;</div>
+<div>#include &lt;algorithm&gt;</div>
+<div>using namespace std;</div>
+<div>char ss[4][10], str[600];</div>
+<div>int l[5], c[4], n, mul[10], len, cn;</div>
+<div>int maxl[5];</div>
+<div>char stmp[10];</div>
+<div>bool pd(int x);</div>
+<div>int a[30], stri;</div>
+<div>bool check(int ssx){</div>
+<div>    int i, x;</div>
+<div>    for (i = 0; ss[ssx][i]; i++){</div>
+<div>        if (ss[ssx][i] &lt; 10){</div>
+<div>            if (!check(ss[ssx][i])){</div>
+<div>                return false;</div>
+<div>            }</div>
+<div>        }else{</div>
+<div>            x = ss[ssx][i];</div>
+<div>            if (a[x] == -1){</div>
+<div>                a[x] = str[stri];</div>
+<div>            }</div>
+<div>            if (a[x] != str[stri]) return false;</div>
+<div>            stri++;</div>
+<div>        }</div>
+<div>    }</div>
+<div>    return true;</div>
+<div>}</div>
+<div>bool wk(int x, int p){</div>
+<div>    int i;</div>
+<div>    if (l[x] &gt; len) return false;</div>
+<div></div>
+<div>    if (p == c[x]){</div>
+<div>        maxl[x] = max(maxl[x + 1], l[x]);</div>
+<div>        return pd(x – 1);</div>
+<div>    }</div>
+<div></div>
+<div>    for (i = x + 1; i &lt; n; i++){</div>
+<div>        l[x] += l[i];</div>
+<div>        ss[x][p] = i;</div>
+<div>        if (wk(x, p + 1)) return true;</div>
+<div>        l[x] -= l[i];</div>
+<div>    }</div>
+<div></div>
+<div>    ss[x][p] = cn++;</div>
+<div>    l[x]++;</div>
+<div>    if (wk(x, p + 1)) return true;</div>
+<div>    cn–;</div>
+<div>    l[x]–;</div>
+<div></div>
+<div>    ss[x][p] = 0;</div>
+<div>    if (wk(x, c[x])) return true;</div>
+<div></div>
+<div>    return false;</div>
+<div>}</div>
+<div>bool pd(int x){</div>
+<div>    if (mul[x] * maxl[x + 1] &lt; len){</div>
+<div>        return false;</div>
+<div>    }</div>
+<div>    if (x &lt; 0){</div>
+<div>        if (l[0] != len) return false;</div>
+<div>        memset(a, -1, sizeof(a));</div>
+<div>        stri = 0;</div>
+<div>        return check(0);</div>
+<div>    }</div>
+<div>    l[x] = 0;</div>
+<div>    if (wk(x, 0)) return true;</div>
+<div>    return false;</div>
+<div>}</div>
+<div>map&lt;char, int&gt; mp;</div>
+<div>int main(){</div>
+<div>    int i, s, ss;</div>
+<div>    while (scanf(“%d”, &amp;n) != EOF){</div>
+<div>        s = 1;</div>
+<div>        for (i = 0; i &lt; n; i++){</div>
+<div>            scanf(“%d”, &amp;c[i]);</div>
+<div>            s += c[i] – 1;</div>
+<div>        }</div>
+<div>        ss = 0;</div>
+<div>        mul[0] = c[0];</div>
+<div>        for (i = 1; i &lt; n; i++){</div>
+<div>            mul[i] = mul[i - 1] * c[i];</div>
+<div>        }</div>
+<div>        l[n] = 1;</div>
+<div>        maxl[n] = 1;</div>
+<div>        scanf(“%s”, str);</div>
+<div>        mp.clear();</div>
+<div>        for (i = 0; str[i]; i++){</div>
+<div>            if (mp.count(str[i]) == 0){</div>
+<div>                mp[str[i]] = 1;</div>
+<div>                ss++;</div>
+<div>            }</div>
+<div>        }</div>
+<div>        if (ss &gt; s){</div>
+<div>            printf(“No\n”);</div>
+<div>            continue;</div>
+<div>        }</div>
+<div>        len = strlen(str);</div>
+<div>        if (len &lt;= s){</div>
+<div>            printf(“Yes\n”);</div>
+<div>            continue;</div>
+<div>        }</div>
+<div>        cn = 10;</div>
+<div>        if (pd(n – 1)){</div>
+<div>            printf(“Yes\n”);</div>
+<div>        }else{</div>
+<div>            printf(“No\n”);</div>
+<div>        }</div>
+<div>    }</div>
+<div>    return 0;</div>
+<div>}</div>
+<div></div>
+<p><wbr/></p></div>
+<p>参考：http://capayoho.blog.163.com/blog/static/200037195201111160275732</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-99874">
+<article class="comment" id="comment-99874">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461218" rel="external nofollow">新用户153984</a></span> on <a href="http://www.acmerblog.com/hdu-4051-compress-the-string-7054.html#comment-99874" rel="nofollow"><time datetime="2017-04-20T19:27:00+00:00" pubdate="">2017年4月20日 at 下午7:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>终于要大结局了。。。尼玛我都工作2年了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-99873">
+<article class="comment" id="comment-99873">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461218" rel="external nofollow">新用户153984</a></span> on <a href="http://www.acmerblog.com/hdu-4051-compress-the-string-7054.html#comment-99873" rel="nofollow"><time datetime="2017-04-20T19:27:00+00:00" pubdate="">2017年4月20日 at 下午7:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>终于要大结局了。。。尼玛我都工作2年了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-99872">
+<article class="comment" id="comment-99872">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461218" rel="external nofollow">新用户153984</a></span> on <a href="http://www.acmerblog.com/hdu-4051-compress-the-string-7054.html#comment-99872" rel="nofollow"><time datetime="2017-04-20T19:27:00+00:00" pubdate="">2017年4月20日 at 下午7:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>终于要大结局了。。。尼玛我都工作2年了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-99871">
+<article class="comment" id="comment-99871">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461218" rel="external nofollow">新用户153984</a></span> on <a href="http://www.acmerblog.com/hdu-4051-compress-the-string-7054.html#comment-99871" rel="nofollow"><time datetime="2017-04-20T19:27:00+00:00" pubdate="">2017年4月20日 at 下午7:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>终于要大结局了。。。尼玛我都工作2年了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-99870">
+<article class="comment" id="comment-99870">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461218" rel="external nofollow">新用户153984</a></span> on <a href="http://www.acmerblog.com/hdu-4051-compress-the-string-7054.html#comment-99870" rel="nofollow"><time datetime="2017-04-20T19:27:00+00:00" pubdate="">2017年4月20日 at 下午7:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>终于要大结局了。。。尼玛我都工作2年了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-99869">
+<article class="comment" id="comment-99869">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461218" rel="external nofollow">新用户153984</a></span> on <a href="http://www.acmerblog.com/hdu-4051-compress-the-string-7054.html#comment-99869" rel="nofollow"><time datetime="2017-04-20T19:27:00+00:00" pubdate="">2017年4月20日 at 下午7:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>终于要大结局了。。。尼玛我都工作2年了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-99868">
+<article class="comment" id="comment-99868">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461218" rel="external nofollow">新用户153984</a></span> on <a href="http://www.acmerblog.com/hdu-4051-compress-the-string-7054.html#comment-99868" rel="nofollow"><time datetime="2017-04-20T19:27:00+00:00" pubdate="">2017年4月20日 at 下午7:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>终于要大结局了。。。尼玛我都工作2年了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-99867">
+<article class="comment" id="comment-99867">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461218" rel="external nofollow">新用户153984</a></span> on <a href="http://www.acmerblog.com/hdu-4051-compress-the-string-7054.html#comment-99867" rel="nofollow"><time datetime="2017-04-20T19:27:00+00:00" pubdate="">2017年4月20日 at 下午7:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>终于要大结局了。。。尼玛我都工作2年了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-99866">
+<article class="comment" id="comment-99866">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461218" rel="external nofollow">新用户153984</a></span> on <a href="http://www.acmerblog.com/hdu-4051-compress-the-string-7054.html#comment-99866" rel="nofollow"><time datetime="2017-04-20T19:27:00+00:00" pubdate="">2017年4月20日 at 下午7:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>终于要大结局了。。。尼玛我都工作2年了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70536">
+<article class="comment" id="comment-70536">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529957" rel="external nofollow">新用户130187</a></span> on <a href="http://www.acmerblog.com/hdu-4051-compress-the-string-7054.html#comment-70536" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>太密集了，不要互相重叠</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-60141">
+<article class="comment" id="comment-60141">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Dwayne</a></span> on <a href="http://www.acmerblog.com/hdu-4051-compress-the-string-7054.html#comment-60141" rel="nofollow"><time datetime="2015-07-09T13:31:49+00:00" pubdate="">2015年7月9日 at 下午1:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>写的好·····  Pollard Rho快速因数分解</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-60140">
+<article class="comment" id="comment-60140">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">skyand</a></span> on <a href="http://www.acmerblog.com/hdu-4051-compress-the-string-7054.html#comment-60140" rel="nofollow"><time datetime="2015-07-08T03:01:13+00:00" pubdate="">2015年7月8日 at 上午3:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>站长好。我是一个准备创业的互联网小白,我们打算做一个有关国*际*游*学的平台。手上也有了一些境外资源。现阶段的团队现在没有cto.原意出让一些管理股寻找一个靠谱的技术专家做合伙人, 不知道是不是能得到您的帮助。发个帖子或者其他方式。期待您的回应。可以加我微信tianxielemon聊聊。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-60144">
+<article class="comment" id="comment-60144">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">nsoi_onion</a></span> on <a href="http://www.acmerblog.com/hdu-4051-compress-the-string-7054.html#comment-60144" rel="nofollow"><time datetime="2015-07-03T08:16:50+00:00" pubdate="">2015年7月3日 at 上午8:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一种方法怎么会是O(log(m+n))呢？没有二分的话直接遍历应该就是O(m+n)吧？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-60138">
+<article class="comment" id="comment-60138">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zx123456</a></span> on <a href="http://www.acmerblog.com/hdu-4051-compress-the-string-7054.html#comment-60138" rel="nofollow"><time datetime="2015-06-27T07:57:14+00:00" pubdate="">2015年6月27日 at 上午7:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>如果两个序列的最后字符不匹配（即X [M-1]！= Y [N-1]）<br/>
+L（X [0 .. M-1]，Y [0 .. N-1]）= MAX（L（X [0 .. M-2]，Y [0 .. N-1]），L（X [0 .. M-1]，Y [0 .. N-1]）<br/>
+这里写错了吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-52000">
+<article class="comment" id="comment-52000">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Happiness</a></span> on <a href="http://www.acmerblog.com/hdu-4051-compress-the-string-7054.html#comment-52000" rel="nofollow"><time datetime="2015-06-21T12:46:23+00:00" pubdate="">2015年6月21日 at 下午12:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很强大啊，佩服</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-52002">
+<article class="comment" id="comment-52002">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">verycourage</a></span> on <a href="http://www.acmerblog.com/hdu-4051-compress-the-string-7054.html#comment-52002" rel="nofollow"><time datetime="2015-06-19T23:24:50+00:00" pubdate="">2015年6月19日 at 下午11:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我又来学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-52001">
+<article class="comment" id="comment-52001">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Bob</a></span> on <a href="http://www.acmerblog.com/hdu-4051-compress-the-string-7054.html#comment-52001" rel="nofollow"><time datetime="2015-06-10T18:27:26+00:00" pubdate="">2015年6月10日 at 下午6:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为是要把从字符串s的start位到当前位在hash中重置，修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-60137">
+<article class="comment" id="comment-60137">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">BGPY243956</a></span> on <a href="http://www.acmerblog.com/hdu-4051-compress-the-string-7054.html#comment-60137" rel="nofollow"><time datetime="2015-06-01T10:06:56+00:00" pubdate="">2015年6月1日 at 上午10:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个差别应该不会太大，或许编辑器就自动优化成内联函数了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51999">
+<article class="comment" id="comment-51999">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sum_tsai</a></span> on <a href="http://www.acmerblog.com/hdu-4051-compress-the-string-7054.html#comment-51999" rel="nofollow"><time datetime="2015-05-20T10:50:38+00:00" pubdate="">2015年5月20日 at 上午10:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Good task for the group. Hold it up for every yeara??s winner. This is a excellent oppotunity for a lot more enhancement. Indeed, obtaining far better and much better is constantly the crucial. Just like my pal suggests on the truth about ab muscles, he just keeps obtaining much better.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-60139">
+<article class="comment" id="comment-60139">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">aaa</a></span> on <a href="http://www.acmerblog.com/hdu-4051-compress-the-string-7054.html#comment-60139" rel="nofollow"><time datetime="2015-05-11T16:07:51+00:00" pubdate="">2015年5月11日 at 下午4:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还是有些难度的！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-60143">
+<article class="comment" id="comment-60143">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sum_tsai</a></span> on <a href="http://www.acmerblog.com/hdu-4051-compress-the-string-7054.html#comment-60143" rel="nofollow"><time datetime="2015-05-11T07:00:09+00:00" pubdate="">2015年5月11日 at 上午7:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>终于AC了！next数组还是不好理解啊，mark</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-60142">
+<article class="comment" id="comment-60142">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yunyang088</a></span> on <a href="http://www.acmerblog.com/hdu-4051-compress-the-string-7054.html#comment-60142" rel="nofollow"><time datetime="2015-04-26T13:37:19+00:00" pubdate="">2015年4月26日 at 下午1:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还是有些难度的！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35596">
+<article class="comment" id="comment-35596">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mr-zhang2011</a></span> on <a href="http://www.acmerblog.com/hdu-4051-compress-the-string-7054.html#comment-35596" rel="nofollow"><time datetime="2015-04-22T08:51:52+00:00" pubdate="">2015年4月22日 at 上午8:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

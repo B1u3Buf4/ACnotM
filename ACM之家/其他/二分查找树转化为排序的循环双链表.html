@@ -1,0 +1,457 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>06-02</div>
+<div class="tit"><h1 class="entry-title">二分查找树转化为排序的循环双链表</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/data-struct/trees" rel="category tag" title="查看树形结构中的全部文章">树形结构</a>, <a href="http://www.acmerblog.com/category/zhuanti/classic" rel="category tag" title="查看经典问题中的全部文章">经典问题</a></span><span class="i4">围观1664次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5814" href="http://www.acmerblog.com/great-tree-list-5814.html#comments" title="《二分查找树转化为排序的循环双链表》上的评论">31 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p>题目：<br/>
+输入一棵二元查找树，将该二元查找树转换成一个排序的双向链表。<br/>
+<strong>要求不能创建任何新的结点，只调整指针的指向。</strong></p>
+<p>例如对于下面的二分查找树：</p>
+<p><img alt="ordered binary tree" src="http://cslibrary.stanford.edu/109/tree.gif"/></p>
+<p>small pointer 其实也就是指向左孩子，large pointer指向右孩子，转化为双链表之后 small pointer应该指向前一个元素，large pointer应该指向后一个元素。转化为排序的循环双链表则为：</p>
+<p><img alt="circular doubly linked list" src="http://cslibrary.stanford.edu/109/list.gif"/></p>
+<h2>分析</h2>
+<p>二分查找树的中序遍历即为升序排列，问题就在于如何在遍历的时候更改指针的指向。一种简单的方法时，遍历二分查找树，讲遍历的结果放在一个数组中，之后再把该数组转化为双链表。如果题目要求只能使用O(1)内存，则只能在遍历的同时构建双链表，即进行指针的替换：</p>
+<p><img alt="tree changed to list 2" src="http://cslibrary.stanford.edu/109/treelist2.gif"/></p>
+<p>我们需要用递归的方法来解决，假定每个递归调用都会返回构建好的双链表，可把问题分解为左右两个子树。</p>
+<p>由于左右子树都已经是有序的，当前节点作为中间的一个节点，把左右子树得到的链表连接起来即可。</p>
+<p>java代码：TreeList.java</p>
+<pre class="brush:java">//二叉树节点 或 双链表节点
+class Node {
+    int data;
+    Node left;
+    Node right;
+
+    public Node(int data) {
+        this.data = data;
+        left = null;
+        right = null;
+    }
+}
+
+/*
+ -append() -- 合并两个链表
+ -treeToList() -- 递归的解决二叉树转换为双链表
+ -treeInsert() -- 构建二叉树
+*/
+public class TreeList {
+
+    //辅助方法，合并两个双链表
+    public static Node append(Node a, Node b) {
+        if (a==null) return(b);
+        if (b==null) return(a);
+
+        // 分别得到两个链表的最后一个元素
+        Node aLast = a.left;
+        Node bLast = b.left;
+
+        // 将两个链表 头尾相连
+        aLast.right = b;
+        b.left = aLast;
+
+        bLast.right = a;
+        a.left = bLast;
+
+        return(a);
+    }
+
+    //递归调用
+    public static Node treeToList(Node root) {
+        // 基本情况
+        if (root==null) return(null);
+
+        // 递归解决子树 ( 就相信他们一定会返回正确的结果 )
+        Node aList = treeToList(root.left);
+        Node bList = treeToList(root.right);
+
+        // 把根节点转换为一个节点的双链表。方便后面的链表合并
+        root.left = root;
+        root.right = root;
+
+        //合并之后即为升序排列，顺序为 (aList, root, bList)
+        aList = append(aList, root);
+        aList = append(aList, bList);
+
+        return(aList);
+    }
+
+    //二分查找树的插入
+    public static void treeInsert(Node root, int newData) {
+        if (newData&lt;=root.data) {
+            if (root.left!=null) treeInsert(root.left, newData);
+            else root.left = new Node(newData);
+        }
+        else {
+            if (root.right!=null) treeInsert(root.right, newData);
+            else root.right = new Node(newData);
+        }
+    }
+
+    //线序遍历，打印二叉树
+    public static void printTree(Node root) {
+        if (root==null) return;
+        printTree(root.left);
+        System.out.print(Integer.toString(root.data) + " ");
+        printTree(root.right);
+    }
+
+    // 打印双链表
+    public static void printList(Node head) {
+        Node current = head;
+
+        while (current != null) {
+            System.out.print(Integer.toString(current.data) + " ");
+            current = current.right;
+            if (current == head) break;
+        }
+
+        System.out.println();
+    }
+
+    // 测试
+    public static void main(String[] args) {
+
+        Node root = new Node(4);
+        treeInsert(root, 2);
+        treeInsert(root, 1);
+        treeInsert(root, 3);
+        treeInsert(root, 5);
+
+        System.out.println("tree:");
+        printTree(root);   // 1 2 3 4 5
+        System.out.println();
+
+        System.out.println("list:");
+        Node head = treeToList(root);
+        printList(head);   // 1 2 3 4 5   yay!
+    }
+}</pre>
+<p>参考：http://cslibrary.stanford.edu/109/TreeListRecursion.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75563">
+<article class="comment" id="comment-75563">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526384" rel="external nofollow">新用户050209</a></span> on <a href="http://www.acmerblog.com/great-tree-list-5814.html#comment-75563" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>突然想到个事儿。有一个很饥渴的女朋友是怎样的体验</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75562">
+<article class="comment" id="comment-75562">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526384" rel="external nofollow">新用户050209</a></span> on <a href="http://www.acmerblog.com/great-tree-list-5814.html#comment-75562" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>突然想到个事儿。有一个很饥渴的女朋友是怎样的体验</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75561">
+<article class="comment" id="comment-75561">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526384" rel="external nofollow">新用户050209</a></span> on <a href="http://www.acmerblog.com/great-tree-list-5814.html#comment-75561" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>突然想到个事儿。有一个很饥渴的女朋友是怎样的体验</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75560">
+<article class="comment" id="comment-75560">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526384" rel="external nofollow">新用户050209</a></span> on <a href="http://www.acmerblog.com/great-tree-list-5814.html#comment-75560" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>突然想到个事儿。有一个很饥渴的女朋友是怎样的体验</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75559">
+<article class="comment" id="comment-75559">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526384" rel="external nofollow">新用户050209</a></span> on <a href="http://www.acmerblog.com/great-tree-list-5814.html#comment-75559" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>突然想到个事儿。有一个很饥渴的女朋友是怎样的体验</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75558">
+<article class="comment" id="comment-75558">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526384" rel="external nofollow">新用户050209</a></span> on <a href="http://www.acmerblog.com/great-tree-list-5814.html#comment-75558" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>突然想到个事儿。有一个很饥渴的女朋友是怎样的体验</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75557">
+<article class="comment" id="comment-75557">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526384" rel="external nofollow">新用户050209</a></span> on <a href="http://www.acmerblog.com/great-tree-list-5814.html#comment-75557" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>突然想到个事儿。有一个很饥渴的女朋友是怎样的体验</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75556">
+<article class="comment" id="comment-75556">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526384" rel="external nofollow">新用户050209</a></span> on <a href="http://www.acmerblog.com/great-tree-list-5814.html#comment-75556" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>突然想到个事儿。有一个很饥渴的女朋友是怎样的体验</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75555">
+<article class="comment" id="comment-75555">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526384" rel="external nofollow">新用户050209</a></span> on <a href="http://www.acmerblog.com/great-tree-list-5814.html#comment-75555" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>突然想到个事儿。有一个很饥渴的女朋友是怎样的体验</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75554">
+<article class="comment" id="comment-75554">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526384" rel="external nofollow">新用户050209</a></span> on <a href="http://www.acmerblog.com/great-tree-list-5814.html#comment-75554" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>突然想到个事儿。有一个很饥渴的女朋友是怎样的体验</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75553">
+<article class="comment" id="comment-75553">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526384" rel="external nofollow">新用户050209</a></span> on <a href="http://www.acmerblog.com/great-tree-list-5814.html#comment-75553" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>突然想到个事儿。有一个很饥渴的女朋友是怎样的体验</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75552">
+<article class="comment" id="comment-75552">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526384" rel="external nofollow">新用户050209</a></span> on <a href="http://www.acmerblog.com/great-tree-list-5814.html#comment-75552" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>突然想到个事儿。有一个很饥渴的女朋友是怎样的体验</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64963">
+<article class="comment" id="comment-64963">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">XgqtJ</span> on <a href="http://www.acmerblog.com/great-tree-list-5814.html#comment-64963" rel="nofollow"><time datetime="2016-12-15T21:57:26+00:00" pubdate="">2016年12月15日 at 下午9:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>快来看！这个爽/啊，/男/人/都/喜/欢/，哇：，htTP://uVU.Cc/iqVp</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64947">
+<article class="comment" id="comment-64947">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">lTNej</span> on <a href="http://www.acmerblog.com/great-tree-list-5814.html#comment-64947" rel="nofollow"><time datetime="2016-12-11T19:07:31+00:00" pubdate="">2016年12月11日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>男人的天堂、高清s萝舞，电动s棒棒各种耍 <a href="http://uVU.cc/iqVo" rel="nofollow">http://uVU.cc/iqVo</a></p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64913">
+<article class="comment" id="comment-64913">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">mwXXN</span> on <a href="http://www.acmerblog.com/great-tree-list-5814.html#comment-64913" rel="nofollow"><time datetime="2016-11-28T14:50:28+00:00" pubdate="">2016年11月28日 at 下午2:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>快来看！这个爽/啊，/男/人/都/喜/欢/，哇：，htTP://uVU.Cc/iqVp</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64807">
+<article class="comment" id="comment-64807">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">HbvWR</span> on <a href="http://www.acmerblog.com/great-tree-list-5814.html#comment-64807" rel="nofollow"><time datetime="2016-10-26T14:28:47+00:00" pubdate="">2016年10月26日 at 下午2:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个更刺j激，准备好手纸哦 A 片。。 <a href="http://T.CN/RcWeTaH" rel="nofollow">http://T.CN/RcWeTaH</a> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64734">
+<article class="comment" id="comment-64734">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">IDVvx</span> on <a href="http://www.acmerblog.com/great-tree-list-5814.html#comment-64734" rel="nofollow"><time datetime="2016-10-10T07:12:22+00:00" pubdate="">2016年10月10日 at 上午7:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个更刺ｃ激，准备好手纸哦 A 片。。 <a href="http://T.CN/RcFeD2C" rel="nofollow">http://T.CN/RcFeD2C</a> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49375">
+<article class="comment" id="comment-49375">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">GDUTtian</a></span> on <a href="http://www.acmerblog.com/great-tree-list-5814.html#comment-49375" rel="nofollow"><time datetime="2015-06-23T02:41:44+00:00" pubdate="">2015年6月23日 at 上午2:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>DFS方法的原理还是不太清楚啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30378">
+<article class="comment" id="comment-30378">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">admin</a></span> on <a href="http://www.acmerblog.com/great-tree-list-5814.html#comment-30378" rel="nofollow"><time datetime="2015-04-20T20:31:43+00:00" pubdate="">2015年4月20日 at 下午8:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>清华也会出这么无聊的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30382">
+<article class="comment" id="comment-30382">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mcitdkj</a></span> on <a href="http://www.acmerblog.com/great-tree-list-5814.html#comment-30382" rel="nofollow"><time datetime="2015-04-18T04:40:36+00:00" pubdate="">2015年4月18日 at 上午4:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>和编译器有关吧，我用的g++正常。头文件可能还需要一个&lt;string.h&gt;</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30380">
+<article class="comment" id="comment-30380">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hongfieyu</a></span> on <a href="http://www.acmerblog.com/great-tree-list-5814.html#comment-30380" rel="nofollow"><time datetime="2015-04-06T04:47:56+00:00" pubdate="">2015年4月6日 at 上午4:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我又来学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49376">
+<article class="comment" id="comment-49376">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">645198</a></span> on <a href="http://www.acmerblog.com/great-tree-list-5814.html#comment-49376" rel="nofollow"><time datetime="2014-11-02T08:21:35+00:00" pubdate="">2014年11月2日 at 上午8:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>请问printAllCombination的时间复杂度怎么分析呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30383">
+<article class="comment" id="comment-30383">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">soasipray</a></span> on <a href="http://www.acmerblog.com/great-tree-list-5814.html#comment-30383" rel="nofollow"><time datetime="2014-10-25T15:52:44+00:00" pubdate="">2014年10月25日 at 下午3:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>看见的晚了，只能提交一次唉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49374">
+<article class="comment" id="comment-49374">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Aifan</a></span> on <a href="http://www.acmerblog.com/great-tree-list-5814.html#comment-49374" rel="nofollow"><time datetime="2014-10-02T16:02:02+00:00" pubdate="">2014年10月2日 at 下午4:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>88行是多余的，可以删除</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30381">
+<article class="comment" id="comment-30381">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wkhuahuo</a></span> on <a href="http://www.acmerblog.com/great-tree-list-5814.html#comment-30381" rel="nofollow"><time datetime="2014-08-16T10:20:40+00:00" pubdate="">2014年8月16日 at 上午10:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>即为打印出的组合的个数C(n,r)，假设print函数复杂度为O(1)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49377">
+<article class="comment" id="comment-49377">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tangxiansheng</a></span> on <a href="http://www.acmerblog.com/great-tree-list-5814.html#comment-49377" rel="nofollow"><time datetime="2014-08-10T06:32:58+00:00" pubdate="">2014年8月10日 at 上午6:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为\n\n</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49378">
+<article class="comment" id="comment-49378">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">la0bei</a></span> on <a href="http://www.acmerblog.com/great-tree-list-5814.html#comment-49378" rel="nofollow"><time datetime="2014-08-06T20:04:38+00:00" pubdate="">2014年8月6日 at 下午8:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>居然看懂了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30379">
+<article class="comment" id="comment-30379">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">admin</a></span> on <a href="http://www.acmerblog.com/great-tree-list-5814.html#comment-30379" rel="nofollow"><time datetime="2014-07-01T19:18:37+00:00" pubdate="">2014年7月1日 at 下午7:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二种解法如果数组有重复元素 就不正确</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30384">
+<article class="comment" id="comment-30384">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">TimeFight</a></span> on <a href="http://www.acmerblog.com/great-tree-list-5814.html#comment-30384" rel="nofollow"><time datetime="2014-06-30T08:03:40+00:00" pubdate="">2014年6月30日 at 上午8:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对于第一题，我的直觉告诉我换不换都一样，求指教</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment byuser comment-author-lintong odd alt thread-odd thread-alt depth-1" id="li-comment-427">
+<article class="comment" id="comment-427">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">lintong</span> on <a href="http://www.acmerblog.com/great-tree-list-5814.html#comment-427" rel="nofollow"><time datetime="2014-06-12T17:45:57+00:00" pubdate="">2014年6月12日 at 下午5:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>纠正一个错误，二分查找树的中序遍历获得元素的升序排列。</p>
+</div>
+</article><!-- #comment-## -->
+<ul class="children">
+<li class="comment byuser comment-author-admin bypostauthor even depth-2" id="li-comment-428">
+<article class="comment" id="comment-428">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://weibo.com/itong2055" rel="external nofollow">管理员</a></span> on <a href="http://www.acmerblog.com/great-tree-list-5814.html#comment-428" rel="nofollow"><time datetime="2014-06-12T19:46:41+00:00" pubdate="">2014年6月12日 at 下午7:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢指出，已改正</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ul><!-- .children -->
+</li><!-- #comment-## -->
+</ol>

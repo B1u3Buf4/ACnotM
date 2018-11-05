@@ -1,0 +1,385 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>08-25</div>
+<div class="tit"><h1 class="entry-title">求强连通分量(1)-Kosaraju算法</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/graph/connectivity" rel="category tag" title="查看连通性问题中的全部文章">连通性问题</a></span><span class="i4">围观2234次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6099" href="http://www.acmerblog.com/strongly-connected-components-6099.html#comments" title="《求强连通分量(1)-Kosaraju算法》上的评论">22 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p><strong>强连通分量</strong></p>
+<p>有向图强连通分量在有向图G中，如果两个顶点vi,vj间（vi&gt;vj）有一条从vi到vj的有向路径，同时还有一条从vj到vi的有向路径，则称两个顶点强连通(strongly connected)。如果有向图G的每两个顶点都强连通，称G是一个强连通图。有向图的极大强连通子图，称为强连通分量(strongly connected components)。</p>
+<p>如下面的图，虽然不是强连通图，但是有3个强连通分量，都用红色框标注。</p>
+<p><a href="http://cdn.acmerblog.com/wp-content/uploads/2014/08/SCC.png"><img alt="SCC" class="alignnone wp-image-6100" height="254" src="http://cdn.acmerblog.com/wp-content/uploads/2014/08/SCC.png" width="454"/></a></p>
+<p><a href="http://zh.wikipedia.org/w/index.php?title=Kosaraju%E7%AE%97%E6%B3%95&amp;action=edit&amp;redlink=1" title="Kosaraju算法（页面不存在）">Kosaraju算法</a>、<a href="http://zh.wikipedia.org/wiki/Tarjan%E7%AE%97%E6%B3%95" title="Tarjan算法">Tarjan算法</a>、<a href="http://zh.wikipedia.org/w/index.php?title=Gabow%E7%AE%97%E6%B3%95&amp;action=edit&amp;redlink=1">Gabow算法</a>皆为寻找有向图强连通分量的有效算法。但是在Tarjan 算法和 Gabow 算法的过程中，只需要进行一次的深度优先搜索，而Kosaraju算法需要两次DFS，因而相对 Kosaraju 算法较有效率。这些算法可简称为<strong>SSC</strong>(strongly connected components)<strong>算法</strong>;</p>
+<p>Kosaraju 算法即为算法导论一书给出的算法，比较直观和易懂。这个算法可以说是最容易理解，最通用的算法，其比较关键的部分是同时应用了原图G和反图GT。 它利用了有向图的这样一个性质，一个图和他的transpose graph(边全部反向)具有相同的强连通分量！</p>
+<p><a href="http://cdn.acmerblog.com/wp-content/uploads/2014/08/SCCGraph2.png"><img alt="SCCGraph2" class="alignnone wp-image-6103" height="254" src="http://cdn.acmerblog.com/wp-content/uploads/2014/08/SCCGraph2.png" width="454"/></a></p>
+<p><strong>算法思路：</strong></p>
+<p>1， DFS遍历原图，对每个访问到的节点标记时间戳（访问完成时间）。</p>
+<p>2， 按照时间戳的降序DFS遍历反向图，得到的每个连通块就是一个强连通分量。</p>
+<p><strong>算法步骤如下：</strong></p>
+<p><strong>1)</strong> 创建一个空的栈 ‘S’ ，然后对图做DFS遍历. 在顶点<strong>访问完成</strong>后加入栈中。访问完成是说回溯返回时，而不是第一次发现该节点时。<strong>fillOrder()函数</strong><br/>
+<strong>2)</strong> 得到图转置，即将所有边反向。<br/>
+<strong>3)</strong> 从S中依次弹出每个顶点，设为 ‘v’. 将v看做遍历的源点 (调用 DFSUtil(v)). 做第二次DFS遍历，可以找到以v为起点的强连通分量，打印出即可。</p>
+<p>代码实现如下：</p>
+<pre class="brush:cpp">#include &lt;iostream&gt;
+#include &lt;list&gt;
+#include &lt;stack&gt;
+using namespace std;
+
+class Graph {
+	int V;    // 顶点个数
+	list&lt;int&gt; *adj;    //邻接表
+
+	// 最晚的完成时间的顶点放在栈顶
+	void fillOrder(int v, bool visited[], stack&lt;int&gt; &amp;Stack);
+
+	// DFS打印以v起点的边
+	void DFSUtil(int v, bool visited[]);
+public:
+	Graph(int V);
+	void addEdge(int v, int w);
+
+	//打印所有的强连通分量
+	void printSCCs();
+
+	//得到当前图的转置图
+	Graph getTranspose();
+};
+
+Graph::Graph(int V) {
+	this-&gt;V = V;
+	adj = new list&lt;int&gt; [V];
+}
+
+void Graph::DFSUtil(int v, bool visited[]) {
+	visited[v] = true;
+	cout &lt;&lt; v &lt;&lt; " ";
+	list&lt;int&gt;::iterator i;
+	for (i = adj[v].begin(); i != adj[v].end(); ++i)
+		if (!visited[*i])
+			DFSUtil(*i, visited);
+}
+
+Graph Graph::getTranspose() {
+	Graph g(V);
+	for (int v = 0; v &lt; V; v++) {
+		list&lt;int&gt;::iterator i;
+		for (i = adj[v].begin(); i != adj[v].end(); ++i) {
+			g.adj[*i].push_back(v);
+		}
+	}
+	return g;
+}
+
+void Graph::addEdge(int v, int w) {
+	adj[v].push_back(w);
+}
+
+void Graph::fillOrder(int v, bool visited[], stack&lt;int&gt; &amp;Stack) {
+	visited[v] = true;
+	list&lt;int&gt;::iterator i;
+	for (i = adj[v].begin(); i != adj[v].end(); ++i)
+		if (!visited[*i])
+			fillOrder(*i, visited, Stack);
+
+	//所有从v顶点可达的顶点都已处理完，v顶点访问完成
+	Stack.push(v);
+}
+
+void Graph::printSCCs() {
+	stack&lt;int&gt; Stack;
+
+	bool *visited = new bool[V];
+	for (int i = 0; i &lt; V; i++)
+		visited[i] = false;
+
+	// 根据完成时间压入栈中，栈顶是完成时间最晚的顶点
+	for (int i = 0; i &lt; V; i++)
+		if (visited[i] == false)
+			fillOrder(i, visited, Stack);
+
+	// 创建转置图
+	Graph gr = getTranspose();
+
+	// 准备第二次DFS
+	for (int i = 0; i &lt; V; i++)
+		visited[i] = false;
+
+	while (Stack.empty() == false) {
+		int v = Stack.top();
+		Stack.pop();
+		// 打印以v为起点的强连通分量
+		if (visited[v] == false) {
+			gr.DFSUtil(v, visited);
+			cout &lt;&lt; endl;
+		}
+	}
+}
+
+int main() {
+	// 创建图
+	Graph g(5);
+	g.addEdge(1, 0);
+	g.addEdge(0, 2);
+	g.addEdge(2, 1);
+	g.addEdge(0, 3);
+	g.addEdge(3, 4);
+
+	cout &lt;&lt; "Following are strongly connected components in given graph \n";
+	g.printSCCs();
+
+	return 0;
+}</pre>
+<p><strong> 时间复杂度</strong></p>
+<p>DFS遍历的时间复杂度为O(V+E) ，图的转置也为O(V+E) 。因此总的时间复杂度为O(V+E)。</p>
+<p>从渐进分析来说，这个复杂度是最好的，但是用到了两次DFS遍历，还有一个常见的更高效的算法 <a href="http://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm" target="_blank">Tarjan’s algorithm</a> ，后面再做讨论。</p>
+<p><strong>应用</strong></p>
+<p>在社交网络上，有些群体可能是强连通的(例如一个班级的学生)，这些群体中的人一般会有一些共同感兴趣的页面或游戏，可以使用SSC算法来找到这样的群体，然后推荐相关的页面或游戏。</p>
+<p>参考：http://www.geeksforgeeks.org/strongly-connected-components/</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75094">
+<article class="comment" id="comment-75094">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533488" rel="external nofollow">新用户566704</a></span> on <a href="http://www.acmerblog.com/strongly-connected-components-6099.html#comment-75094" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>全拿小刀捅死</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75093">
+<article class="comment" id="comment-75093">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533488" rel="external nofollow">新用户566704</a></span> on <a href="http://www.acmerblog.com/strongly-connected-components-6099.html#comment-75093" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>全拿小刀捅死</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75092">
+<article class="comment" id="comment-75092">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533488" rel="external nofollow">新用户566704</a></span> on <a href="http://www.acmerblog.com/strongly-connected-components-6099.html#comment-75092" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>全拿小刀捅死</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75091">
+<article class="comment" id="comment-75091">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533488" rel="external nofollow">新用户566704</a></span> on <a href="http://www.acmerblog.com/strongly-connected-components-6099.html#comment-75091" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>全拿小刀捅死</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75090">
+<article class="comment" id="comment-75090">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533488" rel="external nofollow">新用户566704</a></span> on <a href="http://www.acmerblog.com/strongly-connected-components-6099.html#comment-75090" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>全拿小刀捅死</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75089">
+<article class="comment" id="comment-75089">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533488" rel="external nofollow">新用户566704</a></span> on <a href="http://www.acmerblog.com/strongly-connected-components-6099.html#comment-75089" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>全拿小刀捅死</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75088">
+<article class="comment" id="comment-75088">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533488" rel="external nofollow">新用户566704</a></span> on <a href="http://www.acmerblog.com/strongly-connected-components-6099.html#comment-75088" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>全拿小刀捅死</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75087">
+<article class="comment" id="comment-75087">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533488" rel="external nofollow">新用户566704</a></span> on <a href="http://www.acmerblog.com/strongly-connected-components-6099.html#comment-75087" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>全拿小刀捅死</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58868">
+<article class="comment" id="comment-58868">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mysteriousAngel_love</a></span> on <a href="http://www.acmerblog.com/strongly-connected-components-6099.html#comment-58868" rel="nofollow"><time datetime="2015-07-03T07:21:26+00:00" pubdate="">2015年7月3日 at 上午7:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感谢分享 学习了`(*∩_∩*)′</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63630">
+<article class="comment" id="comment-63630">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">HenrryCheng</a></span> on <a href="http://www.acmerblog.com/strongly-connected-components-6099.html#comment-63630" rel="nofollow"><time datetime="2015-05-15T16:30:38+00:00" pubdate="">2015年5月15日 at 下午4:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>能告诉我为什么对于每一个m，cnt的值不用更新吗?这儿我想不通啊，谢谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49542">
+<article class="comment" id="comment-49542">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">congve1</a></span> on <a href="http://www.acmerblog.com/strongly-connected-components-6099.html#comment-49542" rel="nofollow"><time datetime="2015-05-13T18:12:03+00:00" pubdate="">2015年5月13日 at 下午6:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>漂亮。佩服。<br/>
+P.S.  unsigned 应该去掉。换行符是n 不是/n<br/>
+还可以稍微优化一下，<br/>
+int main() {<br/>
+	int m,n,ai,aj,bi,bj,ak,bk;<br/>
+	while (scanf("%d%d",&amp;m,&amp;n)!=EOF) {<br/>
+		ai = sqrt(m-1);<br/>
+		bi = sqrt(n-1);<br/>
+		aj = (m-ai*ai-1)&gt;&gt;1;<br/>
+		bj = (n-bi*bi-1)&gt;&gt;1;<br/>
+		ak = ((ai+1)*(ai+1)-m)&gt;&gt;1;<br/>
+		bk = ((bi+1)*(bi+1)-n)&gt;&gt;1;<br/>
+		printf("%dn",abs(ai-bi)+abs(aj-bj)+abs(ak-bk));<br/>
+	}<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49545">
+<article class="comment" id="comment-49545">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">GDUTtian</a></span> on <a href="http://www.acmerblog.com/strongly-connected-components-6099.html#comment-49545" rel="nofollow"><time datetime="2015-02-13T16:07:09+00:00" pubdate="">2015年2月13日 at 下午4:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>大致看了下，算法的时间复杂度没有很本性的提升，算不上高效。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49541">
+<article class="comment" id="comment-49541">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">BGPY243956</a></span> on <a href="http://www.acmerblog.com/strongly-connected-components-6099.html#comment-49541" rel="nofollow"><time datetime="2015-02-09T11:05:20+00:00" pubdate="">2015年2月9日 at 上午11:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>具体实现上有所差别，但思路是一样的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49546">
+<article class="comment" id="comment-49546">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">H.Watson</a></span> on <a href="http://www.acmerblog.com/strongly-connected-components-6099.html#comment-49546" rel="nofollow"><time datetime="2015-01-15T07:36:25+00:00" pubdate="">2015年1月15日 at 上午7:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>即为打印出的组合的个数C(n,r)，假设print函数复杂度为O(1)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58870">
+<article class="comment" id="comment-58870">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">20134055016</a></span> on <a href="http://www.acmerblog.com/strongly-connected-components-6099.html#comment-58870" rel="nofollow"><time datetime="2014-12-08T07:20:01+00:00" pubdate="">2014年12月8日 at 上午7:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>a是根先忽略掉，递归子树。剩下前缀bejkcfghid和后缀jkebfghicd，分拆的原则的是每个子树前缀和后缀的节点个数是一样的，根节点出现在前缀的第一个，后缀的最后一个。根节点b出现后缀的第四个位置，则第一部分为四个节点，前缀bejk，后缀jkeb，剩下的c出现在后缀的倒数第2个，就划分为cfghi和 fghic，第3部分就为c、c</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49544">
+<article class="comment" id="comment-49544">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tonight</a></span> on <a href="http://www.acmerblog.com/strongly-connected-components-6099.html#comment-49544" rel="nofollow"><time datetime="2014-12-06T19:35:38+00:00" pubdate="">2014年12月6日 at 下午7:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>站长好。我是一个准备创业的互联网小白,我们打算做一个有关国*际*游*学的平台。手上也有了一些境外资源。现阶段的团队现在没有cto.原意出让一些管理股寻找一个靠谱的技术专家做合伙人, 不知道是不是能得到您的帮助。发个帖子或者其他方式。期待您的回应。可以加我微信tianxielemon聊聊。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49543">
+<article class="comment" id="comment-49543">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wangzhenvs123</a></span> on <a href="http://www.acmerblog.com/strongly-connected-components-6099.html#comment-49543" rel="nofollow"><time datetime="2014-12-03T01:25:36+00:00" pubdate="">2014年12月3日 at 上午1:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感觉我好像很多都不会做。。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49547">
+<article class="comment" id="comment-49547">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">acmer29</a></span> on <a href="http://www.acmerblog.com/strongly-connected-components-6099.html#comment-49547" rel="nofollow"><time datetime="2014-11-11T02:41:24+00:00" pubdate="">2014年11月11日 at 上午2:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>赞！！~~大赞！！~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30696">
+<article class="comment" id="comment-30696">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ForgetVay</a></span> on <a href="http://www.acmerblog.com/strongly-connected-components-6099.html#comment-30696" rel="nofollow"><time datetime="2014-11-04T13:16:08+00:00" pubdate="">2014年11月4日 at 下午1:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>失误失误，转载错了。已经改正，抱歉。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58869">
+<article class="comment" id="comment-58869">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">0xc0de</a></span> on <a href="http://www.acmerblog.com/strongly-connected-components-6099.html#comment-58869" rel="nofollow"><time datetime="2014-11-02T01:06:42+00:00" pubdate="">2014年11月2日 at 上午1:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈呀！这个Dijkstra模板好长OwQ！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63631">
+<article class="comment" id="comment-63631">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">753951</a></span> on <a href="http://www.acmerblog.com/strongly-connected-components-6099.html#comment-63631" rel="nofollow"><time datetime="2014-10-11T04:01:56+00:00" pubdate="">2014年10月11日 at 上午4:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>惊艳了，没想到代码如此简洁</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30697">
+<article class="comment" id="comment-30697">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wangzhenvs123</a></span> on <a href="http://www.acmerblog.com/strongly-connected-components-6099.html#comment-30697" rel="nofollow"><time datetime="2014-09-16T10:55:50+00:00" pubdate="">2014年9月16日 at 上午10:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么不直接用STL排序呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

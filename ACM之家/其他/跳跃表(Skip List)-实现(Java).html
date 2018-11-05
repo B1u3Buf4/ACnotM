@@ -1,0 +1,733 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>05-07</div>
+<div class="tit"><h1 class="entry-title">跳跃表(Skip List)-实现(Java)</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/zhuanti/algorithm" rel="category tag" title="查看算法分析中的全部文章">算法分析</a>, <a href="http://www.acmerblog.com/category/data-struct/linear" rel="category tag" title="查看线性结构中的全部文章">线性结构</a></span><span class="i4">围观2567次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5773" href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comments" title="《跳跃表(Skip List)-实现(Java)》上的评论">33 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p><b>跳跃表</b>是一种<strong>随机化</strong>数据结构，基于并联的链表，其效率可比拟于二叉查找树(对于大多数操作需要O(log <i>n</i>)平均时间)，并且对并发算法友好。</p>
+<p>关于跳跃表的具体介绍可以参考MIT的公开课：<a href="http://v.163.com/movie/2010/12/7/S/M6UTT5U0I_M6V2TTJ7S.html">跳跃表</a></p>
+<p><b>跳跃表的应用</b></p>
+<p>Skip list(跳表）是一种可以代替平衡树的数据结构，默认是按照Key值升序的。Skip list让已排序的数据分布在多层链表中，以0-1随机数决定一个数据的向上攀升与否，通过“空间来换取时间”的一个算法，在每个节点中增加了向前的指针，在插入、删除、查找时可以忽略一些不可能涉及到的结点，从而提高了效率。</p>
+<p>在Java的API中已经有了实现：分别是</p>
+<p><strong>ConcurrentSkipListMap(在功能上对应HashTable、HashMap、TreeMap) ；</strong></p>
+<p><strong>ConcurrentSkipListSet(<strong>在功能上</strong>对应HashSet). </strong></p>
+<p>确切来说，SkipList更像Java中的<strong>TreeMap</strong>，<strong>TreeMap</strong>基于红黑树（一种自平衡二叉查找树）实现的，时间复杂度平均能达到O(log n)。</p>
+<p><strong>HashMap</strong>是基于散列表实现的，时间复杂度平均能达到O(1)。<strong>ConcurrentSkipListMap</strong>是基于跳表实现的，时间复杂度平均能达到O(log n)。</p>
+<p><strong>Skip list</strong>的性质</p>
+<p>(1) 由很多层结构组成，level是通过一定的概率随机产生的。<br/>
+(2) 每一层都是一个有序的链表，默认是升序<br/>
+(3) 最底层(Level 1)的链表包含所有元素。<br/>
+(4) 如果一个元素出现在Level i 的链表中，则它在Level i 之下的链表也都会出现。<br/>
+(5) 每个节点包含两个指针，一个指向同一链表中的下一个元素，一个指向下面一层的元素。</p>
+<p>Ø  <strong>ConcurrentSkipListMap</strong>具有Skip list的性质 ，并且适用于大规模数据的并发访问。多个线程可以安全地并发执行插入、移除、更新和访问操作。与其他有锁机制的数据结构在巨大的压力下相比有优势。</p>
+<p>Ø  <strong>TreeMap</strong>插入数据时平衡树采用严格的旋转（比如平衡二叉树有左旋右旋）来保证平衡，因此Skip list比较容易实现，而且相比平衡树有着较高的运行效率。</p>
+<p>Java代码实现：</p>
+<p>1. SkipListEntry.java ， 这是跳跃表中存储的每个元素实体类，包含 上下左右 四个指针。</p>
+<pre class="brush:java">package skiplist;
+
+public class SkipListEntry {
+	public String key;
+	public Integer value;
+
+	public int pos; //主要为了打印 链表用
+
+	public SkipListEntry up, down, left, right; // 上下左右 四个指针
+
+	public static String negInf = new String("-oo"); // 负无穷
+	public static String posInf = new String("+oo"); // 正无穷
+
+	public SkipListEntry(String k, Integer v) {
+		key = k;
+		value = v;
+
+		up = down = left = right = null;
+	}
+
+	public Integer getValue() {
+		return value;
+	}
+
+	public String getKey() {
+		return key;
+	}
+
+	public Integer setValue(Integer val) {
+		Integer oldValue = value;
+		value = val;
+		return oldValue;
+	}
+
+	public boolean equals(Object o) {
+		SkipListEntry ent;
+		try {
+			ent = (SkipListEntry) o; // 检测类型
+		} catch (ClassCastException ex) {
+			return false;
+		}
+		return (ent.getKey() == key) &amp;&amp; (ent.getValue() == value);
+	}
+
+	public String toString() {
+		return "(" + key + "," + value + ")";
+	}
+}</pre>
+<p>2. SkipList.java, 跳跃表类，包含算法的实现。 head 和 tail 分别是 顶层的头和尾。</p>
+<pre class="brush:java">package skiplist;
+
+import java.util.*;
+
+public class SkipList {
+	public SkipListEntry head; // 顶层的第一个元素
+	public SkipListEntry tail; // 顶层的最后一个元素
+
+	public int n; // 跳跃表中的元素个数
+
+	public int h; // 跳跃表的高度
+	public Random r; // 投掷硬币
+
+	public SkipList() // 默认构造函数...
+	{
+		SkipListEntry p1, p2;
+
+		p1 = new SkipListEntry(SkipListEntry.negInf, null);
+		p2 = new SkipListEntry(SkipListEntry.posInf, null);
+
+		head = p1;
+		tail = p2;
+
+		p1.right = p2;
+		p2.left = p1;
+
+		n = 0;
+		h = 0;
+		r = new Random();
+	}
+
+	/** 返回 包含的元素个数 */
+	public int size() {
+		return n;
+	}
+
+	/** 跳跃表是否为空 */
+	public boolean isEmpty() {
+		return (n == 0);
+	}
+
+	 //在最下面一层，找到要插入的位置前面的那个key
+	public SkipListEntry findEntry(String k) {
+		SkipListEntry p;
+		p = head;
+
+		while (true) {
+			/**
+			 * 一直向右找，例: k=34. 
+			 * 10 ---&gt; 20 ---&gt; 30 ---&gt; 40 ^ | p 会在30处停止
+			 * --------------------------------------------
+			 ***/
+			while (p.right.key != SkipListEntry.posInf
+					&amp;&amp; p.right.key.compareTo(k) &lt;= 0) {
+				p = p.right;
+			//	System.out.println("&gt;&gt;&gt;&gt; " + p.key);
+			}
+			// 如果还有下一层，就到下一层继续查找
+			if (p.down != null) {
+				p = p.down;
+				 //System.out.println("vvvv " + p.key);
+			} else
+				break; // 到了最下面一层 就停止查找
+		}
+
+		return (p); // p.key &lt;= k
+	}
+
+	/** 返回和key绑定的值 */
+	public Integer get(String k) {
+		SkipListEntry p;
+
+		p = findEntry(k);
+
+		if (k.equals(p.getKey()))
+			return (p.value);
+		else
+			return (null);
+	}
+
+	/** 放一个key-value到跳跃表中, 替换原有的并返回 */
+	public Integer put(String k, Integer v) {
+		SkipListEntry p, q;
+		int i;
+
+		p = findEntry(k);
+
+		if (k.equals(p.getKey())) {
+			Integer old = p.value;
+			p.value = v;
+			return (old);
+		}
+
+		q = new SkipListEntry(k, v);
+		q.left = p;
+		q.right = p.right;
+		p.right.left = q;
+		p.right = q;
+
+		i = 0; // 当前层 level = 0
+
+		while (r.nextDouble() &lt; 0.5) {
+
+			//如果超出了高度，需要重新建一个顶层
+			if (i &gt;= h) {
+				SkipListEntry p1, p2;
+
+				h = h + 1;
+				p1 = new SkipListEntry(SkipListEntry.negInf, null);
+				p2 = new SkipListEntry(SkipListEntry.posInf, null);
+
+				p1.right = p2;
+				p1.down = head;
+
+				p2.left = p1;
+				p2.down = tail;
+
+				head.up = p1;
+				tail.up = p2;
+
+				head = p1;
+				tail = p2;
+			}
+
+			while (p.up == null) {
+				p = p.left;
+			}
+			p = p.up;
+
+			SkipListEntry e;
+
+			e = new SkipListEntry(k, null); 
+			e.left = p;
+			e.right = p.right;
+			e.down = q;
+
+			p.right.left = e;
+			p.right = e;
+			q.up = e;
+
+			q = e; // q 进行下一层迭代
+			i = i + 1; // 当前层 +1
+
+		}
+		n = n + 1;
+
+		return (null); // No old value
+	}
+
+	public Integer remove(String key) {
+		return (null);
+	}
+
+	public void printHorizontal() {
+		String s = "";
+		int i;
+		SkipListEntry p;
+
+		p = head;
+
+		while (p.down != null) {
+			p = p.down;
+		}
+
+		i = 0;
+		while (p != null) {
+			p.pos = i++;
+			p = p.right;
+		}
+
+		p = head;
+		while (p != null) {
+			s = getOneRow(p);
+			System.out.println(s);
+
+			p = p.down;
+		}
+	}
+
+	//用了打印测试
+	public String getOneRow(SkipListEntry p) {
+		String s;
+		int a, b, i;
+
+		a = 0;
+
+		s = "" + p.key;
+		p = p.right;
+
+		while (p != null) {
+			SkipListEntry q;
+
+			q = p;
+			while (q.down != null)
+				q = q.down;
+			b = q.pos;
+
+			s = s + " &lt;-";
+
+			for (i = a + 1; i &lt; b; i++)
+				s = s + "--------";
+
+			s = s + "&gt; " + p.key;
+
+			a = b;
+
+			p = p.right;
+		}
+
+		return (s);
+	}
+
+	//用了打印测试
+	public void printVertical() {
+		String s = "";
+		SkipListEntry p;
+		p = head;
+		while (p.down != null)
+			p = p.down;
+
+		while (p != null) {
+			s = getOneColumn(p);
+			System.out.println(s);
+
+			p = p.right;
+		}
+	}
+	//用了打印测试
+	public String getOneColumn(SkipListEntry p) {
+		String s = "";
+		while (p != null) {
+			s = s + " " + p.key;
+			p = p.up;
+		}
+		return (s);
+	}
+}</pre>
+<p>测试类，Test.java</p>
+<pre class="brush:java">package skiplist;
+
+public class Test1 {
+	public static void main(String[] args) {
+		SkipList S = new SkipList();
+
+		S.printHorizontal();
+		System.out.println("------");
+		// S.printVertical();
+		// System.out.println("======");
+
+		S.put("ABC", 123);
+		S.printHorizontal();
+		System.out.println("------");
+		// S.printVertical();
+		 //System.out.println("======");
+
+		S.put("DEF", 123);
+		S.printHorizontal();
+		System.out.println("------");
+		// S.printVertical();
+		// System.out.println("======");
+
+		S.put("KLM", 123);
+		S.printHorizontal();
+		System.out.println("------");
+		// S.printVertical();
+		// System.out.println("======");
+
+		S.put("HIJ", 123);
+		S.printHorizontal();
+		System.out.println("------");
+		// S.printVertical();
+		// System.out.println("======");
+
+		S.put("GHJ", 123);
+		S.printHorizontal();
+		System.out.println("------");
+		// S.printVertical();
+		// System.out.println("======");
+
+		S.put("AAA", 123);
+		S.printHorizontal();
+		System.out.println("------");
+		// S.printVertical();
+		// System.out.println("======");
+
+	}
+}</pre>
+<p>输出结果：</p>
+<pre class="brush:other">-oo &lt;-&gt; +oo
+------
+-oo &lt;-&gt; ABC &lt;-&gt; +oo
+-oo &lt;-&gt; ABC &lt;-&gt; +oo
+------
+-oo &lt;-&gt; ABC &lt;---------&gt; +oo
+-oo &lt;-&gt; ABC &lt;-&gt; DEF &lt;-&gt; +oo
+------
+-oo &lt;-&gt; ABC &lt;---------&gt; KLM &lt;-&gt; +oo
+-oo &lt;-&gt; ABC &lt;-&gt; DEF &lt;-&gt; KLM &lt;-&gt; +oo
+------
+-oo &lt;-----------------&gt; HIJ &lt;---------&gt; +oo
+-oo &lt;-&gt; ABC &lt;---------&gt; HIJ &lt;-&gt; KLM &lt;-&gt; +oo
+-oo &lt;-&gt; ABC &lt;-&gt; DEF &lt;-&gt; HIJ &lt;-&gt; KLM &lt;-&gt; +oo
+------
+-oo &lt;-------------------------&gt; HIJ &lt;---------&gt; +oo
+-oo &lt;-&gt; ABC &lt;-----------------&gt; HIJ &lt;-&gt; KLM &lt;-&gt; +oo
+-oo &lt;-&gt; ABC &lt;-&gt; DEF &lt;-&gt; GHJ &lt;-&gt; HIJ &lt;-&gt; KLM &lt;-&gt; +oo
+------
+-oo &lt;---------------------------------&gt; HIJ &lt;---------&gt; +oo
+-oo &lt;---------&gt; ABC &lt;-----------------&gt; HIJ &lt;-&gt; KLM &lt;-&gt; +oo
+-oo &lt;-&gt; AAA &lt;-&gt; ABC &lt;-&gt; DEF &lt;-&gt; GHJ &lt;-&gt; HIJ &lt;-&gt; KLM &lt;-&gt; +oo
+------</pre>
+<p>每次运行的结果是不一样的，这就是为什么说跳跃表是属于<strong>随机化</strong>数据结构。</p>
+<p>代码参考：<a href="http://www.mathcs.emory.edu/~cheung/Courses/323/Syllabus/Map/skip-list-impl.html">Implementing the skip list data structure</a></p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75672">
+<article class="comment" id="comment-75672">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461911" rel="external nofollow">新用户038601</a></span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-75672" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>龙马的哥哥是谁呀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75671">
+<article class="comment" id="comment-75671">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461911" rel="external nofollow">新用户038601</a></span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-75671" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>龙马的哥哥是谁呀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75670">
+<article class="comment" id="comment-75670">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461911" rel="external nofollow">新用户038601</a></span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-75670" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>龙马的哥哥是谁呀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75669">
+<article class="comment" id="comment-75669">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461911" rel="external nofollow">新用户038601</a></span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-75669" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>龙马的哥哥是谁呀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75668">
+<article class="comment" id="comment-75668">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461911" rel="external nofollow">新用户038601</a></span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-75668" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>龙马的哥哥是谁呀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75667">
+<article class="comment" id="comment-75667">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461911" rel="external nofollow">新用户038601</a></span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-75667" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>龙马的哥哥是谁呀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75666">
+<article class="comment" id="comment-75666">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461911" rel="external nofollow">新用户038601</a></span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-75666" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>龙马的哥哥是谁呀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75665">
+<article class="comment" id="comment-75665">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461911" rel="external nofollow">新用户038601</a></span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-75665" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>龙马的哥哥是谁呀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75664">
+<article class="comment" id="comment-75664">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461911" rel="external nofollow">新用户038601</a></span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-75664" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>龙马的哥哥是谁呀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75663">
+<article class="comment" id="comment-75663">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461911" rel="external nofollow">新用户038601</a></span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-75663" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>龙马的哥哥是谁呀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75662">
+<article class="comment" id="comment-75662">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461911" rel="external nofollow">新用户038601</a></span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-75662" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>龙马的哥哥是谁呀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75661">
+<article class="comment" id="comment-75661">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461911" rel="external nofollow">新用户038601</a></span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-75661" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>龙马的哥哥是谁呀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75660">
+<article class="comment" id="comment-75660">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461911" rel="external nofollow">新用户038601</a></span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-75660" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>龙马的哥哥是谁呀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75659">
+<article class="comment" id="comment-75659">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461911" rel="external nofollow">新用户038601</a></span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-75659" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>龙马的哥哥是谁呀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64949">
+<article class="comment" id="comment-64949">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">mBtgi</span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-64949" rel="nofollow"><time datetime="2016-12-12T17:21:55+00:00" pubdate="">2016年12月12日 at 下午5:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>万 部 A 片高清 国产日韩 <a href="http://T.cN/RVKtwto" rel="nofollow">http://T.cN/RVKtwto</a> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64926">
+<article class="comment" id="comment-64926">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">jghYZ</span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-64926" rel="nofollow"><time datetime="2016-12-08T13:27:20+00:00" pubdate="">2016年12月8日 at 下午1:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个更刺j激，准备好手纸哦 A 片。。 <a href="http://uVU.cc/itn6" rel="nofollow">http://uVU.cc/itn6</a> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64916">
+<article class="comment" id="comment-64916">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">IQRMm</span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-64916" rel="nofollow"><time datetime="2016-12-01T22:48:30+00:00" pubdate="">2016年12月1日 at 下午10:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个更刺j激，准备好手纸哦 A 片。。 <a href="http://uVU.cc/itn6" rel="nofollow">http://uVU.cc/itn6</a> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64832">
+<article class="comment" id="comment-64832">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">cSPhQ</span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-64832" rel="nofollow"><time datetime="2016-11-03T04:54:18+00:00" pubdate="">2016年11月3日 at 上午4:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个更刺j激，准备好手纸哦 A 片。。 <a href="http://uVU.cc/itn6" rel="nofollow">http://uVU.cc/itn6</a> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64824">
+<article class="comment" id="comment-64824">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">菜鸟</span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-64824" rel="nofollow"><time datetime="2016-10-31T09:52:27+00:00" pubdate="">2016年10月31日 at 上午9:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么打印的结果相差很大呢？？？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64793">
+<article class="comment" id="comment-64793">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">PsLjy</span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-64793" rel="nofollow"><time datetime="2016-10-22T04:06:39+00:00" pubdate="">2016年10月22日 at 上午4:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个更刺j激，准备好手纸哦 A 片。。 <a href="http://uVU.cc/itn6" rel="nofollow">http://uVU.cc/itn6</a> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58773">
+<article class="comment" id="comment-58773">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hsp_77_abc</a></span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-58773" rel="nofollow"><time datetime="2015-05-27T04:12:59+00:00" pubdate="">2015年5月27日 at 上午4:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有点意思</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30329">
+<article class="comment" id="comment-30329">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiao597896577</a></span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-30329" rel="nofollow"><time datetime="2015-04-14T04:37:01+00:00" pubdate="">2015年4月14日 at 上午4:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>贴的有些代码的头文件不见了，这是为啥</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49345">
+<article class="comment" id="comment-49345">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">acmer29</a></span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-49345" rel="nofollow"><time datetime="2015-03-13T00:07:43+00:00" pubdate="">2015年3月13日 at 上午12:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>约瑟夫也用说这么长……很成熟的一个问题了，分治的方法解起来o(n)就可以了，有兴趣可以看看具体数学的第一章，关于约瑟夫问题推导出了一系列的结论，很漂亮</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49344">
+<article class="comment" id="comment-49344">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">leowww</a></span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-49344" rel="nofollow"><time datetime="2015-02-21T02:07:41+00:00" pubdate="">2015年2月21日 at 上午2:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感觉这里的评分标准没啥作用阿，反而显得显得赘余，还不如直接去掉好了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63586">
+<article class="comment" id="comment-63586">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mnmlist</a></span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-63586" rel="nofollow"><time datetime="2015-02-08T21:34:08+00:00" pubdate="">2015年2月8日 at 下午9:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58771">
+<article class="comment" id="comment-58771">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">room306</a></span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-58771" rel="nofollow"><time datetime="2015-02-03T19:22:41+00:00" pubdate="">2015年2月3日 at 下午7:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>21行中，j&lt;10可改为j&lt;10-i，减少比较次数</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30328">
+<article class="comment" id="comment-30328">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zwj0571</a></span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-30328" rel="nofollow"><time datetime="2015-01-01T14:06:34+00:00" pubdate="">2015年1月1日 at 下午2:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p><strong>Gucci New Fall Arrivals</strong></p>
+<p>This is really nice to know. I hope it will be successful in the future. Good job on this and keep up the good work.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63584">
+<article class="comment" id="comment-63584">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">liuk</a></span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-63584" rel="nofollow"><time datetime="2014-12-03T00:13:38+00:00" pubdate="">2014年12月3日 at 上午12:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>map[nodes <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .index][nodes <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> .index] == 0 就是判断不相邻的。这个是可以证明的。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58772">
+<article class="comment" id="comment-58772">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">soasipray</a></span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-58772" rel="nofollow"><time datetime="2014-11-02T05:15:57+00:00" pubdate="">2014年11月2日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法挺不错。NewHead代表新的头节点，通过递归找到最后一个节点之后，就把这个节点赋给NewHead，然后一直返回返回，中途这个值是没有变化的，一边返回一边把相应的指针方向颠倒，最后结束时返回新的头节点到主函数。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49343">
+<article class="comment" id="comment-49343">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">we</a></span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-49343" rel="nofollow"><time datetime="2014-10-12T13:25:42+00:00" pubdate="">2014年10月12日 at 下午1:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>上面的评论很起劲，为什么我看不懂啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-921">
+<article class="comment" id="comment-921">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.douban.com/people/dreamactualiser/" rel="external nofollow">dream persuer</a></span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-921" rel="nofollow"><time datetime="2014-10-01T12:48:36+00:00" pubdate="">2014年10月1日 at 下午12:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>remove没有实现</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30330">
+<article class="comment" id="comment-30330">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">_Tree</a></span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-30330" rel="nofollow"><time datetime="2014-09-03T07:00:48+00:00" pubdate="">2014年9月3日 at 上午7:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈呀！这个模板好长OwQ！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63585">
+<article class="comment" id="comment-63585">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">missliuxin</a></span> on <a href="http://www.acmerblog.com/skip-list-impl-java-5773.html#comment-63585" rel="nofollow"><time datetime="2014-08-13T02:05:17+00:00" pubdate="">2014年8月13日 at 上午2:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>清华也会出这么无聊的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

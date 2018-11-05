@@ -1,0 +1,311 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>11-30</div>
+<div class="tit"><h1 class="entry-title">HDU 3658-How many words-动态规划-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/basis/string" rel="category tag" title="查看字符串处理中的全部文章">字符串处理</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a></span><span class="i4">围观393次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6619" href="http://www.acmerblog.com/hdu-3658-how-many-words-6619.html#comments" title="《HDU 3658-How many words-动态规划-[解题报告]HOJ》上的评论">12 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">How many words</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+In order to make a new word, we will pick out m letters from all the upper case letters and lower case letters(from `a’ to `Z’). Therefore, that means you can pick some same letters. But here are two rules:<br/>● as to all the neighbour letters, the absolute value of their ASCII code must be not greater than 32.<br/>● there must be at least one pair of neighbour letters whose absolute value of ASCII code is exactly equal to 32. For example, considering the word in the form like "Xx" or "xX", the neighbour letters have an absolute value of ASCII code exactly equal to 32.<br/>Now how many dierent words can we get? </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line of input is the number of test case. For each test case, there is only one line contains one integer m(2 ≤ m ≤ 10<sup>9</sup>). </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The first line of input is the number of test case. For each test case, there is only one line contains one integer m(2 ≤ m ≤ 10<sup>9</sup>).</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+4
+2
+3
+100
+7926778</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+52
+4056
+533550434
+773908369</pre>
+<p> <!-- problem end --></p>
+<p>题意：给定一个整数n(2&lt;=n&lt;=10^9)，求符合以下规则的字符串有多少种？</p>
+<p><span style="white-space:pre"></span>规则如下：1）字符串长度为n，且字符由大写字母和小写字母组成</p>
+<p><span style="white-space:pre"></span>2）任意两个相邻字符，在ASCII表中的差值不大于32</p>
+<p><span style="white-space:pre"></span>3）至少存在一对相邻字符，其在ASCII表中的差值正好等于32</p>
+<p>
+</p>
+<p>题解：</p>
+<p><span style="white-space:pre"></span>这道题需要先dp，定义f[i][j]为长度为i，结尾为j的符合（1）条件的字符串个数。g[i][j]同理，符合（2）条件。其中j是大小写字母转换的0~51数字。</p>
+<p><span style="white-space:pre"></span>（1）条件：不存在题意中的3）条件，其余题意条件相同</p>
+<p><span style="white-space:pre"></span>（2）条件：任意两个相邻字符，在ASCII表中的差值小于32，其余与（1）条件相同</p>
+<p><span style="white-space:pre"></span>这样结果就可以转换成ans=∑（f[n][j]-g[n][j]）</p>
+<p><span style="white-space:pre"></span>dp方法：f[i][j]=f[i-1][j]*(与j差值小于等于32的字符的个数),g[i][j]=g[i-1][j]*(与j差值小于32的字符的个数).</p>
+<p><span style="white-space:pre"></span>由于n值过大，不能直接dp，需要用矩阵连乘来加速。</p>
+<p><span style="white-space:pre"></span>得到公式：|dp[i][j]|*|matrxi[][]|=|dp[i+1][j]|,其中matrix[a][b](0&lt;=a&lt;52,0&lt;=b&lt;52)在字符a和b差值小于等于32时值为1，其余为0（对于f[i][j]而言，对于g[i][j]就是小于32）。</p>
+<p>
+</p>
+<p>代码：</p>
+<pre class="brush:cpp" code_snippet_id="425721" name="code" snippet_file_name="blog_20140713_1_536076">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;math.h&gt;
+#include &lt;string.h&gt;
+#include &lt;iostream&gt;
+#include &lt;algorithm&gt;
+#include &lt;map&gt;
+#include &lt;set&gt;
+#include &lt;queue&gt;
+using namespace std;
+#define LL __int64
+const int mod=1000000007;
+struct matrix{
+    LL f[52][52];
+};
+matrix mul(matrix a,matrix b)//矩阵乘法
+{
+    int i,j,k;
+    matrix c;
+    memset(c.f,0,sizeof(c.f));
+    for(i=0;i&lt;52;i++)
+    {
+        for(j=0;j&lt;52;j++)
+        {
+            for(k=0;k&lt;52;k++)
+            {
+                c.f[i][j]+=a.f[i][k]*b.f[k][j]%mod;
+            }
+            c.f[i][j]%=mod;
+        }
+    }
+    return c;
+}
+matrix pow_mod(matrix a,int b)//矩阵连乘
+{
+    matrix s;
+    int i,j;
+    memset(s.f,0,sizeof(s.f));
+    for(i=0;i&lt;52;i++)
+        s.f[i][i]=1;
+    while(b)
+    {
+        if(b&amp;1)
+            s=mul(s,a);
+        a=mul(a,a);
+        b=b&gt;&gt;1;
+    }
+    return s;
+}
+int main()
+{
+    int T;
+    scanf("%d",&amp;T);
+    while(T--)
+    {
+        int i,j,k,n,a[100];
+        scanf("%d",&amp;n);
+        for(i=0;i&lt;26;i++)
+        {
+            a[i]=i;
+            a[i+26]=32+i;
+        }
+        matrix e,ee;
+        memset(e.f,0,sizeof(e.f));
+        memset(ee.f,0,sizeof(ee.f));
+        for(j=0;j&lt;52;j++)
+        {
+            for(i=0;i&lt;52;i++)
+            {
+                if(abs(a[j]-a[i])&lt;32)e.f[i][j]=1;//任意两个连续字母差小于32的种数
+                if(abs(a[j]-a[i])&lt;=32)ee.f[i][j]=1;//任意两个连续字母差小于等于32的种数
+            }
+        }
+        e=pow_mod(e,n-1);
+        ee=pow_mod(ee,n-1);
+        LL ans=0;
+        for(i=0;i&lt;52;i++)
+        {
+            for(j=0;j&lt;52;j++)
+            {
+                ans+=ee.f[i][j]-e.f[i][j];
+            }
+        }
+
+        printf("%I64d\n",(ans%mod+mod)%mod);
+    }
+}
+
+</pre>
+<p>
+<img alt="How many words" src="http://cdn.acmerblog.com/img/1419896241260.png"/>
+</p>
+<p><span style="white-space:pre"></span></p>
+<p>参考：http://blog.csdn.net/a601025382s/article/details/37742185</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-73527">
+<article class="comment" id="comment-73527">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527288" rel="external nofollow">新用户277231</a></span> on <a href="http://www.acmerblog.com/hdu-3658-how-many-words-6619.html#comment-73527" rel="nofollow"><time datetime="2017-04-11T22:05:34+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你也东北的？！我也东北的！我吉林白山的，你那！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50684">
+<article class="comment" id="comment-50684">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">oneal</a></span> on <a href="http://www.acmerblog.com/hdu-3658-how-many-words-6619.html#comment-50684" rel="nofollow"><time datetime="2015-07-09T19:48:49+00:00" pubdate="">2015年7月9日 at 下午7:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我没看懂题目<br/>
+2<br/>
+5 6 -1 5 4 -7<br/>
+7 0 6 -1 1 -6 7 -5<br/>
+我觉得第一个应该是5 6 -1 5 4 输出是19 5 4<br/>
+第二个是7 0 6 -1 1 -6 7输出是14 7 7<br/>
+不知道题目例子是怎么得出来的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59440">
+<article class="comment" id="comment-59440">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">pain</a></span> on <a href="http://www.acmerblog.com/hdu-3658-how-many-words-6619.html#comment-59440" rel="nofollow"><time datetime="2015-07-03T01:46:29+00:00" pubdate="">2015年7月3日 at 上午1:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>红绯鱼：<br/>
+牛逼牛逼</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63936">
+<article class="comment" id="comment-63936">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiao1108</a></span> on <a href="http://www.acmerblog.com/hdu-3658-how-many-words-6619.html#comment-63936" rel="nofollow"><time datetime="2015-05-10T05:45:38+00:00" pubdate="">2015年5月10日 at 上午5:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#!/usr/bin/env  python<br/>
+def cou(n):<br/>
+        arr =  <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/82/one_org.gif"/><br/>
+        i = 1<br/>
+        while(i&lt;n):<br/>
+                arr.append(arr[i-1]+selfcount(i))<br/>
+                i+=1<br/>
+        return arr[n-1]</p>
+<p>def selfcount(n):<br/>
+        count = 0<br/>
+        while(n):<br/>
+                if n%10 == 1:<br/>
+                        count += 1<br/>
+                n /= 10<br/>
+        return count</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59443">
+<article class="comment" id="comment-59443">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">we</a></span> on <a href="http://www.acmerblog.com/hdu-3658-how-many-words-6619.html#comment-59443" rel="nofollow"><time datetime="2015-05-06T21:03:41+00:00" pubdate="">2015年5月6日 at 下午9:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，再多来的CF上面的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50683">
+<article class="comment" id="comment-50683">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">09291010</a></span> on <a href="http://www.acmerblog.com/hdu-3658-how-many-words-6619.html#comment-50683" rel="nofollow"><time datetime="2015-04-08T21:55:29+00:00" pubdate="">2015年4月8日 at 下午9:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>,,,,,,,,,,,,,,,</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59438">
+<article class="comment" id="comment-59438">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Miracle-cc</a></span> on <a href="http://www.acmerblog.com/hdu-3658-how-many-words-6619.html#comment-59438" rel="nofollow"><time datetime="2015-04-06T04:54:35+00:00" pubdate="">2015年4月6日 at 上午4:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是研发的在线笔试题吗?发现很多C啊，阿里不是JAVA多么？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-59442">
+<article class="comment" id="comment-59442">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">GDUTtian</a></span> on <a href="http://www.acmerblog.com/hdu-3658-how-many-words-6619.html#comment-59442" rel="nofollow"><time datetime="2015-03-11T09:35:11+00:00" pubdate="">2015年3月11日 at 上午9:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这一题的代码这样提交时错误的~少考虑了很多情况</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59439">
+<article class="comment" id="comment-59439">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">leowww</a></span> on <a href="http://www.acmerblog.com/hdu-3658-how-many-words-6619.html#comment-59439" rel="nofollow"><time datetime="2015-03-06T05:33:57+00:00" pubdate="">2015年3月6日 at 上午5:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，现在就缺少新的资料</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-59441">
+<article class="comment" id="comment-59441">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rick</a></span> on <a href="http://www.acmerblog.com/hdu-3658-how-many-words-6619.html#comment-59441" rel="nofollow"><time datetime="2015-01-02T09:00:24+00:00" pubdate="">2015年1月2日 at 上午9:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个是python代码啊。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59444">
+<article class="comment" id="comment-59444">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Trenson</a></span> on <a href="http://www.acmerblog.com/hdu-3658-how-many-words-6619.html#comment-59444" rel="nofollow"><time datetime="2014-12-30T16:31:00+00:00" pubdate="">2014年12月30日 at 下午4:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有一点问题。。后面动态规划的程序中<br/>
+int dp[n+1][W+1];<br/>
+会报错  提示表达式必须含有常量值。该怎么修改呢。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50682">
+<article class="comment" id="comment-50682">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">645198</a></span> on <a href="http://www.acmerblog.com/hdu-3658-how-many-words-6619.html#comment-50682" rel="nofollow"><time datetime="2014-11-30T08:24:49+00:00" pubdate="">2014年11月30日 at 上午8:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>贴的有些代码的头文件不见了，这是为啥</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

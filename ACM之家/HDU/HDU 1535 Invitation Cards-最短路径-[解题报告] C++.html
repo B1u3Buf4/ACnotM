@@ -1,0 +1,322 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-12</div>
+<div class="tit"><h1 class="entry-title">HDU 1535 Invitation Cards-最短路径-[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph/shortest-path" rel="category tag" title="查看最短路径中的全部文章">最短路径</a></span><span class="i4">围观710次</span><span class="i3"><a class="ds-thread-count" data-thread-key="2092" href="http://www.acmerblog.com/hdu-1535-invitation-cards-2092.html#comments" title="《HDU 1535 Invitation Cards-最短路径-[解题报告] C++》上的评论">18 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Invitation Cards</h1>
+</div>
+<div>
+<p class="mytitle">问题描述 :</p>
+</div>
+<div class="mypanel">In the age of television, not many people attend theater performances. Antique Comedians of Malidinesia are aware of this fact. They want to propagate theater and, most of all, Antique Comedies. They have printed invitation cards with all the necessary information and with the programme. A lot of students were hired to distribute these invitations among the people. Each student volunteer has assigned exactly one bus stop and he or she stays there the whole day and gives invitation to people travelling by bus. A special course was taken where students learned how to influence people and what is the difference between influencing and robbery.<br/>
+The transport system is very special: all lines are unidirectional and connect exactly two stops. Buses leave the originating stop with passangers each half an hour. After reaching the destination stop they return empty to the originating stop, where they wait until the next full half an hour, e.g. X:00 or X:30, where ‘X’ denotes the hour. The fee for transport between two stops is given by special tables and is payable on the spot. The lines are planned in such a way, that each round trip (i.e. a journey starting and finishing at the same stop) passes through a Central Checkpoint Stop (CCS) where each passenger has to pass a thorough check including body scan.All the ACM student members leave the CCS each morning. Each volunteer is to move to one predetermined stop to invite passengers. There are as many volunteers as stops. At the end of the day, all students travel back to CCS. You are to write a computer program that helps ACM to minimize the amount of money to pay every day for the transport of their employees.
+</div>
+<div>
+<p class="mytitle">输入:</p>
+</div>
+<div class="mypanel">The input consists of N cases. The first line of the input contains only positive integer N. Then follow the cases. Each case begins with a line containing exactly two integers P and Q, 1 &lt;= P,Q &lt;= 1000000. P is the number of stops including CCS and Q the number of bus lines. Then there are Q lines, each describing one bus line. Each of the lines contains exactly three numbers – the originating stop, the destination stop and the price. The CCS is designated by number 1. Prices are positive integers the sum of which is smaller than 1000000000. You can also assume it is always possible to get from any stop to any other stop.</div>
+<div>
+<p class="mytitle">输出:</p>
+</div>
+<div class="mypanel">For each case, print one line containing the minimum amount of money to be paid each day by ACM for the travel costs of its volunteers.</div>
+<div>
+<p class="mytitle">样例输入:</p>
+</div>
+<pre class="mypanel iopanel">2
+2 2
+1 2 13
+2 1 33
+4 6
+1 2 10
+2 1 60
+1 3 20
+3 4 10
+2 4 5
+4 1 50</pre>
+<div>
+<p class="mytitle">样例输出:</p>
+</div>
+<pre class="mypanel iopanel">46
+210</pre>
+<p><!-- problem end --></p>
+<p> </p>
+<p>大意：给你一个源点，让你从这里派发n个学生去其余的n-1个站点去邀请人们去CSS，然后再返回CSS，使得总的cost最小。</p>
+<p> </p>
+<p>思路：</p>
+<p>（1）过去的时候：求一次最短路，将所有的d[i]相加。</p>
+<p>（2）回来的时候：我开始想把SPFA所有的点，然后相加，估计会超时。由于是有向边，可以用到一个巧妙的转移的方法，<span style="color: red;">我们将有向边反向</span>，由于题目保证所有的点均可到达，所以SPFA源点，然后相加可得结果。</p>
+<p>CODE：</p>
+<p> </p>
+<pre class="brush:cpp">#include &lt;iostream&gt;
+#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+#include &lt;queue&gt;
+using namespace std;
+
+const int SIZE = 1000001;
+const int INF = 0x3f3f3f3f;
+int u[2*SIZE], v[2*SIZE], w[2*SIZE], next[2*SIZE];
+int s_u[2*SIZE], s_v[2*SIZE], s_w[2*SIZE];
+int first[SIZE], d[SIZE];
+int n, m, cnt;
+
+void init()
+{
+    memset(u, 0, sizeof(u));
+    memset(v, 0, sizeof(v));
+    memset(w, INF, sizeof(w));
+    memset(d, 0, sizeof(d));
+    memset(next, 0, sizeof(next));
+    memset(first, -1, sizeof(first));
+    cnt = 0;
+}
+
+void spfa(int src)
+{
+    queue&lt;int&gt; q;
+    bool inq[SIZE] = {0};
+    for(int i = 1; i &lt;= n; i++) d[i] = (i == src)? 0:INF;
+    q.push(src);
+    while(!q.empty())
+    {
+        int x = q.front(); q.pop();
+        inq[x] = 0;
+        for(int e = first[x]; e!=-1; e = next[e]) if(d[v[e]] &gt; d[x]+w[e])
+        {
+            d[v[e]] = d[x] + w[e];
+            if(!inq[v[e]])
+            {
+                inq[v[e]] = 1;
+                q.push(v[e]);
+            }
+        }
+    }
+}
+
+void read_graph(int u1, int v1, int w1)
+{
+    u[cnt] = u1; v[cnt] = v1; w[cnt] = w1;
+    next[cnt] = first[u[cnt]];
+    first[u[cnt]] = cnt;
+    cnt++;
+}
+
+int main()
+{
+    int T;
+    scanf("%d", &amp;T);
+    while(T--)
+    {
+        int ans = 0;
+        init();
+        scanf("%d%d", &amp;n, &amp;m);
+        for(int i = 1; i &lt;= m; i++)    scanf("%d%d%d", &amp;s_u[i], &amp;s_v[i], &amp;s_w[i]);
+        for(int i = 1; i &lt;= m; i++) read_graph(s_u[i], s_v[i], s_w[i]);
+        spfa(1);
+        for(int i = 1; i &lt;= n; i++) ans += d[i];
+        init();
+        for(int i = 1; i &lt;= m; i++) read_graph(s_v[i], s_u[i], s_w[i]);
+        spfa(1);
+        for(int i = 1; i &lt;= n; i++) ans += d[i];
+        printf("%d\n", ans);
+    }
+    return 0;
+}</pre>
+<p>解题报告转自：http://www.cnblogs.com/g0feng/archive/2012/09/14/2685520.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-92005">
+<article class="comment" id="comment-92005">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513481" rel="external nofollow">新用户938049</a></span> on <a href="http://www.acmerblog.com/hdu-1535-invitation-cards-2092.html#comment-92005" rel="nofollow"><time datetime="2017-04-13T14:35:38+00:00" pubdate="">2017年4月13日 at 下午2:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>抄和借鉴是有明显区别的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-92004">
+<article class="comment" id="comment-92004">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513481" rel="external nofollow">新用户938049</a></span> on <a href="http://www.acmerblog.com/hdu-1535-invitation-cards-2092.html#comment-92004" rel="nofollow"><time datetime="2017-04-13T14:35:38+00:00" pubdate="">2017年4月13日 at 下午2:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>抄和借鉴是有明显区别的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-92003">
+<article class="comment" id="comment-92003">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513481" rel="external nofollow">新用户938049</a></span> on <a href="http://www.acmerblog.com/hdu-1535-invitation-cards-2092.html#comment-92003" rel="nofollow"><time datetime="2017-04-13T14:35:38+00:00" pubdate="">2017年4月13日 at 下午2:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>抄和借鉴是有明显区别的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-92002">
+<article class="comment" id="comment-92002">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513481" rel="external nofollow">新用户938049</a></span> on <a href="http://www.acmerblog.com/hdu-1535-invitation-cards-2092.html#comment-92002" rel="nofollow"><time datetime="2017-04-13T14:35:38+00:00" pubdate="">2017年4月13日 at 下午2:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>抄和借鉴是有明显区别的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-92001">
+<article class="comment" id="comment-92001">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513481" rel="external nofollow">新用户938049</a></span> on <a href="http://www.acmerblog.com/hdu-1535-invitation-cards-2092.html#comment-92001" rel="nofollow"><time datetime="2017-04-13T14:35:38+00:00" pubdate="">2017年4月13日 at 下午2:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>抄和借鉴是有明显区别的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-14056">
+<article class="comment" id="comment-14056">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Ding Qiangyuan</a></span> on <a href="http://www.acmerblog.com/hdu-1535-invitation-cards-2092.html#comment-14056" rel="nofollow"><time datetime="2015-05-12T02:32:23+00:00" pubdate="">2015年5月12日 at 上午2:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>顺利测试通过了，多谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-14058">
+<article class="comment" id="comment-14058">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">woweizhineng</a></span> on <a href="http://www.acmerblog.com/hdu-1535-invitation-cards-2092.html#comment-14058" rel="nofollow"><time datetime="2015-04-03T13:43:20+00:00" pubdate="">2015年4月3日 at 下午1:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>赞！！~~大赞！！~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-14057">
+<article class="comment" id="comment-14057">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">usx13123</a></span> on <a href="http://www.acmerblog.com/hdu-1535-invitation-cards-2092.html#comment-14057" rel="nofollow"><time datetime="2015-03-18T18:56:41+00:00" pubdate="">2015年3月18日 at 下午6:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一句可以忽略不计了吧。从第二句开始分析，说明这个花色下的所有牌都会在其它里面出现，那么还剩下♠️和♦️。第三句，可以排除2和7，因为在两种花色里有。现在是第四句，因为♠️还剩下多个，只有是♦️B才能知道答案。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-41358">
+<article class="comment" id="comment-41358">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mechine</a></span> on <a href="http://www.acmerblog.com/hdu-1535-invitation-cards-2092.html#comment-41358" rel="nofollow"><time datetime="2015-01-31T17:18:58+00:00" pubdate="">2015年1月31日 at 下午5:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学习了！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-61675">
+<article class="comment" id="comment-61675">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">didiaozuoren</a></span> on <a href="http://www.acmerblog.com/hdu-1535-invitation-cards-2092.html#comment-61675" rel="nofollow"><time datetime="2014-12-18T22:35:14+00:00" pubdate="">2014年12月18日 at 下午10:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已修正</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-54961">
+<article class="comment" id="comment-54961">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">HenrryCheng</a></span> on <a href="http://www.acmerblog.com/hdu-1535-invitation-cards-2092.html#comment-54961" rel="nofollow"><time datetime="2014-12-17T09:02:15+00:00" pubdate="">2014年12月17日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一句可以忽略不计了吧。从第二句开始分析，说明这个花色下的所有牌都会在其它里面出现，那么还剩下♠️和♦️。第三句，可以排除2和7，因为在两种花色里有。现在是第四句，因为♠️还剩下多个，只有是♦️B才能知道答案。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-54958">
+<article class="comment" id="comment-54958">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">123zxc</a></span> on <a href="http://www.acmerblog.com/hdu-1535-invitation-cards-2092.html#comment-54958" rel="nofollow"><time datetime="2014-12-03T06:24:56+00:00" pubdate="">2014年12月3日 at 上午6:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>5.1处，反了；“上一个操作符的优先级比操作符ch的优先级大，或栈是空的就入栈。”如代码所述，应为“上一个操作符的优先级比操作符ch的优先级小，或栈是空的就入栈。”</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-54960">
+<article class="comment" id="comment-54960">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">linyanjin</a></span> on <a href="http://www.acmerblog.com/hdu-1535-invitation-cards-2092.html#comment-54960" rel="nofollow"><time datetime="2014-10-28T06:23:48+00:00" pubdate="">2014年10月28日 at 上午6:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>太变态了。我用hash居然超时了。这样break掉居然都行啊。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-14054">
+<article class="comment" id="comment-14054">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zwj0571</a></span> on <a href="http://www.acmerblog.com/hdu-1535-invitation-cards-2092.html#comment-14054" rel="nofollow"><time datetime="2014-10-22T12:40:12+00:00" pubdate="">2014年10月22日 at 下午12:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很全很强大！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-54959">
+<article class="comment" id="comment-54959">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">skyand</a></span> on <a href="http://www.acmerblog.com/hdu-1535-invitation-cards-2092.html#comment-54959" rel="nofollow"><time datetime="2014-10-21T07:26:19+00:00" pubdate="">2014年10月21日 at 上午7:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>m^n % k 的算法写错了，没有人发现吗？？？正确的返回值应该是return b*m % k;</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-14053">
+<article class="comment" id="comment-14053">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jiakcstudio</a></span> on <a href="http://www.acmerblog.com/hdu-1535-invitation-cards-2092.html#comment-14053" rel="nofollow"><time datetime="2014-10-06T14:36:09+00:00" pubdate="">2014年10月6日 at 下午2:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法挺不错。NewHead代表新的头节点，通过递归找到最后一个节点之后，就把这个节点赋给NewHead，然后一直返回返回，中途这个值是没有变化的，一边返回一边把相应的指针方向颠倒，最后结束时返回新的头节点到主函数。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-41359">
+<article class="comment" id="comment-41359">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">645198</a></span> on <a href="http://www.acmerblog.com/hdu-1535-invitation-cards-2092.html#comment-41359" rel="nofollow"><time datetime="2014-06-11T04:05:31+00:00" pubdate="">2014年6月11日 at 上午4:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#!/usr/bin/env python def cou(n): arr =  [1]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-14055">
+<article class="comment" id="comment-14055">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">youpushipop</a></span> on <a href="http://www.acmerblog.com/hdu-1535-invitation-cards-2092.html#comment-14055" rel="nofollow"><time datetime="2014-02-12T16:54:17+00:00" pubdate="">2014年2月12日 at 下午4:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>赞一个！权限已更新:）</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,384 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-09</div>
+<div class="tit"><h1 class="entry-title">HDU 3239-Jiajia’s Robot[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观551次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5108" href="http://www.acmerblog.com/hdu-3239-jiajias-robot-5108.html#comments" title="《HDU 3239-Jiajia’s Robot[解题报告]HOJ》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Jiajia’s Robot</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Jiajia wants to do some experiments on his two-eyed robot. Each eye of the robot shoots a very thin laser beam from it, which goes infinitely (i.e. a mathematical "ray"). Restricted by the internal structure, the two laser beams from the eyes must always form a right angle (i.e. two rays must be perpendicular to each other).
+<p>To help the robot localize itself, Jiajia placed two linear-shaped special materials called MA and MB. If one of the rays intersects with MA, while the other ray intersects with MB, the robot is able to gather enough spatial information for the localization.</p>
+<p></p><center><img alt="In A Crazy City" src="/img/1394722035942.jpg"/></center><br/><center>Fig. The collection of points from which the robot can localize itself.</center><br/>The weird shape in the picture above is the collection of points from which the robot can localize itself. MA and MB are drawn as two line segments.
+<p>Though the task seems a little bit difficult, can you tell me the total area of these points? </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+There will be at most 50 test cases. Each case contains a single line of 8 positive integers <i>x1, y1, x2, y2, x3, y3, x4, y4</i> not greater than 500, where (<i>x1,y1</i>) and (<i>x2,y2</i>) are two endpoints of MA, (<i>x3,y3</i>) and (<i>x4,y4</i>) are two endpoints of MB. Note that MA and MB can have at most one common point. Neither MA nor MB will be degenerated to a point. The last test case is followed by 8 zeros, which should not be processed. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+There will be at most 50 test cases. Each case contains a single line of 8 positive integers <i>x1, y1, x2, y2, x3, y3, x4, y4</i> not greater than 500, where (<i>x1,y1</i>) and (<i>x2,y2</i>) are two endpoints of MA, (<i>x3,y3</i>) and (<i>x4,y4</i>) are two endpoints of MB. Note that MA and MB can have at most one common point. Neither MA nor MB will be degenerated to a point. The last test case is followed by 8 zeros, which should not be processed.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+264 280 147 360 162 335 320 334
+203 165 288 227 149 295 153 344
+0 0 0 0 0 0 0 0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case 1: 26634.633
+
+Case 2: 27436.383</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+#include &lt;cstdlib&gt;
+#include &lt;iostream&gt;
+#include &lt;algorithm&gt;
+#include &lt;cmath&gt;
+#include &lt;map&gt;
+using namespace std;
+#define eps 1e-6
+#define maxn 2010
+#define pi acos(-1.0)
+#define ull unsigned long long
+
+inline double Sqr(double x){ return x*x; }
+struct Point {
+    double x,y,r;
+    Point(double _x,double _y, double _r):x(_x),y(_y),r(_r) {}
+    Point() {}
+};
+double dis( Point&amp; p1, Point&amp; p2 )
+{
+    double dx = p1.x - p2.x;
+    double dy = p1.y - p2.y;
+    return sqrt(dx*dx + dy*dy);
+}
+int n;
+Point tmp[maxn],p[maxn];
+
+struct node
+{
+    double k;
+    int st;
+} ang[maxn];
+
+inline int dblcmp( double x )
+{
+    if( fabs(x) &lt; eps )    return 0;
+    return x &gt; 0 ? 1 : -1;
+}
+
+void get( Point c, double a, Point&amp; p )
+{
+    p.x = c.x + c.r*cos(a);
+    p.y = c.y + c.r*sin(a);
+}
+
+void adjust( double&amp; x )
+{
+    while( dblcmp(x) &lt; 0 )    x += 2*pi;
+    while( dblcmp(x-2*pi) &gt;= 0 )    x -= 2*pi;
+}
+
+bool inter_cir( Point&amp; o1, Point&amp; o2, double&amp; p1, double&amp; p2 )
+{
+	double d = dis(o1, o2);
+	if( dblcmp(d-fabs(o1.r-o2.r)) &lt;= 0 || dblcmp(d-o1.r-o2.r) &gt;= 0 )
+		return 0;
+
+	double cosa = (o1.r*o1.r + d*d - o2.r*o2.r) / (2*o1.r*d);
+	double ang = acos(cosa);
+
+	p1 = p2 = atan2( o2.y-o1.y, o2.x-o1.x );
+	p1 -= ang;	adjust(p1);
+	p2 += ang;	adjust(p2);
+
+	return 1;
+}
+
+int cmp( node a, node b )
+{
+    if( dblcmp(a.k - b.k) )
+        return a.k &lt; b.k;
+    return a.st &gt; b.st;
+}
+
+double cross( Point&amp; a, Point&amp; b )
+{
+    return a.x*b.y - a.y*b.x;
+}
+double ans[20];
+double solve()
+{
+    int i, j, e, cnt, t;
+    Point p1, p2;
+    double pre, a, b;
+
+    for( i = 0; i &lt; n; ++i )
+    {
+        t = 0;
+        for( j = 0; j &lt; n; ++j )    if( j != i )
+        {
+            if( dblcmp(p[j].r - p[i].r - dis(p[i], p[j])) &gt;= 0 )
+                t++;
+        }
+
+        e = 0;
+        for( j = 0; j &lt; n; ++j )    if( j != i )
+        {
+            if( inter_cir(p[i], p[j], a, b) )
+            {
+                ang[e].k = a;    ang[e++].st = 1;
+                ang[e].k = b;    ang[e++].st = -1;
+
+                if( dblcmp(a-b) &gt; 0 )
+                {
+                    ang[e].k = 0;    ang[e++].st = 1;
+                    ang[e].k = 2*pi;    ang[e++].st = -1;
+                }
+            }
+        }
+
+        if( !e )
+        {
+            ans[t] += pi*p[i].r*p[i].r;
+            continue;
+        }
+
+        sort(ang, ang+e, cmp);
+        cnt = 0;
+        pre = ang[e-1].k - 2*pi;
+        get(p[i], ang[e-1].k, p1);
+        for( j = 0; j &lt; e; ++j )
+        {
+            ans[t+cnt] += 0.5*p[i].r*p[i].r*(ang[j].k-pre - sin(ang[j].k-pre));
+            get(p[i], ang[j].k, p2);
+            ans[t+cnt] += cross(p1, p2)*0.5;
+            p1 = p2;
+
+            cnt += ang[j].st;
+            pre = ang[j].k;
+        }
+    }
+    return ans[0]-ans[n-1];
+}
+
+Point get_cir(Point a,Point b)
+{
+    Point t;
+    t.x=(a.x+b.x)*0.5;
+    t.y=(a.y+b.y)*0.5;
+    t.r=dis(a,b)*0.5;
+    return t;
+}
+
+int main()
+{
+    Point a,b,c,d; int i,j,v,u,ok,k,tt=0;
+    double x,y,dd;
+    while(scanf("%lf %lf %lf %lf %lf %lf %lf %lf",&amp;a.x,&amp;a.y,&amp;b.x,&amp;b.y,&amp;c.x,&amp;c.y,&amp;d.x,&amp;d.y)!=EOF)
+    {
+        if(a.x==0&amp;&amp;a.y==0&amp;&amp;b.x==0&amp;b.y==0&amp;&amp;c.x==0&amp;&amp;c.y==0&amp;&amp;d.x==0&amp;&amp;d.y==0) break;
+        tmp[0]=get_cir(a,d);
+        tmp[1]=get_cir(a,c);
+        tmp[2]=get_cir(b,c);
+        tmp[3]=get_cir(b,d);
+        n=4;k=0;
+        for( i = 0; i &lt; n; ++i )
+		{
+			ok = 1;
+			if( !dblcmp(tmp[i].r) )
+				ok = 0;
+			for( j = 0; ok &amp;&amp; j &lt; i; ++j )
+			{
+				if( !dblcmp(tmp[j].x-tmp[i].x) &amp;&amp;
+					!dblcmp(tmp[j].y-tmp[i].y) &amp;&amp;
+					!dblcmp(tmp[j].r-tmp[i].r) )
+					ok = 0;
+			}
+			if( ok )
+				p[k++] = tmp[i];
+		}
+		n = k;
+        memset(ans,0,sizeof(ans));
+        printf("Case %d: %.3lf\n\n",++tt,solve()+eps);
+    }
+    return 0;
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-78316">
+<article class="comment" id="comment-78316">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513753" rel="external nofollow">新用户326227</a></span> on <a href="http://www.acmerblog.com/hdu-3239-jiajias-robot-5108.html#comment-78316" rel="nofollow"><time datetime="2017-04-12T10:53:29+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>哦！你这么说就大亮了嘛！~~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48140">
+<article class="comment" id="comment-48140">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rewrite</a></span> on <a href="http://www.acmerblog.com/hdu-3239-jiajias-robot-5108.html#comment-48140" rel="nofollow"><time datetime="2015-05-25T21:39:25+00:00" pubdate="">2015年5月25日 at 下午9:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错的代码！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28171">
+<article class="comment" id="comment-28171">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fiftyonejiao</a></span> on <a href="http://www.acmerblog.com/hdu-3239-jiajias-robot-5108.html#comment-28171" rel="nofollow"><time datetime="2015-05-23T00:36:47+00:00" pubdate="">2015年5月23日 at 上午12:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>漏了一个"不"，已修正:)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28170">
+<article class="comment" id="comment-28170">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">cyyuen</a></span> on <a href="http://www.acmerblog.com/hdu-3239-jiajias-robot-5108.html#comment-28170" rel="nofollow"><time datetime="2015-05-22T12:55:45+00:00" pubdate="">2015年5月22日 at 下午12:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#!/usr/bin/env python def cou(n): arr =  [1]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63275">
+<article class="comment" id="comment-63275">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ktcer</a></span> on <a href="http://www.acmerblog.com/hdu-3239-jiajias-robot-5108.html#comment-63275" rel="nofollow"><time datetime="2015-05-19T02:37:46+00:00" pubdate="">2015年5月19日 at 上午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对于第一题，我的直觉告诉我换不换都一样，求指教</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28168">
+<article class="comment" id="comment-28168">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NiKaWaLi2015</a></span> on <a href="http://www.acmerblog.com/hdu-3239-jiajias-robot-5108.html#comment-28168" rel="nofollow"><time datetime="2015-05-10T02:20:35+00:00" pubdate="">2015年5月10日 at 上午2:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>等待后面的实现，多谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28172">
+<article class="comment" id="comment-28172">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">OrangeGuy</a></span> on <a href="http://www.acmerblog.com/hdu-3239-jiajias-robot-5108.html#comment-28172" rel="nofollow"><time datetime="2015-03-03T00:06:19+00:00" pubdate="">2015年3月3日 at 上午12:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>懂了，谢谢啦</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28173">
+<article class="comment" id="comment-28173">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mysteriousAngel_love</a></span> on <a href="http://www.acmerblog.com/hdu-3239-jiajias-robot-5108.html#comment-28173" rel="nofollow"><time datetime="2014-12-06T08:57:48+00:00" pubdate="">2014年12月6日 at 上午8:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，这里说的最长回文子序列，非子串</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28169">
+<article class="comment" id="comment-28169">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zhiqiang</a></span> on <a href="http://www.acmerblog.com/hdu-3239-jiajias-robot-5108.html#comment-28169" rel="nofollow"><time datetime="2014-09-19T16:27:27+00:00" pubdate="">2014年9月19日 at 下午4:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正解，已改正。应该都是protected</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28165">
+<article class="comment" id="comment-28165">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tzf888888</a></span> on <a href="http://www.acmerblog.com/hdu-3239-jiajias-robot-5108.html#comment-28165" rel="nofollow"><time datetime="2014-09-15T22:20:29+00:00" pubdate="">2014年9月15日 at 下午10:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已修改。一些字符在编辑的时候转义了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28167">
+<article class="comment" id="comment-28167">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wynk0804</a></span> on <a href="http://www.acmerblog.com/hdu-3239-jiajias-robot-5108.html#comment-28167" rel="nofollow"><time datetime="2014-09-07T05:28:24+00:00" pubdate="">2014年9月7日 at 上午5:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是研发的在线笔试题吗?发现很多C啊，阿里不是JAVA多么？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58170">
+<article class="comment" id="comment-58170">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1520006273</a></span> on <a href="http://www.acmerblog.com/hdu-3239-jiajias-robot-5108.html#comment-58170" rel="nofollow"><time datetime="2014-07-01T17:20:23+00:00" pubdate="">2014年7月1日 at 下午5:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真心不错，力顶作者</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63276">
+<article class="comment" id="comment-63276">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Ding Qiangyuan</a></span> on <a href="http://www.acmerblog.com/hdu-3239-jiajias-robot-5108.html#comment-63276" rel="nofollow"><time datetime="2014-06-13T00:45:40+00:00" pubdate="">2014年6月13日 at 上午12:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>分三种情况讨论。Not Possible就是impossible</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63277">
+<article class="comment" id="comment-63277">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">0xc0de</a></span> on <a href="http://www.acmerblog.com/hdu-3239-jiajias-robot-5108.html#comment-63277" rel="nofollow"><time datetime="2014-04-22T09:28:54+00:00" pubdate="">2014年4月22日 at 上午9:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这配图…..</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28166">
+<article class="comment" id="comment-28166">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fanxianxian</a></span> on <a href="http://www.acmerblog.com/hdu-3239-jiajias-robot-5108.html#comment-28166" rel="nofollow"><time datetime="2014-04-14T20:23:18+00:00" pubdate="">2014年4月14日 at 下午8:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题别太纠结了，不同的编译器结果不一</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

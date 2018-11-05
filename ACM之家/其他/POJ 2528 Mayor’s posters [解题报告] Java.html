@@ -1,0 +1,396 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>11-11</div>
+<div class="tit"><h1 class="entry-title">POJ 2528 Mayor’s posters [解题报告] Java</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/zhuanti/java-poj" rel="category tag" title="查看Java解POJ中的全部文章">Java解POJ</a>, <a href="http://www.acmerblog.com/category/problemset/poj2" rel="category tag" title="查看POJ-北大中的全部文章">POJ-北大</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a></span><span class="i4">围观542次</span><span class="i3"><a class="ds-thread-count" data-thread-key="776" href="http://www.acmerblog.com/POJ-2528-Mayor%27s-posters-blog-776.html#comments" title="《POJ 2528 Mayor’s posters [解题报告] Java》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Mayor’s posters</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+The citizens of Bytetown, AB, could not stand that the candidates in the mayoral election campaign have been placing their electoral posters at all places at their whim. The city council has finally decided to build an electoral wall for placing the posters and introduce the following rules:<br/>
+<ul>
+<li>Every candidate can place exactly one poster on the wall.<br/>
+</li>
+<li>All posters are of the same height equal to the height of the wall; the width of a poster can be any integer number of bytes (byte is the unit of length in Bytetown).<br/>
+</li>
+<li>The wall is divided into segments and the width of each segment is one byte.<br/>
+</li>
+<li>Each poster must completely cover a contiguous number of wall segments. </li>
+</ul>
+<p>They have built a wall 10000000 bytes long (such that there is enough place for all candidates). When the electoral campaign was restarted, the candidates were placing their posters on the wall and their posters differed widely in width. Moreover, the candidates started placing their posters on wall segments already occupied by other posters. Everyone in Bytetown was curious whose posters will be visible (entirely or in part) on the last day before elections.<br/>
+<br/>Your task is to find the number of visible posters when all the posters are placed given the information about posters’ size, their place and order of placement on the electoral wall.
+ </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line of input contains a number c giving the number of cases that follow. The first line of data for a single case contains number 1 &lt;= n &lt;= 10000. The subsequent n lines describe the posters in the order in which they were placed. The i-th line among the n lines contains two integer numbers l<sub>i</sub> and ri which are the number of the wall segment occupied by the left end and the right end of the i-th poster, respectively. We know that for each 1 &lt;= i &lt;= n, 1 &lt;= l<sub>i</sub> &lt;= ri &lt;= 10000000. After the i-th poster is placed, it entirely covers all wall segments numbered l<sub>i</sub>, l<sub>i</sub>+1 ,… , ri.  </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+For each input data set print the number of visible posters after all the posters are placed. 
+<p>The picture below illustrates the case of the sample input.<br/>
+<br/><img src="images/2528_1.jpg"/></p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+5
+1 4
+2 6
+8 10
+3 4
+7 10
+</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+4
+</pre>
+<div class="mybigtile mysubmit"> <a href="http://poj.org/submit?problem_id=2528">提交代码</a>   <a href="http://poj.org/bbs?problem_id=2528">问题讨论</a>   <a href="http://poj.org/problemstatus?problem_id=2528">数据统计</a> </div>
+<div>
+<p class="mytitle"> 解题代码:</p>
+</div>
+<pre class="brush:java ">//* @author: <strong>Yeming Hu</strong>"cslittleye@gmail.com"
+import java.util.*;
+import java.io.*;
+
+public class Main 
+{
+    public static int N = 10000;
+    public static Node head;
+    
+    public static void main(String[] args) 
+    {
+        Scanner sc = new Scanner(new BufferedInputStream(System.in));
+        Set&lt; Integer&gt; endpoints = new TreeSet&lt; Integer&gt;();
+        Segment[] segments = new Segment[N];
+        int t = sc.nextInt();
+        while(t-- &gt; 0)
+        {
+            int n = sc.nextInt();
+            LinkedList&lt; Node&gt; nodes = new LinkedList&lt; Node&gt;();
+            for(int i = 0; i &lt; n; i++)
+            {
+                int s = sc.nextInt();
+                int e = sc.nextInt();
+                segments[i] = new Segment(s,e);
+                endpoints.add(s);
+                endpoints.add(e);
+            }
+            for(Integer endpoint : endpoints)
+            {
+                nodes.addLast(new Node(endpoint,endpoint,endpoint,endpoint));
+            }
+            head = buildSegmentTree(nodes);
+            int result = 0;
+            for(int i = n-1; i &gt;= 0; i--)
+            {
+                Segment seg = segments[i];
+                int left = seg.start;
+                int right = seg.end;
+                if(updateSegmentTree(left,right,head))
+                {
+                    result++;
+                }
+            }
+            System.out.println(result);
+        }
+    }
+    
+    public static boolean updateSegmentTree(int left, int right, Node current)
+    {
+        boolean result;
+        if(current.isCovered)
+        {
+            result = false;
+        }else
+        {
+            if(left == current.left &amp;&amp; right == current.right)
+            {
+                current.isCovered = true;
+                result = true;
+            }else
+            {
+                int leftEnd = current.leftEnd;
+                int rightStart = current.rightStart;
+                if(right &lt;= leftEnd)
+                {
+                    result = updateSegmentTree(left,right,current.leftChild);
+                }else if(left &gt;= rightStart)
+                {
+                    result = updateSegmentTree(left,right,current.rightChild);
+                }else
+                {
+                    boolean r1 = updateSegmentTree(left,leftEnd,current.leftChild);
+                    boolean r2 = updateSegmentTree(rightStart,right,current.rightChild);
+                    result = (r1 || r2);
+                }
+                current.isCovered = (current.leftChild.isCovered &amp;&amp; current.rightChild.isCovered);
+            }
+        }
+        return result;
+    }
+    
+    public static Node buildSegmentTree(LinkedList&lt; Node&gt; current)
+    {
+        LinkedList&lt; Node&gt; next = new LinkedList&lt; Node&gt;();
+        while(current.size() &gt;= 2)
+        {
+            Node leftChild = current.removeFirst();
+            Node rightChild = current.removeFirst();
+            Node parent = new Node(leftChild.left,rightChild.right,leftChild.right,rightChild.left);
+            parent.leftChild = leftChild;
+            parent.rightChild = rightChild;
+            next.add(parent);
+        }
+        if(current.size() &gt; 0)
+        {
+            next.add(current.removeFirst());
+        }
+        if(next.size() &gt;= 2)
+        {
+            return buildSegmentTree(next);
+        }else // it's the root left
+        {
+            return next.removeFirst();
+        }
+    }
+}
+
+class Node
+{
+    int left;
+    int right;
+    int leftEnd;
+    int rightStart;
+    int mid;
+    Node parent;
+    Node leftChild;
+    Node rightChild;
+    boolean isCovered;
+    
+    Node(int left, int right, int leftEnd, int rightStart)
+    {
+        this.left = left;
+        this.right = right;
+        this.leftEnd = leftEnd;
+        this.rightStart = rightStart;
+        this.parent = null;
+        this.leftChild = null;
+        this.rightChild = null;
+        this.isCovered = false;
+    }
+    
+}
+
+class Segment
+{
+    int start;
+    int end;
+    
+    Segment(int s, int e)
+    {
+        this.start = s;
+        this.end = e;
+    }
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-53360">
+<article class="comment" id="comment-53360">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zx123456</a></span> on <a href="http://www.acmerblog.com/POJ-2528-Mayor%27s-posters-blog-776.html#comment-53360" rel="nofollow"><time datetime="2015-06-22T18:31:05+00:00" pubdate="">2015年6月22日 at 下午6:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>原来的主机不行，目前更换到了国内主机</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-53362">
+<article class="comment" id="comment-53362">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tkdzyl2013</a></span> on <a href="http://www.acmerblog.com/POJ-2528-Mayor%27s-posters-blog-776.html#comment-53362" rel="nofollow"><time datetime="2015-06-13T20:27:17+00:00" pubdate="">2015年6月13日 at 下午8:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这道题这里的解法最坏情况似乎应该是指数的。回溯的时候<br/>
+O(n) = O(n-1) + O(n-2) + ….<br/>
+O(n-1) = O(n-2) + O(n-3)+ …<br/>
+O(n) – O(n-1) = O(n-1)<br/>
+O(n) = 2O(n-1)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-60836">
+<article class="comment" id="comment-60836">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Aifan</a></span> on <a href="http://www.acmerblog.com/POJ-2528-Mayor%27s-posters-blog-776.html#comment-60836" rel="nofollow"><time datetime="2015-05-29T07:57:28+00:00" pubdate="">2015年5月29日 at 上午7:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不同的编译器，printf(),执行的顺序不同，所以结果也就不同，建议不要那么写</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-7772">
+<article class="comment" id="comment-7772">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Bob</a></span> on <a href="http://www.acmerblog.com/POJ-2528-Mayor%27s-posters-blog-776.html#comment-7772" rel="nofollow"><time datetime="2015-04-11T09:36:01+00:00" pubdate="">2015年4月11日 at 上午9:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>秒！~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-53359">
+<article class="comment" id="comment-53359">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fastislow</a></span> on <a href="http://www.acmerblog.com/POJ-2528-Mayor%27s-posters-blog-776.html#comment-53359" rel="nofollow"><time datetime="2015-03-05T14:16:44+00:00" pubdate="">2015年3月5日 at 下午2:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为是要把从字符串s的start位到当前位在hash中重置，修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-7778">
+<article class="comment" id="comment-7778">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">spiderMan</a></span> on <a href="http://www.acmerblog.com/POJ-2528-Mayor%27s-posters-blog-776.html#comment-7778" rel="nofollow"><time datetime="2015-02-11T10:03:37+00:00" pubdate="">2015年2月11日 at 上午10:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>博主的C++功底真是好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-7779">
+<article class="comment" id="comment-7779">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zhiqiang</a></span> on <a href="http://www.acmerblog.com/POJ-2528-Mayor%27s-posters-blog-776.html#comment-7779" rel="nofollow"><time datetime="2014-12-26T13:06:20+00:00" pubdate="">2014年12月26日 at 下午1:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题应该是有一般性的解决方法</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-7776">
+<article class="comment" id="comment-7776">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tangzhihua</a></span> on <a href="http://www.acmerblog.com/POJ-2528-Mayor%27s-posters-blog-776.html#comment-7776" rel="nofollow"><time datetime="2014-09-30T11:48:45+00:00" pubdate="">2014年9月30日 at 上午11:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#include &lt;stdio.h&gt;<br/>
+int main(void)<br/>
+{<br/>
+int arr[] = {10,20,30,40,50,60};<br/>
+int *p=arr;<br/>
+printf("%d,%d,",*p++,*++p);<br/>
+printf("%d,%d,%d",*p,*p++,*++p);<br/>
+return 0;<br/>
+}</p>
+<p>为什么是 20,20,50,40,50. 我觉得的应该是 20,20,40,40,50 . 谁能解释下？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-53363">
+<article class="comment" id="comment-53363">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">nsoi_onion</a></span> on <a href="http://www.acmerblog.com/POJ-2528-Mayor%27s-posters-blog-776.html#comment-53363" rel="nofollow"><time datetime="2014-09-15T08:55:40+00:00" pubdate="">2014年9月15日 at 上午8:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>神奇的网站</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-7775">
+<article class="comment" id="comment-7775">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">final</a></span> on <a href="http://www.acmerblog.com/POJ-2528-Mayor%27s-posters-blog-776.html#comment-7775" rel="nofollow"><time datetime="2014-08-21T23:49:33+00:00" pubdate="">2014年8月21日 at 下午11:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>
+	Hello Web Admin, I noticed that your On-Page SEO is is missing a few factors, for one you do not use all three H tags in your post, also I notice that you are not using bold or italics properly in your SEO optimization. On-Page SEO means more now than ever since the new Google update: Panda. No longer are backlinks and simply pinging or sending out a RSS feed the key to getting Google PageRank or Alexa Rankings, You now NEED On-Page SEO. So what is good On-Page SEO?First your keyword must appear in the title.Then it must appear in the URL.You have to optimize your keyword and make sure that it has a nice keyword density of 3-5% in your article with relevant LSI (Latent Semantic Indexing). Then you should spread all H1,H2,H3 tags in your article.Your Keyword should appear in your first paragraph and in the last sentence of the page. You should have relevant usage of Bold and italics of your keyword.There should be one internal link to a page on your blog and you should have one image with an alt tag that has your keyword….wait there's even more Now what if i told you there was a simple WordPress plugin that does all the On-Page SEO, and automatically for you? That's right AUTOMATICALLY, just watch this 4minute video for more information at.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-7774">
+<article class="comment" id="comment-7774">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gy910210</a></span> on <a href="http://www.acmerblog.com/POJ-2528-Mayor%27s-posters-blog-776.html#comment-7774" rel="nofollow"><time datetime="2014-08-08T10:10:53+00:00" pubdate="">2014年8月8日 at 上午10:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/d8/good_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-7773">
+<article class="comment" id="comment-7773">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">645198</a></span> on <a href="http://www.acmerblog.com/POJ-2528-Mayor%27s-posters-blog-776.html#comment-7773" rel="nofollow"><time datetime="2014-07-23T20:04:08+00:00" pubdate="">2014年7月23日 at 下午8:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>for(int i=1; i&lt;=m; i++){<br/>
+            for(int j=1; j&lt;=n; j++){<br/>
+                    dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> [j-1] + 1;<br/>
+                if(s1.charAt(i-1) == s3.charAt(i+j-1))<br/>
+                    dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = dp[i-1] <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  + 1;<br/>
+                if(s2.charAt(j-1) == s3.charAt(i+j-1))<br/>
+                    dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = Math.max(dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> [j - 1] + 1, dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> );<br/>
+            }<br/>
+        }<br/>
+这里的代码似乎有点问题？ dp(i)(j) = dp(i)(j-1) + 1;这个例子System.out.println(ils.isInterleave("aa","dbbca", "aadbbcb"));返回的应该是false</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-7777">
+<article class="comment" id="comment-7777">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">siaswj</a></span> on <a href="http://www.acmerblog.com/POJ-2528-Mayor%27s-posters-blog-776.html#comment-7777" rel="nofollow"><time datetime="2013-12-04T05:20:10+00:00" pubdate="">2013年12月4日 at 上午5:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一题还是比较考验智商~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-53361">
+<article class="comment" id="comment-53361">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">skyand</a></span> on <a href="http://www.acmerblog.com/POJ-2528-Mayor%27s-posters-blog-776.html#comment-53361" rel="nofollow"><time datetime="2013-12-01T13:17:20+00:00" pubdate="">2013年12月1日 at 下午1:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>int half(int *array,int len,int key)<br/>
+{<br/>
+    int l=0,r=len;<br/>
+    while(l&lt;r)<br/>
+    {<br/>
+        int m=(l+r)&gt;&gt;1;<br/>
+        if(key&gt;array <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/98/weibom_org.gif"/> )l=m+1;<br/>
+        else if(key&lt;array <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/98/weibom_org.gif"/> )r=m;<br/>
+        else return m;<br/>
+    }<br/>
+    return -1;<br/>
+}<br/>
+这种就能避免一些Bug<br/>
+l,m,r<br/>
+左边是l,m;右边就是m+1,r;</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

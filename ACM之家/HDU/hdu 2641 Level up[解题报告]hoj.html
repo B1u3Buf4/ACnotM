@@ -1,0 +1,340 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>02-12</div>
+<div class="tit"><h1 class="entry-title">hdu 2641 Level up[解题报告]hoj</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观314次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4231" href="http://www.acmerblog.com/hdu-2641-level-up-4231.html#comments" title="《hdu 2641 Level up[解题报告]hoj》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Level up</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Zty has met a big problem.His X Gu Niang was kidnaped by a secret organization.The organization only left Zty a letter:<br/>"If you can beat our boss ,we will give her the freedom,or…"<br/>The boss of the organization was so secret that no one knows his name.We only know that he was so powerful,and Zty is not powerful enough now,what he need to do is to train and to get more experience(Exp).Then he found a place wonderful for traning,There are N enemies there with different Exp,and Zty has M power ball,the number of power ball he used will effect the probability he beat the enemy.These probabilities are given as percentages p<sub>ij</sub>, where i (with 1 ≤ i ≤ N) is the number of the enemy and j is the quantity of power balls used on it.One power ball can be used only once.<br/>Zty has to level up to 99,then he will be able to beat the boss.Of cause he is level 1 at the begining.He want to know weather the maximal expected Exp he can get is enough.The expected Exp is calculated as Sum(P(i)*Exp) where P is the probability.<br/>The Exp Zty need to level up one level is K/100 , and K will be given.
+<p>Notice that: If Zty doesn’t used a power ball,the probability he beat the enemy is 0. ^_^ </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line contain a T ,then T cases followed.Each test case has the following format:<br/>One line with one integer K &lt;= 100000: as the description means.<br/>One line with one integer N with 1 ≤ N ≤ 100: the number of enemies.<br/>One line with one integer M with 0 ≤ M ≤ 100: the maximal number of available power ball.<br/>One line with N integers indicating the Exp of the N enemies. <br/>N lines, each line corresponding to a enemy i, containing n integers p<sub>i1</sub>, p<sub>i2</sub>, …, p<sub>im</sub> (the percentages, with 0 ≤ p<sub>i1</sub>, p<sub>i2</sub>, …, p<sub>im</sub> ≤ 100). </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The first line contain a T ,then T cases followed.Each test case has the following format:<br/>One line with one integer K &lt;= 100000: as the description means.<br/>One line with one integer N with 1 ≤ N ≤ 100: the number of enemies.<br/>One line with one integer M with 0 ≤ M ≤ 100: the maximal number of available power ball.<br/>One line with N integers indicating the Exp of the N enemies. <br/>N lines, each line corresponding to a enemy i, containing n integers p<sub>i1</sub>, p<sub>i2</sub>, …, p<sub>im</sub> (the percentages, with 0 ≤ p<sub>i1</sub>, p<sub>i2</sub>, …, p<sub>im</sub> ≤ 100).</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+1000
+2
+4
+8 975
+85 94 93 100
+0 0 100 100
+1000
+1
+4
+979
+0 0 0 100</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Love you Ten thousand years.
+Cry,men,not crime.</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+#include &lt;algorithm&gt;
+#include &lt;vector&gt;
+#include &lt;string&gt;
+
+const int inf = 0x3f3f3f3f;
+const int maxn = 10010;
+int val[maxn];
+
+struct SegNode {
+	int left, right, exp, level, lazy, min_;
+	int mid() {
+		return (left + right) &gt;&gt; 1;
+	}
+};
+
+struct SegmentTree {
+	SegNode tree[maxn*5];
+
+	void PushUp(int idx) {
+		tree[idx].exp = std::max(tree[idx&lt;&lt;1].exp, tree[idx&lt;&lt;1|1].exp);
+		tree[idx].level = std::max(tree[idx&lt;&lt;1].level, tree[idx&lt;&lt;1|1].level);
+		tree[idx].min_ = std::min(tree[idx&lt;&lt;1].min_, tree[idx&lt;&lt;1|1].min_);
+	}
+
+	void PushDown(int idx) {
+		tree[idx&lt;&lt;1].exp += tree[idx].lazy * tree[idx&lt;&lt;1].level;
+		tree[idx&lt;&lt;1].min_ -= tree[idx].lazy;
+		tree[idx&lt;&lt;1].lazy += tree[idx].lazy;
+		tree[idx&lt;&lt;1|1].exp += tree[idx].lazy * tree[idx&lt;&lt;1|1].level;
+		tree[idx&lt;&lt;1|1].min_ -= tree[idx].lazy;
+		tree[idx&lt;&lt;1|1].lazy += tree[idx].lazy;
+		tree[idx].lazy = 0;
+	}
+
+	void build(int left, int right, int idx) {
+		tree[idx].left = left; tree[idx].right = right;
+		tree[idx].exp = 0; tree[idx].level = 1;
+		tree[idx].lazy = 0; tree[idx].min_ = val[1];
+		if (left == right) return ;
+		int mid = (left + right) &gt;&gt; 1;
+		build(left, mid, idx&lt;&lt;1);
+		build(mid + 1, right, idx&lt;&lt;1|1);
+		PushUp(idx);
+	}
+
+	void update(int left, int right, int idx, int value) {
+		if (tree[idx].left == tree[idx].right) {
+			tree[idx].exp += tree[idx].level * value;
+			while (tree[idx].exp &gt;= val[tree[idx].level])
+				tree[idx].level++;
+			tree[idx].min_ = (val[tree[idx].level] - tree[idx].exp) / tree[idx].level;
+			return ;
+		}
+		if (tree[idx].left == left &amp;&amp; tree[idx].right == right) {
+			if (value &gt;= tree[idx].min_) {
+				PushDown(idx);
+				int mid = (left + right) / 2;
+				update(left, mid, idx &lt;&lt; 1, value);
+				update(mid + 1, right, idx &lt;&lt; 1 | 1, value);
+				PushUp(idx);
+			} else {
+				tree[idx].exp += tree[idx].level * value;
+				tree[idx].min_ -= value;
+				tree[idx].lazy += value;
+			}
+			return ;
+		}
+		int mid = tree[idx].mid();
+		if (tree[idx].lazy)
+			PushDown(idx);
+		if (mid &gt;= right)
+			update(left, right, idx &lt;&lt; 1, value);
+		else if (mid &lt; left)
+			update(left, right, idx &lt;&lt; 1 | 1, value);
+		else {
+			update(left, mid, idx &lt;&lt; 1, value);
+			update(mid + 1, right, idx &lt;&lt; 1 | 1, value);
+		}
+		PushUp(idx);
+	}
+
+	int query(int left, int right, int idx) {
+		if (tree[idx].left == left &amp;&amp; tree[idx].right == right) 
+			return tree[idx].exp;
+		if (tree[idx].lazy)
+			PushDown(idx);
+		int mid = tree[idx].mid();
+		if (mid &gt;= right)
+			return query(left, right, idx &lt;&lt; 1);
+		else if (mid &lt; left) 
+			return query(left, right, idx &lt;&lt; 1 | 1);
+		else 
+			return std::max(query(left, mid, idx&lt;&lt;1), query(mid+1, right, idx&lt;&lt;1|1));
+	}
+};
+
+SegmentTree seg;
+
+int main() {
+	int test, n, k, q, left, right, value;
+	char ch[111];
+	scanf("%d", &amp;test);
+	for (int cas = 1; cas &lt;= test; cas++) {
+		scanf("%d %d %d", &amp;n, &amp;k, &amp;q);
+		for (int i = 1; i &lt; k; i++)
+			scanf("%d", &amp;val[i]);
+		val[k] = inf;
+		printf("Case %d:\n", cas);
+		seg.build(1, n, 1);
+		for (int qq = 1; qq &lt;= q; qq++) {
+			scanf("%s", ch);
+			if (ch[0] == 'W') {
+				scanf("%d %d %d", &amp;left, &amp;right, &amp;value);
+				seg.update(left, right, 1, value);
+			} else {
+				scanf("%d %d", &amp;left, &amp;right);
+				printf("%d\n", seg.query(left, right, 1));
+			}
+		}
+		puts("");
+	}
+	return 0;
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-23617">
+<article class="comment" id="comment-23617">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bcys</a></span> on <a href="http://www.acmerblog.com/hdu-2641-level-up-4231.html#comment-23617" rel="nofollow"><time datetime="2015-07-14T09:19:47+00:00" pubdate="">2015年7月14日 at 上午9:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>比较基础，找些自信</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-23618">
+<article class="comment" id="comment-23618">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mnmlist</a></span> on <a href="http://www.acmerblog.com/hdu-2641-level-up-4231.html#comment-23618" rel="nofollow"><time datetime="2015-06-08T21:17:31+00:00" pubdate="">2015年6月8日 at 下午9:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>I go through some of your put up and I uncovered a good deal of expertise from it. Many thanks for posting this sort of exciting posts</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-57187">
+<article class="comment" id="comment-57187">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">09291010</a></span> on <a href="http://www.acmerblog.com/hdu-2641-level-up-4231.html#comment-57187" rel="nofollow"><time datetime="2015-06-01T00:17:06+00:00" pubdate="">2015年6月1日 at 上午12:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个也是算法导论的习题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-23621">
+<article class="comment" id="comment-23621">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zhuliyan</a></span> on <a href="http://www.acmerblog.com/hdu-2641-level-up-4231.html#comment-23621" rel="nofollow"><time datetime="2015-04-06T11:37:08+00:00" pubdate="">2015年4月6日 at 上午11:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感觉我好像很多都不会做。。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-23622">
+<article class="comment" id="comment-23622">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Dwayne</a></span> on <a href="http://www.acmerblog.com/hdu-2641-level-up-4231.html#comment-23622" rel="nofollow"><time datetime="2015-04-03T01:18:59+00:00" pubdate="">2015年4月3日 at 上午1:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给力，赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-23623">
+<article class="comment" id="comment-23623">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">acmer29</a></span> on <a href="http://www.acmerblog.com/hdu-2641-level-up-4231.html#comment-23623" rel="nofollow"><time datetime="2015-01-28T08:02:04+00:00" pubdate="">2015年1月28日 at 上午8:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#include &lt;cstdio&gt;</p>
+<p>int main() {<br/>
+	//answer must be odd<br/>
+    int n, u, d;<br/>
+    while(scanf("%d%d%d",&amp;n,&amp;u,&amp;d)==3 &amp;&amp; n&gt;0) {<br/>
+        if(n&lt;=u) { puts("1"); continue; }<br/>
+        n-=u; u-=d; n+=u-1; n/=u;<br/>
+        n&lt;&lt;=1, ++n;<br/>
+        printf("%dn",n);<br/>
+    }<br/>
+    return 0;<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-23616">
+<article class="comment" id="comment-23616">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiao1108</a></span> on <a href="http://www.acmerblog.com/hdu-2641-level-up-4231.html#comment-23616" rel="nofollow"><time datetime="2014-12-29T07:57:20+00:00" pubdate="">2014年12月29日 at 上午7:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢支持！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-23625">
+<article class="comment" id="comment-23625">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jinxiang23</a></span> on <a href="http://www.acmerblog.com/hdu-2641-level-up-4231.html#comment-23625" rel="nofollow"><time datetime="2014-10-23T17:33:30+00:00" pubdate="">2014年10月23日 at 下午5:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不是HDU 2411。。标题党么。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-23620">
+<article class="comment" id="comment-23620">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">645198</a></span> on <a href="http://www.acmerblog.com/hdu-2641-level-up-4231.html#comment-23620" rel="nofollow"><time datetime="2014-09-25T13:34:46+00:00" pubdate="">2014年9月25日 at 下午1:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>终于AC了！next数组还是不好理解啊，mark</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-23626">
+<article class="comment" id="comment-23626">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hsp_77_abc</a></span> on <a href="http://www.acmerblog.com/hdu-2641-level-up-4231.html#comment-23626" rel="nofollow"><time datetime="2014-06-12T20:32:38+00:00" pubdate="">2014年6月12日 at 下午8:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>终于找到一篇能看懂的，mark</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-23624">
+<article class="comment" id="comment-23624">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">HDC</a></span> on <a href="http://www.acmerblog.com/hdu-2641-level-up-4231.html#comment-23624" rel="nofollow"><time datetime="2014-05-22T23:01:16+00:00" pubdate="">2014年5月22日 at 下午11:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>此网站甚是喜欢，潜力巨大，请问站长，如何加入开发团队~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-23619">
+<article class="comment" id="comment-23619">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1832044043</a></span> on <a href="http://www.acmerblog.com/hdu-2641-level-up-4231.html#comment-23619" rel="nofollow"><time datetime="2014-05-11T11:02:43+00:00" pubdate="">2014年5月11日 at 上午11:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>方法二可行，已测试<br/>
+<a href="http://blog.csdn.net/alpc_paul/article/details/33769407" rel="nofollow">http://blog.csdn.net/alpc_paul/article/details/33769407</a></p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-46050">
+<article class="comment" id="comment-46050">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ssjssh</a></span> on <a href="http://www.acmerblog.com/hdu-2641-level-up-4231.html#comment-46050" rel="nofollow"><time datetime="2014-03-30T11:36:03+00:00" pubdate="">2014年3月30日 at 上午11:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>good !</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-57186">
+<article class="comment" id="comment-57186">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">digiworm</a></span> on <a href="http://www.acmerblog.com/hdu-2641-level-up-4231.html#comment-57186" rel="nofollow"><time datetime="2014-03-13T05:18:53+00:00" pubdate="">2014年3月13日 at 上午5:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>理解错了。。。。。谢谢楼主~~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

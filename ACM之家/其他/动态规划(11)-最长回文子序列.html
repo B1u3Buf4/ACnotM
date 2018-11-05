@@ -1,0 +1,417 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>04-17</div>
+<div class="tit"><h1 class="entry-title">动态规划(11)-最长回文子序列</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/gaotong2055" rel="author" title="由dragon发布">dragon</a></span><span class="i1"><a href="http://www.acmerblog.com/category/zhuanti/algorithm" rel="category tag" title="查看算法分析中的全部文章">算法分析</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a></span><span class="i4">围观3713次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5721" href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comments" title="《动态规划(11)-最长回文子序列》上的评论">32 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p><span><span>给一个字符串，找出它的<strong>最长的回文子序列</strong>的长度。</span><span>例如，如果给定的序列是“BBABCBCAB”，则输出应该是7，“BABCBAB”是在它的最长回文子序列。</span></span><span><span> “BBBBB”和“BBCBB”也都是该字符串的回文子序列，但不是最长的。<span style="color: #0000ff;">注意和最长回文子串的区别(参考：<a href="http://www.acmerblog.com/jiudu-1528-2402.html">最长回文串</a>)！<span style="color: #000000;">这里说的子序列，类似<a href="http://www.acmerblog.com/wp-admin/post.php?post=4736&amp;action=edit">最长公共子序列LCS</a>( Longest Common Subsequence)问题，可以是不连续的。这就是LPS(Longest Palindromic Subsequence)问题。</span></span></span></span></p>
+<p>最直接的解决方法是：生成给定字符串的所有子序列，并找出最长的回文序列，这个方法的复杂度是指数级的。下面来分析怎么用动态规划解决。</p>
+<h3>1）最优子结构</h3>
+<p>假设 X[0 ... n-1]  是给定的序列，长度为n.  让 L(0,n-1) 表示 序列 X[0 ... n-1] 的最长回文子序列的长度。</p>
+<p>1. 如果X的最后一个元素和第一个元素是相同的，这时：L(0, n-1) = L(1, n-2) + 2 ,  还以 “B<span style="color: #0000ff;">BABCBCA</span>B” 为例，第一个和最后一个相同，因此 L(1,n-2) 就表示蓝色的部分。</p>
+<p>2. 如果不相同：L(0, n-1) = MAX ( L(1, n-1) ,  L(0, n-2) )。 以”BABCBCA” 为例，L(1,n-1)即为去掉第一个元素的子序列，L(0, n-2)为去掉最后一个元素。</p>
+<p>有了上面的公式，可以很容易的写出下面的递归程序：</p>
+<pre class="brush:cpp">#include&lt;stdio.h&gt;
+#include&lt;string.h&gt;
+int lps(char *seq, int i, int j)
+{
+   //一个元素即为1
+   if (i == j)
+     return 1;
+   if(i &gt; j) return 0; //因为只计算序列 seq[i ... j]
+
+   // 如果首尾相同
+   if (seq[i] == seq[j])
+      return lps (seq, i+1, j-1) + 2;
+
+   // 首尾不同
+   return max( lps(seq, i, j-1), lps(seq, i+1, j) );
+}
+
+/* 测试 */
+int main()
+{
+    char seq[] = "acmerandacm";
+    int n = strlen(seq);
+    printf ("The lnegth of the LPS is %d", lps(seq, 0, n-1));
+    getchar();
+    return 0;
+}</pre>
+<p>Output: The lnegth of the LPS is 5 (即为: amama)</p>
+<h3>重叠子问题</h3>
+<p>画出上面程序的递归树(部分)，已一个长度为6 的字符串为例：</p>
+<pre class="brush:other">               L(0, 5)
+             /        \ 
+            /          \  
+        L(1,5)          L(0,4)
+       /    \            /    \
+      /      \          /      \
+  L(2,5)    L(1,4)  L(1,4)  L(0,3)</pre>
+<p>可见有许多重复的计算，例如L(1,4)。该问题符合动态规划的两个主要性质: <strong><strong><strong><a href="http://www.acmerblog.com/wp-admin/post.php?post=4577&amp;action=edit" title="编辑“动态规划(1)-重叠子问题的性质”">重叠子问题</a></strong></strong></strong> 和 <strong><strong><strong><strong><a href="http://www.acmerblog.com/wp-admin/post.php?post=4581&amp;action=edit" title="编辑“动态规划(2)-最优子结构的性质”">最优子结构  </a></strong></strong></strong></strong>。</p>
+<p>下面通过动态规划的方法解决，通过自下而上的方式打表，存储子问题的最优解。</p>
+<pre class="brush:cpp">int lpsDp(char * str,int n){
+	int dp[n][n], tmp;
+	memset(dp,0,sizeof(dp));
+	for(int i=0; i&lt;n; i++) dp[i][i] = 1;
+	// i 表示 当前长度为 i+1的 子序列
+	for(int i=1; i&lt;n; i++){
+		tmp = 0;
+		//考虑所有连续的长度为i+1的子串. 该串为 str[j, j+i]
+		for(int j=0; j+i&lt;n; j++){
+			//如果首尾相同
+			if(str[j] == str[j+i]){
+				tmp = dp[j+1][j+i-1] + 2;
+			}else{
+				tmp = max(dp[j+1][j+i],dp[j][j+i-1]);
+			}
+			dp[j][j+i] = tmp;
+		}
+	}
+	//返回串 str[0][n-1] 的结果
+	return dp[0][n-1];
+}</pre>
+<p>该算法的时间复杂度为O(n^2)。其实这个问题和 <a href="最长公共子序列">最长公共子序列</a> 问题有些相似之处，我们可以对LCS算法做些修改，来解决此问题:</p>
+<p>1) 对给定的字符串逆序 存储在另一个数组 rev[] 中</p>
+<p>2) 再求这两个 字符串的 LCS的长度</p>
+<p>时间复杂度也为 O(n^2)。</p>
+<p>参考：http://www.geeksforgeeks.org/dynamic-programming-set-12-longest-palindromic-subsequence/</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75866">
+<article class="comment" id="comment-75866">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525181" rel="external nofollow">新用户003790</a></span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-75866" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Title…[...]Wonderful story, reckoned we could combine a few unrelated data, nevertheless actually really worth taking a searc</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75865">
+<article class="comment" id="comment-75865">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525181" rel="external nofollow">新用户003790</a></span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-75865" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Title…[...]Wonderful story, reckoned we could combine a few unrelated data, nevertheless actually really worth taking a searc</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75864">
+<article class="comment" id="comment-75864">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525181" rel="external nofollow">新用户003790</a></span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-75864" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Title…[...]Wonderful story, reckoned we could combine a few unrelated data, nevertheless actually really worth taking a searc</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75863">
+<article class="comment" id="comment-75863">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525181" rel="external nofollow">新用户003790</a></span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-75863" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Title…[...]Wonderful story, reckoned we could combine a few unrelated data, nevertheless actually really worth taking a searc</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75862">
+<article class="comment" id="comment-75862">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525181" rel="external nofollow">新用户003790</a></span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-75862" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Title…[...]Wonderful story, reckoned we could combine a few unrelated data, nevertheless actually really worth taking a searc</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75861">
+<article class="comment" id="comment-75861">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525181" rel="external nofollow">新用户003790</a></span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-75861" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Title…[...]Wonderful story, reckoned we could combine a few unrelated data, nevertheless actually really worth taking a searc</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75860">
+<article class="comment" id="comment-75860">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525181" rel="external nofollow">新用户003790</a></span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-75860" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Title…[...]Wonderful story, reckoned we could combine a few unrelated data, nevertheless actually really worth taking a searc</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75859">
+<article class="comment" id="comment-75859">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525181" rel="external nofollow">新用户003790</a></span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-75859" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Title…[...]Wonderful story, reckoned we could combine a few unrelated data, nevertheless actually really worth taking a searc</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75858">
+<article class="comment" id="comment-75858">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525181" rel="external nofollow">新用户003790</a></span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-75858" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Title…[...]Wonderful story, reckoned we could combine a few unrelated data, nevertheless actually really worth taking a searc</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75857">
+<article class="comment" id="comment-75857">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525181" rel="external nofollow">新用户003790</a></span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-75857" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Title…[...]Wonderful story, reckoned we could combine a few unrelated data, nevertheless actually really worth taking a searc</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75856">
+<article class="comment" id="comment-75856">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525181" rel="external nofollow">新用户003790</a></span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-75856" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Title…[...]Wonderful story, reckoned we could combine a few unrelated data, nevertheless actually really worth taking a searc</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75855">
+<article class="comment" id="comment-75855">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525181" rel="external nofollow">新用户003790</a></span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-75855" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Title…[...]Wonderful story, reckoned we could combine a few unrelated data, nevertheless actually really worth taking a searc</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75854">
+<article class="comment" id="comment-75854">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525181" rel="external nofollow">新用户003790</a></span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-75854" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Title…[...]Wonderful story, reckoned we could combine a few unrelated data, nevertheless actually really worth taking a searc</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75853">
+<article class="comment" id="comment-75853">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525181" rel="external nofollow">新用户003790</a></span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-75853" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Title…[...]Wonderful story, reckoned we could combine a few unrelated data, nevertheless actually really worth taking a searc</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64552">
+<article class="comment" id="comment-64552">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">BillyTheShark</span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-64552" rel="nofollow"><time datetime="2016-03-03T12:44:16+00:00" pubdate="">2016年3月3日 at 下午12:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>思路一看就是错的，试一下“badb”，递归程序输出3，dp的代码更是懒得试了</p>
+</div>
+</article><!-- #comment-## -->
+<ul class="children">
+<li class="comment odd alt depth-2" id="li-comment-64580">
+<article class="comment" id="comment-64580">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://weibo.com/2114260424" rel="external nofollow">Earther01</a></span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-64580" rel="nofollow"><time datetime="2016-04-04T15:16:28+00:00" pubdate="">2016年4月4日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>bad或者bdb，长度就是3啊，有什么错？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even depth-2" id="li-comment-64582">
+<article class="comment" id="comment-64582">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">bbb</span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-64582" rel="nofollow"><time datetime="2016-04-05T16:05:43+00:00" pubdate="">2016年4月5日 at 下午4:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>什么玩意你就懒得试了  没看懂题就被bb</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt depth-2" id="li-comment-64615">
+<article class="comment" id="comment-64615">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">你大爷</span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-64615" rel="nofollow"><time datetime="2016-07-01T21:14:31+00:00" pubdate="">2016年7月1日 at 下午9:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有病吧，本来这个就是3啊，自己不理解思路还乱喷，不是技校的吧？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ul><!-- .children -->
+</li><!-- #comment-## -->
+<li class="comment even thread-odd thread-alt depth-1" id="li-comment-30278">
+<article class="comment" id="comment-30278">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gladuo</a></span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-30278" rel="nofollow"><time datetime="2015-07-15T01:24:47+00:00" pubdate="">2015年7月15日 at 上午1:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>printf这个函数在计算的时候是从右到左，打印是从左到右。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-even depth-1" id="li-comment-30277">
+<article class="comment" id="comment-30277">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">edward2414</a></span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-30277" rel="nofollow"><time datetime="2015-07-07T08:44:27+00:00" pubdate="">2015年7月7日 at 上午8:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个应该是比较简单的解法了，如果有更好的办法可以告诉我</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-odd thread-alt depth-1" id="li-comment-30285">
+<article class="comment" id="comment-30285">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">3136869079</a></span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-30285" rel="nofollow"><time datetime="2015-04-11T17:36:15+00:00" pubdate="">2015年4月11日 at 下午5:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>目前为止见过的最易懂的一个，多谢分享</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-even depth-1" id="li-comment-30280">
+<article class="comment" id="comment-30280">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yesMan</a></span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-30280" rel="nofollow"><time datetime="2015-03-31T17:03:07+00:00" pubdate="">2015年3月31日 at 下午5:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>神奇的网站</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-odd thread-alt depth-1" id="li-comment-30286">
+<article class="comment" id="comment-30286">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xuelanghu</a></span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-30286" rel="nofollow"><time datetime="2014-11-26T07:01:25+00:00" pubdate="">2014年11月26日 at 上午7:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>无需用转移方程也可以解决，哈哈</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-even depth-1" id="li-comment-30282">
+<article class="comment" id="comment-30282">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">645198</a></span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-30282" rel="nofollow"><time datetime="2014-11-24T14:59:10+00:00" pubdate="">2014年11月24日 at 下午2:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>大哥，你复制也看看是不是这题的答案才复制吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-odd thread-alt depth-1" id="li-comment-49311">
+<article class="comment" id="comment-49311">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">895350909</a></span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-49311" rel="nofollow"><time datetime="2014-10-20T17:25:55+00:00" pubdate="">2014年10月20日 at 下午5:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给力！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-even depth-1" id="li-comment-30283">
+<article class="comment" id="comment-30283">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Dick</a></span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-30283" rel="nofollow"><time datetime="2014-10-14T18:20:01+00:00" pubdate="">2014年10月14日 at 下午6:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一题还是比较考验智商~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-odd thread-alt depth-1" id="li-comment-30279">
+<article class="comment" id="comment-30279">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xy7850151</a></span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-30279" rel="nofollow"><time datetime="2014-06-25T20:06:12+00:00" pubdate="">2014年6月25日 at 下午8:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-even depth-1" id="li-comment-30281">
+<article class="comment" id="comment-30281">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">nwling</a></span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-30281" rel="nofollow"><time datetime="2014-06-24T14:29:24+00:00" pubdate="">2014年6月24日 at 下午2:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个系列很不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-odd thread-alt depth-1" id="li-comment-30284">
+<article class="comment" id="comment-30284">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zjd1988</a></span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-30284" rel="nofollow"><time datetime="2014-05-13T08:36:49+00:00" pubdate="">2014年5月13日 at 上午8:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学算法中的数据结构学到一定程度会乐此不疲的，比如其中的2－3树，类似的红黑树，我甚至可以自己写个逻辑文件系统结构来。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-even depth-1" id="li-comment-30287">
+<article class="comment" id="comment-30287">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">GordonTJ</a></span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-30287" rel="nofollow"><time datetime="2014-05-03T03:39:39+00:00" pubdate="">2014年5月3日 at 上午3:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>递归实现的代码部分<br/>
+14句和18句的 wt[n - 1]是不是应该改为 wt[ n ] ?</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-odd thread-alt depth-1" id="li-comment-306">
+<article class="comment" id="comment-306">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">czw8528</span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-306" rel="nofollow"><time datetime="2014-04-18T20:55:06+00:00" pubdate="">2014年4月18日 at 下午8:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>最长回文子串可以使用manacher算法，将时间复杂度降到O(n)。</p>
+</div>
+</article><!-- #comment-## -->
+<ul class="children">
+<li class="comment byuser comment-author-admin odd alt depth-2" id="li-comment-307">
+<article class="comment" id="comment-307">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://weibo.com/itong2055" rel="external nofollow">管理员</a></span> on <a href="http://www.acmerblog.com/longest-palindromic-subsequence-5721.html#comment-307" rel="nofollow"><time datetime="2014-04-18T21:39:34+00:00" pubdate="">2014年4月18日 at 下午9:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，这里说的最长回文子序列，非子串</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ul><!-- .children -->
+</li><!-- #comment-## -->
+</ol>

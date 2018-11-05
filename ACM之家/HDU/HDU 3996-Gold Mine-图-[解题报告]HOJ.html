@@ -1,0 +1,350 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>04-14</div>
+<div class="tit"><h1 class="entry-title">HDU 3996-Gold Mine-图-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph" rel="category tag" title="查看图论中的全部文章">图论</a>, <a href="http://www.acmerblog.com/category/graph/flow" rel="category tag" title="查看网络流中的全部文章">网络流</a></span><span class="i4">围观217次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6999" href="http://www.acmerblog.com/hdu-3996-gold-mine-6999.html#comments" title="《HDU 3996-Gold Mine-图-[解题报告]HOJ》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Gold Mine</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Long long ago, there is a gold mine.The mine consist of many layout, so some area is easy to dig, but some is very hard to dig.To dig one gold, we should cost some value and then gain some value. There are many area that have gold, because of the layout, if one people want to dig one gold in some layout, he must dig some gold on some layout that above this gold’s layout. A gold seeker come here to dig gold.The question is how much value the gold he can dig, suppose he have infinite money in the begin. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+First line the case number.(&lt;=10)
+<p>Then for every case:<br/>  one line for layout number.(&lt;=100)<br/>  for every layout<br/>  first line gold number(&lt;=25)<br/>  then one line for the dig cost and the gold value(32bit integer), the related gold number that must be digged first(&lt;=50)</p>
+<p>then w lines descripte the related gold followed, each line two number, one layout num, one for the order in that layout<br/>see sample for details </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+First line the case number.(&lt;=10)
+<p>Then for every case:<br/>  one line for layout number.(&lt;=100)<br/>  for every layout<br/>  first line gold number(&lt;=25)<br/>  then one line for the dig cost and the gold value(32bit integer), the related gold number that must be digged first(&lt;=50)</p>
+<p>then w lines descripte the related gold followed, each line two number, one layout num, one for the order in that layout<br/>see sample for details</p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+2
+1
+10 100 0
+2
+10 100 1
+1 1
+10 100 1
+1 1</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case #1: 270</pre>
+<p> <!-- problem end --></p>
+<p>题意：<span style="font-family:Arial; font-size:14px; line-height:26px">有一些金矿区域，挖一个金矿时必须挖掉上边的跟他关联的，为最多赚的钱数。输入解释：第一个行是样例的组数。第二行表示有n个区域,接下来的一行m表示第i个区域的金矿的个数为m。接下来的m行为这个区域金矿花费的钱数，获得钱数，以及相关连的金矿的个数w，（下面的w行就是表示这些相关联的金矿的区域和在这个区域的第几个）。</span></p>
+<p><span style="font-family:Arial; font-size:14px; line-height:26px">建图：把点权为b(b&gt;0)的连到源点，边权为b</span></p>
+<p><span style="font-family:Arial; font-size:14px; line-height:26px">点权为a(a&lt;0)的连到汇点，边权为a</span></p>
+<p><span style="font-family:Arial; font-size:14px; line-height:26px">然后建出原图，原图中所有边权为inf</span></p>
+<p><span style="font-family:Arial; font-size:14px; line-height:26px">最后答案为 ： 正点权和 – 最大流</span></p>
+<p><span style="font-family:Arial; font-size:14px; line-height:26px"></span></p>
+<pre class="brush:cpp" code_snippet_id="245189" name="code" snippet_file_name="blog_20140319_1_1272020">#include &lt;iostream&gt;   
+#include &lt;string&gt;   
+#include &lt;cstring&gt;   
+#include &lt;algorithm&gt;   
+#include &lt;cstdio&gt;   
+#include &lt;cctype&gt;   
+#include &lt;queue&gt;   
+#include &lt;stdlib.h&gt;   
+#include &lt;cstdlib&gt;   
+#include &lt;math.h&gt;   
+#include &lt;set&gt;   
+#include &lt;vector&gt;   
+#define inf 10000000000000000 
+#define eps 1e-8   
+#define N 2502
+#define M 10500
+#define ll __int64   
+using namespace std;  
+
+//M为边数 N为点数 点标从1-n   
+struct Edge{  
+    ll from, to, cap, nex;  
+}edge[M*10];//注意这个一定要够大 不然会re 还有反向弧  
+  
+ll head[N], edgenum;  
+void addedge(ll u, ll v, ll cap){  
+    Edge E = { u, v, cap, head[u]};  
+    edge[ edgenum ] = E;  
+    head[u] = edgenum ++;  
+  
+    Edge E2= { v, u, 0,   head[v]};  
+    edge[ edgenum ] = E2;  
+    head[v] = edgenum ++;  
+}  
+ll sign[N], s, t;  
+bool BFS(ll from, ll to){  
+    memset(sign, -1, sizeof(sign));  
+    sign[from] = 0;  
+  
+    queue&lt;ll&gt;q;  
+    q.push(from);  
+    while( !q.empty() ){  
+        int u = q.front(); q.pop();  
+        for(ll i = head[u]; i!=-1; i = edge[i].nex)  
+        {  
+            ll v = edge[i].to;  
+            if(sign[v]==-1 &amp;&amp; edge[i].cap)  
+            {  
+                sign[v] = sign[u] + 1, q.push(v);  
+                if(sign[to] != -1)return true;  
+            }  
+        }  
+    }  
+    return false;  
+}  
+ll Stack[M*4], top, cur[M*4];  
+ll dinic(){  
+  
+    ll ans = 0;  
+    while( BFS(s, t) )  
+    {  
+        memcpy(cur, head, sizeof(head));  
+        ll u = s;      top = 0;  
+        while(1)  
+        {  
+            if(u == t)  
+            {  
+                ll flow = inf, loc;//loc 表示 Stack 中 cap 最小的边  
+                for(ll i = 0; i &lt; top; i++)  
+                    if(flow &gt; edge[ Stack[i] ].cap)  
+                    {  
+                        flow = edge[Stack[i]].cap;  
+                        loc = i;  
+                    }  
+  
+                    for(ll i = 0; i &lt; top; i++)  
+                    {  
+                        edge[ Stack[i] ].cap -= flow;  
+                        edge[Stack[i]^1].cap += flow;  
+                    }  
+                    ans += flow;  
+                    top = loc;  
+                    u = edge[Stack[top]].from;  
+            }  
+            for(ll i = cur[u]; i!=-1; cur[u] = i = edge[i].nex)//cur[u] 表示u所在能增广的边的下标  
+                if(edge[i].cap &amp;&amp; (sign[u] + 1 == sign[ edge[i].to ]))break;  
+            if(cur[u] != -1)  
+            {  
+                Stack[top++] = cur[u];  
+                u = edge[ cur[u] ].to;  
+            }  
+            else  
+            {  
+                if( top == 0 )break;  
+                sign[u] = -1;  
+                u = edge[ Stack[--top] ].from;  
+            }  
+        }  
+    }  
+    return ans;  
+}  
+
+vector&lt;ll&gt;G[N];
+ll n, cnt;
+void init(){
+	memset(head, -1, sizeof(head)); edgenum = 0;
+	cnt = 1;
+	for(ll i = 0; i &lt;= n; i++)G[i].clear();
+}
+ll from, to;
+int main(){
+	ll T, Cas = 1, i, j, k, m, a, b, u, v;scanf("%I64d",&amp;T);
+	from = 0; to = 2501;
+	s = 0, t = to;
+	while(T--){
+			scanf("%I64d",&amp;n);
+			init();
+			ll sum = 0;
+			for(i = 1; i &lt;= n; i++){
+				scanf("%I64d",&amp;m);
+				G[i].push_back(100000);
+				for(j = 1; j &lt;= m; j++)
+				{
+					scanf("%I64d %I64d %I64d",&amp;a,&amp;b,&amp;k);
+					G[i].push_back(cnt++);
+					sum += b;
+					addedge(from, G[i][j], b);
+					addedge(G[i][j], to, a);
+					while(k--){
+						scanf("%I64d %I64d",&amp;u,&amp;v);
+						addedge(G[i][j], G[u][v], inf);
+					}
+				}
+			}
+			printf("Case #%I64d: %I64d\n", Cas++, sum - dinic());		
+	}
+	return 0;
+}</pre>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/acmmmm/article/details/21547417</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-100024">
+<article class="comment" id="comment-100024">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919532172" rel="external nofollow">新用户900891</a></span> on <a href="http://www.acmerblog.com/hdu-3996-gold-mine-6999.html#comment-100024" rel="nofollow"><time datetime="2017-04-20T21:02:04+00:00" pubdate="">2017年4月20日 at 下午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>李振海者，毛时代的出土文物、文革余孽也！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70949">
+<article class="comment" id="comment-70949">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530440" rel="external nofollow">新用户895293</a></span> on <a href="http://www.acmerblog.com/hdu-3996-gold-mine-6999.html#comment-70949" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70948">
+<article class="comment" id="comment-70948">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530440" rel="external nofollow">新用户895293</a></span> on <a href="http://www.acmerblog.com/hdu-3996-gold-mine-6999.html#comment-70948" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70947">
+<article class="comment" id="comment-70947">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530440" rel="external nofollow">新用户895293</a></span> on <a href="http://www.acmerblog.com/hdu-3996-gold-mine-6999.html#comment-70947" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70946">
+<article class="comment" id="comment-70946">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530440" rel="external nofollow">新用户895293</a></span> on <a href="http://www.acmerblog.com/hdu-3996-gold-mine-6999.html#comment-70946" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70945">
+<article class="comment" id="comment-70945">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530440" rel="external nofollow">新用户895293</a></span> on <a href="http://www.acmerblog.com/hdu-3996-gold-mine-6999.html#comment-70945" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70944">
+<article class="comment" id="comment-70944">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530440" rel="external nofollow">新用户895293</a></span> on <a href="http://www.acmerblog.com/hdu-3996-gold-mine-6999.html#comment-70944" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70943">
+<article class="comment" id="comment-70943">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530440" rel="external nofollow">新用户895293</a></span> on <a href="http://www.acmerblog.com/hdu-3996-gold-mine-6999.html#comment-70943" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70942">
+<article class="comment" id="comment-70942">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530440" rel="external nofollow">新用户895293</a></span> on <a href="http://www.acmerblog.com/hdu-3996-gold-mine-6999.html#comment-70942" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70941">
+<article class="comment" id="comment-70941">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530440" rel="external nofollow">新用户895293</a></span> on <a href="http://www.acmerblog.com/hdu-3996-gold-mine-6999.html#comment-70941" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70940">
+<article class="comment" id="comment-70940">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530440" rel="external nofollow">新用户895293</a></span> on <a href="http://www.acmerblog.com/hdu-3996-gold-mine-6999.html#comment-70940" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35224">
+<article class="comment" id="comment-35224">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">room306</a></span> on <a href="http://www.acmerblog.com/hdu-3996-gold-mine-6999.html#comment-35224" rel="nofollow"><time datetime="2015-07-03T14:37:48+00:00" pubdate="">2015年7月3日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感觉这里的评分标准没啥作用阿，反而显得显得赘余，还不如直接去掉好了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35223">
+<article class="comment" id="comment-35223">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">piaoyi</a></span> on <a href="http://www.acmerblog.com/hdu-3996-gold-mine-6999.html#comment-35223" rel="nofollow"><time datetime="2015-06-27T09:55:24+00:00" pubdate="">2015年6月27日 at 上午9:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实国内大部分公司对算法都不够重视。特别是中小型公司老板根本都不懂技术，也不懂什么是算法，从而也不要求程序员懂什么算法，做程序从来不考虑性能问题，只要页面能显示出来就是好程序，这是国内的现状，很无奈。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35222">
+<article class="comment" id="comment-35222">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">userwawa</a></span> on <a href="http://www.acmerblog.com/hdu-3996-gold-mine-6999.html#comment-35222" rel="nofollow"><time datetime="2015-06-26T19:37:13+00:00" pubdate="">2015年6月26日 at 下午7:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有些说不通吧，只有1个孩子肯定是男孩了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-60034">
+<article class="comment" id="comment-60034">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hanyi</a></span> on <a href="http://www.acmerblog.com/hdu-3996-gold-mine-6999.html#comment-60034" rel="nofollow"><time datetime="2015-04-22T08:02:47+00:00" pubdate="">2015年4月22日 at 上午8:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>看似简单，还是不少坑的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,391 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-21</div>
+<div class="tit"><h1 class="entry-title">HDU 1733 Escape-网络流-[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/dfs" rel="category tag" title="查看DFS搜索中的全部文章">DFS搜索</a>, <a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/basis/enumeration" rel="category tag" title="查看枚举中的全部文章">枚举</a>, <a href="http://www.acmerblog.com/category/graph/flow" rel="category tag" title="查看网络流中的全部文章">网络流</a></span><span class="i4">围观1155次</span><span class="i3"><a class="ds-thread-count" data-thread-key="2714" href="http://www.acmerblog.com/hdu-1733-Escape-2714.html#comments" title="《HDU 1733 Escape-网络流-[解题报告] C++》上的评论">13 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Escape</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Loneknight hates attending class very much. Every time he is attending class, when he feel tiresome with the class, he start planning the shortest path he can escape from the classroom. Therefore, he can escape from classroom so quickly that he is always the first one escape from the classroom after the class finishes. He is very proud of this fact. 
+<p>One day, loneknight is day dreaming in class, and planning the shortest path for escaping. Suddently, an issue come into his mind, if everyone in the classroom want to escape as soon as possible just as loneknight, what will happend? As a kind man, loneknight want to plan a strategy that will let everyone escape from the classroom with minimum time consume. But after dozens of minutes of consideration, loneknight find this problem so difficult for him.</p>
+<p> Now, as the best friend of him, please design a algorithm to solve this problem for him. Note that, at every time unit, everyone can move seperately up, down, left, right one unit, or stay in the old position. In addtion, no one can move to a wall or out of the room, the only way to escape is go through a gate. Moreover, at every time unit, a position can only contain a person, including gates. That means if in time t, a person escape thourgh gate g, no one can go into g in time t, but can go into g in t + 1. Now, it’s your job to calculate the minimum time required to escape for everyone. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input consists of several test cases. Each test case start with a line containing two number, n, m (1 &lt; n, m &lt;= 16), the rows and the columns of the room. Then n lines follow, each contain exact m characters, representing th type of unitin it. (. for empty place, X for human, # for wall, @ for gate). Input is end with EOF. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+You have to print the shortest time needed for everyone escape from the roomin a single line for each case. (-1 if impossible)</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+4 4
+.@..
+.X..
+....
+....
+
+4 4
+.@..
+.XX.
+.XX.
+..@.
+
+4 4
+.@..
+.#..
+#X#.
+.#..</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+2
+-1</pre>
+<p> <!-- problem end --></p>
+<p>1.拆点，对于第d天，每个点已被拆为d+1个点，下标代号成等差数列 公差n*m.</p>
+<p>2.起始的时候，s向第0天的n*m中是人的点连条权值为1的边。</p>
+<p>3.而后从小到大枚举每天，假设第t天，那么对于t-1天的点可以向四周扩展，或不动，向对应在第t天新加的点连条权为1的边，然后对第t天的n*m点，如果是出口则向汇点连条权值为1的边，然后从源点到汇点做网络流，如果ans等于人数，则break，return t。</p>
+<p>4.对于没有解的情况，我是先dfs判断是否有解处理的。</p>
+<p>比较挫，g++跑了125ms。</p>
+<pre class="brush:cpp ">#include&lt;cstring&gt;
+#include&lt;cstdio&gt;
+#include&lt;queue&gt;
+char mp[30][30];
+int cnt,ans,head[30000],gap[30000],dis[30000],sum,vi[30][30];
+const int inf=1&lt;&lt;30;
+struct EDGE
+{
+	int to,f,nxt;
+}edge[2000000];
+int n,m,s,t,nn;
+int dx[]={1,0,-1,0},dy[]={0,1,0,-1};
+int di[][2]={1,0,-1,0,0,1,0,-1,0,0};
+int min(int a,int b)
+{
+	return a&lt;b?a:b;
+}
+int in(int x,int y)
+{
+	return x&gt;=1&amp;&amp;x&lt;=n&amp;&amp;y&gt;=1&amp;&amp;y&lt;=m&amp;&amp;mp[x][y]!='#';
+}
+void add(int a,int b,int c)
+{
+	edge[cnt].to=b;
+	edge[cnt].f=c;
+	edge[cnt].nxt=head[a];
+	head[a]=cnt++;
+	edge[cnt].to=a;
+	edge[cnt].f=0;
+	edge[cnt].nxt=head[b];
+	head[b]=cnt++;
+}
+void init()
+{
+		cnt=ans=sum=0;
+		memset(head,-1,sizeof(head));
+		for(int i=1;i&lt;=n;i++)
+			scanf("%s",mp[i]+1);
+		s=1,t=2;
+		for(int i=1;i&lt;=n;i++)
+		for(int j=1;j&lt;=m;j++)
+		{
+			int num=(i-1)*m+j+2;
+			if(mp[i][j]=='X')
+			{
+				sum++;
+				add(s,num,1); 
+			}
+		}
+		nn=2+n*m;
+}
+int dfs(int x,int y)
+{
+    vi[x][y]=1;
+	if(mp[x][y]=='@')
+	return 1;
+	for(int i=0;i&lt;4;i++)
+	{
+		int xx=x+dx[i];
+		int yy=y+dy[i];
+		if(!in(xx,yy))
+			continue;
+		if(vi[xx][yy])
+		continue;
+		if(dfs(xx,yy))
+		return 1;
+	}
+	return 0;
+}
+int ok()
+{
+	for(int i=1;i&lt;=n;i++)
+	for(int j=1;j&lt;=m;j++)
+	{
+		memset(vi,0,sizeof(vi));
+		if(mp[i][j]=='X'&amp;&amp;!dfs(i,j))
+		return 1;
+	}
+	return 0;
+}
+int gfs(int x,int flow)
+{
+	if(x==t)
+	return flow;
+	int temp=flow,pos=nn-1,j;
+	for(j=head[x];j!=-1;j=edge[j].nxt)
+	{
+		int y=edge[j].to;
+		int c=edge[j].f;
+		if(c&gt;0&amp;&amp;dis[x]==dis[y]+1)
+		{
+			int temp_flow=gfs(y,min(temp,c));
+			temp-=temp_flow;
+			edge[j].f-=temp_flow;
+			edge[j^1].f+=temp_flow;
+			if(temp==0||dis[s]==nn)
+			return flow-temp;
+		}
+		if(c&gt;0&amp;&amp;pos&gt;dis[y])
+		pos=dis[y];
+	}
+	if(temp==flow)
+	{
+		if(!(--gap[dis[x]]))
+		dis[s]=nn;
+		else
+		gap[dis[x]=pos+1]++;
+	}
+	return flow-temp;
+}
+int sap()
+{
+    int maxflow=0;
+	memset(gap,0,sizeof(gap));
+	memset(dis,0,sizeof(dis));
+	gap[0]=nn;
+	while(dis[s]&lt;nn)
+	{
+		maxflow+=gfs(s,inf);
+	}
+	return maxflow;
+}
+int judge(int ti)
+{
+	for(int i=1;i&lt;=n;i++)
+	for(int j=1;j&lt;=m;j++)
+	{
+		int u=(i-1)*m+j;
+		u=(ti-1)*m*n+2+u;
+		if(mp[i][j]=='#')
+		continue;
+		for(int k=0;k&lt;5;k++)
+		{
+			int x=i+di[k][0];
+			int y=j+di[k][1];
+			int v=(x-1)*m+y;
+			v=ti*m*n+2+v;
+			if(!in(x,y))
+			continue;
+			add(u,v,1);
+		}
+	}
+	for(int i=1;i&lt;=n;i++)
+	for(int j=1;j&lt;=m;j++)
+	{
+		int v=(i-1)*m+j;
+		v=2+ti*m*n+v;
+		if(mp[i][j]=='@')
+		{
+		 add(v,t,1);
+      }
+    }
+	nn+=n*m;
+	ans+=sap();
+	return ans==sum;
+}
+int gao()
+{
+	if(sum==0)
+	return 0;
+	int ti=0;
+	while(1)
+	{
+		ti++;
+		if(judge(ti))
+		break;
+		//printf("%d",ti); 
+//		printf("%d",ans);
+	}
+	return ti;
+}
+int main()
+{
+	while(2==scanf("%d%d",&amp;n,&amp;m))
+	{
+		init();
+		if(ok())
+		{
+			printf("-1\n");
+			continue;
+		}
+		printf("%d\n",gao());
+	}
+	return 0;
+}</pre>
+<p>解题报告转自：http://blog.csdn.net/nash142857/article/details/7909386</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-16932">
+<article class="comment" id="comment-16932">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1832044043</a></span> on <a href="http://www.acmerblog.com/hdu-1733-Escape-2714.html#comment-16932" rel="nofollow"><time datetime="2015-06-14T08:40:34+00:00" pubdate="">2015年6月14日 at 上午8:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一种方法怎么会是O(log(m+n))呢？没有二分的话直接遍历应该就是O(m+n)吧？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-42775">
+<article class="comment" id="comment-42775">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">crazymage</a></span> on <a href="http://www.acmerblog.com/hdu-1733-Escape-2714.html#comment-42775" rel="nofollow"><time datetime="2015-06-04T18:44:48+00:00" pubdate="">2015年6月4日 at 下午6:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>大哥，你复制也看看是不是这题的答案才复制吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-16931">
+<article class="comment" id="comment-16931">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">AC_Grazy</a></span> on <a href="http://www.acmerblog.com/hdu-1733-Escape-2714.html#comment-16931" rel="nofollow"><time datetime="2015-05-01T07:33:34+00:00" pubdate="">2015年5月1日 at 上午7:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个才是我想要的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-16934">
+<article class="comment" id="comment-16934">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jue</a></span> on <a href="http://www.acmerblog.com/hdu-1733-Escape-2714.html#comment-16934" rel="nofollow"><time datetime="2015-02-18T01:26:19+00:00" pubdate="">2015年2月18日 at 上午1:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错的网站，建议添加些比赛信息</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-42780">
+<article class="comment" id="comment-42780">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jixiangniao993</a></span> on <a href="http://www.acmerblog.com/hdu-1733-Escape-2714.html#comment-42780" rel="nofollow"><time datetime="2015-02-15T23:21:42+00:00" pubdate="">2015年2月15日 at 下午11:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>能不能说一下tmp数组和solve都是干嘛的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-16930">
+<article class="comment" id="comment-16930">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">liuk</a></span> on <a href="http://www.acmerblog.com/hdu-1733-Escape-2714.html#comment-16930" rel="nofollow"><time datetime="2014-11-10T12:41:14+00:00" pubdate="">2014年11月10日 at 下午12:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很棒的网站，加油！⛽️</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-42776">
+<article class="comment" id="comment-42776">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zclzcllove</a></span> on <a href="http://www.acmerblog.com/hdu-1733-Escape-2714.html#comment-42776" rel="nofollow"><time datetime="2014-10-20T11:40:33+00:00" pubdate="">2014年10月20日 at 上午11:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈呀！这个Dijkstra模板好长OwQ！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-42778">
+<article class="comment" id="comment-42778">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mr_zhang2011</a></span> on <a href="http://www.acmerblog.com/hdu-1733-Escape-2714.html#comment-42778" rel="nofollow"><time datetime="2014-08-13T23:30:02+00:00" pubdate="">2014年8月13日 at 下午11:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-42777">
+<article class="comment" id="comment-42777">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">didiaozuoren</a></span> on <a href="http://www.acmerblog.com/hdu-1733-Escape-2714.html#comment-42777" rel="nofollow"><time datetime="2014-08-05T06:18:01+00:00" pubdate="">2014年8月5日 at 上午6:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很棒的网站，加油！⛽️</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-16933">
+<article class="comment" id="comment-16933">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">changjf</a></span> on <a href="http://www.acmerblog.com/hdu-1733-Escape-2714.html#comment-16933" rel="nofollow"><time datetime="2014-07-17T02:10:08+00:00" pubdate="">2014年7月17日 at 上午2:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序是错的吧，明显没有判断不和该节点相邻的其他节点是否相互相邻</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-16929">
+<article class="comment" id="comment-16929">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ssjssh</a></span> on <a href="http://www.acmerblog.com/hdu-1733-Escape-2714.html#comment-16929" rel="nofollow"><time datetime="2014-03-29T07:38:08+00:00" pubdate="">2014年3月29日 at 上午7:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>厉害，支持</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-42779">
+<article class="comment" id="comment-42779">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">oneal</a></span> on <a href="http://www.acmerblog.com/hdu-1733-Escape-2714.html#comment-42779" rel="nofollow"><time datetime="2014-01-26T22:21:38+00:00" pubdate="">2014年1月26日 at 下午10:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>站长好。我是一个准备创业的互联网小白,我们打算做一个有关国*际*游*学的平台。手上也有了一些境外资源。现阶段的团队现在没有cto.原意出让一些管理股寻找一个靠谱的技术专家做合伙人, 不知道是不是能得到您的帮助。发个帖子或者其他方式。期待您的回应。可以加我微信tianxielemon聊聊。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-16935">
+<article class="comment" id="comment-16935">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">AC_Grazy</a></span> on <a href="http://www.acmerblog.com/hdu-1733-Escape-2714.html#comment-16935" rel="nofollow"><time datetime="2013-12-25T04:05:43+00:00" pubdate="">2013年12月25日 at 上午4:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跟书上的解法不一样，不知道哪个效率要高些</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

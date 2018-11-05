@@ -1,0 +1,270 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>09-17</div>
+<div class="tit"><h1 class="entry-title">HDU 4757-Tree-线段树-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/dfs" rel="category tag" title="查看DFS搜索中的全部文章">DFS搜索</a>, <a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/data-struct/trees" rel="category tag" title="查看树形结构中的全部文章">树形结构</a></span><span class="i4">围观71次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7802" href="http://www.acmerblog.com/hdu-4757-tree-7802.html#comments" title="《HDU 4757-Tree-线段树-[解题报告]HOJ》上的评论">5 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Tree</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+  Zero and One are good friends who always have fun with each other. This time, they decide to do something on a tree which is a kind of graph that there is only one path from node to node. First, Zero will give One an tree and every node in this tree has a value. Then, Zero will ask One a series of queries. Each query contains three parameters: x, y, z which mean that he want to know the maximum value produced by z xor each value on the path from node x to node y (include node x, node y). Unfortunately, One has no idea in this question. So he need you to solve it. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+  There are several test cases and the cases end with EOF. For each case:
+<p>  The first line contains two integers n(1&lt;=n&lt;=10^5) and m(1&lt;=m&lt;=10^5), which are the amount of tree’s nodes and queries, respectively.</p>
+<p>  The second line contains n integers a[1..n] and a[i](0&lt;=a[i]&lt;2^{16}) is the value on the ith node.</p>
+<p>  The next n�C1 lines contains two integers u v, which means there is an connection between u and v.</p>
+<p>  The next m lines contains three integers x y z, which are the parameters of Zero’s query. </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+  There are several test cases and the cases end with EOF. For each case:
+<p>  The first line contains two integers n(1&lt;=n&lt;=10^5) and m(1&lt;=m&lt;=10^5), which are the amount of tree’s nodes and queries, respectively.</p>
+<p>  The second line contains n integers a[1..n] and a[i](0&lt;=a[i]&lt;2^{16}) is the value on the ith node.</p>
+<p>  The next n�C1 lines contains two integers u v, which means there is an connection between u and v.</p>
+<p>  The next m lines contains three integers x y z, which are the parameters of Zero’s query.</p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3 2
+1 2 2
+1 2
+2 3
+1 3 1
+2 3 2</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+3
+0</pre>
+<p> <!-- problem end --></p>
+<p>可持久化trie树。不会可持久化数据结构的话推荐先看陈立杰的论文。先掌握可持久化线段树和可持久化trie树。</p>
+<pre class="brush:cpp" name="code">//可持久化trie树，题目已知一棵树，每个点有点权，询问一对点路径上点权与给定值异或的最大值
+#pragma comment(linker, "/STACK:1024000000,1024000000")
+#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+#include &lt;algorithm&gt;
+#define N 100100
+using namespace std;
+
+struct Edge{
+	int v,next;
+}edge[N*2];
+
+int head[N],val[N],cnt,n,m;
+
+void addedge(int u,int v){
+	edge[cnt].v=v;
+	edge[cnt].next=head[u];
+	head[u]=cnt++;
+	edge[cnt].v=u;
+	edge[cnt].next=head[v];
+	head[v]=cnt++;
+}
+
+struct Trie{
+	int go[2],cnt;
+}trie[N*17];
+int root[N],tot;
+
+int insert(int id,int num){
+	int p=++tot,tem=p;
+	trie[p]=trie[id];
+	for(int i=15;i&gt;=0;i--){
+		int tmp=(num&gt;&gt;i)&amp;1;
+		trie[++tot]=trie[trie[p].go[tmp]];
+		trie[tot].cnt++;
+		trie[p].go[tmp]=tot;
+		p=tot;
+	}
+	return tem;
+}
+
+void dfs(int u,int father){
+	root[u]=insert(root[father],val[u]);
+	for(int i=head[u];i!=-1;i=edge[i].next){
+		int v=edge[i].v;
+		if(v==father)continue;
+		dfs(v,u);
+	}
+}
+
+struct Query{
+	int v,id,w,next;
+}query[N*2];
+
+int head2[N],cnt2,f[N],lca[N],ans[N];
+bool flag[N];
+
+void addedge2(int u,int v,int w,int id){
+	query[cnt2].v=v;
+	query[cnt2].w=w;
+	query[cnt2].id=id;
+	query[cnt2].next=head2[u];
+	head2[u]=cnt2++;
+	query[cnt2].v=u;
+	query[cnt2].w=w;
+	query[cnt2].id=id;
+	query[cnt2].next=head2[v];
+	head2[v]=cnt2++;
+}
+
+int find(int u){
+	if(u==f[u]) return u;
+	return f[u]=find(f[u]);
+}
+
+void tarjan(int u,int father){
+	for(int i=head[u];i!=-1;i=edge[i].next){
+		int v=edge[i].v;
+		if(v==father) continue;
+		tarjan(v,u);
+		f[v]=u;
+	}
+	flag[u]=1;
+	for(int i=head2[u];i!=-1;i=query[i].next){
+		int v=query[i].v;
+		if(flag[v]){
+			lca[query[i].id]=find(v);
+		}
+	}
+}
+
+int findans(int u,int v,int LCA,int num){
+	int p1=root[u],p2=root[v],p3=root[LCA],ans_tmp=0;
+	for(int i=15;i&gt;=0;i--){
+		int tmp=(num&gt;&gt;i)&amp;1;
+		int sum=trie[trie[p1].go[!tmp]].cnt+trie[trie[p2].go[!tmp]].cnt-2*trie[trie[p3].go[!tmp]].cnt;
+		if(sum&gt;0){
+			p1=trie[p1].go[!tmp];
+			p2=trie[p2].go[!tmp];
+			p3=trie[p3].go[!tmp];
+			ans_tmp+=1&lt;&lt;i;
+		}
+		else{
+			p1=trie[p1].go[tmp];
+			p2=trie[p2].go[tmp];
+			p3=trie[p3].go[tmp];
+		}
+	}
+	return max(ans_tmp,num^val[LCA]);
+}
+
+void solve(){
+	for(int i=1;i&lt;=n;i++)
+		for(int j=head2[i];j!=-1;j=query[j].next){
+			int id=query[j].id;
+			if(ans[id]!=-1)continue;
+			ans[id]=findans(i,query[j].v,lca[id],query[j].w);
+		}
+	for(int i=1;i&lt;=m;i++) printf("%d\n",ans[i]);
+}
+
+void init(){
+	memset(head,-1,sizeof(head));
+	memset(head2,-1,sizeof(head2));
+	memset(ans,-1,sizeof(ans));
+	cnt=cnt2=0;
+}
+
+int main(){
+	int u,v,w;
+	while(scanf("%d %d",&amp;n,&amp;m)!=EOF){
+		init();
+		for(int i=1;i&lt;=n;i++) scanf("%d",&amp;val[i]);
+		for(int i=1;i&lt;n;i++){
+			scanf("%d %d",&amp;u,&amp;v);
+			addedge(u,v);
+		}
+		root[0]=0;
+		trie[0].go[0]=trie[0].go[1]=0;
+		trie[0].cnt=0;
+		tot=0;
+		dfs(1,0);
+		for(int i=1;i&lt;=m;i++){
+			scanf("%d %d %d",&amp;u,&amp;v,&amp;w);
+			addedge2(u,v,w,i);
+		}
+		for(int i=1;i&lt;=n;i++) f[i]=i;
+		memset(flag,0,sizeof(flag));
+		tarjan(1,0);
+		solve();
+	}
+    return 0;
+}
+</pre>
+<p>参考：http://blog.csdn.net/waitfor_/article/details/12683231</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-102376">
+<article class="comment" id="comment-102376">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919465897" rel="external nofollow">新用户157062</a></span> on <a href="http://www.acmerblog.com/hdu-4757-tree-7802.html#comment-102376" rel="nofollow"><time datetime="2017-04-24T13:59:05+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你是脑壳进水了吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101901">
+<article class="comment" id="comment-101901">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456547" rel="external nofollow">新用户244940</a></span> on <a href="http://www.acmerblog.com/hdu-4757-tree-7802.html#comment-101901" rel="nofollow"><time datetime="2017-04-23T14:02:18+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>本人 最近把腹肌吃没了 哎虽说不胖   但也有点赘肉 我应经告别了怎么吃都不胖的时代了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101441">
+<article class="comment" id="comment-101441">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518491" rel="external nofollow">新用户418322</a></span> on <a href="http://www.acmerblog.com/hdu-4757-tree-7802.html#comment-101441" rel="nofollow"><time datetime="2017-04-22T13:59:15+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>最新院线大片极速播放，TVB电视剧可以当晚同步播放啦！超清在线观看【粤语/国语版】支持电脑手机播放</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100644">
+<article class="comment" id="comment-100644">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514745" rel="external nofollow">新用户060134</a></span> on <a href="http://www.acmerblog.com/hdu-4757-tree-7802.html#comment-100644" rel="nofollow"><time datetime="2017-04-21T14:04:13+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Shut up ,and take my money.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96815">
+<article class="comment" id="comment-96815">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525262" rel="external nofollow">新用户496570</a></span> on <a href="http://www.acmerblog.com/hdu-4757-tree-7802.html#comment-96815" rel="nofollow"><time datetime="2017-04-19T19:07:53+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Bray Wyatt被你吃了？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

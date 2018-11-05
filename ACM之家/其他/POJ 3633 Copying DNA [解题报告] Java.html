@@ -1,0 +1,323 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>11-13</div>
+<div class="tit"><h1 class="entry-title">POJ 3633 Copying DNA [解题报告] Java</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/zhuanti/java-poj" rel="category tag" title="查看Java解POJ中的全部文章">Java解POJ</a>, <a href="http://www.acmerblog.com/category/problemset/poj2" rel="category tag" title="查看POJ-北大中的全部文章">POJ-北大</a>, <a href="http://www.acmerblog.com/category/search/backtracking" rel="category tag" title="查看回溯和剪枝中的全部文章">回溯和剪枝</a>, <a href="http://www.acmerblog.com/category/search" rel="category tag" title="查看搜索中的全部文章">搜索</a>, <a href="http://www.acmerblog.com/category/search/cut" rel="category tag" title="查看记忆化搜索中的全部文章">记忆化搜索</a></span><span class="i4">围观719次</span><span class="i3"><a class="ds-thread-count" data-thread-key="1109" href="http://www.acmerblog.com/POJ-3633-Copying-DNA-blog-1109.html#comments" title="《POJ 3633 Copying DNA [解题报告] Java》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Copying DNA</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+<div>
+<p>Evolution is a seemingly random process which works in a way which resembles certain approaches we use to get approximate solutions to hard combinatorial problems. You are now to do something completely different.</p>
+<p>Given a DNA string <i>S</i> from the alphabet {A,C,G,T}, find the minimal number of copy operations needed to create another string <i>T</i>. You may reverse the strings you copy, and copy both from <i>S</i> and the pieces of your partial <i>T</i>. You may put these pieces together at any time. You may only copy contiguous parts of your partial <i>T</i>, and all copied strings must be used in your final <i>T</i>. Example: From <i>S</i> = “ACTG” create <i>T</i> = “GTACTATTATA”</p>
+<ol>
+<li>Get GT……… by copying and reversing "TG" from <i>S</i>.</li>
+<li>Get GTAC……. by copying "AC" from <i>S</i>.</li>
+<li>Get GTAC…TA.. by copying "TA" from the partial <i>T</i>.</li>
+<li>Get GTAC…TAAT by copying and reversing "TA" from the partial <i>T</i>.</li>
+<li>Get GTACAATTAAT by copying "AAT" from the partial <i>T</i>.</li>
+</ol>
+</div></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+<p>The first line of input gives a single integer, 1 ≤ <i>t</i> ≤ 100, the number of test cases. Then follow, for each test case, a line with the string <i>S</i> of length 1 ≤ <i>m</i> ≤ 18, and a line with the string <i>T</i> of length 1 ≤ <i>n</i> ≤ 18.</p>
+</div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+<p>Output for each test case the number of copy operations needed to create <i>T</i> from <i>S</i>, or "impossible" if it cannot be done.</p>
+</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+5
+ACGT
+GTAC
+A
+C
+ACGT
+TGCA
+ACGT
+TCGATCGA
+A
+AAAAAAAAAAAAAAAAAA</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+impossible
+1
+4
+6</pre>
+<div class="mybigtile mysubmit"> <a href="http://poj.org/submit?problem_id=3633">提交代码</a>   <a href="http://poj.org/bbs?problem_id=3633">问题讨论</a>   <a href="http://poj.org/problemstatus?problem_id=3633">数据统计</a> </div>
+<div>
+<p class="mytitle"> 解题代码:</p>
+</div>
+<pre class="brush:java ">//* @author 
+/**
+ * @version 2009/08/26
+ * @author sbzlyessit
+ */
+
+ /*搜索题. 状态不多, 可用记忆化搜索, 但是转移耗费巨大, 所以仍需剪枝. 
+  *最主要的一项剪枝就是每一位匹配时都要取最长的长度进行下一步搜索. 
+  */
+
+import java.io.*;
+import java.util.*;
+
+public class Main {
+
+    private static final int        MAX_N = 18;
+
+    private static BufferedReader   in =
+        new BufferedReader(new InputStreamReader(System.in));
+    private static char[]           s, t, sr;
+    private static int[]            matchs, matchsr;
+    private static int[]            hash = new int[1 &lt;&lt;  MAX_N];
+
+    public static void main(String[] argv) throws Exception {
+        for(int caseSize = Integer.parseInt(in.readLine()); caseSize &gt; 0; caseSize--){
+            if (!readIn()) {
+                System.out.println("impossible");
+            } else {
+                System.out.println(solve(0));
+            }
+        }
+    }
+
+    private static boolean readIn() throws Exception {
+        String  S = in.readLine(), T = in.readLine();
+        int     i;
+        if ((!S.contains("A") &amp;&amp; T.contains("A")) || (!S.contains("C") &amp;&amp; T.contains("C")) ||
+                (!S.contains("G") &amp;&amp; T.contains("G")) || (!S.contains("T") &amp;&amp; T.contains("T"))) {
+            return false;
+        }
+        s = S.toCharArray();
+        t = T.toCharArray();
+        sr = new char[s.length];
+        matchs = new int[t.length];
+        matchsr = new int[t.length];
+        Arrays.fill(hash, Integer.MAX_VALUE);
+        hash[(1 &lt;&lt;  t.length) - 1] = 0;
+        reverse(s, sr);
+        for (i = 0; i &lt;  t.length; i++) {
+            matchs[i] = longestMatch(i, t.length, s);
+            matchsr[i] = longestMatch(i, t.length, sr);
+        }
+        return true;
+    }
+
+    private static void reverse(char[] a, char[] ar) {
+        for (int i = 0; i &lt; a.length; i++) {
+            ar[i] = a[a.length - i - 1];
+        }
+    }
+
+    private static int longestMatch(int from, int to, char[] a) {
+        int i, len, max = 0;
+        for (i = 0, len = 0; i &lt; a.length; i++, len = 0) {
+            while (len &lt; to - from &amp;&amp; i + len &lt; a.length &amp;&amp; a[i + len] == t[from + len]) {
+                len++;
+            }
+            max = Math.max(max, len);
+        }
+        return max;
+    }
+
+    private static int solve(int state) {
+        if (hash[state] != Integer.MAX_VALUE) {
+            return hash[state];
+        }
+        char[] done = new char[t.length];
+        char[] doner = new char[t.length];
+        int i, m = 0, len, g;
+        for (i = 0; i &lt; done.length; i++) {
+            done[i] = (state &amp; (1 &lt;&lt; i)) != 0 ? t[i] : '0';
+        }
+        reverse(done, doner);
+        for(i = 0; i &lt; t.length; i++) {
+            if ((state &amp; (1 &lt;&lt; i)) != 0) {
+                m = 0;
+                continue;
+            }
+            len = 1;
+            while (i + len &lt; t.length &amp;&amp; (state &amp; (1 &lt;&lt; (i + len))) == 0) {
+                len++;
+            }
+            g = Math.min(len, Math.max(matchs[i], matchsr[i]));
+            g = Math.max(g, longestMatch(i, i + len, done));
+            g = Math.max(g, longestMatch(i, i + len, doner));
+            if(g &gt; m - 1) {
+                hash[state] = Math.min(hash[state], 1 + solve(state | ((1 &lt;&lt; (i + g)) - (1 &lt;&lt; i))));
+            }
+            m = g;
+        }
+        return hash[state];
+    }
+
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-9888">
+<article class="comment" id="comment-9888">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">we</a></span> on <a href="http://www.acmerblog.com/POJ-3633-Copying-DNA-blog-1109.html#comment-9888" rel="nofollow"><time datetime="2015-06-04T15:10:37+00:00" pubdate="">2015年6月4日 at 下午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，就是把这32位当成一个长度为32的数组</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-9892">
+<article class="comment" id="comment-9892">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">edward2414</a></span> on <a href="http://www.acmerblog.com/POJ-3633-Copying-DNA-blog-1109.html#comment-9892" rel="nofollow"><time datetime="2015-06-02T18:15:44+00:00" pubdate="">2015年6月2日 at 下午6:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>请问printAllCombination的时间复杂度怎么分析呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-39264">
+<article class="comment" id="comment-39264">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">haojunyu</a></span> on <a href="http://www.acmerblog.com/POJ-3633-Copying-DNA-blog-1109.html#comment-39264" rel="nofollow"><time datetime="2015-05-16T21:25:43+00:00" pubdate="">2015年5月16日 at 下午9:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>博主的C++功底真是好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-9891">
+<article class="comment" id="comment-9891">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">super157</a></span> on <a href="http://www.acmerblog.com/POJ-3633-Copying-DNA-blog-1109.html#comment-9891" rel="nofollow"><time datetime="2015-04-23T15:48:44+00:00" pubdate="">2015年4月23日 at 下午3:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈呀！这个模板好长OwQ！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-9886">
+<article class="comment" id="comment-9886">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rtaxa</a></span> on <a href="http://www.acmerblog.com/POJ-3633-Copying-DNA-blog-1109.html#comment-9886" rel="nofollow"><time datetime="2015-03-10T02:21:12+00:00" pubdate="">2015年3月10日 at 上午2:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>约瑟夫也用说这么长……很成熟的一个问题了，分治的方法解起来o(n)就可以了，有兴趣可以看看具体数学的第一章，关于约瑟夫问题推导出了一系列的结论，很漂亮</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-9894">
+<article class="comment" id="comment-9894">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tangxiansheng</a></span> on <a href="http://www.acmerblog.com/POJ-3633-Copying-DNA-blog-1109.html#comment-9894" rel="nofollow"><time datetime="2015-01-04T00:43:09+00:00" pubdate="">2015年1月4日 at 上午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>非常好，初学者就应该先理解递归</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-9885">
+<article class="comment" id="comment-9885">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">magicSky</a></span> on <a href="http://www.acmerblog.com/POJ-3633-Copying-DNA-blog-1109.html#comment-9885" rel="nofollow"><time datetime="2014-09-28T10:30:12+00:00" pubdate="">2014年9月28日 at 上午10:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序只能输出一个子序列</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-9889">
+<article class="comment" id="comment-9889">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">PriceKiller</a></span> on <a href="http://www.acmerblog.com/POJ-3633-Copying-DNA-blog-1109.html#comment-9889" rel="nofollow"><time datetime="2014-06-11T21:46:30+00:00" pubdate="">2014年6月11日 at 下午9:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>We do not harbor that I couldn’t remove other individuals’ problems whenever this arrived at.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-53872">
+<article class="comment" id="comment-53872">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Mayboy</a></span> on <a href="http://www.acmerblog.com/POJ-3633-Copying-DNA-blog-1109.html#comment-53872" rel="nofollow"><time datetime="2014-04-19T10:47:44+00:00" pubdate="">2014年4月19日 at 上午10:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>good !</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-9887">
+<article class="comment" id="comment-9887">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">vintion</a></span> on <a href="http://www.acmerblog.com/POJ-3633-Copying-DNA-blog-1109.html#comment-9887" rel="nofollow"><time datetime="2014-04-08T09:13:24+00:00" pubdate="">2014年4月8日 at 上午9:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一个数表示数列的个数，5表示之后有5个数</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-9893">
+<article class="comment" id="comment-9893">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tangzhihua</a></span> on <a href="http://www.acmerblog.com/POJ-3633-Copying-DNA-blog-1109.html#comment-9893" rel="nofollow"><time datetime="2014-02-01T10:47:46+00:00" pubdate="">2014年2月1日 at 上午10:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是研发的在线笔试题吗?发现很多C啊，阿里不是JAVA多么？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-61118">
+<article class="comment" id="comment-61118">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Emlar</a></span> on <a href="http://www.acmerblog.com/POJ-3633-Copying-DNA-blog-1109.html#comment-61118" rel="nofollow"><time datetime="2014-01-28T05:08:49+00:00" pubdate="">2014年1月28日 at 上午5:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-9884">
+<article class="comment" id="comment-9884">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">actlea</a></span> on <a href="http://www.acmerblog.com/POJ-3633-Copying-DNA-blog-1109.html#comment-9884" rel="nofollow"><time datetime="2013-12-11T11:21:22+00:00" pubdate="">2013年12月11日 at 上午11:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚开始学习，为啥会报错了，你试过了吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-9890">
+<article class="comment" id="comment-9890">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dream</a></span> on <a href="http://www.acmerblog.com/POJ-3633-Copying-DNA-blog-1109.html#comment-9890" rel="nofollow"><time datetime="2013-11-27T07:21:00+00:00" pubdate="">2013年11月27日 at 上午7:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>此题答案确实应该是A。文中已修改，感谢一楼的提醒！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,438 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-02</div>
+<div class="tit"><h1 class="entry-title">HDU 3103-Shoring Up the Levees[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观339次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4918" href="http://www.acmerblog.com/hdu-3103-shoring-up-the-levees-4918.html#comments" title="《HDU 3103-Shoring Up the Levees[解题报告]HOJ》上的评论">26 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Shoring Up the Levees</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+The tiny country of Waterlogged is protected by a series of levees that form a quadrilateral as shown below:
+<p></p><center><img alt="Lawrence of Arabia" src="http://www.acmerblog.com/img/1394162517834.jpg"/></center>
+<p>The quadrilateral is defined by four vertices. The levees partition the country into four quadrants. Each quadrant is identified by a pair of vertices representing the outside edge of that quadrant. For example, Quadrant 1 shown below is defined by the points (x1, y1) and (x2, y2) .</p>
+<p></p><center><img alt="Lawrence of Arabia" src="http://www.acmerblog.com/img/1394162517965.jpg"/></center>
+<p>It happens very often that the country of Waterlogged becomes flooded, and the levees need to be reinforced, but their country is poor and they have limited resources. They would like to be able to reinforce those levees that encompass the largest area first, then the next largest second, then the next largest third, and the smallest area fourth.</p>
+<p>Help Waterlogged identify which quadrants are the largest, and the length of the levees around them. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+here will be several sets of input. Each set will consist of eight real numbers, on a single line. Those numbers will represent, in order:
+<p>X1 Y1 X2 Y2 X3 Y3 X4 Y4</p>
+<p>The four points are guaranteed to form a convex quadrilateral when taken in order — that is, there will be no concavities, and no lines crossing. Every number will be in the range from -1000.0 to 1000.0 inclusive. No Quadrant will have an area or a perimeter smaller than 0.001. End of the input will be a line with eight 0.0′s. </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+here will be several sets of input. Each set will consist of eight real numbers, on a single line. Those numbers will represent, in order:
+<p>X1 Y1 X2 Y2 X3 Y3 X4 Y4</p>
+<p>The four points are guaranteed to form a convex quadrilateral when taken in order — that is, there will be no concavities, and no lines crossing. Every number will be in the range from -1000.0 to 1000.0 inclusive. No Quadrant will have an area or a perimeter smaller than 0.001. End of the input will be a line with eight 0.0′s.</p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1 2 1 5 5 2 2 0
+3.5 2.2 4.8 -9.6 -1.2 -4.4 -8.9 12.4
+0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+5.100 11.459 3.400 9.045 0.900 6.659 0.600 4.876
+44.548 38.972 21.982 25.997 20.342 38.374 10.038 19.043</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include &lt;iostream&gt;
+#include &lt;cmath&gt;
+#include &lt;vector&gt;
+#include &lt;algorithm&gt;
+#include &lt;complex&gt;
+#include &lt;iomanip&gt;
+
+using namespace std;
+typedef long double ld;
+typedef complex&lt;ld&gt; pt;
+typedef vector&lt;pt&gt; pol;
+
+////////////////////////////////////////////////////////////////////////////////
+// General 2D geometry, Polygon cutting, Point in polygon
+////////////////////////////////////////////////////////////////////////////////
+const int INF = 0x3f3f3f3f; const int MINF = 0xc0c0c0c0;
+const ld EPS = 1e-9; const ld PI = acos(-1.L);
+ld cp(const pt &amp;a, const pt &amp;b) { return a.real()*b.imag() - b.real()*a.imag();}
+ld dp(const pt &amp;a, const pt &amp;b) { return a.real()*b.real() + a.imag()*b.imag();}
+inline ld sgn(const ld&amp; x) { return abs(x) &lt; EPS ? 0 : x/abs(x); }
+inline bool cmp_lex(const pt&amp; a, const pt&amp; b)
+{ return a.real() &lt; b.real() || (a.real() == b.real() &amp;&amp; a.imag() &lt; b.imag()); }
+inline bool cmp_lex_i(const pt &amp;a, const pt &amp;b)
+{ return a.imag() &lt; b.imag() || (a.imag() == b.imag() &amp;&amp; a.real() &lt; b.real()); }
+
+// handles ALL cases, change occurences of &lt;= to &lt; to exclude endpoints
+bool seg_x_seg(pt a1, pt a2, pt b1, pt b2){
+  //if (a1==a2 || b1==b2) return false; // uncomment to exclude endpoints
+  int s1 = sgn(cp(a2 - a1, b1 - a1)), s2 = sgn(cp(a2 - a1, b2 - a1));
+  int s3 = sgn(cp(b2 - b1, a1 - b1)), s4 = sgn(cp(b2 - b1, a2 - b1));
+  if(!s1 &amp;&amp; !s2 &amp;&amp; !s3) { // collinear
+    if (cmp_lex(a2, a1)) swap(a1,a2); if (cmp_lex(b2, b1)) swap(b1, b2);
+    return !cmp_lex(b2, a1) &amp;&amp; !cmp_lex(a2, b1);
+    //return cmp_lex(a1, b2) &amp;&amp; cmp_lex(b1, a2);//uncomment to exclude endpoints
+  } return s1*s2 &lt;= 0 &amp;&amp; s3*s4 &lt;= 0; }
+
+inline pt line_inter(const pt &amp;a, const pt &amp;b, const pt &amp;c, const pt &amp;d){
+  return a + cp(c - a, d - c)/cp(b - a, d - c) * (b - a); }
+
+// Projection of (a -&gt; p) to vector (a -&gt; b), SIGNED - positive in front
+inline ld proj_dist(const pt &amp;a, const pt &amp;b, const pt &amp;p){
+  return dp(b - a, p - a) / abs(b - a); }
+
+// SIGNED distance. Pt on the right of vector (a -&gt; b) will be NEGATIVE.
+inline ld lp_dist(const pt &amp;a, const pt &amp;b, const pt &amp;p){
+  return cp(b - a, p - a) / abs(b - a); }
+
+// Line segment (a, b) to pt p distance.
+inline ld lsp_dist(const pt &amp;a, const pt &amp;b, const pt &amp;p){
+  return dp(b - a, p - a) &gt; 0 &amp;&amp; dp(a - b, p - b) &gt; 0 ?
+    abs(cp(b - a, p - a) / abs(b - a)) : min(abs(a - p), abs(b - p)); }
+
+// Closest pt on line segment (a, b) to pt p.
+inline pt lsp_closest(const pt &amp;a, const pt &amp;b, const pt &amp;p){
+  if (dp(b - a, p - a) &gt; 0 &amp;&amp; dp(a - b, p - b) &gt; 0)
+    return abs(cp(b - a, p - a))&lt;EPS ? p : line_inter(a, b, p, p+(a-b)*pt(0,1));
+  return abs(a - p) &lt; abs(b - p) ? a : b; }
+
+// Area of a polygon (convex or concave). Always non-negative.
+ld area(pol v){ ld out=0;
+  for(int i = v.size()-1, j = 0; j &lt; v.size(); i = j++) out += cp(v[i], v[j]);
+  return abs(out)/2; }
+
+ld peri(pol v) {
+    ld out=0;
+    for(int i=0, j=v.size(); i&lt;j; i++) {
+        out+= abs(v[i]-v[(i+1)%j]);
+    }
+    return out;
+}
+
+long long round3(ld a) {
+    return (int) (a*1000 + 0.5);
+}
+
+bool sort_area(pol a, pol b) {
+    if(round3(area(a)) == round3(area(b))) {
+        return peri(a) &gt; peri(b);
+    } else {
+        return area(a) &gt; area(b);
+    }
+}
+
+int main() {
+    ld ax, ay, bx, by, cx, cy, dx, dy;
+    while(cin &gt;&gt; ax&gt;&gt;ay&gt;&gt;bx&gt;&gt;by&gt;&gt;cx&gt;&gt;cy&gt;&gt;dx&gt;&gt;dy &amp;&amp; 
+        (abs(ax)&gt;EPS ||
+            abs(bx)&gt;EPS || 
+            abs(cx)&gt;EPS || 
+            abs(dx)&gt;EPS || 
+            abs(ay)&gt;EPS || 
+            abs(by)&gt;EPS || 
+            abs(cy)&gt;EPS || 
+            abs(dy)&gt;EPS)) {
+        pt a(ax,ay), b(bx,by), c(cx,cy), d(dx,dy), o = line_inter(a,c,b,d);
+        //cerr &lt;&lt; a &lt;&lt; " " &lt;&lt; b &lt;&lt; " " &lt;&lt; c &lt;&lt; " " &lt;&lt; d &lt;&lt; " " &lt;&lt; o &lt;&lt; endl;
+        vector&lt;pol&gt;p(4);
+        for(int i=0; i&lt;4; i++) {
+            p[i].push_back(o);
+        }
+        p[0].push_back(a);
+        p[0].push_back(b);
+        p[1].push_back(b);
+        p[1].push_back(c);
+        p[2].push_back(c);
+        p[2].push_back(d);
+        p[3].push_back(d);
+        p[3].push_back(a);
+        sort(p.begin(), p.end(), sort_area);
+
+        for(int i=0; i&lt;4; i++) {
+            cout &lt;&lt; fixed &lt;&lt; setprecision(3) &lt;&lt; area(p[i]) &lt;&lt; " " &lt;&lt; peri(p[i]);
+            if(i&lt;3) cout &lt;&lt; " ";
+        }cout &lt;&lt; endl;
+    }
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-79095">
+<article class="comment" id="comment-79095">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521065" rel="external nofollow">新用户695329</a></span> on <a href="http://www.acmerblog.com/hdu-3103-shoring-up-the-levees-4918.html#comment-79095" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>一叨+二叨=叨叨叨</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79094">
+<article class="comment" id="comment-79094">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521065" rel="external nofollow">新用户695329</a></span> on <a href="http://www.acmerblog.com/hdu-3103-shoring-up-the-levees-4918.html#comment-79094" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>一叨+二叨=叨叨叨</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79093">
+<article class="comment" id="comment-79093">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521065" rel="external nofollow">新用户695329</a></span> on <a href="http://www.acmerblog.com/hdu-3103-shoring-up-the-levees-4918.html#comment-79093" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>一叨+二叨=叨叨叨</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79092">
+<article class="comment" id="comment-79092">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521065" rel="external nofollow">新用户695329</a></span> on <a href="http://www.acmerblog.com/hdu-3103-shoring-up-the-levees-4918.html#comment-79092" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>一叨+二叨=叨叨叨</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79091">
+<article class="comment" id="comment-79091">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521065" rel="external nofollow">新用户695329</a></span> on <a href="http://www.acmerblog.com/hdu-3103-shoring-up-the-levees-4918.html#comment-79091" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>一叨+二叨=叨叨叨</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79090">
+<article class="comment" id="comment-79090">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521065" rel="external nofollow">新用户695329</a></span> on <a href="http://www.acmerblog.com/hdu-3103-shoring-up-the-levees-4918.html#comment-79090" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>一叨+二叨=叨叨叨</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79089">
+<article class="comment" id="comment-79089">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521065" rel="external nofollow">新用户695329</a></span> on <a href="http://www.acmerblog.com/hdu-3103-shoring-up-the-levees-4918.html#comment-79089" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>一叨+二叨=叨叨叨</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79088">
+<article class="comment" id="comment-79088">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521065" rel="external nofollow">新用户695329</a></span> on <a href="http://www.acmerblog.com/hdu-3103-shoring-up-the-levees-4918.html#comment-79088" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>一叨+二叨=叨叨叨</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79087">
+<article class="comment" id="comment-79087">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521065" rel="external nofollow">新用户695329</a></span> on <a href="http://www.acmerblog.com/hdu-3103-shoring-up-the-levees-4918.html#comment-79087" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>一叨+二叨=叨叨叨</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79086">
+<article class="comment" id="comment-79086">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521065" rel="external nofollow">新用户695329</a></span> on <a href="http://www.acmerblog.com/hdu-3103-shoring-up-the-levees-4918.html#comment-79086" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>一叨+二叨=叨叨叨</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79085">
+<article class="comment" id="comment-79085">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521065" rel="external nofollow">新用户695329</a></span> on <a href="http://www.acmerblog.com/hdu-3103-shoring-up-the-levees-4918.html#comment-79085" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>一叨+二叨=叨叨叨</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79084">
+<article class="comment" id="comment-79084">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521065" rel="external nofollow">新用户695329</a></span> on <a href="http://www.acmerblog.com/hdu-3103-shoring-up-the-levees-4918.html#comment-79084" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>一叨+二叨=叨叨叨</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79083">
+<article class="comment" id="comment-79083">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521065" rel="external nofollow">新用户695329</a></span> on <a href="http://www.acmerblog.com/hdu-3103-shoring-up-the-levees-4918.html#comment-79083" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>一叨+二叨=叨叨叨</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27135">
+<article class="comment" id="comment-27135">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">leowww</a></span> on <a href="http://www.acmerblog.com/hdu-3103-shoring-up-the-levees-4918.html#comment-27135" rel="nofollow"><time datetime="2015-05-10T02:39:31+00:00" pubdate="">2015年5月10日 at 上午2:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>居然是机试，还和13年重复。题目不难</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47740">
+<article class="comment" id="comment-47740">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Watson</a></span> on <a href="http://www.acmerblog.com/hdu-3103-shoring-up-the-levees-4918.html#comment-47740" rel="nofollow"><time datetime="2015-05-06T16:39:50+00:00" pubdate="">2015年5月6日 at 下午4:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可以用公式。主要为了说明动态规划，如果要打表的话，这种方法也是较简单和高效的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27136">
+<article class="comment" id="comment-27136">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mcitdkj</a></span> on <a href="http://www.acmerblog.com/hdu-3103-shoring-up-the-levees-4918.html#comment-27136" rel="nofollow"><time datetime="2015-04-11T19:32:42+00:00" pubdate="">2015年4月11日 at 下午7:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>88行是多余的，可以删除</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-27139">
+<article class="comment" id="comment-27139">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">g29tony</a></span> on <a href="http://www.acmerblog.com/hdu-3103-shoring-up-the-levees-4918.html#comment-27139" rel="nofollow"><time datetime="2015-04-11T16:53:24+00:00" pubdate="">2015年4月11日 at 下午4:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Often We don’t set up on weblogs, but I would like to condition that this established up really forced me individually to do this! considerably outstanding publish</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27134">
+<article class="comment" id="comment-27134">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">changjf</a></span> on <a href="http://www.acmerblog.com/hdu-3103-shoring-up-the-levees-4918.html#comment-27134" rel="nofollow"><time datetime="2015-02-12T22:52:52+00:00" pubdate="">2015年2月12日 at 下午10:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已更正。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-27138">
+<article class="comment" id="comment-27138">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">acmer29</a></span> on <a href="http://www.acmerblog.com/hdu-3103-shoring-up-the-levees-4918.html#comment-27138" rel="nofollow"><time datetime="2014-12-21T17:35:22+00:00" pubdate="">2014年12月21日 at 下午5:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个条件 “两个数的乘积最小”可以忽略</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27137">
+<article class="comment" id="comment-27137">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jinxiang23</a></span> on <a href="http://www.acmerblog.com/hdu-3103-shoring-up-the-levees-4918.html#comment-27137" rel="nofollow"><time datetime="2014-12-13T14:56:00+00:00" pubdate="">2014年12月13日 at 下午2:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>very good solutions.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47739">
+<article class="comment" id="comment-47739">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">litaotao</a></span> on <a href="http://www.acmerblog.com/hdu-3103-shoring-up-the-levees-4918.html#comment-47739" rel="nofollow"><time datetime="2014-12-08T04:12:46+00:00" pubdate="">2014年12月8日 at 上午4:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Excellent Web-site! I required to ask if I might webpages and use a component of the net web website and use a number of factors for just about any faculty process. Please notify me through email regardless of whether that would be excellent. Many thanks</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27140">
+<article class="comment" id="comment-27140">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">modstart</a></span> on <a href="http://www.acmerblog.com/hdu-3103-shoring-up-the-levees-4918.html#comment-27140" rel="nofollow"><time datetime="2014-11-12T07:21:21+00:00" pubdate="">2014年11月12日 at 上午7:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈呀！这个Dijkstra模板好长OwQ！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47742">
+<article class="comment" id="comment-47742">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">reking</a></span> on <a href="http://www.acmerblog.com/hdu-3103-shoring-up-the-levees-4918.html#comment-47742" rel="nofollow"><time datetime="2014-10-11T16:53:30+00:00" pubdate="">2014年10月11日 at 下午4:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>顺利测试通过了，多谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63148">
+<article class="comment" id="comment-63148">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wizcabbit</a></span> on <a href="http://www.acmerblog.com/hdu-3103-shoring-up-the-levees-4918.html#comment-63148" rel="nofollow"><time datetime="2014-09-02T18:14:33+00:00" pubdate="">2014年9月2日 at 下午6:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是研发类的题还是算法类？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47741">
+<article class="comment" id="comment-47741">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dongxi</a></span> on <a href="http://www.acmerblog.com/hdu-3103-shoring-up-the-levees-4918.html#comment-47741" rel="nofollow"><time datetime="2014-07-30T07:34:02+00:00" pubdate="">2014年7月30日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>看见的晚了，只能提交一次唉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-47743">
+<article class="comment" id="comment-47743">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fanxianxian</a></span> on <a href="http://www.acmerblog.com/hdu-3103-shoring-up-the-levees-4918.html#comment-47743" rel="nofollow"><time datetime="2014-06-28T01:14:19+00:00" pubdate="">2014年6月28日 at 上午1:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Java真是解决大数的利器</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

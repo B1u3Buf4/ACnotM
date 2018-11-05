@@ -1,0 +1,418 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>04-14</div>
+<div class="tit"><h1 class="entry-title">HDU 3926-Hand in Hand-并查集-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/data-struct/union-find" rel="category tag" title="查看并查集中的全部文章">并查集</a>, <a href="http://www.acmerblog.com/category/basis/sort" rel="category tag" title="查看排序中的全部文章">排序</a></span><span class="i4">围观648次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6928" href="http://www.acmerblog.com/hdu-3926-hand-in-hand-6928.html#comments" title="《HDU 3926-Hand in Hand-并查集-[解题报告]HOJ》上的评论">22 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Hand in Hand</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+In order to get rid of Conan, Kaitou KID disguises himself as a teacher in the kindergarten. He knows kids love games and works out a new game called "hand in hand". 
+<p>Initially kids run on the playground randomly. When Kid says "stop", kids catch others’ hands immediately. One hand can catch any other hand randomly. It’s weird to have more than two hands get together so one hand grabs at most one other hand. After kids stop moving they form a graph.</p>
+<p>Everybody takes a look at the graph and repeat the above steps again to form another graph. Now Kid has a question for his kids: "Are the two graph isomorphism?"  </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line contains a single positive integer T( T &lt;= 100 ), indicating the number of datasets.<br/>There are two graphs in each case, for each graph:<br/>    first line contains N( 1 &lt;= N &lt;= 10^4 ) and M indicating the number of kids and connections.<br/>    the next M lines each have two integers u and v indicating kid u and v are "hand in hand".<br/>    You can assume each kid only has two hands. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The first line contains a single positive integer T( T &lt;= 100 ), indicating the number of datasets.<br/>There are two graphs in each case, for each graph:<br/>    first line contains N( 1 &lt;= N &lt;= 10^4 ) and M indicating the number of kids and connections.<br/>    the next M lines each have two integers u and v indicating kid u and v are "hand in hand".<br/>    You can assume each kid only has two hands.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+
+3 2
+1 2
+2 3
+3 2
+3 2
+2 1
+
+3 3
+1 2
+2 3
+3 1
+3 1
+1 2</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case #1: YES
+Case #2: NO</pre>
+<p> <!-- problem end --></p>
+<p>题目链接：<a>http://acm.hdu.edu.cn/showproblem.php?pid=3926</a></p>
+<p>题目大意：给你2个图，最大度为2.问两个图是否相似</p>
+<p>解题思路：</p>
+<p>本质是并查集，但是细节是在是恶心死人了。。。</p>
+<p>1.最大度为2.说明这个图可能有多个连通分量，每个连通分量要么是环，要么是链。</p>
+<p>2.然后遍历每个连通分量，记录该连通分量的结点个数，以及该连通分量是环还是链。</p>
+<p>3.将第一个图按照结点个数排序（若子结点个数相同，则对链先排序）</p>
+<p>4.将第二个图按照步骤三排序</p>
+<p>5.比较排序后，2个图是否每个元素都相等。若相等，则相似。</p>
+<p>
+</p>
+<p>代码如下：</p>
+<pre class="brush:cpp" name="code">#include&lt;iostream&gt;
+#include&lt;cstdio&gt;
+#include&lt;cstring&gt;
+#include&lt;string&gt;
+#include&lt;climits&gt;
+#include&lt;algorithm&gt;
+using namespace std;
+#define MAXN 10010
+int pre1[MAXN], pre2[MAXN]; //父节点
+int num1, num2;
+
+struct graph //图的子结点数目，是否为环
+{
+	int son;
+	bool ring;
+};
+graph g1[MAXN], g2[MAXN];
+
+bool cmb(const graph &amp;g1, const graph &amp;g2) //子结点优先+先链后环排序
+{
+	if(g1.son &lt; g2.son)
+		return true;
+	else if(g1.son == g2.son &amp;&amp; g1.ring &lt; g2.ring)
+		return true;
+	else
+		return false;
+}
+
+int find(int x, int pre[]) //查找根结点+路径压缩
+{
+	return x == pre[x] ? x : find(pre[x], pre);
+}
+
+void join(int x, int y, int pre[],graph g1[]) //合并
+{
+	int root1, root2;
+	root1 = find(x, pre);
+	root2 = find(y, pre);
+	if(root1 == root2)
+		g1[root1].ring = true; //为环
+	else
+	{
+		if(g1[root1].son &gt;= g1[root2].son) //结点相加
+		{
+			pre[root2] = root1;
+			g1[root1].son += g1[root2].son;
+		}
+		else
+		{
+			pre[root1] = root2;
+			g1[root2].son += g1[root1].son;
+		}
+	}
+}
+
+bool cmp(int num, graph g1[], graph g2[]) //判断图是否同构
+{
+	sort(g1 + 1, g1 + num + 1, cmb); //排序
+	sort(g2 + 1, g2 + num + 1, cmb);
+	for(int i = 1; i &lt;= num; ++i)
+		if(g1[i].son != g2[i].son || (g1[i].son == g2[i].son &amp;&amp; g1[i].ring != g2[i].ring))
+			return false;
+	return true;
+}
+
+int main()
+{
+	int ncase, T = 0;
+	int link1, link2;
+	int hand1, hand2;
+	int ans1, ans2;
+	bool flag;
+	scanf("%d", &amp;ncase);
+	while(ncase--)
+	{
+		flag = true;
+		scanf("%d%d", &amp;num1, &amp;link1);
+		for(int i = 1; i &lt; MAXN; ++i) //初始化
+		{
+			pre1[i] = i;
+			pre2[i] = i;
+			g1[i].son = 1;
+			g2[i].son = 1;
+			g1[i].ring = false;
+			g2[i].ring = false;
+		}
+		for(int i = 1; i &lt;= link1; ++i)
+		{
+			scanf("%d%d", &amp;hand1, &amp;hand2);
+			join(hand1, hand2, pre1, g1);
+		}
+		scanf("%d%d", &amp;num2, &amp;link2);
+		if(link2 != link1) //边数不同跳出
+			flag = false;
+		for(int i = 1; i &lt;= link2; ++i)
+		{
+			scanf("%d%d", &amp;hand1, &amp;hand2);
+			if(flag == false)
+				continue;
+			else
+				join(hand1, hand2, pre2, g2);
+		}
+		flag = cmp(num2, g1, g2);
+		if(flag == false)
+			printf("Case #%d: NO\n", ++T);
+		else
+		{
+			if(flag)
+				printf("Case #%d: YES\n", ++T);
+			else
+				printf("Case #%d: NO\n", ++T);
+		}
+	}
+	return 0;
+}</pre>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/niushuai666/article/details/6916764</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-71469">
+<article class="comment" id="comment-71469">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518889" rel="external nofollow">新用户132209</a></span> on <a href="http://www.acmerblog.com/hdu-3926-hand-in-hand-6928.html#comment-71469" rel="nofollow"><time datetime="2017-04-11T17:41:12+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不是同一个人吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-71468">
+<article class="comment" id="comment-71468">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518889" rel="external nofollow">新用户132209</a></span> on <a href="http://www.acmerblog.com/hdu-3926-hand-in-hand-6928.html#comment-71468" rel="nofollow"><time datetime="2017-04-11T17:41:12+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不是同一个人吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-71467">
+<article class="comment" id="comment-71467">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518889" rel="external nofollow">新用户132209</a></span> on <a href="http://www.acmerblog.com/hdu-3926-hand-in-hand-6928.html#comment-71467" rel="nofollow"><time datetime="2017-04-11T17:41:12+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不是同一个人吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-71466">
+<article class="comment" id="comment-71466">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518889" rel="external nofollow">新用户132209</a></span> on <a href="http://www.acmerblog.com/hdu-3926-hand-in-hand-6928.html#comment-71466" rel="nofollow"><time datetime="2017-04-11T17:41:12+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不是同一个人吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-71465">
+<article class="comment" id="comment-71465">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518889" rel="external nofollow">新用户132209</a></span> on <a href="http://www.acmerblog.com/hdu-3926-hand-in-hand-6928.html#comment-71465" rel="nofollow"><time datetime="2017-04-11T17:41:12+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不是同一个人吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-71464">
+<article class="comment" id="comment-71464">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518889" rel="external nofollow">新用户132209</a></span> on <a href="http://www.acmerblog.com/hdu-3926-hand-in-hand-6928.html#comment-71464" rel="nofollow"><time datetime="2017-04-11T17:41:12+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不是同一个人吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-71463">
+<article class="comment" id="comment-71463">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518889" rel="external nofollow">新用户132209</a></span> on <a href="http://www.acmerblog.com/hdu-3926-hand-in-hand-6928.html#comment-71463" rel="nofollow"><time datetime="2017-04-11T17:41:12+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不是同一个人吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-71462">
+<article class="comment" id="comment-71462">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518889" rel="external nofollow">新用户132209</a></span> on <a href="http://www.acmerblog.com/hdu-3926-hand-in-hand-6928.html#comment-71462" rel="nofollow"><time datetime="2017-04-11T17:41:12+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不是同一个人吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51584">
+<article class="comment" id="comment-51584">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ssjssh</a></span> on <a href="http://www.acmerblog.com/hdu-3926-hand-in-hand-6928.html#comment-51584" rel="nofollow"><time datetime="2015-07-10T01:57:21+00:00" pubdate="">2015年7月10日 at 上午1:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈呀！这个Dijkstra模板好长OwQ！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-34793">
+<article class="comment" id="comment-34793">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NextLife</a></span> on <a href="http://www.acmerblog.com/hdu-3926-hand-in-hand-6928.html#comment-34793" rel="nofollow"><time datetime="2015-07-01T08:15:29+00:00" pubdate="">2015年7月1日 at 上午8:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实就是DFS搜索，数据量较小，穷举了所有情况</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51582">
+<article class="comment" id="comment-51582">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">April</a></span> on <a href="http://www.acmerblog.com/hdu-3926-hand-in-hand-6928.html#comment-51582" rel="nofollow"><time datetime="2015-06-22T06:25:35+00:00" pubdate="">2015年6月22日 at 上午6:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法挺不错。NewHead代表新的头节点，通过递归找到最后一个节点之后，就把这个节点赋给NewHead，然后一直返回返回，中途这个值是没有变化的，一边返回一边把相应的指针方向颠倒，最后结束时返回新的头节点到主函数。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51585">
+<article class="comment" id="comment-51585">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jinxiang23</a></span> on <a href="http://www.acmerblog.com/hdu-3926-hand-in-hand-6928.html#comment-51585" rel="nofollow"><time datetime="2015-06-17T03:13:46+00:00" pubdate="">2015年6月17日 at 上午3:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>yeah, This is very tricky. If you use Cpp,you need more code</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-34794">
+<article class="comment" id="comment-34794">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wangzhenvs123</a></span> on <a href="http://www.acmerblog.com/hdu-3926-hand-in-hand-6928.html#comment-34794" rel="nofollow"><time datetime="2015-06-16T23:10:52+00:00" pubdate="">2015年6月16日 at 下午11:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为避免精度问题，PI值请使用arccos(-1)。应该是acos</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-34798">
+<article class="comment" id="comment-34798">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hong0220</a></span> on <a href="http://www.acmerblog.com/hdu-3926-hand-in-hand-6928.html#comment-34798" rel="nofollow"><time datetime="2015-06-06T00:19:23+00:00" pubdate="">2015年6月6日 at 上午12:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>wt[n - 1]没错，因为下标是[0...n-1]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-34792">
+<article class="comment" id="comment-34792">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">WalkCoder</a></span> on <a href="http://www.acmerblog.com/hdu-3926-hand-in-hand-6928.html#comment-34792" rel="nofollow"><time datetime="2015-06-01T03:23:38+00:00" pubdate="">2015年6月1日 at 上午3:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>图像处理那题解题报告在哪儿呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-34795">
+<article class="comment" id="comment-34795">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangduanjing</a></span> on <a href="http://www.acmerblog.com/hdu-3926-hand-in-hand-6928.html#comment-34795" rel="nofollow"><time datetime="2015-05-17T06:05:39+00:00" pubdate="">2015年5月17日 at 上午6:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个..  真没看出来</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51586">
+<article class="comment" id="comment-51586">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jamoeba</a></span> on <a href="http://www.acmerblog.com/hdu-3926-hand-in-hand-6928.html#comment-51586" rel="nofollow"><time datetime="2015-05-07T08:05:12+00:00" pubdate="">2015年5月7日 at 上午8:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为是要把从字符串s的start位到当前位在hash中重置，修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51587">
+<article class="comment" id="comment-51587">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">silianbo</a></span> on <a href="http://www.acmerblog.com/hdu-3926-hand-in-hand-6928.html#comment-51587" rel="nofollow"><time datetime="2015-05-04T08:54:13+00:00" pubdate="">2015年5月4日 at 上午8:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Thanks for using the time to examine this, I truly feel strongly about it and enjoy finding out far more on this subject matter. If achievable, as you achieve knowledge</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-34797">
+<article class="comment" id="comment-34797">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hwp</a></span> on <a href="http://www.acmerblog.com/hdu-3926-hand-in-hand-6928.html#comment-34797" rel="nofollow"><time datetime="2015-05-02T21:42:41+00:00" pubdate="">2015年5月2日 at 下午9:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>约瑟夫也用说这么长……很成熟的一个问题了，分治的方法解起来o(n)就可以了，有兴趣可以看看具体数学的第一章，关于约瑟夫问题推导出了一系列的结论，很漂亮</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51583">
+<article class="comment" id="comment-51583">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tangzhihua</a></span> on <a href="http://www.acmerblog.com/hdu-3926-hand-in-hand-6928.html#comment-51583" rel="nofollow"><time datetime="2015-04-30T21:09:55+00:00" pubdate="">2015年4月30日 at 下午9:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#pragma pack(2) 这个用法太坑爹</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-34796">
+<article class="comment" id="comment-34796">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Baifern</a></span> on <a href="http://www.acmerblog.com/hdu-3926-hand-in-hand-6928.html#comment-34796" rel="nofollow"><time datetime="2015-04-18T17:06:13+00:00" pubdate="">2015年4月18日 at 下午5:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有没有C++编译的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-34799">
+<article class="comment" id="comment-34799">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">TimeFight</a></span> on <a href="http://www.acmerblog.com/hdu-3926-hand-in-hand-6928.html#comment-34799" rel="nofollow"><time datetime="2015-04-17T02:12:16+00:00" pubdate="">2015年4月17日 at 上午2:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>总数为2n，遍历到第n个，就是中间的位置</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

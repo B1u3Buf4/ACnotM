@@ -1,0 +1,382 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-11</div>
+<div class="tit"><h1 class="entry-title">HDU 1461 Rotations and Reflections-BFS-[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/bfs" rel="category tag" title="查看BFS搜索中的全部文章">BFS搜索</a>, <a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/search" rel="category tag" title="查看搜索中的全部文章">搜索</a></span><span class="i4">围观1737次</span><span class="i3"><a class="ds-thread-count" data-thread-key="1993" href="http://www.acmerblog.com/hdu-1461-Rotations-and-Reflections-1993.html#comments" title="《HDU 1461 Rotations and Reflections-BFS-[解题报告] C++》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Rotations and Reflections</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Many games, tricks and puzzles depend on determining whether two patterns on a rectangular grid are the “same” or not. For instance, the 96 different ways of arranging 8 queens safely on a chessboard can be shown to consist of rotations and/or reflections of only 12 basic patterns.
+<p>Write a program that will read in pairs of patterns and determine whether there is a simple transformation that will convert one into the other. Because symmetrical patterns bear many relationships to each other, the transformations must be checked in a specific order. The possible transformations (in order) are:</p>
+<p>Preservation:           The patterns are identical  </p>
+<p>90 degree rotation  :    The pattern was rotated clockwise by 90 degrees  </p>
+<p>180 degree rotation:    The pattern was rotated clockwise by 180 degrees  </p>
+<p>270 degree rotation:    The pattern was rotated clockwise by 270 degrees  </p>
+<p>Reflection:             The pattern was reflected about the horizontal axis (effectively by a mirror held at the top of the pattern) </p>
+<p>Combination:            A reflection (as above), followed by one of the above rotations </p>
+<p>Improper:               The patterns do not match under any of the above transformations  </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+Input will consist of a series of pairs of patterns. Each set will consist of a line containing a single integer N (2 &lt;= N &lt;= 10) giving the size of the patterns, followed by N lines. Each line will consist of N dots or `x’s (specifying a line of the original pattern), a space, and another set of N dots and `x’s (specifying a line of the transformed pattern). The file will be terminated by a line consisting of a single zero (0).</div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+Output will consist of a series of lines, one for each pattern pair in the input. Each line will consist of one of the following: `Preserved’, `Rotated through m degrees’ (where m is one of 90, 180 or 270), `Reflected’, `Reflected and rotated through m degrees’, `Improper’.
+</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+5
+x...x ....x
+.x... ...x.
+...x. .x...
+..x.x ..x..
+....x xx..x
+2
+x. xx
+x. xx
+4
+..x. ...x
+xx.. ....
+.... xx..
+...x ..x.
+4
+.x.. ..x.
+.x.x x...
+.... ..xx
+..x. ....
+0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Rotated through 90 degrees
+Improper
+Reflected
+Reflected and rotated through 270 degrees</pre>
+<p> <!-- problem end --></p>
+<p>认真把题目读完，你就会发现  最终状态只会是题目描述的那几种。 bfs水过</p>
+<pre class="brush:cpp ">#include&lt;iostream&gt;
+#include&lt;cstdio&gt;
+#include&lt;cstring&gt;
+#include&lt;queue&gt;
+#define N 11
+using namespace std;
+struct Node
+{
+    char map[10][N];
+    int flag;
+};
+char endstate[10][N];
+Node t1,t2,t3;
+int n,i,j,k;
+bool isEnd(Node tt)
+{
+    for(i=0;i&lt;n;i++)
+    {
+        for(j=0;j&lt;n;j++)
+        {
+            if(tt.map[i][j]!=endstate[i][j])
+                return false;
+        }
+    }
+    return true;
+}
+void rt90()
+{
+
+    for(i=0;i&lt;n;i++)
+    {
+        for(j=0;j&lt;n;j++)
+        {
+            t1.map[j][n-i-1]=t2.map[i][j];
+        }
+    }
+}
+void rt180()
+{
+    rt90();
+    t3=t2;
+    t2=t1;
+    rt90();
+    t2=t3;
+}
+void rt270()
+{
+    rt90();
+    t3=t2;
+    t2=t1;
+    rt90();
+    t2=t1;
+    rt90();
+    t2=t3;
+}
+void reflect()
+{
+    for(i=0;i&lt;n;i++)
+    {
+        for(j=0;j&lt;n;j++)
+        {
+            t1.map[n-i-1][j]=t2.map[i][j];
+        }
+    }
+}
+void BFS()
+{
+    queue&lt;Node&gt; qu;
+    if(isEnd(t1))
+    {
+        printf("Preserved\n");
+        return;
+    }
+    t1.flag=0;
+    qu.push(t1);
+    while(!qu.empty())
+    {
+        t2=qu.front();
+        qu.pop();
+        if(t2.flag==0)
+        {
+            t1.flag=1;
+            rt90();
+            if(isEnd(t1))
+            {
+                printf("Rotated through 90 degrees\n");
+                return;
+            }
+            rt180();
+
+            if(isEnd(t1))
+            {
+                printf("Rotated through 180 degrees\n");
+                return;
+            }
+            rt270();
+            if(isEnd(t1))
+            {
+                printf("Rotated through 270 degrees\n");
+                return;
+            }
+            reflect();
+            if(isEnd(t1))
+            {
+                printf("Reflected\n");
+                return;
+            }
+            qu.push(t1);
+        }
+        else if(t2.flag==1)
+        {
+            rt90();
+            if(isEnd(t1))
+            {
+                printf("Reflected and rotated through 90 degrees\n");
+                return;
+            }
+            rt180();
+            if(isEnd(t1))
+            {
+                printf("Reflected and rotated through 180 degrees\n");
+                return;
+            }
+            rt270();
+            if(isEnd(t1))
+            {
+                printf("Reflected and rotated through 270 degrees\n");
+                return;
+            }
+            printf("Improper\n");
+        }
+    }
+}
+int main()
+{
+     while(scanf("%d",&amp;n)&amp;&amp;n!=0)
+    {
+        for(i=0;i&lt;n;i++)
+        {
+            scanf("%s%s",t1.map[i],endstate[i]);
+        }
+        BFS();
+    }
+}</pre>
+<p></p>
+<p>
+</p>
+<p>解题报告转自：http://blog.csdn.net/qq403977698/article/details/8059184</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-13535">
+<article class="comment" id="comment-13535">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">water160</a></span> on <a href="http://www.acmerblog.com/hdu-1461-Rotations-and-Reflections-1993.html#comment-13535" rel="nofollow"><time datetime="2015-04-19T18:13:29+00:00" pubdate="">2015年4月19日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>3，求得所有的为的总和sum—-&gt;所有数的总和<br/>
+printf( "Not Possible" );—-&gt;printf("impossible");<br/>
+对吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-13527">
+<article class="comment" id="comment-13527">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yesMan</a></span> on <a href="http://www.acmerblog.com/hdu-1461-Rotations-and-Reflections-1993.html#comment-13527" rel="nofollow"><time datetime="2015-02-02T17:38:38+00:00" pubdate="">2015年2月2日 at 下午5:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>分析的很详细！赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-13532">
+<article class="comment" id="comment-13532">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">linzzzz</a></span> on <a href="http://www.acmerblog.com/hdu-1461-Rotations-and-Reflections-1993.html#comment-13532" rel="nofollow"><time datetime="2015-01-19T11:11:00+00:00" pubdate="">2015年1月19日 at 上午11:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已经挂掉了，给个参考呗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-13537">
+<article class="comment" id="comment-13537">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Anne</a></span> on <a href="http://www.acmerblog.com/hdu-1461-Rotations-and-Reflections-1993.html#comment-13537" rel="nofollow"><time datetime="2014-11-20T02:25:39+00:00" pubdate="">2014年11月20日 at 上午2:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>整理的很好，多谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-13528">
+<article class="comment" id="comment-13528">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NextLife</a></span> on <a href="http://www.acmerblog.com/hdu-1461-Rotations-and-Reflections-1993.html#comment-13528" rel="nofollow"><time datetime="2014-11-14T00:19:36+00:00" pubdate="">2014年11月14日 at 上午12:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，算是枚举吧，已修正</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-41080">
+<article class="comment" id="comment-41080">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tzf888888</a></span> on <a href="http://www.acmerblog.com/hdu-1461-Rotations-and-Reflections-1993.html#comment-41080" rel="nofollow"><time datetime="2014-10-15T20:51:26+00:00" pubdate="">2014年10月15日 at 下午8:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>以了解 想問為甚麼 Tbl[6001] = {1} 初始化都是1<br/>
+為何不是Tbl[0]=1 其他為0</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-13531">
+<article class="comment" id="comment-13531">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rtaxa</a></span> on <a href="http://www.acmerblog.com/hdu-1461-Rotations-and-Reflections-1993.html#comment-13531" rel="nofollow"><time datetime="2014-09-19T08:52:19+00:00" pubdate="">2014年9月19日 at 上午8:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学算法中的数据结构学到一定程度会乐此不疲的，比如其中的2－3树，类似的红黑树，我甚至可以自己写个逻辑文件系统结构来。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-13529">
+<article class="comment" id="comment-13529">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">stamwoo</a></span> on <a href="http://www.acmerblog.com/hdu-1461-Rotations-and-Reflections-1993.html#comment-13529" rel="nofollow"><time datetime="2014-08-15T20:55:15+00:00" pubdate="">2014年8月15日 at 下午8:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#include &lt;stdio.h&gt;<br/>
+int main(void)<br/>
+{<br/>
+int arr[] = {10,20,30,40,50,60};<br/>
+int *p=arr;<br/>
+printf("%d,%d,",*p++,*++p);<br/>
+printf("%d,%d,%d",*p,*p++,*++p);<br/>
+return 0;<br/>
+}</p>
+<p>为什么是 20,20,50,40,50. 我觉得的应该是 20,20,40,40,50 . 谁能解释下？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-13533">
+<article class="comment" id="comment-13533">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jinxiang23</a></span> on <a href="http://www.acmerblog.com/hdu-1461-Rotations-and-Reflections-1993.html#comment-13533" rel="nofollow"><time datetime="2014-04-25T05:18:35+00:00" pubdate="">2014年4月25日 at 上午5:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一句可以忽略不计了吧。从第二句开始分析，说明这个花色下的所有牌都会在其它里面出现，那么还剩下♠️和♦️。第三句，可以排除2和7，因为在两种花色里有。现在是第四句，因为♠️还剩下多个，只有是♦️B才能知道答案。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-13538">
+<article class="comment" id="comment-13538">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mazilian</a></span> on <a href="http://www.acmerblog.com/hdu-1461-Rotations-and-Reflections-1993.html#comment-13538" rel="nofollow"><time datetime="2014-03-01T09:08:38+00:00" pubdate="">2014年3月1日 at 上午9:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真心不错，力顶作者</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-13530">
+<article class="comment" id="comment-13530">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bai</a></span> on <a href="http://www.acmerblog.com/hdu-1461-Rotations-and-Reflections-1993.html#comment-13530" rel="nofollow"><time datetime="2014-02-09T16:29:46+00:00" pubdate="">2014年2月9日 at 下午4:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错的网站，建议添加些比赛信息</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-41079">
+<article class="comment" id="comment-41079">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wawa_zmt</a></span> on <a href="http://www.acmerblog.com/hdu-1461-Rotations-and-Reflections-1993.html#comment-41079" rel="nofollow"><time datetime="2014-01-30T07:21:59+00:00" pubdate="">2014年1月30日 at 上午7:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感谢分享 学习了`(*∩_∩*)′</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-13536">
+<article class="comment" id="comment-13536">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wawa</a></span> on <a href="http://www.acmerblog.com/hdu-1461-Rotations-and-Reflections-1993.html#comment-13536" rel="nofollow"><time datetime="2014-01-21T06:54:44+00:00" pubdate="">2014年1月21日 at 上午6:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我想整理一下leetcode的题解，站长能不能给权限</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-13534">
+<article class="comment" id="comment-13534">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Trenson</a></span> on <a href="http://www.acmerblog.com/hdu-1461-Rotations-and-Reflections-1993.html#comment-13534" rel="nofollow"><time datetime="2013-12-18T18:34:25+00:00" pubdate="">2013年12月18日 at 下午6:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>问题3是不是应该为1/4  .因为截取的三段，无论是否能组成三角形， x， y-x ，1-y,都应大于0，所以  x&lt;y,基础应该是一个大三角形。小三角是大三角的 1/4.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

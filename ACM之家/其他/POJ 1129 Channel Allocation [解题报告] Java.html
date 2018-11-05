@@ -1,0 +1,283 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>11-09</div>
+<div class="tit"><h1 class="entry-title">POJ 1129 Channel Allocation [解题报告] Java</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/zhuanti/java-poj" rel="category tag" title="查看Java解POJ中的全部文章">Java解POJ</a>, <a href="http://www.acmerblog.com/category/problemset/poj2" rel="category tag" title="查看POJ-北大中的全部文章">POJ-北大</a>, <a href="http://www.acmerblog.com/category/search/backtracking" rel="category tag" title="查看回溯和剪枝中的全部文章">回溯和剪枝</a>, <a href="http://www.acmerblog.com/category/graph/graph-visit" rel="category tag" title="查看图的遍历中的全部文章">图的遍历</a>, <a href="http://www.acmerblog.com/category/basis/enumeration" rel="category tag" title="查看枚举中的全部文章">枚举</a></span><span class="i4">围观1382次</span><span class="i3"><a class="ds-thread-count" data-thread-key="277" href="http://www.acmerblog.com/POJ-1129-Channel-Allocation-blog-277.html#comments" title="《POJ 1129 Channel Allocation [解题报告] Java》上的评论">13 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Channel Allocation</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+When a radio station is broadcasting over a very large area, repeaters are used to retransmit the signal so that every receiver has a strong signal. However, the channels used by each repeater must be carefully chosen so that nearby repeaters do not interfere with one another. This condition is satisfied if adjacent repeaters use different channels.
+<p>Since the radio frequency spectrum is a precious resource, the number of channels required by a given network of repeaters should be minimised. You have to write a program that reads in a description of a repeater network and determines the minimum number of channels required. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input consists of a number of maps of repeater networks. Each map begins with a line containing the number of repeaters. This is between 1 and 26, and the repeaters are referred to by consecutive upper-case letters of the alphabet starting with A. For example, ten repeaters would have the names A,B,C,…,I and J. A network with zero repeaters indicates the end of input.
+<p>Following the number of repeaters is a list of adjacency relationships. Each line has the form:</p>
+<p>A:BCDH</p>
+<p>which indicates that the repeaters B, C, D and H are adjacent to the repeater A. The first line describes those adjacent to repeater A, the second those adjacent to B, and so on for all of the repeaters. If a repeater is not adjacent to any other, its line has the form</p>
+<p>A:</p>
+<p>The repeaters are listed in alphabetical order.</p>
+<p>Note that the adjacency is a symmetric relationship; if A is adjacent to B, then B is necessarily adjacent to A. Also, since the repeaters lie in a plane, the graph formed by connecting adjacent repeaters does not have any line segments that cross.<br/>
+</p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+For each map (except the final one with no repeaters), print a line containing the minumum number of channels needed so that no adjacent channels interfere. The sample output shows the format of this line. Take care that channels is in the singular form when only one channel is required.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+A:
+B:
+4
+A:BC
+B:ACD
+C:ABD
+D:BC
+4
+A:BCD
+B:ACD
+C:ABD
+D:ABC
+0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+1 channel needed.
+3 channels needed.
+4 channels needed. </pre>
+<div class="mybigtile mysubmit"> <a href="http://poj.org/submit?problem_id=1129">提交代码</a>   <a href="http://poj.org/bbs?problem_id=1129">问题讨论</a>   <a href="http://poj.org/problemstatus?problem_id=1129">数据统计</a> </div>
+<div>
+<p class="mytitle"> 解题代码:</p>
+</div>
+<pre class="brush:java">import java.util.*;
+import java.io.*;
+/*
+ *【题意简述】信道分配。给定一个无向图，为每顶点填上颜色，要求满足相邻的顶点颜色不同，
+ * 问最少的颜色数是多少?
+ *【分析】利用四色定理，直接枚举颜色数+DFS，其中DFS是暴力枚举每个顶的颜色，以便找到一个可行解。 
+ */
+public class Main{
+    
+    public static int[][] g=new int[26][26];
+    
+    public static int solve(int n){
+        int i,j,cnum;
+        boolean tag=true;
+        // 无边图只用1色即可
+        for(i=0;i&lt; n &amp;&amp; tag;i++){
+            for(j=i+1;j&lt; n &amp;&amp; tag;j++){
+                if(g[i][j]==1) 
+                    tag=false;
+            }
+           }
+        if(tag) 
+            return 1;
+        
+        for(cnum=2;cnum&lt;=4;cnum++)    // 枚举答案+dfs
+        {
+            int[] x=new int[n];
+            Arrays.fill(x,-1);
+            if(DFS(x,0,cnum,n)) 
+                return cnum;
+        }
+        return -1;
+    }
+    
+    //DFS的复杂度是颜色数^顶点数(4^26，其中可行性剪枝剪掉了很多分支) 
+    public static boolean DFS(int[] x,int vnum, int cnum,int n){
+        if(vnum == n) return true;    // v的顶点都上色，可行解
+        for(int i=0;i&lt; cnum;i++){    // 如果某个顶点没有颜色填，返回上一层
+            x[vnum] = i;
+            if(check(vnum,x,i,n))         
+                if(DFS(x,vnum+1,cnum,n)) // 合法，枚举下一个顶点
+                    return true;
+        }
+        return false;
+    }
+
+    // 判断相邻的顶点是否有涂过这种颜色
+    public static boolean check(int vnum,int[] x,int t,int n){
+        boolean find=true;
+        for(int i=0;i&lt; n &amp;&amp; find;i++){
+            if(g[vnum][i]==1 &amp;&amp; x[i]==t)
+                find=false;
+        }
+        return find;
+    }
+    
+    public static void main(String rgs[]) throws Exception
+    {  
+        Scanner cin = new Scanner(new BufferedInputStream(System.in));
+        int i,j,n=cin.nextInt();
+        while(n!=0){            
+            for(i=0;i&lt; n;i++)
+                Arrays.fill(g[i],0);        
+            for(i=0;i&lt; n;i++){
+                String s = cin.next();
+                for(j=2;j&lt; s.length();j++)
+                    g[i][s.charAt(j)-'A']=1;
+            }
+            int count=solve(n);
+            if(count==1)
+                System.out.println(count+" channel needed.");
+            else
+                System.out.println(count+" channels needed.");
+            n=cin.nextInt();
+        }
+    }
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-36487">
+<article class="comment" id="comment-36487">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tangzhihua</a></span> on <a href="http://www.acmerblog.com/POJ-1129-Channel-Allocation-blog-277.html#comment-36487" rel="nofollow"><time datetime="2015-05-29T13:17:46+00:00" pubdate="">2015年5月29日 at 下午1:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈呀！这个Dijkstra模板好长OwQ！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-4275">
+<article class="comment" id="comment-4275">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1193658339</a></span> on <a href="http://www.acmerblog.com/POJ-1129-Channel-Allocation-blog-277.html#comment-4275" rel="nofollow"><time datetime="2015-05-20T12:37:15+00:00" pubdate="">2015年5月20日 at 下午12:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>aha, welcome!</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-4273">
+<article class="comment" id="comment-4273">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Amber</a></span> on <a href="http://www.acmerblog.com/POJ-1129-Channel-Allocation-blog-277.html#comment-4273" rel="nofollow"><time datetime="2015-05-14T01:05:30+00:00" pubdate="">2015年5月14日 at 上午1:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>大哥，你复制也看看是不是这题的答案才复制吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-36489">
+<article class="comment" id="comment-36489">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">water160</a></span> on <a href="http://www.acmerblog.com/POJ-1129-Channel-Allocation-blog-277.html#comment-36489" rel="nofollow"><time datetime="2014-11-28T14:51:32+00:00" pubdate="">2014年11月28日 at 下午2:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这排版…你都打开来看看改改</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-4269">
+<article class="comment" id="comment-4269">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fanxianxian</a></span> on <a href="http://www.acmerblog.com/POJ-1129-Channel-Allocation-blog-277.html#comment-4269" rel="nofollow"><time datetime="2014-11-21T21:57:17+00:00" pubdate="">2014年11月21日 at 下午9:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好，找的就是这一题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-4272">
+<article class="comment" id="comment-4272">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">OrangeGuy</a></span> on <a href="http://www.acmerblog.com/POJ-1129-Channel-Allocation-blog-277.html#comment-4272" rel="nofollow"><time datetime="2014-11-19T03:35:38+00:00" pubdate="">2014年11月19日 at 上午3:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法很不错啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-4268">
+<article class="comment" id="comment-4268">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaotong2055</a></span> on <a href="http://www.acmerblog.com/POJ-1129-Channel-Allocation-blog-277.html#comment-4268" rel="nofollow"><time datetime="2014-08-28T18:46:00+00:00" pubdate="">2014年8月28日 at 下午6:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>.net中char类型不是两个字节么</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-4271">
+<article class="comment" id="comment-4271">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dongxi</a></span> on <a href="http://www.acmerblog.com/POJ-1129-Channel-Allocation-blog-277.html#comment-4271" rel="nofollow"><time datetime="2014-07-11T14:27:45+00:00" pubdate="">2014年7月11日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很全很强大！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-60389">
+<article class="comment" id="comment-60389">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jandk</a></span> on <a href="http://www.acmerblog.com/POJ-1129-Channel-Allocation-blog-277.html#comment-60389" rel="nofollow"><time datetime="2014-06-16T21:13:11+00:00" pubdate="">2014年6月16日 at 下午9:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>nice!!!</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-36488">
+<article class="comment" id="comment-36488">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lin</a></span> on <a href="http://www.acmerblog.com/POJ-1129-Channel-Allocation-blog-277.html#comment-36488" rel="nofollow"><time datetime="2014-04-27T18:27:09+00:00" pubdate="">2014年4月27日 at 下午6:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>顶一个 赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-36486">
+<article class="comment" id="comment-36486">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">didiaozuoren</a></span> on <a href="http://www.acmerblog.com/POJ-1129-Channel-Allocation-blog-277.html#comment-36486" rel="nofollow"><time datetime="2014-02-07T17:28:35+00:00" pubdate="">2014年2月7日 at 下午5:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为nn</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-4270">
+<article class="comment" id="comment-4270">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1173954900</a></span> on <a href="http://www.acmerblog.com/POJ-1129-Channel-Allocation-blog-277.html#comment-4270" rel="nofollow"><time datetime="2014-02-03T14:40:43+00:00" pubdate="">2014年2月3日 at 下午2:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题别太纠结了，不同的编译器结果不一</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-4274">
+<article class="comment" id="comment-4274">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">0xc0de</a></span> on <a href="http://www.acmerblog.com/POJ-1129-Channel-Allocation-blog-277.html#comment-4274" rel="nofollow"><time datetime="2014-01-27T12:24:07+00:00" pubdate="">2014年1月27日 at 下午12:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>上面的评论很起劲，为什么我看不懂啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

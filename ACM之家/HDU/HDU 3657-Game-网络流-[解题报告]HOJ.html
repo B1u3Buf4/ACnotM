@@ -1,0 +1,366 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>11-30</div>
+<div class="tit"><h1 class="entry-title">HDU 3657-Game-网络流-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph/flow" rel="category tag" title="查看网络流中的全部文章">网络流</a>, <a href="http://www.acmerblog.com/category/graph/connectivity" rel="category tag" title="查看连通性问题中的全部文章">连通性问题</a></span><span class="i4">围观577次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6618" href="http://www.acmerblog.com/hdu-3657-game-6618.html#comments" title="《HDU 3657-Game-网络流-[解题报告]HOJ》上的评论">18 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Game</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+onmylove has invented a game on n × m grids. There is one positive integer on each grid. Now you can take the numbers from the grids to make your final score as high as possible. The way to get score is like<br/>the following:<br/>● At the beginning, the score is 0;<br/>● If you take a number which equals to x, the score increase x;<br/>● If there appears two neighboring empty grids after you taken the number, then the score should be decreased by 2(x&amp;y). Here x and y are the values used to existed on these two grids. Please pay attention that "neighboring grids" means there exits and only exits one common border between these two grids.
+<p>Since onmylove thinks this problem is too easy, he adds one more rule:<br/>● Before you start the game, you are given some positions and the numbers on these positions must be taken away.<br/>Can you help onmylove to calculate: what’s the highest score onmylove can get in the game? </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+Multiple input cases. For each case, there are three integers n, m, k in a line.<br/>n and m describing the size of the grids is n ×m. k means there are k positions of which you must take their numbers. Then following n lines, each contains m numbers, representing the numbers on the n×m grids.Then k lines follow. Each line contains two integers, representing the row and column of one position<br/>and you must take the number on this position. Also, the rows and columns are counted start from 1.<br/>Limits: 1 ≤ n, m ≤ 50, 0 ≤ k ≤ n × m, the integer in every gird is not more than 1000. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+Multiple input cases. For each case, there are three integers n, m, k in a line.<br/>n and m describing the size of the grids is n ×m. k means there are k positions of which you must take their numbers. Then following n lines, each contains m numbers, representing the numbers on the n×m grids.Then k lines follow. Each line contains two integers, representing the row and column of one position<br/>and you must take the number on this position. Also, the rows and columns are counted start from 1.<br/>Limits: 1 ≤ n, m ≤ 50, 0 ≤ k ≤ n × m, the integer in every gird is not more than 1000.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2 2 1
+2 2
+2 2
+1 1
+2 2 1
+2 7
+4 1
+1 1</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+4
+9
+
+<div style="font-family:Times New Roman;font-size:14px;background-color:F4FBFF;border:#B7CBFF 1px dashed;padding:6px"><div style="font-family:Arial;font-weight:bold;color:#7CA9ED;border-bottom:#B7CBFF 1px dashed"><i>Hint</i></div>As to the second case in Sample Input, onmylove gan get the highest score when calulating like this:
+2 + 7 + 4 － 2 × (2&amp;4) － 2 × (2&amp;7) = 13 － 2 × 0 － 2 × 2 = 9.</div><i style="font-size:1px"> </i></pre>
+<p> <!-- problem end --></p>
+<p><a>http://acm.hdu.edu.cn/showproblem.php?pid=3657</a></p>
+<pre class="brush:cpp" name="code">#include&lt;iostream&gt;
+using namespace std;
+#define N 2550
+#define M 2000000
+#define inf 0x7fffffff
+struct Graph{    
+    struct node{    
+        int v,next,flow;    
+        node(){}; 
+        node(int a,int b,int c):next(a),v(b),flow(c){};    
+    }E[M];    
+    int pre[N];   
+    int head[N];    
+    int cur[N];  
+    int dis[N];   
+    int NV,NE;    
+    int gap[N];  
+    void init(int n){    
+        memset(head,-1,sizeof(head));    
+        NE=0;    
+        NV=n;    
+    }    
+    void insert(int u,int v,int w){    
+        E[NE]=node(head[u],v,w);    
+        head[u]=NE++;    
+        E[NE]=node(head[v],u,0);  
+        head[v]=NE++;  
+    }    
+    int SAP(int s,int t){  
+        memset(dis,0,sizeof(dis));  
+        memset(gap,0,sizeof(gap));  
+        for(int i=0;i&lt;NV;i++)   
+            cur[i]=head[i];  
+        int u=pre[s]=s;  
+        int maxflow=0,aug=INT_MAX;  
+        gap[0]=NV;  
+        while(dis[s]&lt;NV){  
+    loop:   for(int &amp;i=cur[u];i!=-1;i=E[i].next){  
+                int v=E[i].v;  
+                if(E[i].flow&amp;&amp;dis[u]==dis[v]+1){  
+                    if(aug&gt;E[i].flow)  
+                        aug=E[i].flow;  
+                    pre[v]=u;  
+                    u=v;  
+                    if(v==t){  
+                        maxflow+=aug;  
+                        for(u=pre[u];v!=s;v=u,u=pre[u]){  
+                            E[cur[u]].flow-=aug;  
+                            E[cur[u]^1].flow+=aug;  
+                        }  
+                        aug=INT_MAX;  
+                    }  
+                    goto loop;  
+                }  
+            }  
+            int mindis=NV;  
+            for(int i=head[u];i!=-1;i=E[i].next){  
+                int v=E[i].v;  
+                if(E[i].flow&amp;&amp;mindis&gt;dis[v]){  
+                    cur[u]=i;  
+                    mindis=dis[v];  
+                }  
+            }  
+            if(--gap[dis[u]]==0)  
+                break;  
+            gap[dis[u]=mindis+1]++;  
+            u=pre[u];  
+        }  
+        return maxflow;  
+    }  
+}G;
+int map[55][55];
+int main(void){
+	int n,m,k;
+	while(~scanf("%d%d%d",&amp;n,&amp;m,&amp;k)){
+		int beg=n*m+1,end=beg+1;
+		G.init(end);
+		int s=0;
+		for(int i=1;i&lt;=n;i++)
+			for(int j=1;j&lt;=m;j++){
+				scanf("%d",&amp;map[i][j]);
+				s+=map[i][j];
+			}
+		for(int i=1;i&lt;=n;i++)
+			for(int j=1;j&lt;=m;j++){
+				int u=(i-1)*m+j;
+				if((i+j)%2){
+					G.insert(beg,u,map[i][j]);
+					if(i&gt;1) G.insert(u,u-m,2*(map[i][j]&amp;map[i-1][j]));
+					if(j&gt;1) G.insert(u,u-1,2*(map[i][j]&amp;map[i][j-1]));
+					if(i&lt;n) G.insert(u,u+m,2*(map[i][j]&amp;map[i+1][j]));
+					if(j&lt;m) G.insert(u,u+1,2*(map[i][j]&amp;map[i][j+1]));
+				}
+				else
+					G.insert(u,end,map[i][j]);
+			}
+		while(k--){
+			int x,y;
+			scanf("%d%d",&amp;x,&amp;y);
+			int u=(x-1)*m+y;
+			if((x+y)%2){
+				for(int i=G.head[beg];i!=-1;i=G.E[i].next)
+					if(G.E[i].v==u){
+						G.E[i].flow=inf;
+						break;
+					}
+			}
+			else{
+				for(int i=G.head[u];i!=-1;i=G.E[i].next)
+					if(G.E[i].v==end){
+						G.E[i].flow=inf;
+						break;
+					}
+			}
+		}
+		printf("%d\n",s-G.SAP(beg,end));
+	}
+}
+			</pre>
+<p>
+在网上看到的一句话恍然大悟啊，建立一个最小割模型之后，<span style="color:#ff6666">假设x点与源点是连着的，说明你是把x点给取到手了，不连，说明你是把x点去除</span>，之前一直不太明白边的容量是怎么来确定的，现在知道了，方格取数是相邻两个不能取，假设x,y是相邻的两点，他们直接建无穷大的边的原因就是：假设你最后把x,y都取来了，那么x和y的这条边就是一条割边，最小割是一定要把这条割边去掉的，去掉的代价就是该边的权值，试想如果这条边是无穷大的，程序会来割这条边吗？显然不会！所以这样就保证了x,y是不会同时被取到的。而这题相邻的可以取，只不过要额外的代价，还是假设x,y都取来了，那么这时候x,y边就是割边，程序会把它割掉，所以该边容量不是无穷大，而是相应的代价，至于后面的一定要取的几个点，只需要把他们和源点或汇点的容量设为无穷大，这样程序一定不会去割这条边，最后的结果就是这些点都留下来了，也就是都取了！</p>
+<p>参考：http://blog.csdn.net/me4546/article/details/6662959</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-73524">
+<article class="comment" id="comment-73524">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919467106" rel="external nofollow">新用户209702</a></span> on <a href="http://www.acmerblog.com/hdu-3657-game-6618.html#comment-73524" rel="nofollow"><time datetime="2017-04-11T22:05:34+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>白白饭，感觉口齿都不利索了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-73523">
+<article class="comment" id="comment-73523">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919467106" rel="external nofollow">新用户209702</a></span> on <a href="http://www.acmerblog.com/hdu-3657-game-6618.html#comment-73523" rel="nofollow"><time datetime="2017-04-11T22:05:34+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>白白饭，感觉口齿都不利索了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-73522">
+<article class="comment" id="comment-73522">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919467106" rel="external nofollow">新用户209702</a></span> on <a href="http://www.acmerblog.com/hdu-3657-game-6618.html#comment-73522" rel="nofollow"><time datetime="2017-04-11T22:05:34+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>白白饭，感觉口齿都不利索了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-73521">
+<article class="comment" id="comment-73521">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919467106" rel="external nofollow">新用户209702</a></span> on <a href="http://www.acmerblog.com/hdu-3657-game-6618.html#comment-73521" rel="nofollow"><time datetime="2017-04-11T22:05:34+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>白白饭，感觉口齿都不利索了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59437">
+<article class="comment" id="comment-59437">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Emlar</a></span> on <a href="http://www.acmerblog.com/hdu-3657-game-6618.html#comment-59437" rel="nofollow"><time datetime="2015-07-07T12:29:38+00:00" pubdate="">2015年7月7日 at 下午12:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>太变态了。我用hash居然超时了。这样break掉居然都行啊。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-59436">
+<article class="comment" id="comment-59436">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">woweizhineng</a></span> on <a href="http://www.acmerblog.com/hdu-3657-game-6618.html#comment-59436" rel="nofollow"><time datetime="2015-07-05T18:23:42+00:00" pubdate="">2015年7月5日 at 下午6:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序只能输出一个子序列</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59428">
+<article class="comment" id="comment-59428">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">piaoyi</a></span> on <a href="http://www.acmerblog.com/hdu-3657-game-6618.html#comment-59428" rel="nofollow"><time datetime="2015-06-30T07:19:29+00:00" pubdate="">2015年6月30日 at 上午7:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有两个重复的话结果是正确的，但解法不够严谨，后面重复的覆盖掉前面的，由于题目数据限制也比较严，所以能提交通过。已更新算法</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-32863">
+<article class="comment" id="comment-32863">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">AC_Grazy</a></span> on <a href="http://www.acmerblog.com/hdu-3657-game-6618.html#comment-32863" rel="nofollow"><time datetime="2015-06-25T19:34:50+00:00" pubdate="">2015年6月25日 at 下午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>“可以发现,树将是满二叉树,”这句话不对吧，构造的树应该是“完全二叉树”，而非“满二叉树”。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59427">
+<article class="comment" id="comment-59427">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">AE</a></span> on <a href="http://www.acmerblog.com/hdu-3657-game-6618.html#comment-59427" rel="nofollow"><time datetime="2015-06-14T02:03:47+00:00" pubdate="">2015年6月14日 at 上午2:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>以了解 想問為甚麼 Tbl[6001] = {1} 初始化都是1<br/>
+為何不是Tbl[0]=1 其他為0</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-59429">
+<article class="comment" id="comment-59429">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xy7850151</a></span> on <a href="http://www.acmerblog.com/hdu-3657-game-6618.html#comment-59429" rel="nofollow"><time datetime="2015-06-08T00:41:18+00:00" pubdate="">2015年6月8日 at 上午12:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>原来如此 了解了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59435">
+<article class="comment" id="comment-59435">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">HenrryCheng</a></span> on <a href="http://www.acmerblog.com/hdu-3657-game-6618.html#comment-59435" rel="nofollow"><time datetime="2015-06-07T21:50:17+00:00" pubdate="">2015年6月7日 at 下午9:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这配图…..</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-59431">
+<article class="comment" id="comment-59431">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">BGPY243956</a></span> on <a href="http://www.acmerblog.com/hdu-3657-game-6618.html#comment-59431" rel="nofollow"><time datetime="2015-05-26T04:36:48+00:00" pubdate="">2015年5月26日 at 上午4:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很强大啊，佩服</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59430">
+<article class="comment" id="comment-59430">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">nsoi_onion</a></span> on <a href="http://www.acmerblog.com/hdu-3657-game-6618.html#comment-59430" rel="nofollow"><time datetime="2015-04-29T05:47:50+00:00" pubdate="">2015年4月29日 at 上午5:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个也是算法导论的习题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-59426">
+<article class="comment" id="comment-59426">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rtaxa</a></span> on <a href="http://www.acmerblog.com/hdu-3657-game-6618.html#comment-59426" rel="nofollow"><time datetime="2015-04-16T21:48:40+00:00" pubdate="">2015年4月16日 at 下午9:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>顺利测试通过了，多谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59432">
+<article class="comment" id="comment-59432">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">we</a></span> on <a href="http://www.acmerblog.com/hdu-3657-game-6618.html#comment-59432" rel="nofollow"><time datetime="2015-03-07T15:11:12+00:00" pubdate="">2015年3月7日 at 下午3:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为\n\n</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-32864">
+<article class="comment" id="comment-32864">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Amber</a></span> on <a href="http://www.acmerblog.com/hdu-3657-game-6618.html#comment-32864" rel="nofollow"><time datetime="2015-02-16T00:47:09+00:00" pubdate="">2015年2月16日 at 上午12:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>终于AC了！next数组还是不好理解啊，mark</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59434">
+<article class="comment" id="comment-59434">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bcys</a></span> on <a href="http://www.acmerblog.com/hdu-3657-game-6618.html#comment-59434" rel="nofollow"><time datetime="2014-12-18T17:36:32+00:00" pubdate="">2014年12月18日 at 下午5:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>int L[m+1][n+1];这样定义出错，这个在gcc上可以编译通过  在VS上不行 应该改为new 或者vector</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-59433">
+<article class="comment" id="comment-59433">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Baifern</a></span> on <a href="http://www.acmerblog.com/hdu-3657-game-6618.html#comment-59433" rel="nofollow"><time datetime="2014-12-17T09:19:15+00:00" pubdate="">2014年12月17日 at 上午9:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，值得借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

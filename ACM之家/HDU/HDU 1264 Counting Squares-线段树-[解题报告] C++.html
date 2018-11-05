@@ -1,0 +1,299 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-04</div>
+<div class="tit"><h1 class="entry-title">HDU 1264 Counting Squares-线段树-[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/basis/sort" rel="category tag" title="查看排序中的全部文章">排序</a>, <a href="http://www.acmerblog.com/category/basis/enumeration" rel="category tag" title="查看枚举中的全部文章">枚举</a>, <a href="http://www.acmerblog.com/category/data-struct/trees" rel="category tag" title="查看树形结构中的全部文章">树形结构</a>, <a href="http://www.acmerblog.com/category/geometry/analytic-geometry" rel="category tag" title="查看解析几何中的全部文章">解析几何</a></span><span class="i4">围观1033次</span><span class="i3"><a class="ds-thread-count" data-thread-key="1628" href="http://www.acmerblog.com/hdu-1264-Counting-Squares-1628.html#comments" title="《HDU 1264 Counting Squares-线段树-[解题报告] C++》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Counting Squares</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Your input is a series of rectangles, one per line. Each rectangle is specified as two points(X,Y) that specify the opposite corners of a rectangle. All coordinates will be integers in the range 0 to 100. For example, the line<br/>5 8 7 10<br/>specifies the rectangle who’s corners are(5,8),(7,8),(7,10),(5,10).<br/>If drawn on graph paper, that rectangle would cover four squares. Your job is to count the number of unit(i.e.,1*1) squares that are covered by any one of the rectangles given as input. Any square covered  by more than one rectangle should only be counted once. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input format is a series of lines, each containing 4 integers. Four -1′s are used to separate problems, and four -2′s are used to end the last problem. Otherwise, the numbers are the x-ycoordinates of two points that are opposite corners of a rectangle. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+Your output should be the number of squares covered by each set of rectangles. Each number should be printed on a separate line.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+5 8 7 10
+6 9 7 8
+6 8 8 11
+-1 -1 -1 -1
+0 0 100 100
+50 75 12 90
+39 42 57 73
+-2 -2 -2 -2</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+8
+10000</pre>
+<p><!-- problem end --></p>
+<p>
+ 一道水的线段树，搞了一个晚上，早上脑子清醒过来后终于找到错的地方了~初始化弱智了，在漆黑的环境里面真的不适合写代码。。。</p>
+<pre class="brush:cpp ">/*
+线段树求矩形面积的并（离散化下先）
+把X坐标排序离散，枚举每一个区间，然后扫描线段树，求的覆盖的Y的长度
+然后 （X[i+1]-X[i]） *L 即是所求面积
+*/
+#include&lt;stdio.h&gt;
+#include&lt;string.h&gt;
+#include&lt;stdlib.h&gt;
+#define NN 300
+#define Swap(a,b) (a=a^b,b=b^a,a=a^b)
+struct node{
+	int r,l,val;
+}seg_tree[NN];
+struct Link{
+	int low_x,low_y,high_x,high_y;
+}link[NN];
+int X[NN];
+int len_l,len_seg,len_x,val,get_ans;
+int cmp(const void *a,const void *b){
+	return *(int *)a - *(int *)b;
+}
+void Init(int root,int l,int r)
+{
+	int mid = (l+r)&gt;&gt;1;
+	seg_tree[root].l = l;
+	seg_tree[root].r = r;
+	seg_tree[root].val = 0;
+	len_seg = len_seg &lt; root ? root : len_seg;
+	if(r-l == 1)return ;
+	Init(root*2,l,mid);
+	Init(root*2+1,mid,r);
+}
+void insert(int root ,int l,int r){
+	int mid = (seg_tree[root].l+seg_tree[root].r)&gt;&gt;1;
+	if(root &gt; len_seg ) return ;
+	if(l &lt;= seg_tree[root].l &amp;&amp; r &gt;= seg_tree[root].r)
+		seg_tree[root].val = val;
+	else if(r&lt;=mid)insert(root*2,l,r);
+	else if(l&gt;=mid)insert(root*2+1,l,r);
+	else {
+		insert(root*2,l,mid);
+		insert(root*2+1,mid,r);
+	}
+	return ;
+}
+void get_seg(int root)
+{
+	if(root &gt; len_seg ) return ;
+	if(seg_tree[root].val == val){	//用来区分不同区间的Y的长度
+		get_ans+=(seg_tree[root].r-seg_tree[root].l);
+		return ;
+	}
+	get_seg(root*2);
+	get_seg(root*2+1);
+}
+int main()
+{
+	int i,j,ans,x1,x2,y1,y2;	
+	Init(1,0,100);
+	while(scanf("%d%d%d%d",&amp;x1,&amp;y1,&amp;x2,&amp;y2)){
+		ans=len_l=len_x=0;
+		if(x1&gt;x2)Swap(x1,x2);
+		if(y1&gt;y2)Swap(y1,y2);
+		X[len_x++] = x1;
+		X[len_x++] = x2;
+		link[len_l].low_x = x1;
+		link[len_l].low_y = y1;
+		link[len_l].high_x = x2;
+		link[len_l++].high_y=y2;
+		while(scanf("%d%d%d%d",&amp;x1,&amp;y1,&amp;x2,&amp;y2)){
+			if(x1 == -1 || x1 == -2)break;
+			if(x1&gt;x2)Swap(x1,x2);
+			if(y1&gt;y2)Swap(y1,y2);
+			X[len_x++] = x1;
+			X[len_x++] = x2;
+			link[len_l].low_x = x1;
+			link[len_l].low_y = y1;
+			link[len_l].high_x = x2;
+			link[len_l++].high_y=y2;
+		}
+		qsort(X,len_x,sizeof(int),cmp);
+		for(i=0;i&lt;len_x-1;i++){
+			if(X[i] == X[i+1])continue;
+			val++;//保证了不同区间 线段树中val的值的不同，达到一次建树，多次使用的效果！
+			for(j=0;j&lt;len_l;j++){
+				if(link[j].low_x &lt;= X[i] &amp;&amp; link[j].high_x &gt;= X[i+1])
+					insert(1,link[j].low_y,link[j].high_y);
+			}
+			get_ans=0;
+			get_seg(1);
+			ans += (X[i+1]-X[i])*get_ans;
+		}
+		printf("%d\n",ans);
+		if(x1 == -2)break;
+	}
+	return 0;
+}</pre>
+<p>
+ </p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-54484">
+<article class="comment" id="comment-54484">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">943965021</a></span> on <a href="http://www.acmerblog.com/hdu-1264-Counting-Squares-1628.html#comment-54484" rel="nofollow"><time datetime="2015-05-21T21:10:20+00:00" pubdate="">2015年5月21日 at 下午9:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>处凡愚而不减，在圣贤而不增；<br/>住烦恼而不乱，居禅定而不寂。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-12040">
+<article class="comment" id="comment-12040">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Snarl_jsb</a></span> on <a href="http://www.acmerblog.com/hdu-1264-Counting-Squares-1628.html#comment-12040" rel="nofollow"><time datetime="2015-04-05T04:56:12+00:00" pubdate="">2015年4月5日 at 上午4:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-40417">
+<article class="comment" id="comment-40417">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">winter</a></span> on <a href="http://www.acmerblog.com/hdu-1264-Counting-Squares-1628.html#comment-40417" rel="nofollow"><time datetime="2015-03-26T21:54:39+00:00" pubdate="">2015年3月26日 at 下午9:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>int L[m+1][n+1];这样定义出错，这个在gcc上可以编译通过 在VS上不行 应该改为new 或者vector</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-40420">
+<article class="comment" id="comment-40420">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">becool456</a></span> on <a href="http://www.acmerblog.com/hdu-1264-Counting-Squares-1628.html#comment-40420" rel="nofollow"><time datetime="2015-01-26T05:40:40+00:00" pubdate="">2015年1月26日 at 上午5:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>涨姿势了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-40418">
+<article class="comment" id="comment-40418">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">la0bei</a></span> on <a href="http://www.acmerblog.com/hdu-1264-Counting-Squares-1628.html#comment-40418" rel="nofollow"><time datetime="2014-11-29T21:31:55+00:00" pubdate="">2014年11月29日 at 下午9:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好网站，肯定会火的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-54486">
+<article class="comment" id="comment-54486">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">blogpick</a></span> on <a href="http://www.acmerblog.com/hdu-1264-Counting-Squares-1628.html#comment-54486" rel="nofollow"><time datetime="2014-11-12T07:56:51+00:00" pubdate="">2014年11月12日 at 上午7:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>88行是多余的，可以删除</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-54483">
+<article class="comment" id="comment-54483">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Sacomplex</a></span> on <a href="http://www.acmerblog.com/hdu-1264-Counting-Squares-1628.html#comment-54483" rel="nofollow"><time datetime="2014-06-19T12:25:17+00:00" pubdate="">2014年6月19日 at 下午12:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，再多来的CF上面的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-40416">
+<article class="comment" id="comment-40416">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">beizhiwu</a></span> on <a href="http://www.acmerblog.com/hdu-1264-Counting-Squares-1628.html#comment-40416" rel="nofollow"><time datetime="2014-05-15T19:23:55+00:00" pubdate="">2014年5月15日 at 下午7:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很有意思，可惜我很菜啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-40419">
+<article class="comment" id="comment-40419">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jupiterhyun</a></span> on <a href="http://www.acmerblog.com/hdu-1264-Counting-Squares-1628.html#comment-40419" rel="nofollow"><time datetime="2014-05-08T11:29:00+00:00" pubdate="">2014年5月8日 at 上午11:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嗯   分析得很到位，确实用模板编程能让面试官对你的印象更好。在设置辅助栈的时候可以这样：push时，比较要push的elem和辅助栈的栈顶，elem&lt;=min.top()，则min.push(elem).否则只要push（elem）就好。在pop的时候，比较stack.top()与min.top(),if(stack.top()&lt;=min.top()),则{stack.pop();min.pop();}，否则{stack.pop();}.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-54487">
+<article class="comment" id="comment-54487">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tkdzyl2013</a></span> on <a href="http://www.acmerblog.com/hdu-1264-Counting-Squares-1628.html#comment-54487" rel="nofollow"><time datetime="2014-04-27T14:04:11+00:00" pubdate="">2014年4月27日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个差别应该不会太大，或许编辑器就自动优化成内联函数了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-12039">
+<article class="comment" id="comment-12039">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">beizhiwu</a></span> on <a href="http://www.acmerblog.com/hdu-1264-Counting-Squares-1628.html#comment-12039" rel="nofollow"><time datetime="2014-04-25T06:47:37+00:00" pubdate="">2014年4月25日 at 上午6:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个..  真没看出来</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-54485">
+<article class="comment" id="comment-54485">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">oneal</a></span> on <a href="http://www.acmerblog.com/hdu-1264-Counting-Squares-1628.html#comment-54485" rel="nofollow"><time datetime="2014-02-10T07:34:34+00:00" pubdate="">2014年2月10日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>“可以发现,树将是满二叉树,”这句话不对吧，构造的树应该是“完全二叉树”，而非“满二叉树”。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-12037">
+<article class="comment" id="comment-12037">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sheyty</a></span> on <a href="http://www.acmerblog.com/hdu-1264-Counting-Squares-1628.html#comment-12037" rel="nofollow"><time datetime="2014-02-04T18:02:17+00:00" pubdate="">2014年2月4日 at 下午6:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，再多来的CF上面的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-12038">
+<article class="comment" id="comment-12038">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Ailing</a></span> on <a href="http://www.acmerblog.com/hdu-1264-Counting-Squares-1628.html#comment-12038" rel="nofollow"><time datetime="2013-12-05T15:41:42+00:00" pubdate="">2013年12月5日 at 下午3:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,599 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-13</div>
+<div class="tit"><h1 class="entry-title">HDU 3252-Code Merging[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观476次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5147" href="http://www.acmerblog.com/hdu-3252-code-merging-5147.html#comments" title="《HDU 3252-Code Merging[解题报告]HOJ》上的评论">18 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Code Merging</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+<b>Background</b>
+<p>Version control is the art of managing changes to information. It has long been a critical tool for programmers, who typically spend their time making small changes to software and then undoing those changes the next day. But the usefulness of version control software extends far beyond the bounds of the software development world. Anywhere you can find people using computers to manage information that changes often, there is room for version control.</p>
+<p>Some version control systems are also software configuration management (SCM) systems. These systems are specifically tailored to manage trees of source code, and have many features that are specific to software development-such as natively understanding programming languages, or supplying tools for building software.</p>
+<p>One nice feature that many SCM systems provide is called "Code Merging", which allows a code to be modified simultaneously by two coders. As long as they work on DIFFERENT parts of the code, modifications could be merged gracefully.</p>
+<p>Consider the following code:</p>
+<p>void idle(){}<br/>void goShoppingWithGirlFriend(){…}<br/>void playGames(){…}<br/>int main()<br/>{<br/>    if (today.isSunday())<br/>        idle();<br/>}</p>
+<p>Mr. T added a function "greeting Pan Xi" by changing the original code into:</p>
+<p>void greetingPX(){ printf("greeting Pan Xi"); }<br/>void idle(){}<br/>void goShoppingWithGirlFriend(){…}<br/>void playGames(){…}<br/>int main()<br/>{<br/>    if (today.isSunday())<br/>        idle();<br/>}</p>
+<p>At the same time, Mr. L added a function "greeting Xue Xiaoyuan" by changing the original code into:</p>
+<p>void idle(){}<br/>void goShoppingWithGirlFriend(){…}<br/>void playGames(){…}<br/>void greetingXXY(){ printf("greeting Xue Xiaoyuan"); }<br/>int main()<br/>{<br/>    if (today.isSunday())<br/>        idle();<br/>}</p>
+<p>Note that two modifications are made in different parts of the code, so smart SCMs can happily merge them, preserving both new functionalities:</p>
+<p>void greetingPX(){ printf("greeting Pan Xi"); }<br/>void idle(){}<br/>void goShoppingWithGirlFriend(){…}<br/>void playGames(){…}<br/>void greetingXXY(){ printf("greeting Xue Xiaoyuan"); }<br/>int main()<br/>{<br/>    if (today.isSunday())<br/>        idle();<br/>}</p>
+<p>Amazing, right?</p>
+<p>But life’s not always easy. If someone else changed the last part into:</p>
+<p>if(today.isSunday())<br/>    playGames();</p>
+<p>And another anonymous coder wrote the following:</p>
+<p>if(today.isSunday())<br/>    goShoppingWithGirlFriend();</p>
+<p>I bet no SCM in the world really knows what to do – it totally depends on the coder, though Mr. T and Mr. L both prefer the latter.</p>
+<p><b>Task</b></p>
+<p>In this problem, your task is to implement the following code merging algorithm:</p>
+<p>    * Each line of a code is considered as an atomic element, so the algorithm actually takes as input two sequences A and B.<br/>    * Calculates the longest common subsequence (LCS) of these two sequences, denoted by (a1,b1), (a2,b2), …, (ak,bk), i.e. The ai-th line of code A matches the bi-th line of code B, and k is the length of the LCS. By "matching", two lines should be exactly the same, including whitespace characters.<br/>    * By the definition of LCS, a1&lt;a2&lt;a3&lt;…&lt;ak, b1&lt;b2&lt;b3&lt;…&lt;bk, which are called match points. We split both sequences into k+1 so-called diff-sections by their own match points, then merge each pair of diff-sections one by one.<br/>    * Print the merged diff-sections, separated by the lines in the LCS.</p>
+<p>IMPORTANT: in order for the result to be stable, the integer sequence (a1, b1, a2, b2, …, ak, bk) should be lexicographically smallest. Thus, the output of the algorithm is always unique.</p>
+<p>For people who’re still confused, here is some more technical information: let M[i] be the i-th match-point, i.e., M[i] = A[ai] = B[bi], DA[i] be the i-th diff-section of A, i.e. DA[i] = {A[ai-1+1 ... ai-1]} (note that a0=0, ak+1=len(A)+1). It’s not hard to see that code A can be rewritten as: DA[1], M[1], DA[2], M[2], …, DA[k], M[k], DA[k+1]. We can define DB[i] similarly.</p>
+<p>With these symbols, we can easily express the final output of this problem as:</p>
+<p>merge(DA[1],DB[1])<br/>M[1]<br/>merge(DA[2],DB[2])<br/>M[2]<br/>merge(DA[3],DB[3])<br/>M[3]<br/>…<br/>M[k]<br/>merge(DA[k+1],DB[k+1])</p>
+<p>Where merge(DA[i],DB[i]) is calculated as follows:</p>
+<p>    * If one of DA[i] and DB[i] is empty, return the other (though it can be again empty)<br/>    * otherwise, report a conflict, showing content of the diff-sections in both codes (see sample output below). </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line contains a single integer T (T &lt;= 20), the number of test cases. Each case contains code A followed by code B. Both codes end with a line containing 9 character #CODE-END (excluding the newline character). Each code contains at most 1000 lines, each line contains no more than 200 characters, and is guaranteed to be followed by a newline character. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The first line contains a single integer T (T &lt;= 20), the number of test cases. Each case contains code A followed by code B. Both codes end with a line containing 9 character #CODE-END (excluding the newline character). Each code contains at most 1000 lines, each line contains no more than 200 characters, and is guaranteed to be followed by a newline character.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+void greetingPX(){ printf("greeting Pan Xi"); }
+void idle(){}
+void goShoppingWithGirlFriend(){...}
+void playGames(){...}
+int main()
+{
+    if (today.isSunday())
+        idle();
+}
+#CODE-END
+void idle(){}
+void goShoppingWithGirlFriend(){...}
+void playGames(){...}
+void greetingXXY(){ printf("greeting Xue Xiaoyuan"); }
+int main()
+{
+    if (today.isSunday())
+        idle();
+}
+#CODE-END
+int main()
+{
+    if(today.isSunday())
+        playGames();
+}
+#CODE-END
+int main()
+{
+    if(today.isSunday())
+        goShoppingWithGirlFriend();
+}
+#CODE-END</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case 1:
+void greetingPX(){ printf("greeting Pan Xi"); }
+void idle(){}
+void goShoppingWithGirlFriend(){...}
+void playGames(){...}
+void greetingXXY(){ printf("greeting Xue Xiaoyuan"); }
+int main()
+{
+    if (today.isSunday())
+        idle();
+}
+
+Case 2:
+int main()
+{
+    if(today.isSunday())
+//**** CONFLICT STARTS ****//
+//code in A:
+        playGames();
+//code in B:
+        goShoppingWithGirlFriend();
+//***** CONFLICT ENDS *****//
+}</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include &lt;iostream&gt;
+#include &lt;queue&gt;
+#include &lt;stack&gt;
+#include &lt;string&gt;
+#include &lt;map&gt;
+#include &lt;vector&gt;
+#include &lt;cstring&gt;
+#include &lt;set&gt;
+#include &lt;cstdio&gt;
+#include &lt;cmath&gt;
+#include &lt;algorithm&gt;
+using namespace std;
+const int MAX=1005,INF=1&lt;&lt;30;
+const string END="#CODE-END";
+
+int len;
+map&lt;string,int&gt; mymap;
+map&lt;string,int&gt;::iterator ite;
+
+vector&lt;string&gt; A,B;
+
+int cnt;
+int f[MAX][MAX];
+int ma[MAX],mb[MAX];
+vector&lt;int&gt; a,b;
+int Test;
+
+void read(vector&lt;string&gt; &amp;t,vector&lt;int&gt; &amp;arr){
+
+    string s;
+    while(getline(cin,s)){
+        if(s==END)
+            break;
+        ite=mymap.find(s);
+        if(ite==mymap.end())
+            mymap[s]=len++;
+//        cout&lt;&lt;"LEN: "&lt;&lt;s&lt;&lt;" "&lt;&lt;mymap[s]&lt;&lt;endl;
+
+        t.push_back(s);
+        arr.push_back(mymap[s]);
+    }
+
+//    for(int i=0;i&lt;(int)arr.size();i++)
+//        cout&lt;&lt;"T:  "&lt;&lt;arr[i]&lt;&lt;endl;
+
+
+    return ;
+}
+
+void createM(){
+
+    int n1=(int)a.size()-1,n2=(int)b.size()-1;
+//    cout&lt;&lt;"n1:n2 "&lt;&lt;n1&lt;&lt;" "&lt;&lt;n2&lt;&lt;endl;
+//    f[0][0]=0;
+//    for(int i=0;i&lt;=n1;i++) f[i][0]=0;
+//    for(int i=0;i&lt;=n2;i++) f[0][i]=0;
+    memset(f,0,sizeof(f));
+
+    for(int i=n1;i&gt;=1;i--){
+        for(int j=n2;j&gt;=1;j--){
+            if(a[i]==b[j])
+                f[i][j]=f[i+1][j+1]+1;
+            else
+                f[i][j]=max(f[i+1][j],f[i][j+1]);
+        }
+    }
+
+//    cout&lt;&lt;f[n1][n2]&lt;&lt;endl;
+//    if(Test==0){
+//        for(int i=0;i&lt;=n1;i++)
+//            cout&lt;&lt;"a: "&lt;&lt;a[i]&lt;&lt;endl;
+//
+//        for(int i=0;i&lt;=n2;i++)
+//            cout&lt;&lt;"b: "&lt;&lt;b[i]&lt;&lt;endl;
+//    }
+
+//    int i=1,j=1;
+    int L=f[1][1];
+    cnt=f[1][1];
+//    while(L&lt;f[1][1]){
+////        if(i&gt;n1||j&gt;n2)
+////            while(1) ;
+//        if(a[i]==b[j]){
+//            ma[L]=(i++)-1;
+//            mb[L]=(j++)-1;
+//            ++L;
+//        }
+//        else if(f[i+1][j]&lt;f[i][j+1])
+//            ++j;
+//        else
+//            ++i;
+//    }
+
+    int x = -1,c=0;
+    for(int i = 1; i&lt;=n1; i++)
+    {
+        for(int j = 1; j&lt;= n2; j++)
+        {
+            if(a[i] == b[j] &amp;&amp; f[i][j] == L &amp;&amp; j &gt; x)
+            {
+                x = j;
+                L--;
+//                record[cnt][0] = i, record[cnt][1] = j;
+                ma[c]=i-1;
+                mb[c]=j-1;
+                x = j;
+                c++;
+                break;
+            }
+        }
+    }
+//    cout&lt;&lt;"DSA: "&lt;&lt;n1&lt;&lt;" "&lt;&lt;n2&lt;&lt;endl;
+//    cout&lt;&lt;"ASD: "&lt;&lt;i&lt;&lt;" "&lt;&lt;j&lt;&lt;endl;
+
+//    cout&lt;&lt;"CNTTTTTTTTTTTTT: "&lt;&lt;cnt&lt;&lt;endl;
+//    for(int i=0;i&lt;cnt;i++)
+//        cout&lt;&lt;ma[i]&lt;&lt;" "&lt;&lt;mb[i]&lt;&lt;endl;
+
+    return ;
+}
+
+struct DD{
+    bool isM;
+    int b,e;
+};
+DD DA[MAX*3],DB[MAX*3];
+
+void cut(){
+//    cout&lt;&lt;"CNT: "&lt;&lt;cnt&lt;&lt;endl;
+    int front=0,rear=0;
+
+    int len=0;
+    for(int i=0;i&lt;2*cnt;i++,len++){
+        rear=ma[len];
+        if(front&lt;rear){
+            DA[i].isM=0;
+            DA[i].b=front;
+            DA[i].e=rear-1;
+        }
+        else {
+            DA[i].isM=0;
+            DA[i].b=-1;
+            DA[i].e=-1;
+        }
+
+        //plus M[];
+        ++i;
+        DA[i].isM=1;
+        DA[i].b=ma[len];
+        DA[i].e=ma[len];
+        front=ma[len]+1;
+
+    }
+    rear=(int)A.size();
+
+    if(front&lt;rear){
+        DA[cnt*2].isM=0;
+        DA[cnt*2].b=front;
+        DA[cnt*2].e=rear-1;
+    }
+    else {
+        DA[cnt*2].isM=0;
+        DA[cnt*2].b=-1;
+        DA[cnt*2].e=-1;
+    }
+
+    front=rear=0;
+    len=0;
+    for(int i=0;i&lt;2*cnt;i++,len++){
+        rear=mb[len];
+        if(front&lt;rear){
+            DB[i].isM=0;
+            DB[i].b=front;
+            DB[i].e=rear-1;
+        }
+        else {
+            DB[i].isM=0;
+            DB[i].b=-1;
+            DB[i].e=-1;
+        }
+
+        //plus M[];
+        ++i;
+        DB[i].isM=1;
+        DB[i].b=mb[len];
+        DB[i].e=mb[len];
+        front=mb[len]+1;
+
+    }
+    rear=(int)B.size();
+
+    if(front&lt;rear){
+        DB[cnt*2].isM=0;
+        DB[cnt*2].b=front;
+        DB[cnt*2].e=rear-1;
+    }
+    else {
+        DB[cnt*2].isM=0;
+        DB[cnt*2].b=-1;
+        DB[cnt*2].e=-1;
+    }
+
+//    cout&lt;&lt;"TES: "&lt;&lt;endl;
+//    for(int i=0;i&lt;2*cnt+1;i++){
+//        cout&lt;&lt;DB[i].b&lt;&lt;" "&lt;&lt;DB[i].e&lt;&lt;" ";
+//        if(DB[i].isM)
+//            cout&lt;&lt;"YES"&lt;&lt;endl;
+//        else
+//            cout&lt;&lt;"NO"&lt;&lt;endl;
+//
+//    }
+
+    return ;
+}
+
+void output(){
+
+    for(int i=0;i&lt;2*cnt+1;i++){
+
+        if(DA[i].isM)
+            cout&lt;&lt;A[DA[i].b]&lt;&lt;endl;
+        else if(DA[i].b==-1&amp;&amp;DA[i].e==-1){
+            if(DB[i].b==-1&amp;&amp;DB[i].e==-1)
+                continue;
+            else{
+                for(int j=DB[i].b;j&lt;=DB[i].e;j++){
+                    cout&lt;&lt;B[j]&lt;&lt;endl;
+                }
+            }
+        }
+        else if(DB[i].b==-1&amp;&amp;DB[i].e==-1){
+            if(DA[i].b==-1&amp;&amp;DA[i].e==-1)
+                continue;
+            else{
+                for(int j=DA[i].b;j&lt;=DA[i].e;j++){
+                    cout&lt;&lt;A[j]&lt;&lt;endl;
+                }
+            }
+        }
+        else {
+            cout&lt;&lt;"//**** CONFLICT STARTS ****//"&lt;&lt;endl
+                &lt;&lt;"//code in A:"&lt;&lt;endl;
+            for(int j=DA[i].b;j&lt;=DA[i].e;j++){
+                cout&lt;&lt;A[j]&lt;&lt;endl;
+            }
+            cout&lt;&lt;"//code in B:"&lt;&lt;endl;
+            for(int j=DB[i].b;j&lt;=DB[i].e;j++){
+                cout&lt;&lt;B[j]&lt;&lt;endl;
+            }
+            cout&lt;&lt;"//***** CONFLICT ENDS *****//"&lt;&lt;endl;
+        }
+
+    }
+    return ;
+}
+
+int main()
+{
+#ifndef ONLINE_JUDGE
+    freopen("i.txt", "r", stdin);
+#endif
+//    freopen("comehome.in","r",stdin);
+//    freopen("comehome.out","w",stdout);
+
+    int test=1;
+    cin&gt;&gt;Test;
+    cin.ignore();
+    while(Test--){
+
+        cout&lt;&lt;"Case "&lt;&lt;test++&lt;&lt;":"&lt;&lt;endl;
+
+        len=0;
+        mymap.clear();
+        A.clear();B.clear();
+        a.clear();b.clear();
+        a.push_back(-1);b.push_back(-1);
+
+        read(A,a);
+        read(B,b);
+
+        createM();
+
+        cut();
+
+        output();
+        cout&lt;&lt;endl;
+    }
+    return 0;
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-78266">
+<article class="comment" id="comment-78266">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513006" rel="external nofollow">新用户816720</a></span> on <a href="http://www.acmerblog.com/hdu-3252-code-merging-5147.html#comment-78266" rel="nofollow"><time datetime="2017-04-12T10:53:29+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你让让我来呀！谁他妈不愿意来呀！那个犊子才不愿意 来啊！  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78265">
+<article class="comment" id="comment-78265">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513006" rel="external nofollow">新用户816720</a></span> on <a href="http://www.acmerblog.com/hdu-3252-code-merging-5147.html#comment-78265" rel="nofollow"><time datetime="2017-04-12T10:53:29+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你让让我来呀！谁他妈不愿意来呀！那个犊子才不愿意 来啊！  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-78264">
+<article class="comment" id="comment-78264">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513006" rel="external nofollow">新用户816720</a></span> on <a href="http://www.acmerblog.com/hdu-3252-code-merging-5147.html#comment-78264" rel="nofollow"><time datetime="2017-04-12T10:53:29+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你让让我来呀！谁他妈不愿意来呀！那个犊子才不愿意 来啊！  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78263">
+<article class="comment" id="comment-78263">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513006" rel="external nofollow">新用户816720</a></span> on <a href="http://www.acmerblog.com/hdu-3252-code-merging-5147.html#comment-78263" rel="nofollow"><time datetime="2017-04-12T10:53:29+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你让让我来呀！谁他妈不愿意来呀！那个犊子才不愿意 来啊！  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28279">
+<article class="comment" id="comment-28279">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">vincent_ynh</a></span> on <a href="http://www.acmerblog.com/hdu-3252-code-merging-5147.html#comment-28279" rel="nofollow"><time datetime="2015-07-10T18:18:05+00:00" pubdate="">2015年7月10日 at 下午6:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>afsasfasfasf</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28275">
+<article class="comment" id="comment-28275">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">GDUTtian</a></span> on <a href="http://www.acmerblog.com/hdu-3252-code-merging-5147.html#comment-28275" rel="nofollow"><time datetime="2015-07-07T23:28:25+00:00" pubdate="">2015年7月7日 at 下午11:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算法，他认识我，我不认识他，后来有人告诉我你写的这段代码就是XXX算法。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28276">
+<article class="comment" id="comment-28276">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wawa</a></span> on <a href="http://www.acmerblog.com/hdu-3252-code-merging-5147.html#comment-28276" rel="nofollow"><time datetime="2015-06-15T04:14:32+00:00" pubdate="">2015年6月15日 at 上午4:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Thanks i enjoy your write-up about Why We Keep track of | J Squared Consulting</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28278">
+<article class="comment" id="comment-28278">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Dwayne</a></span> on <a href="http://www.acmerblog.com/hdu-3252-code-merging-5147.html#comment-28278" rel="nofollow"><time datetime="2015-04-02T23:45:26+00:00" pubdate="">2015年4月2日 at 下午11:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给力</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28268">
+<article class="comment" id="comment-28268">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">lintong</a></span> on <a href="http://www.acmerblog.com/hdu-3252-code-merging-5147.html#comment-28268" rel="nofollow"><time datetime="2015-03-19T09:40:45+00:00" pubdate="">2015年3月19日 at 上午9:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>整理的很好，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28273">
+<article class="comment" id="comment-28273">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">water160</a></span> on <a href="http://www.acmerblog.com/hdu-3252-code-merging-5147.html#comment-28273" rel="nofollow"><time datetime="2015-02-27T14:27:48+00:00" pubdate="">2015年2月27日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>此题答案确实应该是A。文中已修改，感谢一楼的提醒！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28274">
+<article class="comment" id="comment-28274">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lint</a></span> on <a href="http://www.acmerblog.com/hdu-3252-code-merging-5147.html#comment-28274" rel="nofollow"><time datetime="2015-02-07T17:20:35+00:00" pubdate="">2015年2月7日 at 下午5:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>比较基础，找些自信</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28272">
+<article class="comment" id="comment-28272">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">123zxc</a></span> on <a href="http://www.acmerblog.com/hdu-3252-code-merging-5147.html#comment-28272" rel="nofollow"><time datetime="2015-01-14T00:47:59+00:00" pubdate="">2015年1月14日 at 上午12:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很全很强大！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28277">
+<article class="comment" id="comment-28277">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">winter</a></span> on <a href="http://www.acmerblog.com/hdu-3252-code-merging-5147.html#comment-28277" rel="nofollow"><time datetime="2014-09-25T22:13:49+00:00" pubdate="">2014年9月25日 at 下午10:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>分三种情况讨论。Not Possible就是impossible</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28271">
+<article class="comment" id="comment-28271">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">super157</a></span> on <a href="http://www.acmerblog.com/hdu-3252-code-merging-5147.html#comment-28271" rel="nofollow"><time datetime="2014-08-26T07:00:40+00:00" pubdate="">2014年8月26日 at 上午7:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这一题的代码这样提交时错误的~少考虑了很多情况</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28266">
+<article class="comment" id="comment-28266">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dream</a></span> on <a href="http://www.acmerblog.com/hdu-3252-code-merging-5147.html#comment-28266" rel="nofollow"><time datetime="2014-08-14T16:06:46+00:00" pubdate="">2014年8月14日 at 下午4:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一种方法怎么会是O(log(m+n))呢？没有二分的话直接遍历应该就是O(m+n)吧？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28267">
+<article class="comment" id="comment-28267">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hanyi</a></span> on <a href="http://www.acmerblog.com/hdu-3252-code-merging-5147.html#comment-28267" rel="nofollow"><time datetime="2014-07-15T07:35:12+00:00" pubdate="">2014年7月15日 at 上午7:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是什么鬼，怎么多头文件</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28270">
+<article class="comment" id="comment-28270">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hwp</a></span> on <a href="http://www.acmerblog.com/hdu-3252-code-merging-5147.html#comment-28270" rel="nofollow"><time datetime="2014-05-08T03:41:18+00:00" pubdate="">2014年5月8日 at 上午3:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>I go through some of your put up and I uncovered a good deal of expertise from it. Many thanks for posting this sort of exciting posts</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28269">
+<article class="comment" id="comment-28269">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">reking</a></span> on <a href="http://www.acmerblog.com/hdu-3252-code-merging-5147.html#comment-28269" rel="nofollow"><time datetime="2014-03-19T23:07:39+00:00" pubdate="">2014年3月19日 at 下午11:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>remove没有实现</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

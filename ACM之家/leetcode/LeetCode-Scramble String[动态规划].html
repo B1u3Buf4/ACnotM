@@ -1,0 +1,543 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>11-18</div>
+<div class="tit"><h1 class="entry-title">LeetCode-Scramble String[动态规划]</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a></span><span class="i4">围观1310次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6224" href="http://www.acmerblog.com/leetcode-solution-scramble-string-6224.html#comments" title="《LeetCode-Scramble String[动态规划]》上的评论">26 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<h3><strong>Scramble String</strong></h3>
+<div class="question-content">
+<p>
+Given a string <i>s1</i>, we may represent it as a binary tree by partitioning it to two non-empty substrings recursively.
+</p>
+<p>
+Below is one possible representation of <i>s1</i> = <code>"great"</code>:
+</p>
+<pre>
+    great
+   /    \
+  gr    eat
+ / \    /  \
+g   r  e   at
+           / \
+          a   t
+</pre>
+<p>
+To scramble the string, we may choose any non-leaf node and swap its two children.
+</p>
+<p>
+For example, if we choose the node <code>"gr"</code> and swap its two children, it produces a scrambled string <code>"rgeat"</code>.
+</p>
+<pre>
+    rgeat
+   /    \
+  rg    eat
+ / \    /  \
+r   g  e   at
+           / \
+          a   t
+</pre>
+<p>
+We say that <code>"rgeat"</code> is a scrambled string of <code>"great"</code>.
+</p>
+<p>
+Similarly, if we continue to swap the children of nodes <code>"eat"</code> and <code>"at"</code>, it produces a scrambled string <code>"rgtae"</code>.
+</p>
+<pre>
+    rgtae
+   /    \
+  rg    tae
+ / \    /  \
+r   g  ta  e
+       / \
+      t   a
+</pre>
+<p>
+We say that <code>"rgtae"</code> is a scrambled string of <code>"great"</code>.
+</p>
+<p>
+Given two strings <i>s1</i> and <i>s2</i> of the same length, determine if <i>s2</i> is a scrambled string of <i>s1</i>.
+</p>
+</div>
+<p> 标签: Dynamic Programming String<br/>
+<strong>分析</strong>
+</p><p>首先想到的是递归（即深搜），对两个string进行分割，然后比较四对字符串。代码虽然简单，但是复杂度比较高。有两种加速策略，一种是剪枝，提前返回；一种是加缓存，缓存中间结果，即memorization（翻译为记忆化搜索）。</p>
+<p>剪枝可以五花八门，要充分观察，充分利用信息，找到能让节点提前返回的条件。例如，判断两个字符串是否互为scamble，至少要求每个字符在两个字符串中出现的次数要相等，如果不相等则返回false。</p>
+<p>加缓存，可以用数组或HashMap。本题维数较高，用HashMap，{map}和{unordered_map}均可。</p>
+<p>既然可以用记忆化搜索，这题也一定可以用动规。设状态为{f[n][i][j]}，表示长度为$n$，起点为{s1[i]}和起点为{s2[j]}两个字符串是否互为scramble，则状态转移方程为<br/>
+\begin{Code}<br/>
+f[n][i][j]} =  (f[k][i][j] &amp;&amp; f[n-k][i+k][j+k])<br/>
+            || (f[k][i][j+n-k] &amp;&amp; f[n-k][i+k][j])<br/>
+\end{Code}</p>
+<p>代码1
+</p><pre class="brush:cpp">
+// LeetCode, Interleaving String
+// 递归，会超时，仅用来帮助理解
+// 时间复杂度O(n^6)，空间复杂度O(1)
+class Solution {
+public:
+    bool isScramble(string s1, string s2) {
+        return isScramble(s1.begin(), s1.end(), s2.begin());
+    }
+private:
+    typedef string::iterator Iterator;
+    bool isScramble(Iterator first1, Iterator last1, Iterator first2) {
+        auto length = distance(first1, last1);
+        auto last2 = next(first2, length);
+
+        if (length == 1) return *first1 == *first2;
+
+        for (int i = 1; i &lt; length; ++i)
+            if ((isScramble(first1, first1 + i, first2)
+                 &amp;&amp; isScramble(first1 + i, last1, first2 + i))
+                    || (isScramble(first1, first1 + i, last2 - i)
+                            &amp;&amp; isScramble(first1 + i, last1, first2)))
+                return true;
+
+        return false;
+    }
+};
+</pre>
+<p>代码2
+</p><pre class="brush:cpp">
+// LeetCode, Interleaving String
+// 动规，时间复杂度O(n^3)，空间复杂度O(n^3)
+class Solution {
+public:
+    bool isScramble(string s1, string s2) {
+        const int N = s1.size();
+        if (N != s2.size()) return false;
+
+        // f[n][i][j]，表示长度为n，起点为s1[i]和
+        // 起点为s2[j]两个字符串是否互为scramble
+        bool f[N + 1][N][N];
+        fill_n(&amp;f[0][0][0], (N + 1) * N * N, false);
+
+        for (int i = 0; i &lt; N; i++)
+            for (int j = 0; j &lt; N; j++)
+                f[1][i][j] = s1[i] == s2[j];
+
+        for (int n = 1; n &lt;= N; ++n) {
+            for (int i = 0; i + n &lt;= N; ++i) {
+                for (int j = 0; j + n &lt;= N; ++j) {
+                    for (int k = 1; k &lt; n; ++k) {
+                        if ((f[k][i][j] &amp;&amp; f[n - k][i + k][j + k]) ||
+                                (f[k][i][j + n - k] &amp;&amp; f[n - k][i + k][j])) {
+                            f[n][i][j] = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return f[N][0][0];
+    }
+};
+</pre>
+<p>代码3
+</p><pre class="brush:cpp">
+// LeetCode, Interleaving String
+// 递归+剪枝
+// 时间复杂度O(n^6)，空间复杂度O(1)
+class Solution {
+public:
+    bool isScramble(string s1, string s2) {
+        return isScramble(s1.begin(), s1.end(), s2.begin());
+    }
+private:
+    typedef string::iterator Iterator;
+    bool isScramble(Iterator first1, Iterator last1, Iterator first2) {
+        auto length = distance(first1, last1);
+        auto last2 = next(first2, length);
+        if (length == 1) return *first1 == *first2;
+
+        // 剪枝，提前返回
+        int A[26]; // 每个字符的计数器
+        fill(A, A + 26, 0);
+        for(int i = 0; i &lt; length; i++) A[*(first1+i)-'a']++;
+        for(int i = 0; i &lt; length; i++) A[*(first2+i)-'a']--;
+        for(int i = 0; i &lt; 26; i++) if (A[i] != 0) return false;
+
+        for (int i = 1; i &lt; length; ++i)
+            if ((isScramble(first1, first1 + i, first2)
+                 &amp;&amp; isScramble(first1 + i, last1, first2 + i))
+                    || (isScramble(first1, first1 + i, last2 - i)
+                            &amp;&amp; isScramble(first1 + i, last1, first2)))
+                return true;
+
+        return false;
+    }
+};
+</pre>
+<p>代码4
+</p><pre class="brush:cpp">
+// LeetCode, Interleaving String
+// 递归+map做cache
+// 时间复杂度O(n^3)，空间复杂度O(n^3)
+class Solution {
+public:
+    bool isScramble(string s1, string s2) {
+        cache.clear();
+        return isScramble(s1.begin(), s1.end(), s2.begin());
+    }
+private:
+    typedef string::const_iterator Iterator;
+    map&lt;tuple&lt;Iterator, Iterator, Iterator&gt;, bool&gt; cache;
+
+    bool isScramble(Iterator first1, Iterator last1, Iterator first2) {
+        auto length = distance(first1, last1);
+        auto last2 = next(first2, length);
+
+        if (length == 1) return *first1 == *first2;
+
+        for (int i = 1; i &lt; length; ++i)
+            if ((getOrUpdate(first1, first1 + i, first2)
+                    &amp;&amp; getOrUpdate(first1 + i, last1, first2 + i))
+                    || (getOrUpdate(first1, first1 + i, last2 - i)
+                            &amp;&amp; getOrUpdate(first1 + i, last1, first2)))
+                return true;
+
+        return false;
+    }
+
+    bool getOrUpdate(Iterator first1, Iterator last1, Iterator first2) {
+        auto key = make_tuple(first1, last1, first2);
+        auto pos = cache.find(key);
+
+        return (pos != cache.end()) ?
+                pos-&gt;second : (cache[key] = isScramble(first1, last1, first2));
+    }
+};
+</pre>
+<p>代码5
+</p><pre class="brush:cpp">
+typedef string::const_iterator Iterator;
+typedef tuple&lt;Iterator, Iterator, Iterator&gt; Key;
+// 定制一个哈希函数
+namespace std {
+template&lt;&gt; struct hash&lt;Key&gt; {
+    size_t operator()(const Key &amp; x) const {
+        Iterator first1, last1, first2;
+        tie(first1, last1, first2) = x;
+
+        int result = *first1;
+        result = result * 31 + *last1;
+        result = result * 31 + *first2;
+        result = result * 31 + *(next(first2, distance(first1, last1)-1));
+        return result;
+    }
+};
+}
+
+// LeetCode, Interleaving String
+// 递归+unordered_map做cache，比map快
+// 时间复杂度O(n^3)，空间复杂度O(n^3)
+class Solution {
+public:
+    unordered_map&lt;Key, bool&gt; cache;
+
+    bool isScramble(string s1, string s2) {
+        cache.clear();
+        return isScramble(s1.begin(), s1.end(), s2.begin());
+    }
+
+    bool isScramble(Iterator first1, Iterator last1, Iterator first2) {
+        auto length = distance(first1, last1);
+        auto last2 = next(first2, length);
+
+        if (length == 1)
+            return *first1 == *first2;
+
+        for (int i = 1; i &lt; length; ++i)
+            if ((getOrUpdate(first1, first1 + i, first2)
+                    &amp;&amp; getOrUpdate(first1 + i, last1, first2 + i))
+                    || (getOrUpdate(first1, first1 + i, last2 - i)
+                            &amp;&amp; getOrUpdate(first1 + i, last1, first2)))
+                return true;
+
+        return false;
+    }
+
+    bool getOrUpdate(Iterator first1, Iterator last1, Iterator first2) {
+        auto key = make_tuple(first1, last1, first2);
+        auto pos = cache.find(key);
+
+        return (pos != cache.end()) ?
+                pos-&gt;second : (cache[key] = isScramble(first1, last1, first2));
+    }
+};
+</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-74548">
+<article class="comment" id="comment-74548">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514189" rel="external nofollow">新用户430820</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-scramble-string-6224.html#comment-74548" rel="nofollow"><time datetime="2017-04-12T03:53:48+00:00" pubdate="">2017年4月12日 at 上午3:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好看好看！！！我喜欢蜜丽呢！！喜欢她的执着！！喜欢沙拉曼和亲王的帅气！啊啊啊。。(=(^.^)=</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-74547">
+<article class="comment" id="comment-74547">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514189" rel="external nofollow">新用户430820</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-scramble-string-6224.html#comment-74547" rel="nofollow"><time datetime="2017-04-12T03:53:48+00:00" pubdate="">2017年4月12日 at 上午3:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好看好看！！！我喜欢蜜丽呢！！喜欢她的执着！！喜欢沙拉曼和亲王的帅气！啊啊啊。。(=(^.^)=</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-74546">
+<article class="comment" id="comment-74546">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514189" rel="external nofollow">新用户430820</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-scramble-string-6224.html#comment-74546" rel="nofollow"><time datetime="2017-04-12T03:53:48+00:00" pubdate="">2017年4月12日 at 上午3:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好看好看！！！我喜欢蜜丽呢！！喜欢她的执着！！喜欢沙拉曼和亲王的帅气！啊啊啊。。(=(^.^)=</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-74545">
+<article class="comment" id="comment-74545">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514189" rel="external nofollow">新用户430820</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-scramble-string-6224.html#comment-74545" rel="nofollow"><time datetime="2017-04-12T03:53:48+00:00" pubdate="">2017年4月12日 at 上午3:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好看好看！！！我喜欢蜜丽呢！！喜欢她的执着！！喜欢沙拉曼和亲王的帅气！啊啊啊。。(=(^.^)=</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-74544">
+<article class="comment" id="comment-74544">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514189" rel="external nofollow">新用户430820</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-scramble-string-6224.html#comment-74544" rel="nofollow"><time datetime="2017-04-12T03:53:48+00:00" pubdate="">2017年4月12日 at 上午3:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好看好看！！！我喜欢蜜丽呢！！喜欢她的执着！！喜欢沙拉曼和亲王的帅气！啊啊啊。。(=(^.^)=</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-74543">
+<article class="comment" id="comment-74543">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514189" rel="external nofollow">新用户430820</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-scramble-string-6224.html#comment-74543" rel="nofollow"><time datetime="2017-04-12T03:53:48+00:00" pubdate="">2017年4月12日 at 上午3:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好看好看！！！我喜欢蜜丽呢！！喜欢她的执着！！喜欢沙拉曼和亲王的帅气！啊啊啊。。(=(^.^)=</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-74542">
+<article class="comment" id="comment-74542">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514189" rel="external nofollow">新用户430820</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-scramble-string-6224.html#comment-74542" rel="nofollow"><time datetime="2017-04-12T03:53:48+00:00" pubdate="">2017年4月12日 at 上午3:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好看好看！！！我喜欢蜜丽呢！！喜欢她的执着！！喜欢沙拉曼和亲王的帅气！啊啊啊。。(=(^.^)=</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-74541">
+<article class="comment" id="comment-74541">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514189" rel="external nofollow">新用户430820</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-scramble-string-6224.html#comment-74541" rel="nofollow"><time datetime="2017-04-12T03:53:48+00:00" pubdate="">2017年4月12日 at 上午3:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好看好看！！！我喜欢蜜丽呢！！喜欢她的执着！！喜欢沙拉曼和亲王的帅气！啊啊啊。。(=(^.^)=</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-74540">
+<article class="comment" id="comment-74540">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514189" rel="external nofollow">新用户430820</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-scramble-string-6224.html#comment-74540" rel="nofollow"><time datetime="2017-04-12T03:53:48+00:00" pubdate="">2017年4月12日 at 上午3:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好看好看！！！我喜欢蜜丽呢！！喜欢她的执着！！喜欢沙拉曼和亲王的帅气！啊啊啊。。(=(^.^)=</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-74539">
+<article class="comment" id="comment-74539">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514189" rel="external nofollow">新用户430820</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-scramble-string-6224.html#comment-74539" rel="nofollow"><time datetime="2017-04-12T03:53:48+00:00" pubdate="">2017年4月12日 at 上午3:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好看好看！！！我喜欢蜜丽呢！！喜欢她的执着！！喜欢沙拉曼和亲王的帅气！啊啊啊。。(=(^.^)=</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-74538">
+<article class="comment" id="comment-74538">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514189" rel="external nofollow">新用户430820</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-scramble-string-6224.html#comment-74538" rel="nofollow"><time datetime="2017-04-12T03:53:48+00:00" pubdate="">2017年4月12日 at 上午3:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好看好看！！！我喜欢蜜丽呢！！喜欢她的执着！！喜欢沙拉曼和亲王的帅气！啊啊啊。。(=(^.^)=</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64838">
+<article class="comment" id="comment-64838">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">黄渭阳</span> on <a href="http://www.acmerblog.com/leetcode-solution-scramble-string-6224.html#comment-64838" rel="nofollow"><time datetime="2016-11-06T15:06:01+00:00" pubdate="">2016年11月6日 at 下午3:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>剪枝法数组应该是会越界的！为什么最后一种解法定制哈希最后要减1？求解，谢谢。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49921">
+<article class="comment" id="comment-49921">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">vincent_ynh</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-scramble-string-6224.html#comment-49921" rel="nofollow"><time datetime="2015-07-10T21:19:36+00:00" pubdate="">2015年7月10日 at 下午9:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-31371">
+<article class="comment" id="comment-31371">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Dwayne</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-scramble-string-6224.html#comment-31371" rel="nofollow"><time datetime="2015-06-30T13:47:50+00:00" pubdate="">2015年6月30日 at 下午1:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>厉害啊，我遇见数学问题就头疼！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-31370">
+<article class="comment" id="comment-31370">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xy7850151</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-scramble-string-6224.html#comment-31370" rel="nofollow"><time datetime="2015-06-23T14:30:33+00:00" pubdate="">2015年6月23日 at 下午2:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>漏了一个"不"，已修正:)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-31373">
+<article class="comment" id="comment-31373">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dream</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-scramble-string-6224.html#comment-31373" rel="nofollow"><time datetime="2015-06-10T13:01:27+00:00" pubdate="">2015年6月10日 at 下午1:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>头文件的颜色是有意设成这种灰暗色的吗？感觉看不清</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49925">
+<article class="comment" id="comment-49925">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">michaelwen</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-scramble-string-6224.html#comment-49925" rel="nofollow"><time datetime="2015-06-06T03:23:21+00:00" pubdate="">2015年6月6日 at 上午3:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一种方法怎么会是O(log(m+n))呢？没有二分的话直接遍历应该就是O(m+n)吧？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49923">
+<article class="comment" id="comment-49923">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">GDUTtian</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-scramble-string-6224.html#comment-49923" rel="nofollow"><time datetime="2015-05-23T19:17:06+00:00" pubdate="">2015年5月23日 at 下午7:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>懂了，谢谢啦</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49924">
+<article class="comment" id="comment-49924">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">edward2414</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-scramble-string-6224.html#comment-49924" rel="nofollow"><time datetime="2015-05-01T01:09:45+00:00" pubdate="">2015年5月1日 at 上午1:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>哇，算法有这么多呢！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49922">
+<article class="comment" id="comment-49922">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Ding Qiangyuan</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-scramble-string-6224.html#comment-49922" rel="nofollow"><time datetime="2015-04-20T00:22:34+00:00" pubdate="">2015年4月20日 at 上午12:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>输入样例作为一个整体输入，带回车</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-31372">
+<article class="comment" id="comment-31372">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wynk0804</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-scramble-string-6224.html#comment-31372" rel="nofollow"><time datetime="2015-03-28T19:00:55+00:00" pubdate="">2015年3月28日 at 下午7:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，还是这种实现比较好理解。虽然效率有点低</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-59002">
+<article class="comment" id="comment-59002">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Baifern</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-scramble-string-6224.html#comment-59002" rel="nofollow"><time datetime="2015-03-27T20:02:29+00:00" pubdate="">2015年3月27日 at 下午8:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>mark, 备用</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-31369">
+<article class="comment" id="comment-31369">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">pain</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-scramble-string-6224.html#comment-31369" rel="nofollow"><time datetime="2015-02-24T10:40:06+00:00" pubdate="">2015年2月24日 at 上午10:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很高兴你会喜欢这个网站。目前还没有一个开发团队，网站是我一个人在维护，都是用的开源系统，也没有太多需要开发的部分，主要是内容整理。非常感谢你的关注。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-59003">
+<article class="comment" id="comment-59003">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangduanjing</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-scramble-string-6224.html#comment-59003" rel="nofollow"><time datetime="2015-02-03T03:25:17+00:00" pubdate="">2015年2月3日 at 上午3:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对于第一题，我的直觉告诉我换不换都一样，求指教</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-31374">
+<article class="comment" id="comment-31374">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">g29tony</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-scramble-string-6224.html#comment-31374" rel="nofollow"><time datetime="2015-02-02T15:23:02+00:00" pubdate="">2015年2月2日 at 下午3:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>后面的掩码变量部分乍一看比较难理解，其实就是把32位按照一个整体来看待。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-31368">
+<article class="comment" id="comment-31368">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xun.gong</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-scramble-string-6224.html#comment-31368" rel="nofollow"><time datetime="2015-02-02T06:17:23+00:00" pubdate="">2015年2月2日 at 上午6:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算法，他认识我，我不认识他，后来有人告诉我你写的这段代码就是XXX算法。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

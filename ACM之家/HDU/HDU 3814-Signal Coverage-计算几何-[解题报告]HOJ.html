@@ -1,0 +1,558 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>04-13</div>
+<div class="tit"><h1 class="entry-title">HDU 3814-Signal Coverage-计算几何-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/geometry/analytic-geometry" rel="category tag" title="查看解析几何中的全部文章">解析几何</a></span><span class="i4">围观327次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6816" href="http://www.acmerblog.com/hdu-3814-signal-coverage-6816.html#comments" title="《HDU 3814-Signal Coverage-计算几何-[解题报告]HOJ》上的评论">25 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Signal Coverage</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+GSM, Global System for Mobile Communications, is the world’s most popular standard for mobile telephone systems. CMCC, China Mobile Communications Corporation, has almost 500,000 GSM base stations, but some cellphone users still complain about the signal coverage problem. Because of building block or some other reasons, we can assume that a base station covers an area of a simple polygon, and they don’t intersect with each other. We have a map that contains some simple polygons which represents the coverage of base stations. For the coverage ratio statistics, we drew a segment on the map, and we consider the C/L be the coverage ratio. C is the length of segment to be covered; L is the length of the segment we drew.<br/>Please notice that, if a part of the segment can be considered as covered, that part must be inside or on the boundary of the polygon. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line contains a single integer T, indicating the number of test cases.<br/>Each test case begins with two coordinate, indicating the start and the end of the segment we drew. Then followed an integer, N, indicating there are N simple polygons. Each polygon starts with an integer, C, and C coordinates followed. 
+<p>Technical Specification</p>
+<p>1. 1 &lt;= T &lt;= 20<br/>2. The number of all the points on the map is less than 100,000.<br/>3. The coordinate of all the points consists of integers, and the value is in the range of [-100000, 100000] </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The first line contains a single integer T, indicating the number of test cases.<br/>Each test case begins with two coordinate, indicating the start and the end of the segment we drew. Then followed an integer, N, indicating there are N simple polygons. Each polygon starts with an integer, C, and C coordinates followed. 
+<p>Technical Specification</p>
+<p>1. 1 &lt;= T &lt;= 20<br/>2. The number of all the points on the map is less than 100,000.<br/>3. The coordinate of all the points consists of integers, and the value is in the range of [-100000, 100000]</p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+
+0 0 2 0
+1
+4 0 0 1 0 1 1 0 1
+
+0 0 2 0
+1
+4 0 -1 1 -1 1 1 0 1</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case 1: 50.00%
+Case 2: 50.00%</pre>
+<p> <!-- problem end --></p>
+<p>给一条直线和多个简单多边形，求在多边形内（包括边上）的线段长度占总长度的百分比。</p>
+<p> </p>
+<p>WA了一晚上和一上午换了N种方法终于想到了个简单又好写不用各种讨论无视各种trick的方法。</p>
+<p>核心思想就是把线段根据交点分成若干段，然后判断每段的某一边是否有面积。</p>
+<p>那这个怎么判断呢？</p>
+<p><img alt="Signal Coverage" src="http://cdn.acmerblog.com/img/1436105475747.gif"/></p>
+<p>如上图：不告诉你具体的多边形情况，只知道多边形的边与线段相交的情况，能判断出哪些是区域是多边形内，哪些是外面的么？</p>
+<p>很简单的啦，交替就行了，如下图：</p>
+<p><img alt="Signal Coverage" src="http://cdn.acmerblog.com/img/1436105476139.gif"/></p>
+<p>具体做法么就是把交点都求出来，并记录这个交点在线段的两边各产生了几条线（多边形的边的某个端点在线段上会在某一边产生一条线，普通的相交会在两边都产生线，重合的就无视掉吧），排个序，相同的点都合并起来。</p>
+<p>求长度么就是扫一遍，看到目前这个点为止在线段的两边各已出现多少线，只要有一边是奇数个，那接下去的一段区域就在某个多边形内了。</p>
+<p>那线段的起点是否在多边形内呢？反向延长到足够远处，从哪里开始一路判断过来就好了。</p>
+<p> </p>
+<p> </p>
+<p> </p>
+<pre class="brush:cpp" name="code">#include&lt;iostream&gt;
+#include&lt;algorithm&gt;
+#include&lt;cmath&gt;
+#define eps 1e-9
+using namespace std;
+double f_abs(double x){
+    return x&lt;0?-x:x;
+}
+struct Point{
+    double x,y;
+    bool up,dn;
+    void disp(){
+        printf("%lf %lf\n",x,y);
+    }
+    void get(){
+        scanf("%lf%lf",&amp;x,&amp;y);
+    }
+    bool friend operator&lt;(Point a,Point b){
+        if(f_abs(a.x-b.x)&lt;eps)return a.y&lt;b.y;
+        return a.x&lt;b.x;
+    }
+    bool friend operator&gt;(Point a,Point b){
+        return b&lt;a;
+    }
+    bool friend operator==(Point a,Point b){
+        return f_abs(a.x-b.x)&lt;eps&amp;&amp;f_abs(a.y-b.y)&lt;eps;
+    }
+};
+struct Line{
+    Point s,e;
+    bool friend operator&lt;(Line a,Line b){
+        return a.s&lt;b.s;
+    }
+    void st(){
+        Point t;
+        if(s&gt;e){
+            t=s;s=e;e=t;
+        }
+    }
+    void get(){
+        s.get();e.get();
+        st();
+    }
+};
+Line line[200000],myl[2];
+Point ep[200000];
+int en;
+double get_cross(Point a,Line b){
+    double ax,ay,bx,by;
+    ax=b.s.x-a.x;
+    ay=b.s.y-a.y;
+    bx=b.e.x-a.x;
+    by=b.e.y-a.y;
+    return ax*by-ay*bx;
+}
+int inter(Line a,Line b,Point &amp;rp=Point()){//0：不相交 1：相交 2、3：端点相交，a在b某一边 4：重合
+    double cj[2];
+    cj[0]=get_cross(b.s,a);cj[1]=get_cross(b.e,a);
+    if(cj[0]*cj[1]&gt;eps)return 0;
+    cj[0]=get_cross(a.s,b);cj[1]=get_cross(a.e,b);
+    if(cj[0]*cj[1]&gt;eps)return 0;
+    if(f_abs(cj[0])&lt;eps&amp;&amp;f_abs(cj[1])&lt;eps){
+        return 4;
+    }
+    if(f_abs(cj[0])&lt;eps){
+        rp=a.s;
+        if(cj[1]&gt;eps)return 2;
+        else return 3;
+    }else if(f_abs(cj[1])&lt;eps){
+        rp=a.e;
+        if(cj[0]&gt;eps)return 2;
+        else return 3;
+    }else{
+        double key1=(a.e.x-a.s.x)*(b.e.y-b.s.y);  
+        double key2=(b.e.x-b.s.x)*(a.e.y-a.s.y);  
+        double key=key1-key2;  
+        rp.x=(a.s.y-b.s.y)*(a.e.x-a.s.x)*(b.e.x-b.s.x);  
+        rp.x-=key2*a.s.x-key1*b.s.x;  
+        rp.x/=key;  
+        if(f_abs(b.e.x-b.s.x)&lt;eps)rp.y=(a.e.y-a.s.y)/(a.e.x-a.s.x)*(rp.x-a.s.x)+a.s.y;  
+        else rp.y=(b.e.y-b.s.y)/(b.e.x-b.s.x)*(rp.x-b.s.x)+b.s.y;  
+        return 1;
+    }
+}
+int ln;
+void get_myl2(){
+    double dy=myl[0].e.y-myl[0].s.y,dx=myl[0].e.x-myl[0].s.x;
+    double t=sqrt(dy*dy+dx*dx);
+    dy/=t;dx/=t;
+    myl[1].e=myl[0].s;
+    myl[1].s.x=myl[1].e.x-300000*dx;
+    myl[1].s.y=myl[1].e.y-300000*dy;
+}
+void get_data(){
+    myl[0].get();
+    int t,n,i;
+    int pcnt=0;
+    Point p[2],ini;
+    ln=0;
+    scanf("%d",&amp;t);
+    while(t--){
+        scanf("%d",&amp;n);
+        ini.get();
+        if(n==1)continue;
+        p[0]=ini;
+        bool f=0;
+        for(i=1;i&lt;n;i++){
+            f^=1;
+            p[f].get();
+            line[ln].s=p[f^1];
+            line[ln].e=p[f];
+            line[ln++].st();
+        }
+        line[ln].s=p[f];
+        line[ln].e=ini;
+        line[ln++].st();
+    }
+    get_myl2();
+}
+double get_len(Point a,Point b){
+    return sqrt((b.x-a.x)*(b.x-a.x)+(b.y-a.y)*(b.y-a.y));
+}
+void get_ep(Line l){
+    en=0;
+    int t,i;
+    for(i=0;i&lt;ln;i++){
+        t=inter(line[i],l,ep[en]);
+        if(!t||t==4)continue;
+        if(t==1){
+            ep[en].up=1;
+            ep[en++].dn=1;
+        }else if(t==2){
+            ep[en].up=1;
+            ep[en++].dn=0;
+        }else{
+            ep[en].up=0;
+            ep[en++].dn=1;
+        }
+    }
+    sort(ep,ep+en);
+    int ten=0;
+    for(i=0;i&lt;en;i++){
+        if(ten&amp;&amp;ep[i]==ep[ten-1]){
+            ep[ten-1].up^=ep[i].up;
+            ep[ten-1].dn^=ep[i].dn;
+        }else ep[ten++]=ep[i];
+    }
+    en=ten;
+}
+void run(){
+    if(myl[0].s==myl[0].e){
+        printf("0.00%%\n");
+        return;
+    }
+    int i;
+    bool in=0,left=0,right=0;
+    get_ep(myl[1]);
+    for(i=0;i&lt;en;i++){
+		left^=ep[i].up;
+		right^=ep[i].dn;
+    }
+	if(left||right)in=1;
+	else in=0;
+    get_ep(myl[0]);
+    double len=get_len(myl[0].s,myl[0].e),res=0;
+    Point lp=myl[0].s;
+    ep[en++]=myl[0].e;
+    for(i=0;i&lt;en;i++){
+        if(ep[i]==myl[0].s)continue;
+        if(in)res+=get_len(ep[i],lp);
+		left^=ep[i].up;
+		right^=ep[i].dn;
+        if(left||right)in=1;
+		else in=0;
+        lp=ep[i];
+    }
+    printf("%.2lf%%\n",res*100/len);
+}
+int main(){
+    int i,t;
+    scanf("%d",&amp;t);
+    for(i=1;i&lt;=t;i++){
+        get_data();
+        printf("Case %d: ",i);
+        run();
+    }
+    return 0;
+}</pre>
+<p>
+ </p>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/he11oworld/article/details/6903471</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-72538">
+<article class="comment" id="comment-72538">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518679" rel="external nofollow">新用户999034</a></span> on <a href="http://www.acmerblog.com/hdu-3814-signal-coverage-6816.html#comment-72538" rel="nofollow"><time datetime="2017-04-11T19:58:25+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是十三亿乘以一亿</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-72537">
+<article class="comment" id="comment-72537">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518679" rel="external nofollow">新用户999034</a></span> on <a href="http://www.acmerblog.com/hdu-3814-signal-coverage-6816.html#comment-72537" rel="nofollow"><time datetime="2017-04-11T19:58:25+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是十三亿乘以一亿</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-72536">
+<article class="comment" id="comment-72536">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518679" rel="external nofollow">新用户999034</a></span> on <a href="http://www.acmerblog.com/hdu-3814-signal-coverage-6816.html#comment-72536" rel="nofollow"><time datetime="2017-04-11T19:58:25+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是十三亿乘以一亿</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-72535">
+<article class="comment" id="comment-72535">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518679" rel="external nofollow">新用户999034</a></span> on <a href="http://www.acmerblog.com/hdu-3814-signal-coverage-6816.html#comment-72535" rel="nofollow"><time datetime="2017-04-11T19:58:25+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是十三亿乘以一亿</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-72534">
+<article class="comment" id="comment-72534">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518679" rel="external nofollow">新用户999034</a></span> on <a href="http://www.acmerblog.com/hdu-3814-signal-coverage-6816.html#comment-72534" rel="nofollow"><time datetime="2017-04-11T19:58:25+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是十三亿乘以一亿</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-72533">
+<article class="comment" id="comment-72533">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518679" rel="external nofollow">新用户999034</a></span> on <a href="http://www.acmerblog.com/hdu-3814-signal-coverage-6816.html#comment-72533" rel="nofollow"><time datetime="2017-04-11T19:58:25+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是十三亿乘以一亿</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-72532">
+<article class="comment" id="comment-72532">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518679" rel="external nofollow">新用户999034</a></span> on <a href="http://www.acmerblog.com/hdu-3814-signal-coverage-6816.html#comment-72532" rel="nofollow"><time datetime="2017-04-11T19:58:25+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是十三亿乘以一亿</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-72531">
+<article class="comment" id="comment-72531">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518679" rel="external nofollow">新用户999034</a></span> on <a href="http://www.acmerblog.com/hdu-3814-signal-coverage-6816.html#comment-72531" rel="nofollow"><time datetime="2017-04-11T19:58:25+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是十三亿乘以一亿</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-72530">
+<article class="comment" id="comment-72530">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518679" rel="external nofollow">新用户999034</a></span> on <a href="http://www.acmerblog.com/hdu-3814-signal-coverage-6816.html#comment-72530" rel="nofollow"><time datetime="2017-04-11T19:58:25+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是十三亿乘以一亿</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-72529">
+<article class="comment" id="comment-72529">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518679" rel="external nofollow">新用户999034</a></span> on <a href="http://www.acmerblog.com/hdu-3814-signal-coverage-6816.html#comment-72529" rel="nofollow"><time datetime="2017-04-11T19:58:25+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是十三亿乘以一亿</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-72528">
+<article class="comment" id="comment-72528">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518679" rel="external nofollow">新用户999034</a></span> on <a href="http://www.acmerblog.com/hdu-3814-signal-coverage-6816.html#comment-72528" rel="nofollow"><time datetime="2017-04-11T19:58:25+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是十三亿乘以一亿</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33991">
+<article class="comment" id="comment-33991">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">oneal</a></span> on <a href="http://www.acmerblog.com/hdu-3814-signal-coverage-6816.html#comment-33991" rel="nofollow"><time datetime="2015-07-09T13:05:37+00:00" pubdate="">2015年7月9日 at 下午1:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>纠正一个错误，二分查找树的中序遍历获得元素的升序排列。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33987">
+<article class="comment" id="comment-33987">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dreams</a></span> on <a href="http://www.acmerblog.com/hdu-3814-signal-coverage-6816.html#comment-33987" rel="nofollow"><time datetime="2015-07-08T01:03:35+00:00" pubdate="">2015年7月8日 at 上午1:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，就是把这32位当成一个长度为32的数</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51205">
+<article class="comment" id="comment-51205">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">samjustin</a></span> on <a href="http://www.acmerblog.com/hdu-3814-signal-coverage-6816.html#comment-51205" rel="nofollow"><time datetime="2015-06-26T06:22:06+00:00" pubdate="">2015年6月26日 at 上午6:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序员会算法，等于一个古惑仔带了zhi抢啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51203">
+<article class="comment" id="comment-51203">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">everos</a></span> on <a href="http://www.acmerblog.com/hdu-3814-signal-coverage-6816.html#comment-51203" rel="nofollow"><time datetime="2015-06-10T03:24:37+00:00" pubdate="">2015年6月10日 at 上午3:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#pragma pack(2) 这个用法太坑爹</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51207">
+<article class="comment" id="comment-51207">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">reking</a></span> on <a href="http://www.acmerblog.com/hdu-3814-signal-coverage-6816.html#comment-51207" rel="nofollow"><time datetime="2015-06-08T07:08:48+00:00" pubdate="">2015年6月8日 at 上午7:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>great!</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33988">
+<article class="comment" id="comment-33988">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiaoliubuer</a></span> on <a href="http://www.acmerblog.com/hdu-3814-signal-coverage-6816.html#comment-33988" rel="nofollow"><time datetime="2015-06-04T03:09:26+00:00" pubdate="">2015年6月4日 at 上午3:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>排版</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33986">
+<article class="comment" id="comment-33986">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">BGPY243956</a></span> on <a href="http://www.acmerblog.com/hdu-3814-signal-coverage-6816.html#comment-33986" rel="nofollow"><time datetime="2015-05-25T18:34:12+00:00" pubdate="">2015年5月25日 at 下午6:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错的网站，建议添加些比赛信息</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51202">
+<article class="comment" id="comment-51202">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jade1827</a></span> on <a href="http://www.acmerblog.com/hdu-3814-signal-coverage-6816.html#comment-51202" rel="nofollow"><time datetime="2015-05-24T15:04:48+00:00" pubdate="">2015年5月24日 at 下午3:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>红绯鱼：<br/>
+这模板神了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33992">
+<article class="comment" id="comment-33992">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tkdzyl2013</a></span> on <a href="http://www.acmerblog.com/hdu-3814-signal-coverage-6816.html#comment-33992" rel="nofollow"><time datetime="2015-05-24T03:41:00+00:00" pubdate="">2015年5月24日 at 上午3:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>题目需要求解的是最小值，而且没有考虑可能存在环，比如<br/>
+0 0 0 0 0<br/>
+1 1 1 1 0<br/>
+1 0 0 0 0<br/>
+1 0 1 0 1<br/>
+1 0 0 0 0<br/>
+会陷入死循环</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33989">
+<article class="comment" id="comment-33989">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zrw</a></span> on <a href="http://www.acmerblog.com/hdu-3814-signal-coverage-6816.html#comment-33989" rel="nofollow"><time datetime="2015-05-24T01:08:45+00:00" pubdate="">2015年5月24日 at 上午1:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我得邮箱cwqbupt@qq.com</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51206">
+<article class="comment" id="comment-51206">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">spiderMan</a></span> on <a href="http://www.acmerblog.com/hdu-3814-signal-coverage-6816.html#comment-51206" rel="nofollow"><time datetime="2015-05-17T00:44:48+00:00" pubdate="">2015年5月17日 at 上午12:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#include &lt;cstdio&gt;<br/>
+#include &lt;cstring&gt;</p>
+<p>const int MAXSIZE=256;<br/>
+//char store[MAXSIZE];<br/>
+char str1[MAXSIZE];<br/>
+/*<br/>
+void init(char *store) {<br/>
+    int i;<br/>
+    store['A']=’V', store['B']=’W',store['C']=’X',store['D']=’Y',store['E']=’Z';<br/>
+    for(i=’F';i&lt;=’Z';++i) store <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> =i-5;<br/>
+}<br/>
+*/<br/>
+int main() {<br/>
+    //freopen("input.txt","r",stdin);<br/>
+    //init(store);<br/>
+    char *p;<br/>
+    while(fgets(str1,MAXSIZE,stdin) &amp;&amp; strcmp(str1,"STARTn")==0) {<br/>
+        if(p=fgets(str1,MAXSIZE,stdin)) {<br/>
+            for(;*p;++p) {<br/>
+				//*p=store[*p]<br/>
+                if(*p&lt;’A’ || *p&gt;’Z') continue;<br/>
+                if(*p&gt;’E') *p=*p-5;<br/>
+                else *p=*p+21;<br/>
+            }<br/>
+            printf("%s",str1);<br/>
+        }<br/>
+        fgets(str1,MAXSIZE,stdin);<br/>
+    }<br/>
+    return 0;<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51204">
+<article class="comment" id="comment-51204">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lanifer</a></span> on <a href="http://www.acmerblog.com/hdu-3814-signal-coverage-6816.html#comment-51204" rel="nofollow"><time datetime="2015-04-26T14:39:10+00:00" pubdate="">2015年4月26日 at 下午2:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>18题的C也是错误的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33990">
+<article class="comment" id="comment-33990">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaotong2055</a></span> on <a href="http://www.acmerblog.com/hdu-3814-signal-coverage-6816.html#comment-33990" rel="nofollow"><time datetime="2015-04-17T07:37:23+00:00" pubdate="">2015年4月17日 at 上午7:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>能不能说下这个是用的什么算法策略？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64037">
+<article class="comment" id="comment-64037">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ktcer</a></span> on <a href="http://www.acmerblog.com/hdu-3814-signal-coverage-6816.html#comment-64037" rel="nofollow"><time datetime="2015-04-15T07:40:53+00:00" pubdate="">2015年4月15日 at 上午7:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算法是程序的灵魂，算法分简单和复杂，如果不搞大数据类，程序员了解一下简单点的算法也是可以的，但是会算法的一定要会编程才行，程序员不一定要会算法，利于自己项目需要的可以简单了解。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

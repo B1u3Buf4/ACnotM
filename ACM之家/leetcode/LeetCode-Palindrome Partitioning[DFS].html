@@ -1,0 +1,344 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>11-18</div>
+<div class="tit"><h1 class="entry-title">LeetCode-Palindrome Partitioning[DFS]</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/dfs" rel="category tag" title="查看DFS搜索中的全部文章">DFS搜索</a></span><span class="i4">围观873次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6258" href="http://www.acmerblog.com/leetcode-solution-palindrome-partitioning-6258.html#comments" title="《LeetCode-Palindrome Partitioning[DFS]》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<h3><strong>Palindrome Partitioning</strong></h3>
+<div class="question-content">
+<p>
+Given a string <i>s</i>, partition <i>s</i> such that every substring of the partition is a palindrome.
+</p>
+<p>
+Return all possible palindrome partitioning of <i>s</i>.
+</p>
+<p>
+For example, given <i>s</i> = <code>"aab"</code>,</p>
+<p>Return
+</p>
+<pre>
+  [
+    ["aa","b"],
+    ["a","a","b"]
+  ]
+</pre>
+</div>
+<p> 标签: Backtracking<br/>
+<strong>分析</strong>
+</p><p>在每一步都可以判断中间结果是否为合法结果，用回溯法。</p>
+<p>一个长度为n的字符串，有$n-1$个地方可以砍断，每个地方可断可不断，因此复杂度为$O(2^{n-1})$</p>
+<p>代码1
+</p><pre class="brush:cpp">
+//LeetCode, Palindrome Partitioning
+// 时间复杂度O(2^n)，空间复杂度O(n)
+class Solution {
+public:
+    vector&lt;vector&lt;string&gt;&gt; partition(string s) {
+        vector&lt;vector&lt;string&gt;&gt; result;
+        vector&lt;string&gt; path;  // 一个partition方案
+        dfs(s, path, result, 0, 1);
+        return result;
+    }
+
+    // s[0, prev-1]之间已经处理，保证是回文串
+    // prev 表示s[prev-1]与s[prev]之间的空隙位置，start同理
+    void dfs(string &amp;s, vector&lt;string&gt;&amp; path,
+            vector&lt;vector&lt;string&gt;&gt; &amp;result, size_t prev, size_t start) {
+        if (start == s.size()) { // 最后一个隔板
+            if (isPalindrome(s, prev, start - 1)) { // 必须使用
+                path.push_back(s.substr(prev, start - prev));
+                result.push_back(path);
+                path.pop_back();
+            }
+            return;
+        }
+        // 不断开
+        dfs(s, path, result, prev, start + 1);
+        // 如果[prev, start-1] 是回文，则可以断开，也可以不断开（上一行已经做了）
+        if (isPalindrome(s, prev, start - 1)) {
+            // 断开
+            path.push_back(s.substr(prev, start - prev));
+            dfs(s, path, result, start, start + 1);
+            path.pop_back();
+        }
+    }
+
+    bool isPalindrome(const string &amp;s, int start, int end) {
+        while (start &lt; end &amp;&amp; s[start] == s[end]) {
+            ++start;
+            --end;
+        }
+        return start &gt;= end;
+    }
+};
+</pre>
+<p>代码2
+</p><pre class="brush:cpp">
+//LeetCode, Palindrome Partitioning
+// 时间复杂度O(2^n)，空间复杂度O(n)
+class Solution {
+public:
+    vector&lt;vector&lt;string&gt;&gt; partition(string s) {
+        vector&lt;vector&lt;string&gt;&gt; result;
+        vector&lt;string&gt; path;  // 一个partition方案
+        DFS(s, path, result, 0);
+        return result;
+    }
+    // 搜索必须以s[start]开头的partition方案
+    void DFS(string &amp;s, vector&lt;string&gt;&amp; path,
+            vector&lt;vector&lt;string&gt;&gt; &amp;result, int start) {
+        if (start == s.size()) {
+            result.push_back(path);
+            return;
+        }
+        for (int i = start; i &lt; s.size(); i++) {
+            if (isPalindrome(s, start, i)) { // 从i位置砍一刀
+                path.push_back(s.substr(start, i - start + 1));
+                DFS(s, path, result, i + 1);  // 继续往下砍
+                path.pop_back(); // 撤销上上行
+            }
+        }
+    }
+    bool isPalindrome(const string &amp;s, int start, int end) {
+        while (start &lt; end &amp;&amp; s[start] == s[end]) {
+            ++start;
+            --end;
+        }
+        return start &gt;= end;
+    }
+};
+</pre>
+<p>代码3
+</p><pre class="brush:cpp">
+// LeetCode, Palindrome Partitioning
+// 动规，时间复杂度O(n^2)，空间复杂度O(1)
+class Solution {
+public:
+    vector&lt;vector&lt;string&gt; &gt; partition(string s) {
+        const int n = s.size();
+        bool p[n][n]; // whether s[i,j] is palindrome
+        fill_n(&amp;p[0][0], n * n, false);
+        for (int i = n - 1; i &gt;= 0; --i)
+            for (int j = i; j &lt; n; ++j)
+                p[i][j] = s[i] == s[j] &amp;&amp; ((j - i &lt; 2) || p[i + 1][j - 1]);
+
+        vector&lt;vector&lt;string&gt; &gt; sub_palins[n]; // sub palindromes of s[0,i]
+        for (int i = n - 1; i &gt;= 0; --i) {
+            for (int j = i; j &lt; n; ++j)
+                if (p[i][j]) {
+                    const string palindrome = s.substr(i, j - i + 1);
+                    if (j + 1 &lt; n) {
+                        for (auto v : sub_palins[j + 1]) {
+                            v.insert(v.begin(), palindrome);
+                            sub_palins[i].push_back(v);
+                        }
+                    } else {
+                        sub_palins[i].push_back(vector&lt;string&gt; { palindrome });
+                    }
+                }
+        }
+        return sub_palins[0];
+    }
+};
+</pre>
+<p>Java代码:
+</p><pre class="brush:java"> public class Solution {
+
+    private void init(boolean[][] isPal, String s) {
+        int len = isPal.length;
+        for (int i=0; i&lt;len; i++) isPal[i][i] = true;
+        for (int k=1; k&lt;len; k++)
+            for (int i=0; i+k&lt;len; i++) {
+                if (s.charAt(i) != s.charAt(i+k)) continue;
+                isPal[i][i+k] = (i+1 &lt;= i+k-1) ? isPal[i+1][i+k-1] : true;
+            }
+    }
+
+    private void helper(String s, int start, List&lt;String&gt; tmpPartition, List&lt;List&lt;String&gt;&gt; ans, boolean[][] isPal) {
+        if (start &gt;= s.length()){
+        	ans.add(new ArrayList&lt;String&gt;(tmpPartition));
+        	return;
+        }
+        for (int i=start; i&lt; s.length(); i++) {
+            if (isPal[start][i]) {
+            	tmpPartition.add(s.substring(start, i+1));
+                helper(s, i+1, tmpPartition, ans, isPal);
+                tmpPartition.remove(tmpPartition.size() - 1);
+            }
+        }
+    }
+
+    public List&lt;List&lt;String&gt;&gt; partition(String s) {
+        int len = s.length();
+        boolean[][] isPal = new boolean[len][len];
+        init(isPal, s);
+        List&lt;List&lt;String&gt;&gt; ans = new ArrayList&lt;List&lt;String&gt;&gt;();
+        List&lt;String&gt; tmpPartition = new ArrayList&lt;String&gt;();
+        helper(s, 0, tmpPartition, ans, isPal);
+        return ans;
+    }
+}</pre>
+<p><strong>相关题目</strong><br/>
+<a href="/leetcode-solution-palindrome-partitioning-ii-6228.html">Palindrome Partitioning II</a></p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-74351">
+<article class="comment" id="comment-74351">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522078" rel="external nofollow">新用户827877</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-palindrome-partitioning-6258.html#comment-74351" rel="nofollow"><time datetime="2017-04-12T01:59:36+00:00" pubdate="">2017年4月12日 at 上午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这和小说的完全一样啊 就连说的话都是一样的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-31620">
+<article class="comment" id="comment-31620">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">lintong</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-palindrome-partitioning-6258.html#comment-31620" rel="nofollow"><time datetime="2015-07-07T06:42:48+00:00" pubdate="">2015年7月7日 at 上午6:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>和编译器有关吧，我用的g++正常。头文件可能还需要一个&lt;string.h&gt;</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-31615">
+<article class="comment" id="comment-31615">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jxfactor</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-palindrome-partitioning-6258.html#comment-31615" rel="nofollow"><time datetime="2015-07-02T19:35:15+00:00" pubdate="">2015年7月2日 at 下午7:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>else if也是要比较两次</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50055">
+<article class="comment" id="comment-50055">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">123zxc</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-palindrome-partitioning-6258.html#comment-50055" rel="nofollow"><time datetime="2015-05-24T01:32:48+00:00" pubdate="">2015年5月24日 at 上午1:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法挺不错。NewHead代表新的头节点，通过递归找到最后一个节点之后，就把这个节点赋给NewHead，然后一直返回返回，中途这个值是没有变化的，一边返回一边把相应的指针方向颠倒，最后结束时返回新的头节点到主函数。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50054">
+<article class="comment" id="comment-50054">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">biantiao</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-palindrome-partitioning-6258.html#comment-50054" rel="nofollow"><time datetime="2015-05-22T11:16:18+00:00" pubdate="">2015年5月22日 at 上午11:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感觉第二种方法其实也不是很好，不过的确要比第一种方法要好一点。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-31618">
+<article class="comment" id="comment-31618">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gy910210</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-palindrome-partitioning-6258.html#comment-31618" rel="nofollow"><time datetime="2015-04-17T12:51:55+00:00" pubdate="">2015年4月17日 at 下午12:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序是对的。有些地方用了C++的写法</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-31619">
+<article class="comment" id="comment-31619">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">aaa</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-palindrome-partitioning-6258.html#comment-31619" rel="nofollow"><time datetime="2015-04-15T09:02:41+00:00" pubdate="">2015年4月15日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>终于AC了！next数组还是不好理解啊，mark</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50053">
+<article class="comment" id="comment-50053">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jue</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-palindrome-partitioning-6258.html#comment-50053" rel="nofollow"><time datetime="2015-03-17T20:45:17+00:00" pubdate="">2015年3月17日 at 下午8:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>思路二可以用一个长度为k的队列来实现，入队后判断下队尾元素的next指针是否为空，若为空，则出队指针即为所求。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-31616">
+<article class="comment" id="comment-31616">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">raymanshf</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-palindrome-partitioning-6258.html#comment-31616" rel="nofollow"><time datetime="2015-03-01T15:24:58+00:00" pubdate="">2015年3月1日 at 下午3:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个方法是错的，不信你试试：<br/>
+20 5<br/>
+1 A:9<br/>
+1 A:9<br/>
+1 A:9<br/>
+1 A:6<br/>
+1 A:4<br/>
+正确答案应该是19，这个答案是18</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-31617">
+<article class="comment" id="comment-31617">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Supermaner</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-palindrome-partitioning-6258.html#comment-31617" rel="nofollow"><time datetime="2015-02-11T07:08:47+00:00" pubdate="">2015年2月11日 at 上午7:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这代码的输出格式不对阿，else语句的low=p移动一下位置，增加可读性</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-31622">
+<article class="comment" id="comment-31622">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jamoeba</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-palindrome-partitioning-6258.html#comment-31622" rel="nofollow"><time datetime="2015-01-14T04:44:59+00:00" pubdate="">2015年1月14日 at 上午4:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>此题答案确实应该是A。文中已修改，感谢一楼的提醒！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-31613">
+<article class="comment" id="comment-31613">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">OrangeGuy</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-palindrome-partitioning-6258.html#comment-31613" rel="nofollow"><time datetime="2015-01-07T08:39:09+00:00" pubdate="">2015年1月7日 at 上午8:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>目前为止见过的最易懂的一个，多谢分享</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-31621">
+<article class="comment" id="comment-31621">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dream</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-palindrome-partitioning-6258.html#comment-31621" rel="nofollow"><time datetime="2015-01-01T07:13:18+00:00" pubdate="">2015年1月1日 at 上午7:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚开始学习，为啥会报错了，你试过了吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-31614">
+<article class="comment" id="comment-31614">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaoriqiang</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-palindrome-partitioning-6258.html#comment-31614" rel="nofollow"><time datetime="2014-12-11T05:30:24+00:00" pubdate="">2014年12月11日 at 上午5:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为是要把从字符串s的start位到当前位在hash中重置，修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

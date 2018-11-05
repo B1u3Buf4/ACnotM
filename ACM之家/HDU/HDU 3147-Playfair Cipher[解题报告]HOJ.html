@@ -1,0 +1,337 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-06</div>
+<div class="tit"><h1 class="entry-title">HDU 3147-Playfair Cipher[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观631次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4980" href="http://www.acmerblog.com/hdu-3147-playfair-cipher-4980.html#comments" title="《HDU 3147-Playfair Cipher[解题报告]HOJ》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Playfair Cipher</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+The Playfair cipher is a manual symmetric encryption technique and was the first digraph substitution cipher. The scheme was invented in 1854 by Charles Wheatstone, but bears the name of Lord Playfair who promoted the use of the cipher.
+<p>The Playfair cipher uses a 5 by 5 table containing each letter in the English alphabet exactly once (except ‘Q’ which is missing). The table constitutes the encryption key. To more easily remember the table, it is typically generated from a key phrase. First fill in the spaces in an empty table with the letters of the key phrase (dropping spaces and duplicate letters), then fill the remaining spaces with the rest of the letters of the alphabet in order. The key phrase is written in the top rows of the table, from left to right. For instance, if the key phrase is "playfair example", the encryption key becomes</p>
+<p></p><center><img alt="Beacons" src="http://www.acmerblog.com/img/1394453166554.jpg"/></center><br/>To encrypt a message, one would remove all spaces and then break the message into digraphs (groups of 2 letters) such that, for example, "Hello World" becomes "HE LL OW OR LD". Then map them out on the key table, and apply the rule below that matches the letter combination:
+<ul>
+<li>If both letters are the same (or only one letter is left), add an ‘X’ after the first letter. Encrypt the new pair and continue (note that this changes all the remaining digraphs).</li>
+<p>
+</p><li>If the letters appear on the same row of your table, replace them with the letters to their immediate right respectively (wrapping around to the left side of the row if a letter in the original pair was on the right side of the row). With the table above, the digraph ‘CH’ would be encrypted ‘DB’.</li>
+<p>
+</p><li>If the letters appear on the same column of your table, replace them with the letters immediately below respectively (wrapping around to the top side of the column if a letter in the original pair was on the bottom side of the column). With the table above, the digraph ‘VA’ would be encrypted ‘AE’.</li>
+<p>
+</p><li>If the letters are not on the same row or column, replace them with the letters on the same row respectively but at the other pair of corners of the rectangle defined by the original pair. The order is important { the first letter of the encrypted pair is the one that lies on the same row as the first letter of the plaintext pair. With the table above, the digraph ‘KM’ would be encrypted ‘SR’.</li>
+</ul>
+<p>Write a program that reads a key phrase and a plaintext to encrypt, and outputs the encrypted text.</p>
+<p><i>The text to encrypt will not contain two ‘x’s following each other, or an ‘x’ as the last character, as this might cause the first rule above to repeat itself indefinitely.</i> </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input contains two lines. The first line contains the key phrase. The second line contains the text to encrypt. Each line will contain between 1 and 1000 characters, inclusive. Each character will be a lower case English letter, ‘a’ – ‘z’ (except ‘q’), or a space character. Neither line will start or end with a space. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input contains two lines. The first line contains the key phrase. The second line contains the text to encrypt. Each line will contain between 1 and 1000 characters, inclusive. Each character will be a lower case English letter, ‘a’ – ‘z’ (except ‘q’), or a space character. Neither line will start or end with a space.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+playfair example
+hide the gold in the tree stump
+the magic key
+i love programming competition</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+BMNDZBXDKYBEJVDMUIXMMNUVIF
+YDVHCWSPKNTAHKUBIPERMHGHDVRU</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include&lt;iostream&gt;
+#include&lt;vector&gt;
+#include&lt;fstream&gt;
+#include&lt;queue&gt;
+#include&lt;algorithm&gt;
+#include&lt;list&gt;
+#include&lt;cstdio&gt;
+#include&lt;stack&gt;
+#include&lt;cstring&gt;
+#include&lt;cmath&gt;
+#include&lt;string&gt;
+#include&lt;sstream&gt;
+#include&lt;map&gt;
+#include &lt;bitset&gt;
+#include &lt;set&gt; 
+
+using namespace std ;
+
+#define			pii			pair &lt; int , int &gt;
+#define			MP			make_pair
+
+map &lt; char , pii &gt; table ;
+map &lt; pii , char &gt; table2 ;
+bool visit[100] ;
+
+int main()
+{
+	//freopen("a.in","r",stdin);
+	int t , R , C ;
+	string key , text ;
+	cin &gt;&gt; t ;
+	getline ( cin , text ) ;
+	while ( t-- ){
+		table.clear() , table2.clear() ;
+		memset ( visit , 0 , sizeof visit ) ;
+		visit['q'-'a'] = 1 ;
+		getline ( cin , key ) ;
+		getline ( cin , text ) ;
+		R = C = 0 ;
+		for ( int i = 0 ; i &lt; key.size() ; i++ ){
+			if ( key[i] &gt;= 'a' &amp;&amp; key[i] &lt;= 'z' &amp;&amp; !visit[key[i]-'a'] ){
+				visit[key[i]-'a'] = 1 ;
+				table[key[i]] = MP ( R , C ) ; 
+				table2[MP(R,C)] = key[i] ;
+				C++ ;
+				if ( C == 5 ){
+					R++ ;
+					C = 0 ;
+				}
+			}
+		}
+		for ( int i = 'a' ; i &lt;= 'z' ; i++ ){
+			if ( !visit[i-'a'] ){
+				table[(char)(i)] = MP ( R , C ) ; 
+				table2[MP(R,C)] = (char)(i) ;
+				C++ ;
+				if ( C == 5 ){
+					R++ ;
+					C = 0 ;
+				}
+			}
+		}
+		for ( int i = 0 ; i &lt; text.size() ; i++ ){
+			if ( text[i] == ' ' ){
+				text.erase ( text.begin() + i ) ;
+				i-- ;
+			}
+		}
+		for ( int i = 0 ; i &lt; text.size()-1 ; i+=2 ){
+			if ( text[i] == text[i+1] )
+				text.insert ( text.begin() + i + 1 , 'x' ) ;
+		}
+		if ( (int)(text.size())%2 )
+			text.push_back ( 'x' ) ;
+		char ch1 , ch2 ;
+		int x_ch1 , y_ch1 , x_ch2 , y_ch2 , new_x , new_y ;
+		for ( int i = 0 ; i &lt; (int)(text.size())-1 ; i+=2 ){
+			ch1 = text[i] , ch2 = text[i+1] ;
+			if ( ch1 == ch2 ) ch2 = 'x' ;
+			x_ch1 = table[ch1].first ;
+			y_ch1 = table[ch1].second ;
+			x_ch2 = table[ch2].first ;
+			y_ch2 = table[ch2].second ;
+			if ( x_ch1 == x_ch2 ){
+				new_y = (y_ch1+1)%5 ;
+				cout &lt;&lt; (char)(table2[MP(x_ch1,new_y)]-32);
+				new_y = (y_ch2+1)%5 ;
+				cout &lt;&lt; (char)(table2[MP(x_ch2,new_y)]-32) ;
+			}
+			else if ( y_ch1 == y_ch2 ){
+				new_x = (x_ch1+1)%5 ;
+				cout &lt;&lt; (char)(table2[MP(new_x,y_ch1)]-32) ;
+				new_x = (x_ch2+1)%5 ;
+				cout &lt;&lt; (char)(table2[MP(new_x,y_ch2)]-32) ;
+			}
+			else{
+				new_y = abs ( y_ch1 - y_ch2 ) ;
+				if ( y_ch1 &lt; y_ch2 ){
+					y_ch1 += new_y ;
+					y_ch2 -= new_y ;
+				}
+				else if ( y_ch1 &gt; y_ch2 ){
+					y_ch1 -= new_y ;
+					y_ch2 += new_y ;
+				}
+				cout &lt;&lt; (char)(table2[MP(x_ch1,y_ch1)]-32) ;
+				cout &lt;&lt; (char)(table2[MP(x_ch2,y_ch2)]-32) ;
+			}
+		}
+		cout &lt;&lt; endl ;
+	}
+	return 0;
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-78739">
+<article class="comment" id="comment-78739">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529381" rel="external nofollow">新用户229976</a></span> on <a href="http://www.acmerblog.com/hdu-3147-playfair-cipher-4980.html#comment-78739" rel="nofollow"><time datetime="2017-04-12T12:30:20+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>活該 你是生命 那些蛇也是一樣的生命聖靈</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27502">
+<article class="comment" id="comment-27502">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Happiness</a></span> on <a href="http://www.acmerblog.com/hdu-3147-playfair-cipher-4980.html#comment-27502" rel="nofollow"><time datetime="2015-06-19T00:59:59+00:00" pubdate="">2015年6月19日 at 上午12:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>great!</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-27496">
+<article class="comment" id="comment-27496">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">aaa</a></span> on <a href="http://www.acmerblog.com/hdu-3147-playfair-cipher-4980.html#comment-27496" rel="nofollow"><time datetime="2015-05-06T05:06:35+00:00" pubdate="">2015年5月6日 at 上午5:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学习了。找到这题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27501">
+<article class="comment" id="comment-27501">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">edward2414</a></span> on <a href="http://www.acmerblog.com/hdu-3147-playfair-cipher-4980.html#comment-27501" rel="nofollow"><time datetime="2015-04-15T09:35:19+00:00" pubdate="">2015年4月15日 at 上午9:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>0000</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-27494">
+<article class="comment" id="comment-27494">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Anne</a></span> on <a href="http://www.acmerblog.com/hdu-3147-playfair-cipher-4980.html#comment-27494" rel="nofollow"><time datetime="2015-03-05T17:26:48+00:00" pubdate="">2015年3月5日 at 下午5:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不好意思，写错了．应该是　path[0]=0,  visited[V] = true;</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27493">
+<article class="comment" id="comment-27493">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tufei</a></span> on <a href="http://www.acmerblog.com/hdu-3147-playfair-cipher-4980.html#comment-27493" rel="nofollow"><time datetime="2015-01-03T02:52:52+00:00" pubdate="">2015年1月3日 at 上午2:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一句可以忽略不计了吧。从第二句开始分析，说明这个花色下的所有牌都会在其它里面出现，那么还剩下♠️和♦️。第三句，可以排除2和7，因为在两种花色里有。现在是第四句，因为♠️还剩下多个，只有是♦️B才能知道答案。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-27500">
+<article class="comment" id="comment-27500">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">room306</a></span> on <a href="http://www.acmerblog.com/hdu-3147-playfair-cipher-4980.html#comment-27500" rel="nofollow"><time datetime="2014-11-06T09:58:44+00:00" pubdate="">2014年11月6日 at 上午9:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>和编译器有关吧，我用的g++正常。头文件可能还需要一个&lt;string.h&gt;</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27499">
+<article class="comment" id="comment-27499">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">linzzzz</a></span> on <a href="http://www.acmerblog.com/hdu-3147-playfair-cipher-4980.html#comment-27499" rel="nofollow"><time datetime="2014-09-17T03:01:02+00:00" pubdate="">2014年9月17日 at 上午3:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-27504">
+<article class="comment" id="comment-27504">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">21435048</a></span> on <a href="http://www.acmerblog.com/hdu-3147-playfair-cipher-4980.html#comment-27504" rel="nofollow"><time datetime="2014-07-18T10:09:40+00:00" pubdate="">2014年7月18日 at 上午10:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没敢用map，总怕stl用着会超时</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27498">
+<article class="comment" id="comment-27498">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">stamwoo</a></span> on <a href="http://www.acmerblog.com/hdu-3147-playfair-cipher-4980.html#comment-27498" rel="nofollow"><time datetime="2014-06-03T00:39:23+00:00" pubdate="">2014年6月3日 at 上午12:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢提醒</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-27497">
+<article class="comment" id="comment-27497">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xy7850151</a></span> on <a href="http://www.acmerblog.com/hdu-3147-playfair-cipher-4980.html#comment-27497" rel="nofollow"><time datetime="2014-05-29T14:49:41+00:00" pubdate="">2014年5月29日 at 下午2:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>文章写得挺好，就是最后的斐波那契那个没有看明白</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27495">
+<article class="comment" id="comment-27495">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fermi</a></span> on <a href="http://www.acmerblog.com/hdu-3147-playfair-cipher-4980.html#comment-27495" rel="nofollow"><time datetime="2014-05-29T11:40:20+00:00" pubdate="">2014年5月29日 at 上午11:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>题目需要求解的是最小值，而且没有考虑可能存在环，比如<br/>
+0 0 0 0 0<br/>
+1 1 1 1 0<br/>
+1 0 0 0 0<br/>
+1 0 1 0 1<br/>
+1 0 0 0 0<br/>
+会陷入死循环</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47873">
+<article class="comment" id="comment-47873">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zzzzzz</a></span> on <a href="http://www.acmerblog.com/hdu-3147-playfair-cipher-4980.html#comment-47873" rel="nofollow"><time datetime="2014-05-20T22:50:32+00:00" pubdate="">2014年5月20日 at 下午10:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>涨姿势了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27503">
+<article class="comment" id="comment-27503">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hong0220</a></span> on <a href="http://www.acmerblog.com/hdu-3147-playfair-cipher-4980.html#comment-27503" rel="nofollow"><time datetime="2014-04-27T06:03:33+00:00" pubdate="">2014年4月27日 at 上午6:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>换句话说，A[k/2-1]不可能大于两数组合并之后的第k小值，所以我们可以将其抛弃。<br/>
+应该是，不可能小于合并后的第K小值吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58015">
+<article class="comment" id="comment-58015">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">biantiao</a></span> on <a href="http://www.acmerblog.com/hdu-3147-playfair-cipher-4980.html#comment-58015" rel="nofollow"><time datetime="2014-04-03T06:25:40+00:00" pubdate="">2014年4月3日 at 上午6:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

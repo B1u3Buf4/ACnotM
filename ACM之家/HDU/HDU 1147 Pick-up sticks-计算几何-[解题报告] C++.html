@@ -1,0 +1,323 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-02</div>
+<div class="tit"><h1 class="entry-title">HDU 1147 Pick-up sticks-计算几何-[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/math" rel="category tag" title="查看数学相关中的全部文章">数学相关</a>, <a href="http://www.acmerblog.com/category/geometry/analytic-geometry" rel="category tag" title="查看解析几何中的全部文章">解析几何</a></span><span class="i4">围观944次</span><span class="i3"><a class="ds-thread-count" data-thread-key="1487" href="http://www.acmerblog.com/hdu-1147-Pick-up-sticks-1487.html#comments" title="《HDU 1147 Pick-up sticks-计算几何-[解题报告] C++》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Pick-up sticks</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Stan has n sticks of various length. He throws them one at a time on the floor in a random way. After finishing throwing, Stan tries to find the top sticks, that is these sticks such that there is no stick on top of them. Stan has noticed that the last thrown stick is always on top but he wants to know all the sticks that are on top. Stan sticks are very, very thin such that their thickness can be neglected.<br/><img src="http://acm.hdu.edu.cn/data/images/1147-1.jpg"/> </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+Input consists of a number of cases. The data for each case start with 1 ≤ n ≤ 100000, the number of sticks for this case. The following n lines contain four numbers each, these numbers are the planar coordinates of the endpoints of one stick. The sticks are listed in the order in which Stan has thrown them. You may assume that there are no more than 1000 top sticks. The input is ended by the case with n=0. This case should not be processed.  </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+For each input case, print one line of output listing the top sticks in the format given in the sample. The top sticks should be listed in order in which they were thrown. <br/>The picture to the right below illustrates the first case from input.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+5
+1 1 4 2
+2 3 3 1
+1 -2.0 8 4
+1 4 8 2
+3 3 6 -2.0
+3
+0 0 1 1
+1 0 2 1
+2 0 3 1
+0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Top sticks: 2, 4, 5.
+Top sticks: 1, 2, 3.</pre>
+<p><!-- problem end --></p>
+<p><span style="font-family:Times New Roman"><span style="font-size:14px">题意是在一个平面上按顺序摆上放一些棍子，求最后哪些棍子在最上面（此题只需考虑规范相交的情况）</span></span></p>
+<p><span style="font-family:Times New Roman"><span style="font-size:14px">用一个链表储存每放一根棍子后摆在最上面的棍子，每放一根棍子就判断一下是否跟前面的棍子规相交，</span></span></p>
+<p><span style="font-family:Times New Roman"><span style="font-size:14px">若相交，则将前面的那条棍子删除</span></span></p>
+<p><span style="font-family:Times New Roman"><span style="font-size:14px"></span></span></p>
+<pre class="brush:cpp ">#include&lt;iostream&gt;
+#include&lt;cstdio&gt;
+#include&lt;cmath&gt;
+#include&lt;cstring&gt;
+#include&lt;list&gt;
+using namespace std;
+#define precision 1e-8
+#define MAX 1000000
+struct point 
+{
+	double x;
+	double y;
+};
+
+struct seg
+{
+	point a;
+	point b;
+	int cnt;
+};
+
+//p1a与p2a的叉积
+double cross(point p1,point p2,point a)
+{
+	return (p1.x-a.x)*(p2.y-a.y)-(p1.y-a.y)*(p2.x-a.x);
+}
+//判断m是否等于0
+int dblcmp(double m)
+{
+	if(fabs(m)&lt;precision)
+		return 0;
+	else if(m&lt;0)
+		return -1;
+	return 1;
+}
+
+int betweencmp(point p1,point p2,point a)
+{
+	
+	double s=(p1.x-a.x)*(p2.x-a.x)+(p1.y-a.y)*(p2.y-a.y);  //ap1与ap2的点积
+	return dblcmp(s);
+}
+
+
+
+int segcross(point a,point b,point c,point d)
+{
+	double s1,s2,s3,s4;
+	int d1,d2,d3,d4;
+	d1=dblcmp(s1=cross(b,c,a));
+	d2=dblcmp(s2=cross(b,d,a));
+	d3=dblcmp(s3=cross(d,a,c));
+	d4=dblcmp(s4=cross(d,b,c));
+	//判断规范相交，并计算出交点
+	if(d1*d2&lt;0 &amp;&amp;d3*d4&lt;0)
+	{
+		return 1;
+	}
+	//判断非规范相交
+	if( ( d1==0 &amp;&amp; betweencmp(a,b,c)&lt;=0 ) ||
+		( d2==0 &amp;&amp; betweencmp(a,b,d)&lt;=0 ) ||
+		( d3==0 &amp;&amp; betweencmp(c,d,a)&lt;=0 ) ||
+		( d4==0 &amp;&amp; betweencmp(c,d,b)&lt;=0 ))
+		return true;
+		
+	return false;
+}
+
+
+int main()
+{
+	freopen("test.txt","r",stdin);
+	list&lt;seg&gt;stick;
+	int n;
+	int i,k;
+	int len;
+	list&lt;seg&gt;::iterator p;
+	seg v;
+
+	while(scanf("%d",&amp;n)!=EOF &amp;&amp;n!=0)
+	{
+		
+		
+		scanf("%lf %lf %lf %lf", &amp;v.a.x , &amp;v.a.y , &amp;v.b.x , &amp;v.b.y);
+		v.cnt=1;
+		stick.push_back(v);
+		for(i=2;i&lt;=n;i++)
+		{
+			scanf("%lf %lf %lf %lf", &amp;v.a.x , &amp;v.a.y , &amp;v.b.x , &amp;v.b.y);
+			v.cnt=i;
+			stick.push_back(v);
+			len=stick.size();
+			p=stick.begin();
+			for(k=1;k&lt;len;k++)
+			{
+				
+				if( segcross((*p).a,(*p).b,v.a,v.b) )
+				{
+					p=stick.erase(p);
+				}
+				else
+					p++;
+			}
+
+		}
+		printf("Top sticks: ");
+		p=stick.begin();
+		len=stick.size();
+		for(i=1;i&lt;len;i++)
+		{
+			printf("%d, ",(*p).cnt);
+			p++;
+		}
+		printf("%d.\n",(*p).cnt);
+		stick.clear();
+	}
+	return 0;
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-54303">
+<article class="comment" id="comment-54303">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Christmas</a></span> on <a href="http://www.acmerblog.com/hdu-1147-Pick-up-sticks-1487.html#comment-54303" rel="nofollow"><time datetime="2015-07-08T02:36:11+00:00" pubdate="">2015年7月8日 at 上午2:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>顶一个 赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-61303">
+<article class="comment" id="comment-61303">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">nsoi_onion</a></span> on <a href="http://www.acmerblog.com/hdu-1147-Pick-up-sticks-1487.html#comment-61303" rel="nofollow"><time datetime="2015-07-02T22:57:11+00:00" pubdate="">2015年7月2日 at 下午10:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>aha, welcome!</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-40029">
+<article class="comment" id="comment-40029">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">linzzzz</a></span> on <a href="http://www.acmerblog.com/hdu-1147-Pick-up-sticks-1487.html#comment-40029" rel="nofollow"><time datetime="2015-06-23T09:48:40+00:00" pubdate="">2015年6月23日 at 上午9:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你的理解应该是：即使主持人拿走一个箱子对结果没有影响。这样想，主持人拿走的箱子只是没有影响到你初始选择的那个箱子中有奖品的概率，但是改变了其余两个箱子的概率分布。由 1/3,1/3 变成了 0, 2/3</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-54304">
+<article class="comment" id="comment-54304">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wynk0804</a></span> on <a href="http://www.acmerblog.com/hdu-1147-Pick-up-sticks-1487.html#comment-54304" rel="nofollow"><time datetime="2015-06-22T11:21:11+00:00" pubdate="">2015年6月22日 at 上午11:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已更正。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-40031">
+<article class="comment" id="comment-40031">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">daisyleedq</a></span> on <a href="http://www.acmerblog.com/hdu-1147-Pick-up-sticks-1487.html#comment-40031" rel="nofollow"><time datetime="2015-03-27T06:57:45+00:00" pubdate="">2015年3月27日 at 上午6:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>约瑟夫也用说这么长……很成熟的一个问题了，分治的方法解起来o(n)就可以了，有兴趣可以看看具体数学的第一章，关于约瑟夫问题推导出了一系列的结论，很漂亮</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-40033">
+<article class="comment" id="comment-40033">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bluesky</a></span> on <a href="http://www.acmerblog.com/hdu-1147-Pick-up-sticks-1487.html#comment-40033" rel="nofollow"><time datetime="2015-03-26T17:46:15+00:00" pubdate="">2015年3月26日 at 下午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已修改。一些字符在编辑的时候转义了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-54305">
+<article class="comment" id="comment-54305">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fastislow</a></span> on <a href="http://www.acmerblog.com/hdu-1147-Pick-up-sticks-1487.html#comment-54305" rel="nofollow"><time datetime="2015-02-16T18:41:30+00:00" pubdate="">2015年2月16日 at 下午6:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>C语言版本的代码好像有点问题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-40028">
+<article class="comment" id="comment-40028">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">489365227</a></span> on <a href="http://www.acmerblog.com/hdu-1147-Pick-up-sticks-1487.html#comment-40028" rel="nofollow"><time datetime="2015-01-04T08:27:53+00:00" pubdate="">2015年1月4日 at 上午8:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，现在就缺少新的资料</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-40034">
+<article class="comment" id="comment-40034">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">we</a></span> on <a href="http://www.acmerblog.com/hdu-1147-Pick-up-sticks-1487.html#comment-40034" rel="nofollow"><time datetime="2014-12-25T08:21:47+00:00" pubdate="">2014年12月25日 at 上午8:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感谢分享 学习了`(*∩_∩*)′</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-40026">
+<article class="comment" id="comment-40026">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">TimeFight</a></span> on <a href="http://www.acmerblog.com/hdu-1147-Pick-up-sticks-1487.html#comment-40026" rel="nofollow"><time datetime="2014-12-02T06:04:18+00:00" pubdate="">2014年12月2日 at 上午6:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可是看了很多算法书什么的都是说的(start-end)/2哎。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-40027">
+<article class="comment" id="comment-40027">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hanyi</a></span> on <a href="http://www.acmerblog.com/hdu-1147-Pick-up-sticks-1487.html#comment-40027" rel="nofollow"><time datetime="2014-09-01T19:51:47+00:00" pubdate="">2014年9月1日 at 下午7:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>找bug好专业的说</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-40030">
+<article class="comment" id="comment-40030">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">985836927</a></span> on <a href="http://www.acmerblog.com/hdu-1147-Pick-up-sticks-1487.html#comment-40030" rel="nofollow"><time datetime="2014-05-30T00:53:54+00:00" pubdate="">2014年5月30日 at 上午12:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一种方法怎么会是O(log(m+n))呢？没有二分的话直接遍历应该就是O(m+n)吧？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-40025">
+<article class="comment" id="comment-40025">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiaobei</a></span> on <a href="http://www.acmerblog.com/hdu-1147-Pick-up-sticks-1487.html#comment-40025" rel="nofollow"><time datetime="2014-03-05T14:44:11+00:00" pubdate="">2014年3月5日 at 下午2:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-40032">
+<article class="comment" id="comment-40032">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">20134055016</a></span> on <a href="http://www.acmerblog.com/hdu-1147-Pick-up-sticks-1487.html#comment-40032" rel="nofollow"><time datetime="2013-12-15T01:27:28+00:00" pubdate="">2013年12月15日 at 上午1:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，还是这种实现比较好理解。虽然效率有点低</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

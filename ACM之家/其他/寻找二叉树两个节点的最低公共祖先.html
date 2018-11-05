@@ -1,0 +1,359 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>04-06</div>
+<div class="tit"><h1 class="entry-title">寻找二叉树两个节点的最低公共祖先</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/gaotong2055" rel="author" title="由dragon发布">dragon</a></span><span class="i1"><a href="http://www.acmerblog.com/category/data-struct/trees" rel="category tag" title="查看树形结构中的全部文章">树形结构</a>, <a href="http://www.acmerblog.com/category/zhuanti/classic" rel="category tag" title="查看经典问题中的全部文章">经典问题</a></span><span class="i4">围观3566次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5574" href="http://www.acmerblog.com/lca-lowest-common-ancestor-5574.html#comments" title="《寻找二叉树两个节点的最低公共祖先》上的评论">19 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p>给定一棵树，同时给出树中的两个结点(n1和n2)，求它们的最低公共祖先。也就是常见的LCA(Lowest Common Ancestor )问题。</p>
+<p>看下面的图就明白了：</p>
+<p> </p>
+<p><img alt="lca" src="http://d2o58evtke57tz.cloudfront.net/wp-content/uploads/lca.png"/></p>
+<h3><strong>方法一</strong></h3>
+<p>下面是一个简单的复杂度为 O(n) 的算法，解决LCA问题<br/>
+<strong>1) </strong>找到从根到n1的路径，并存储在一个向量或数组中。<br/>
+<strong>2)</strong>找到从根到n2的路径，并存储在一个向量或数组中。<br/>
+<strong>3)</strong> 遍历这两条路径，直到遇到一个不同的节点，则前面的那个即为最低公共祖先.</p>
+<p>下面的C++的程序实现</p>
+<pre class="brush:cpp">// O(n) 解决 LCA
+#include &lt;iostream&gt;
+#include &lt;vector&gt;
+using namespace std;
+
+//二叉树节点
+struct Node
+{
+    int key;
+    struct Node *left, *right;
+};
+//公用函数，生成一个节点
+Node * newNode(int k)
+{
+    Node *temp = new Node;
+    temp-&gt;key = k;
+    temp-&gt;left = temp-&gt;right = NULL;
+    return temp;
+}
+//找到从root到 节点值为key的路径,存储在path中。没有的话返回-1
+bool findpath(Node * root,vector&lt;int&gt; &amp;path,int key){
+	if(root == NULL) return false;
+	path.push_back(root-&gt;key);
+	if(root-&gt;key == key) return true;
+	//左子树或右子树 是否找到,找到的话当前节点就在路径中了
+	bool find =  ( findpath(root-&gt;left, path, key) || findpath(root-&gt;right,path ,key) );
+	if(find) return true;
+	//该节点下未找到就弹出
+	path.pop_back();
+	return false;
+}
+
+int findLCA(Node * root,int key1,int key2){
+	vector&lt;int&gt; path1,path2;
+	bool find1 = findpath(root, path1, key1);
+	bool find2 = findpath(root, path2, key2);
+	if(find1 &amp;&amp; find2){
+		int ans ;
+		for(int i=0; i&lt;path1.size(); i++){
+			if(path1[i] != path2[i]){
+				break;
+			}else
+				ans = path1[i];
+		}
+		return ans;
+	}
+	return -1;
+}
+
+// Driver program to test above functions
+int main()
+{
+    // 按照上面的图来创创建树
+    Node * root = newNode(1);
+    root-&gt;left = newNode(2);
+    root-&gt;right = newNode(3);
+    root-&gt;left-&gt;left = newNode(4);
+    root-&gt;left-&gt;right = newNode(5);
+    root-&gt;right-&gt;left = newNode(6);
+    root-&gt;right-&gt;right = newNode(7);
+    cout &lt;&lt; "LCA(4, 5) = " &lt;&lt; findLCA(root, 4, 5);
+    cout &lt;&lt; "\nLCA(4, 6) = " &lt;&lt; findLCA(root, 4, 6);
+    cout &lt;&lt; "\nLCA(3, 4) = " &lt;&lt; findLCA(root, 3, 4);
+    cout &lt;&lt; "\nLCA(2, 4) = " &lt;&lt; findLCA(root, 2, 4);
+    return 0;
+}</pre>
+<p><strong>输出：</strong></p>
+<pre class="brush:other">LCA(4, 5) = 2
+LCA(4, 6) = 1
+LCA(3, 4) = 1
+LCA(2, 4) = 2</pre>
+<p><strong>时间复杂度: </strong>O(n), 树被遍历了两次，每次遍历复杂度不超过n，然后比较路径。</p>
+<h3><strong>第二种方法(只遍历一次)</strong></h3>
+<p>上面的方法虽然是O(n)，但是操作依然繁琐了一点，并且需要额外的空间来存储路径。其实可以只遍历一次，利用递归的巧妙之处。学好二叉树，其实就是学好递归。</p>
+<p>从root开始遍历，如果n1和n2中的任一个和root匹配，那么root就是LCA。 如果都不匹配，则分别递归左、右子树，如果有一个 key（n1或n2）出现在左子树，并且另一个key(n1或n2)出现在右子树，则root就是LCA.  如果两个key都出现在左子树，则说明LCA在左子树中，否则在右子树。</p>
+<pre class="brush:cpp">/* 只用一次遍历解决LCA */
+#include &lt;iostream&gt;
+using namespace std;
+struct Node
+{
+    struct Node *left, *right;
+    int key;
+};
+Node* newNode(int key)
+{
+    Node *temp = new Node;
+    temp-&gt;key = key;
+    temp-&gt;left = temp-&gt;right = NULL;
+    return temp;
+}
+
+// 返回n1和n2的 LCA的指针
+// 假设n1和n2都出现在树中
+struct Node *findLCA(struct Node* root, int n1, int n2)
+{
+    if (root == NULL) return NULL;
+
+    // 只要n1 或 n2 的任一个匹配即可
+    //  (注意：如果 一个节点是另一个祖先，则返回的是祖先节点。因为递归是要返回到祖先的 )
+    if (root-&gt;key == n1 || root-&gt;key == n2)
+        return root;
+    // 分别在左右子树查找
+    Node *left_lca  = findLCA(root-&gt;left, n1, n2);
+    Node *right_lca = findLCA(root-&gt;right, n1, n2);
+    // 如果都返回非空指针 Non-NULL, 则说明两个节点分别出现了在两个子树中，则当前节点肯定为LCA
+    if (left_lca &amp;&amp; right_lca)  return root;
+    // 如果一个为空，在说明LCA在另一个子树
+    return (left_lca != NULL)? left_lca: right_lca;
+}
+
+//测试
+int main()
+{
+    // 构造上面图中的树
+    Node * root = newNode(1);
+    root-&gt;left = newNode(2);
+    root-&gt;right = newNode(3);
+    root-&gt;left-&gt;left = newNode(4);
+    root-&gt;left-&gt;right = newNode(5);
+    root-&gt;right-&gt;left = newNode(6);
+    root-&gt;right-&gt;right = newNode(7);
+    cout &lt;&lt; "LCA(4, 5) = " &lt;&lt; findLCA(root, 4, 5)-&gt;key;
+    cout &lt;&lt; "\nLCA(4, 6) = " &lt;&lt; findLCA(root, 4, 6)-&gt;key;
+    cout &lt;&lt; "\nLCA(3, 4) = " &lt;&lt; findLCA(root, 3, 4)-&gt;key;
+    cout &lt;&lt; "\nLCA(2, 4) = " &lt;&lt; findLCA(root, 2, 4)-&gt;key;
+    return 0;
+}</pre>
+<p>时间复杂度为O(n)，但是上面的方法还是有所局限的，必须保证两个要查找的节点n1和n2都出现在树中。如果n1不在树中，则会返回n2为LCA，理想答案应该为NULL。要解决这个问题，可以先查找下 n1和n2是否出现在树中，然后加几个判断即可。</p>
+<p>参考：http://www.geeksforgeeks.org/lowest-common-ancestor-binary-tree-set-1/</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75992">
+<article class="comment" id="comment-75992">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513690" rel="external nofollow">新用户414011</a></span> on <a href="http://www.acmerblog.com/lca-lowest-common-ancestor-5574.html#comment-75992" rel="nofollow"><time datetime="2017-04-12T05:46:06+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>下盘不稳啊，战斗意识也渣，光顾了nb了，典型没大脑，活不久</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64997">
+<article class="comment" id="comment-64997">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">HrUVI</span> on <a href="http://www.acmerblog.com/lca-lowest-common-ancestor-5574.html#comment-64997" rel="nofollow"><time datetime="2016-12-26T13:49:03+00:00" pubdate="">2016年12月26日 at 下午1:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>打开 ２８８ｄ．ｐｗ 都是 浪美眉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64996">
+<article class="comment" id="comment-64996">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">HrUVI</span> on <a href="http://www.acmerblog.com/lca-lowest-common-ancestor-5574.html#comment-64996" rel="nofollow"><time datetime="2016-12-26T13:49:03+00:00" pubdate="">2016年12月26日 at 下午1:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>打开 ２８８ｄ．ｐｗ 都是 浪美眉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64995">
+<article class="comment" id="comment-64995">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">HrUVI</span> on <a href="http://www.acmerblog.com/lca-lowest-common-ancestor-5574.html#comment-64995" rel="nofollow"><time datetime="2016-12-26T13:49:03+00:00" pubdate="">2016年12月26日 at 下午1:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>打开 ２８８ｄ．ｐｗ 都是 浪美眉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64576">
+<article class="comment" id="comment-64576">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">sunny</span> on <a href="http://www.acmerblog.com/lca-lowest-common-ancestor-5574.html#comment-64576" rel="nofollow"><time datetime="2016-04-02T13:47:02+00:00" pubdate="">2016年4月2日 at 下午1:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>java版本<br/>
+<a href="https://github.com/i-sunny/algorithms/blob/master/src/com/algorithms/tree/LowestCommonAncestor.java" rel="nofollow">https://github.com/i-sunny/algorithms/blob/master/src/com/algorithms/tree/LowestCommonAncestor.java</a></p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30085">
+<article class="comment" id="comment-30085">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">stamwoo</a></span> on <a href="http://www.acmerblog.com/lca-lowest-common-ancestor-5574.html#comment-30085" rel="nofollow"><time datetime="2015-06-21T02:13:40+00:00" pubdate="">2015年6月21日 at 上午2:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30084">
+<article class="comment" id="comment-30084">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">21435048</a></span> on <a href="http://www.acmerblog.com/lca-lowest-common-ancestor-5574.html#comment-30084" rel="nofollow"><time datetime="2015-05-15T22:49:55+00:00" pubdate="">2015年5月15日 at 下午10:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个后缀数组不是常用的那个.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30083">
+<article class="comment" id="comment-30083">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NiKaWaLi</a></span> on <a href="http://www.acmerblog.com/lca-lowest-common-ancestor-5574.html#comment-30083" rel="nofollow"><time datetime="2015-02-10T14:38:13+00:00" pubdate="">2015年2月10日 at 下午2:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>if(j){<br/>
+                    int ans=a <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> ;<br/>
+                    for(int x=j-1;x&gt;=0;x–){<br/>
+                        if(!a <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/d7/newx_org.gif"/> ) break;<br/>
+                        ans=min(ans,a <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/d7/newx_org.gif"/> );<br/>
+                        sum+=ans;<br/>
+                    }<br/>
+                }<br/>
+求解释，，dp的思路是什么呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30090">
+<article class="comment" id="comment-30090">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ygwx</a></span> on <a href="http://www.acmerblog.com/lca-lowest-common-ancestor-5574.html#comment-30090" rel="nofollow"><time datetime="2014-12-04T10:21:01+00:00" pubdate="">2014年12月4日 at 上午10:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为是要把从字符串s的start位到当前位在hash中重置，修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30087">
+<article class="comment" id="comment-30087">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fermi</a></span> on <a href="http://www.acmerblog.com/lca-lowest-common-ancestor-5574.html#comment-30087" rel="nofollow"><time datetime="2014-11-18T02:31:41+00:00" pubdate="">2014年11月18日 at 上午2:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正确性是关键，冲突是都会有的，主要是那种算法冲突的概率低</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49231">
+<article class="comment" id="comment-49231">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sam_justin</a></span> on <a href="http://www.acmerblog.com/lca-lowest-common-ancestor-5574.html#comment-49231" rel="nofollow"><time datetime="2014-11-01T10:35:27+00:00" pubdate="">2014年11月1日 at 上午10:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-937">
+<article class="comment" id="comment-937">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">aaa</span> on <a href="http://www.acmerblog.com/lca-lowest-common-ancestor-5574.html#comment-937" rel="nofollow"><time datetime="2014-10-04T00:50:26+00:00" pubdate="">2014年10月4日 at 上午12:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感觉第二种方法其实也不是很好，不过的确要比第一种方法要好一点。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-936">
+<article class="comment" id="comment-936">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">aaa</span> on <a href="http://www.acmerblog.com/lca-lowest-common-ancestor-5574.html#comment-936" rel="nofollow"><time datetime="2014-10-04T00:41:22+00:00" pubdate="">2014年10月4日 at 上午12:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>上面的评论很起劲，为什么我看不懂啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment byuser comment-author-qq1005873807 odd alt thread-odd thread-alt depth-1" id="li-comment-931">
+<article class="comment" id="comment-931">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">qq1005873807</span> on <a href="http://www.acmerblog.com/lca-lowest-common-ancestor-5574.html#comment-931" rel="nofollow"><time datetime="2014-10-02T18:37:23+00:00" pubdate="">2014年10月2日 at 下午6:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法好！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-930">
+<article class="comment" id="comment-930">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">战绩</span> on <a href="http://www.acmerblog.com/lca-lowest-common-ancestor-5574.html#comment-930" rel="nofollow"><time datetime="2014-10-02T18:26:59+00:00" pubdate="">2014年10月2日 at 下午6:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好厉害～</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30089">
+<article class="comment" id="comment-30089">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dreams</a></span> on <a href="http://www.acmerblog.com/lca-lowest-common-ancestor-5574.html#comment-30089" rel="nofollow"><time datetime="2014-06-21T02:33:49+00:00" pubdate="">2014年6月21日 at 上午2:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>约瑟夫也用说这么长……很成熟的一个问题了，分治的方法解起来o(n)就可以了，有兴趣可以看看具体数学的第一章，关于约瑟夫问题推导出了一系列的结论，很漂亮</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30086">
+<article class="comment" id="comment-30086">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Supermaner</a></span> on <a href="http://www.acmerblog.com/lca-lowest-common-ancestor-5574.html#comment-30086" rel="nofollow"><time datetime="2014-06-16T04:23:51+00:00" pubdate="">2014年6月16日 at 上午4:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>代码不错，赞一个！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30088">
+<article class="comment" id="comment-30088">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">CCCat</a></span> on <a href="http://www.acmerblog.com/lca-lowest-common-ancestor-5574.html#comment-30088" rel="nofollow"><time datetime="2014-04-17T13:30:19+00:00" pubdate="">2014年4月17日 at 下午1:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>mark, 备用</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-282">
+<article class="comment" id="comment-282">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">会飞的鱼</span> on <a href="http://www.acmerblog.com/lca-lowest-common-ancestor-5574.html#comment-282" rel="nofollow"><time datetime="2014-04-08T00:15:58+00:00" pubdate="">2014年4月8日 at 上午12:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法很不错啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,220 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>11-18</div>
+<div class="tit"><h1 class="entry-title">LeetCode-Unique Paths[DFS]</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/dfs" rel="category tag" title="查看DFS搜索中的全部文章">DFS搜索</a></span><span class="i4">围观1052次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6273" href="http://www.acmerblog.com/leetcode-solution-unique-paths-6273.html#comments" title="《LeetCode-Unique Paths[DFS]》上的评论">9 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<h3><strong>Unique Paths</strong></h3>
+<div class="question-content">
+<p>A robot is located at the top-left corner of a <i>m</i> x <i>n</i> grid (marked ‘Start’ in the diagram below).</p>
+<p>The robot can only move either down or right at any point in time. The robot is trying to reach the bottom-right corner of the grid (marked ‘Finish’ in the diagram below).</p>
+<p>How many possible unique paths are there?</p>
+<p><img alt="" src="http://4.bp.blogspot.com/_UElib2WLeDE/TNJf8VtC2VI/AAAAAAAACXU/UyUa-9LKp4E/s400/robot_maze.png"/></p>
+<p style="font-size: 11px;">Above is a 3 x 7 grid. How many possible unique paths are there?</p>
+<p><b>Note:</b> <i>m</i> and <i>n</i> will be at most 100.</p>
+</div>
+<p>标签: Array Dynamic Programming<br/>
+<strong>分析</strong></p>
+<p><strong>1. 深搜</strong></p>
+<p>深搜，小集合可以过，大集合会超时</p>
+<pre class="brush:cpp">// LeetCode, Unique Paths
+// 深搜，小集合可以过，大集合会超时
+// 时间复杂度O(n^4)，空间复杂度O(n)
+class Solution {
+public:
+    int uniquePaths(int m, int n) {
+        if (m &lt; 1 || n &lt; 1) return 0; // 终止条件
+
+        if (m == 1 &amp;&amp; n == 1) return 1; // 收敛条件
+
+        return uniquePaths(m - 1, n) + uniquePaths(m, n - 1);
+    }
+};</pre>
+<p><strong> 2. 备忘录法</strong></p>
+<p>给前面的深搜，加个缓存，就可以过大集合了。即备忘录法。</p>
+<pre class="brush:cpp">// LeetCode, Unique Paths
+// 深搜 + 缓存，即备忘录法
+// 时间复杂度O(n^2)，空间复杂度O(n^2)
+class Solution {
+public:
+    int uniquePaths(int m, int n) {
+        // 0行和0列未使用
+        this-&gt;f = vector&lt;vector&lt;int&gt; &gt;(m + 1, vector&lt;int&gt;(n + 1, 0));
+        return dfs(m, n);
+    }
+private:
+    vector&lt;vector&lt;int&gt; &gt; f;  // 缓存
+
+    int dfs(int x, int y) {
+        if (x &lt; 1 || y &lt; 1) return 0; // 数据非法，终止条件
+
+        if (x == 1 &amp;&amp; y == 1) return 1; // 回到起点，收敛条件
+
+        return getOrUpdate(x - 1, y) + getOrUpdate(x, y - 1);
+    }
+
+    int getOrUpdate(int x, int y) {
+        if (f[x][y] &gt; 0) return f[x][y];
+        else return f[x][y] = dfs(x, y);
+    }
+};</pre>
+<p><strong> 3. 动态规划</strong></p>
+<p>既然可以用备忘录法自顶向下解决，也一定可以用动规自底向上解决。</p>
+<p>设状态为f[i][j]，表示从起点$(1,1)$到达$(i,j)$的路线条数，则状态转移方程为：<br/>
+f[i][j]=f[i-1][j]+f[i][j-1]</p>
+<pre class="brush:cpp">// LeetCode, Unique Paths
+// 动规，滚动数组
+// 时间复杂度O(n^2)，空间复杂度O(n)
+class Solution {
+public:
+    int uniquePaths(int m, int n) {
+        vector&lt;int&gt; f(n, 0);
+        f[0] = 1;
+        for (int i = 0; i &lt; m; i++) {
+            for (int j = 1; j &lt; n; j++) {
+                // 左边的f[j]，表示更新后的f[j]，与公式中的f[i[[j]对应
+                // 右边的f[j]，表示老的f[j]，与公式中的f[i-1][j]对应
+                f[j] = f[j - 1] + f[j];
+            }
+        }
+        return f[n - 1];
+    }
+};</pre>
+<p><strong>4. 数学公式</strong></p>
+<p>一个$m$行，$n$列的矩阵，机器人从左上走到右下总共需要的步数是$m+n-2$，其中向下走的步数是$m-1$，因此问题变成了在$m+n-2$个操作中，选择$m–1$个时间点向下走，选择方式有多少种。即 $C_{m+n-2}^{m-1}$ 。</p>
+<pre class="brush:cpp">// LeetCode, Unique Paths
+// 数学公式
+class Solution {
+public:
+    typedef long long int64_t;
+    // 求阶乘, n!/(start-1)!，即 n*(n-1)...start，要求 n &gt;= 1
+    static int64_t factor(int n, int start = 1) {
+        int64_t  ret = 1;
+        for(int i = start; i &lt;= n; ++i)
+            ret *= i;
+        return ret;
+    }
+    // 求组合数 C_n^k
+    static int64_t combination(int n, int k) {
+        // 常数优化
+        if (k == 0) return 1;
+        if (k == 1) return n;
+
+        int64_t ret = factor(n, k+1);
+        ret /= factor(n - k);
+        return ret;
+    }
+
+    int uniquePaths(int m, int n) {
+        // max 可以防止n和k差距过大，从而防止combination()溢出
+        return combination(m+n-2, max(m-1, n-1));
+    }
+};</pre>
+<p><strong>相关题目</strong></p>
+<p><a href="http://www.acmerblog.com/leetcode-solution-unique-paths-ii-6252.html">Unique Paths II</a></p>
+<p><a href="http://www.acmerblog.com/leetcode-solution-minimum-path-sum-6208.html">Minimum Path Sum</a></p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-74340">
+<article class="comment" id="comment-74340">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514741" rel="external nofollow">新用户509632</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-unique-paths-6273.html#comment-74340" rel="nofollow"><time datetime="2017-04-12T01:59:35+00:00" pubdate="">2017年4月12日 at 上午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>作者快更新，</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63775">
+<article class="comment" id="comment-63775">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">2013283119</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-unique-paths-6273.html#comment-63775" rel="nofollow"><time datetime="2015-07-20T19:00:07+00:00" pubdate="">2015年7月20日 at 下午7:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>根本过不了。。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63774">
+<article class="comment" id="comment-63774">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">abguorui0928</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-unique-paths-6273.html#comment-63774" rel="nofollow"><time datetime="2015-07-14T13:06:14+00:00" pubdate="">2015年7月14日 at 下午1:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>题目需要求解的是最小值，而且没有考虑可能存在环</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-59088">
+<article class="comment" id="comment-59088">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">qq1005873807</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-unique-paths-6273.html#comment-59088" rel="nofollow"><time datetime="2015-06-27T00:56:12+00:00" pubdate="">2015年6月27日 at 上午12:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一题是不是可以这样想，生了n孩子的家庭等价于n个家庭各生了一个1个孩子，这样最后男女的比例还是1:1</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63773">
+<article class="comment" id="comment-63773">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wawa_zmt</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-unique-paths-6273.html#comment-63773" rel="nofollow"><time datetime="2015-02-15T14:20:10+00:00" pubdate="">2015年2月15日 at 下午2:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>终于找到一篇能看懂的，mark</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63776">
+<article class="comment" id="comment-63776">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">CCat</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-unique-paths-6273.html#comment-63776" rel="nofollow"><time datetime="2015-01-15T06:32:08+00:00" pubdate="">2015年1月15日 at 上午6:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#pragma pack(2) 这个用法太坑爹</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50097">
+<article class="comment" id="comment-50097">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hehe_snail</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-unique-paths-6273.html#comment-50097" rel="nofollow"><time datetime="2014-12-29T19:38:54+00:00" pubdate="">2014年12月29日 at 下午7:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个程序编译都通不过， int L[m+1][n+1];这样定义出错，应该换成具体的数字ac</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63777">
+<article class="comment" id="comment-63777">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Silence.L</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-unique-paths-6273.html#comment-63777" rel="nofollow"><time datetime="2014-12-19T19:50:58+00:00" pubdate="">2014年12月19日 at 下午7:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题别太纠结了，不同的编译器结果不一样</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59089">
+<article class="comment" id="comment-59089">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Emlar</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-unique-paths-6273.html#comment-59089" rel="nofollow"><time datetime="2014-12-07T21:49:47+00:00" pubdate="">2014年12月7日 at 下午9:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对于第一题，我的直觉告诉我换不换都一样，求指教</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

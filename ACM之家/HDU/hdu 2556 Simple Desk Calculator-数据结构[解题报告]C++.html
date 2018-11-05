@@ -1,0 +1,528 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>02-10</div>
+<div class="tit"><h1 class="entry-title">hdu 2556 Simple Desk Calculator-数据结构[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/data-struct/linear" rel="category tag" title="查看线性结构中的全部文章">线性结构</a></span><span class="i4">围观1034次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4107" href="http://www.acmerblog.com/hdu-2556-simple-desk-calculator-4107.html#comments" title="《hdu 2556 Simple Desk Calculator-数据结构[解题报告]C++》上的评论">36 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Simple Desk Calculator</h1>
+</div>
+<div>
+<p class="mytitle">问题描述 :</p>
+</div>
+<div class="mypanel">Your task are to write a program that imitates a simple desk calculator. Your calculator must be able to accept an infix expression which at least includes (, ), +, -, *, /,% . If the expression is legal, output its value, else ouput an error message.</div>
+<div>
+<p class="mytitle">输入:</p>
+</div>
+<div class="mypanel">There are several test cases, each occupies one line that contains an infix expression. Proceed until the end of the file.</div>
+<div>
+<p class="mytitle">输出:</p>
+</div>
+<div class="mypanel">There are several test cases, each occupies one line that contains an infix expression. Proceed until the end of the file.</div>
+<div>
+<p class="mytitle">样例输入:</p>
+</div>
+<pre class="mypanel iopanel">4.99+5.99+6.99*1.06
+(3*5*(4*8)%2)
+1+2(
+2/0
+2.5%2
+2%2.5</pre>
+<div>
+<p class="mytitle">样例输出:</p>
+</div>
+<pre class="mypanel iopanel">18.39
+0.00
+ERROR IN INFIX NOTATION
+ERROR IN INFIX NOTATION
+ERROR IN INFIX NOTATION
+ERROR IN INFIX NOTATION</pre>
+<p><!-- problem end --></p>
+<p>又是一道中缀表示法的表达式求值问题，不过比起昨天的“简单计算器”，这道题的难度有所增加。首先是表达式中允许出现括号和求模运算，而且允许出现double型的操作数（非负的），最复杂的可能是表达式不保证合法，也就是说写出的程序必须有判断表达式是否合法的能力。</p>
+<p>乍一看这题，我被狠狠的震慑住了，有点不知从何下手的感觉。经过分析，觉得基本的算法不用改变，只需增加若干功能函数或者补全细节，应该可以满足要求。</p>
+<p>最后事实说明我的思路基本靠谱，而且运气也不错，交到第二遍就Accept（本来我是已经做好了人肉交题的思想准备了<img alt="用栈实现表达式求值(2):Simple Desk Calculator - oldsharp - Joker" src="http://b.bst.126.net/style/common/htmlEditor/portrait/r/preview/r52.gif"/>）</p>
+<p>还想说一下的是，本题的测试数据还不够全面（纯属个人观点）。比如”8++”这组数据，我的程序将它判为格式错误，而Zerob13的代码跑这个数据时会崩溃；又如”(()(5+8)”这样的数据，我的代码判为合法，而Zerob13的代码判为非法；再如”5+.5″,我的判非法，Zerob13的判合法。同为AC代码，却存在很多的差异，说明测试数据没有包括以上情况，我也不清楚某些情况究竟是合法还是非法。还有就是类似于”1*0/(5-6)”这样的数据，我的代码输出-0.00，而zerob13的代码输出的是0.00，我不明白这里的差异是如何造成的。</p>
+<p>贴一下我的代码：</p>
+<pre class="brush:cpp">#include&lt;iostream&gt;
+#include&lt;cstring&gt;
+#include&lt;cctype&gt;
+#include&lt;stack&gt;
+using std::stack;
+const int L=1001;
+
+stack&lt;double&gt; OPND;
+stack&lt;char&gt; OPTR;
+
+bool IsLegalChar(char c)
+{
+    if(isdigit(c))
+       return true;
+    else if(c=='+' || c=='-' || c=='*' || c=='/' || c=='%' || c=='(' || c==')' || c=='.')
+       return true;
+    else
+       return false;
+}
+
+double ToOperand(char t[],int length,int count,int point)
+{
+    if(count&gt;1 || t[0]=='.' || t[length-1]=='.')
+       return -1.0;
+    double result=0.0,v=1.0;
+    if(count==0)
+    {
+       for(int i=length-1;i&gt;=0;i--)
+       {
+           result+=(double)(t[i]-'0')*v;
+           v*=10;
+       }
+       return result;
+    }
+    else
+    {
+       for(int i=point-1;i&gt;=0;i--)
+       {
+           result+=(double)(t[i]-'0')*v;
+           v*=10;
+       }
+       v=0.1;
+       for(int i=point+1;i&lt;length;i++)
+       {
+           result+=(double)(t[i]-'0')*v;
+           v/=10.0;
+       }
+       return result;
+    }
+}
+
+char OperatorJudgement(char optr1,char optr2)
+{
+    if(optr1=='+' || optr1=='-')
+    {
+       if(optr2=='+' || optr2=='-' || optr2==')' || optr2=='#')
+           return '&gt;';
+       if(optr2=='*' || optr2=='/' || optr2=='%' || optr2=='(')
+           return '&lt;';
+    }  
+    if(optr1=='*' || optr1=='/' || optr1=='%')
+    {
+       if(optr2=='+' || optr2=='-' || optr2=='*' || optr2=='/' || optr2=='%' || optr2==')' || optr2=='#')
+           return '&gt;';
+       if(optr2=='(')
+           return '&lt;';
+    }
+    if(optr1=='(')
+    {
+       if(optr2==')')
+           return '=';
+       if(optr2=='#')
+           return 'E';
+       if(optr2=='+' || optr2=='-' || optr2=='*' || optr2=='/' || optr2=='%' || optr2=='(')
+           return '&lt;';
+    }
+    if(optr1==')')
+    {
+       if(optr2=='(')
+           return 'E';
+       else
+           return '&gt;';
+    }
+    if(optr1=='#')
+    {
+       if(optr2==')')
+           return 'E';
+       if(optr2=='#')
+           return '=';
+       else
+           return '&lt;';
+    }
+}
+
+bool IsLegalMod(double opnd1,double opnd2)
+{
+    if(opnd1-(int)opnd1!=0.0 || opnd2-(int)opnd2!=0.0 || opnd2==0.0)
+       return false;
+    return true;
+}
+
+double Calculate(double opnd1,char optr,double opnd2)
+{
+    if(optr=='+')
+       return opnd1+opnd2;
+    if(optr=='-')
+       return opnd1-opnd2;
+    if(optr=='*')
+       return opnd1*opnd2;
+    if(optr=='/')
+       return opnd1/opnd2;
+    if(optr=='%')
+       return (double)((int)opnd1%(int)opnd2);
+}
+
+int main()
+{
+    int i,j;
+    bool isLegalInfixNonation;
+    char s[L],t[L];
+
+    while(gets(s))
+    {
+       isLegalInfixNonation=true;
+       for(i=0;s[i]!='\0';i++)
+       {
+           if(IsLegalChar(s[i])==false)
+           {
+              isLegalInfixNonation=false;
+              break;
+           }
+       }
+       strcat(s,"#");
+       while(OPND.empty()==false)
+           OPND.pop();
+       while(OPTR.empty()==false)
+           OPTR.pop();
+
+       i=0;
+       OPTR.push('#');
+       while((s[i]!='#' || OPTR.top()!='#') &amp;&amp; isLegalInfixNonation==true)
+       {
+           if(isdigit(s[i]) || s[i]=='.')
+           {
+              int point=0,count=0;
+              for(j=0;isdigit(s[i]) || s[i]=='.';i++,j++)
+              {
+                  t[j]=s[i];
+                  if(s[i]=='.')
+                     count++,point=j;
+              }
+              double opnd=ToOperand(t,j,count,point);
+              if(opnd==-1.0)
+              {
+                  isLegalInfixNonation=false;
+                  break;
+              }
+              else
+              {
+                  OPND.push(opnd);
+              }
+           }
+           else
+           {
+              char optr1=OPTR.top(),optr2=s[i];
+              char judgement=OperatorJudgement(optr1,optr2);
+              if(judgement=='E')
+                  isLegalInfixNonation=false;
+              else
+              {
+                  if(judgement=='&lt;')
+                  {
+                     OPTR.push(optr2);
+                     i++;
+                  }
+                  else if(judgement=='=')
+                  {
+                     OPTR.pop();
+                     i++;
+                  }
+                  else if(judgement=='&gt;')
+                  {
+                     OPTR.pop();
+                     if(OPND.empty()==true)
+                     {
+                         isLegalInfixNonation=false;
+                         break;
+                     }
+                     double opnd2=OPND.top();
+                     OPND.pop();
+                     if(OPND.empty()==true)
+                     {
+                         isLegalInfixNonation=false;
+                         break;
+                     }
+                     double opnd1=OPND.top();
+                     OPND.pop();
+                     if(optr1=='%')
+                     {
+                         if(IsLegalMod(opnd1,opnd2)==false)
+                         {
+                            isLegalInfixNonation=false;
+                            break;
+                         }
+                     }
+                     if(optr1=='/')
+                     {
+                         if(opnd2==0.0)
+                         {
+                            isLegalInfixNonation=false;
+                            break;
+                         }
+                     }
+                     double result=Calculate(opnd1,optr1,opnd2);
+                      OPND.push(result);
+                  }
+              }
+           }
+       }
+       if(isLegalInfixNonation==false)
+           puts("ERROR IN INFIX NOTATION");
+       else
+       {
+           if(OPND.size()!=1)
+              puts("ERROR IN INFIX NOTATION");
+           else
+              printf("%.2lf\n",OPND.top());
+       }
+    }
+    return 0;
+}</pre>
+<p> </p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="post pingback">
+<p>Pingback: <a class="url" href="http://www.cheapnfloutletjerseys.us.com/" rel="external nofollow">Cheap Jerseys From China</a></p>
+</li><!-- #comment-## -->
+<li class="post pingback">
+<p>Pingback: <a class="url" href="http://www.cheapnflfootballjerseyswholesale.us.com/" rel="external nofollow">Cheap Jerseys From China</a></p>
+</li><!-- #comment-## -->
+<li class="post pingback">
+<p>Pingback: <a class="url" href="http://www.cheapfootballjerseysnfl.us.com/" rel="external nofollow">Cheap NFL Jerseys China</a></p>
+</li><!-- #comment-## -->
+<li class="post pingback">
+<p>Pingback: <a class="url" href="http://www.cheapnfljerseyswholesale-china.com/" rel="external nofollow">Wholesale NFL Jerseys From China</a></p>
+</li><!-- #comment-## -->
+<li class="post pingback">
+<p>Pingback: <a class="url" href="http://www.cheap-wholesalenfljerseys.com/" rel="external nofollow">Cheap Jerseys Wholesale</a></p>
+</li><!-- #comment-## -->
+<li class="post pingback">
+<p>Pingback: <a class="url" href="http://www.jerseyschina.us.com/" rel="external nofollow">Cheap NFL Jerseys</a></p>
+</li><!-- #comment-## -->
+<li class="post pingback">
+<p>Pingback: <a class="url" href="http://www.wholesalenhljerseysmark.com/" rel="external nofollow">Cheap NHL Jerseys</a></p>
+</li><!-- #comment-## -->
+<li class="post pingback">
+<p>Pingback: <a class="url" href="http://www.cheapnflsportsjerseyschina.us.com/" rel="external nofollow">Wholesale NFL Jerseys Free Shipping</a></p>
+</li><!-- #comment-## -->
+<li class="post pingback">
+<p>Pingback: <a class="url" href="http://www.cheapjerseysdiscount.us.com/" rel="external nofollow">Wholesale Jerseys</a></p>
+</li><!-- #comment-## -->
+<li class="post pingback">
+<p>Pingback: <a class="url" href="http://www.wholesalenfljerseys-china.us.com/" rel="external nofollow">Wholesale NFL Jerseys Supply</a></p>
+</li><!-- #comment-## -->
+<li class="post pingback">
+<p>Pingback: <a class="url" href="http://www.cheapsportsjerseysnfl.com/" rel="external nofollow">Cheap NFL Jerseys China</a></p>
+</li><!-- #comment-## -->
+<li class="post pingback">
+<p>Pingback: <a class="url" href="http://www.cheapjerseystowholesale.com/" rel="external nofollow">Wholesale NFL Jerseys</a></p>
+</li><!-- #comment-## -->
+<li class="post pingback">
+<p>Pingback: <a class="url" href="http://www.wholesalejerseyscheapjerseys.us.com/" rel="external nofollow">Cheap NFL Jerseys</a></p>
+</li><!-- #comment-## -->
+<li class="post pingback">
+<p>Pingback: <a class="url" href="http://www.cheapdiscountnfljerseys.us.com/" rel="external nofollow">Cheap Jerseys Wholesale</a></p>
+</li><!-- #comment-## -->
+<li class="post pingback">
+<p>Pingback: <a class="url" href="http://www.cheapnfljerseys-supply.com/" rel="external nofollow">Wholesale Jerseys China Free Shipping</a></p>
+</li><!-- #comment-## -->
+<li class="post pingback">
+<p>Pingback: <a class="url" href="http://www.cheapjerseys4wholesale.com/" rel="external nofollow">Wholesale Jerseys</a></p>
+</li><!-- #comment-## -->
+<li class="post pingback">
+<p>Pingback: <a class="url" href="http://www.cheapnfljerseyschina-wholesale.us.com/" rel="external nofollow">Cheap Jerseys Free Shipping</a></p>
+</li><!-- #comment-## -->
+<li class="post pingback">
+<p>Pingback: <a class="url" href="http://www.wholesalenfljerseysonline.us.com/" rel="external nofollow">Wholesale NFL Jerseys</a></p>
+</li><!-- #comment-## -->
+<li class="post pingback">
+<p>Pingback: <a class="url" href="http://www.cheapjerseyswholesalejerseys.us.com/" rel="external nofollow">Wholesale Jerseys</a></p>
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-83805">
+<article class="comment" id="comment-83805">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517654" rel="external nofollow">新用户665369</a></span> on <a href="http://www.acmerblog.com/hdu-2556-simple-desk-calculator-4107.html#comment-83805" rel="nofollow"><time datetime="2017-04-12T22:38:37+00:00" pubdate="">2017年4月12日 at 下午10:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这位蛋友是用IE浏览器发得图吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-83804">
+<article class="comment" id="comment-83804">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517654" rel="external nofollow">新用户665369</a></span> on <a href="http://www.acmerblog.com/hdu-2556-simple-desk-calculator-4107.html#comment-83804" rel="nofollow"><time datetime="2017-04-12T22:38:37+00:00" pubdate="">2017年4月12日 at 下午10:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这位蛋友是用IE浏览器发得图吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-83803">
+<article class="comment" id="comment-83803">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517654" rel="external nofollow">新用户665369</a></span> on <a href="http://www.acmerblog.com/hdu-2556-simple-desk-calculator-4107.html#comment-83803" rel="nofollow"><time datetime="2017-04-12T22:38:37+00:00" pubdate="">2017年4月12日 at 下午10:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这位蛋友是用IE浏览器发得图吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-23016">
+<article class="comment" id="comment-23016">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">missliuxin</a></span> on <a href="http://www.acmerblog.com/hdu-2556-simple-desk-calculator-4107.html#comment-23016" rel="nofollow"><time datetime="2015-06-05T22:01:37+00:00" pubdate="">2015年6月5日 at 下午10:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>头文件的颜色是有意设成这种灰暗色的吗？感觉看不清</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-23009">
+<article class="comment" id="comment-23009">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zcmu_sls</a></span> on <a href="http://www.acmerblog.com/hdu-2556-simple-desk-calculator-4107.html#comment-23009" rel="nofollow"><time datetime="2015-04-12T07:27:33+00:00" pubdate="">2015年4月12日 at 上午7:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不同的编译器，printf(),执行的顺序不同，所以结果也就不同，建议不要那么写</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-23020">
+<article class="comment" id="comment-23020">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gyouxu</a></span> on <a href="http://www.acmerblog.com/hdu-2556-simple-desk-calculator-4107.html#comment-23020" rel="nofollow"><time datetime="2015-02-15T15:53:26+00:00" pubdate="">2015年2月15日 at 下午3:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是什么鬼，怎么多头文件</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-23018">
+<article class="comment" id="comment-23018">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lanifer</a></span> on <a href="http://www.acmerblog.com/hdu-2556-simple-desk-calculator-4107.html#comment-23018" rel="nofollow"><time datetime="2015-02-10T19:09:04+00:00" pubdate="">2015年2月10日 at 下午7:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>说的就是无向图啊，有向图的算法也是类似的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-23011">
+<article class="comment" id="comment-23011">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ssjssh</a></span> on <a href="http://www.acmerblog.com/hdu-2556-simple-desk-calculator-4107.html#comment-23011" rel="nofollow"><time datetime="2015-01-04T13:23:50+00:00" pubdate="">2015年1月4日 at 下午1:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-23019">
+<article class="comment" id="comment-23019">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">slowlight</a></span> on <a href="http://www.acmerblog.com/hdu-2556-simple-desk-calculator-4107.html#comment-23019" rel="nofollow"><time datetime="2014-12-29T18:21:34+00:00" pubdate="">2014年12月29日 at 下午6:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>for(int i=1; i&lt;=m; i++){<br/>
+            for(int j=1; j&lt;=n; j++){<br/>
+                    dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> [j-1] + 1;<br/>
+                if(s1.charAt(i-1) == s3.charAt(i+j-1))<br/>
+                    dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = dp[i-1] <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  + 1;<br/>
+                if(s2.charAt(j-1) == s3.charAt(i+j-1))<br/>
+                    dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = Math.max(dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> [j - 1] + 1, dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> );<br/>
+            }<br/>
+        }<br/>
+这里的代码似乎有点问题？ dp(i)(j) = dp(i)(j-1) + 1;这个例子System.out.println(ils.isInterleave("aa","dbbca", "aadbbcb"));返回的应该是false</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-23017">
+<article class="comment" id="comment-23017">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zcmu_sls</a></span> on <a href="http://www.acmerblog.com/hdu-2556-simple-desk-calculator-4107.html#comment-23017" rel="nofollow"><time datetime="2014-10-08T23:15:05+00:00" pubdate="">2014年10月8日 at 下午11:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Java真是解决大数的利器</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-23013">
+<article class="comment" id="comment-23013">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">20122256</a></span> on <a href="http://www.acmerblog.com/hdu-2556-simple-desk-calculator-4107.html#comment-23013" rel="nofollow"><time datetime="2014-08-19T21:10:44+00:00" pubdate="">2014年8月19日 at 下午9:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>整理的很好，多谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-23008">
+<article class="comment" id="comment-23008">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiaoliubuer</a></span> on <a href="http://www.acmerblog.com/hdu-2556-simple-desk-calculator-4107.html#comment-23008" rel="nofollow"><time datetime="2014-08-05T06:23:12+00:00" pubdate="">2014年8月5日 at 上午6:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>怎么输入两个0程序还没退出</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-23012">
+<article class="comment" id="comment-23012">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Miracle-cc</a></span> on <a href="http://www.acmerblog.com/hdu-2556-simple-desk-calculator-4107.html#comment-23012" rel="nofollow"><time datetime="2014-06-09T23:19:33+00:00" pubdate="">2014年6月9日 at 下午11:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-23010">
+<article class="comment" id="comment-23010">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rtaxa</a></span> on <a href="http://www.acmerblog.com/hdu-2556-simple-desk-calculator-4107.html#comment-23010" rel="nofollow"><time datetime="2014-05-13T09:06:05+00:00" pubdate="">2014年5月13日 at 上午9:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二种想法，我想来好久，为啥需要一个newhead，发现是把最后一个节点一直返回到嘴上面这层函数。厉害，这道题之前没样子想过。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-23021">
+<article class="comment" id="comment-23021">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">room306</a></span> on <a href="http://www.acmerblog.com/hdu-2556-simple-desk-calculator-4107.html#comment-23021" rel="nofollow"><time datetime="2014-04-19T13:50:43+00:00" pubdate="">2014年4月19日 at 下午1:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有点意思</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-23014">
+<article class="comment" id="comment-23014">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiaobei</a></span> on <a href="http://www.acmerblog.com/hdu-2556-simple-desk-calculator-4107.html#comment-23014" rel="nofollow"><time datetime="2014-04-04T18:00:15+00:00" pubdate="">2014年4月4日 at 下午6:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好厉害～</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-23015">
+<article class="comment" id="comment-23015">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">CCCat</a></span> on <a href="http://www.acmerblog.com/hdu-2556-simple-desk-calculator-4107.html#comment-23015" rel="nofollow"><time datetime="2014-03-11T18:11:29+00:00" pubdate="">2014年3月11日 at 下午6:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法挺不错。NewHead代表新的头节点，通过递归找到最后一个节点之后，就把这个节点赋给NewHead，然后一直返回返回，中途这个值是没有变化的，一边返回一边把相应的指针方向颠倒，最后结束时返回新的头节点到主函数。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

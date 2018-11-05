@@ -1,0 +1,374 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-10</div>
+<div class="tit"><h1 class="entry-title">HDU 1434 幸福列车-模拟-[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/basis/simulate" rel="category tag" title="查看模拟法中的全部文章">模拟法</a>, <a href="http://www.acmerblog.com/category/data-struct/linear" rel="category tag" title="查看线性结构中的全部文章">线性结构</a></span><span class="i4">围观827次</span><span class="i3"><a class="ds-thread-count" data-thread-key="1911" href="http://www.acmerblog.com/hdu-1434-%E5%B9%B8%E7%A6%8F%E5%88%97%E8%BD%A6-1911.html#comments" title="《HDU 1434 幸福列车-模拟-[解题报告] C++》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">幸福列车</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+一批幸福的列车即将从杭州驶向幸福的终点站――温州，身为总列车长的linle有一些奇怪的癖好。
+<p>他会记录下全部乘客的名字（name）和他们的人品值（RP），根据这些将他们排序，并不时地从某辆列车里踢出人品最不好（RP值最低）的一个人，当两个人人品一样不好时，他就会踢出名字难听的人（linle认为按字典顺序，排在越在后面的人名字越难听）。</p>
+<p>当然出于列车行驶需要，他还会不时的发布一些命令，比如让某个乘客上车，合并某两辆列车等。</p>
+<p>linle的上一任秘书***因为不能高效地执行他的这些命令而被炒鱿鱼，他现在正在寻觅新的秘书人选，你能不能胜任呢？（谢绝男士，待遇丰厚~~~） </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+本题包含多组测试，请处理到文件结束。<br/>对于每一组测试，第一行包含两个整数 N ，M ，表示一共有N( N&lt;=10000 ) 辆列车，执行M( M&lt;=10000 )次操作。<br/>接下来有 N （从1开始记数）辆列车的信息，每辆列车先有一个数字 Xi(1 &lt;= Xi &lt;= 100 )，表示该列车有Xi个乘客，接下来Xi行乘客信息，每个乘客包含名字（20个字符以内，不包含空白符）和人品（0&lt;= RP &lt;=30000）。<br/>再接下来有 M 行操作信息，一共有3种操作，分别为
+<p>GETON Xi name RP  表示有一个叫name的人品为RP的人登上第Xi列车</p>
+<p>JOIN Xi Xj          表示有将第Xj辆列车合并到Xi辆列车</p>
+<p>GETOUT Xi        表示从第Xi辆列车踢出一个人品最差的人</p>
+<p>测试数据保证每个操作均合法，即不会将已经被合并到其他列车的列车再进行合并，也不会从一辆空列车里踢出乘客 </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+对于每个 GETOUT 命令，输出被踢出的那个人的名字</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3 5
+2
+xhd 0
+zl 1
+2
+8600 1
+ll 2
+1
+Ignatius 3
+GETOUT 1
+JOIN 1 2
+GETOUT 1
+GETON 3 hoho 2
+GETOUT 3</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+xhd
+zl
+hoho
+
+<div style="font-family:Times New Roman;font-size:14px;background-color:F4FBFF;border:#B7CBFF 1px dashed;padding:6px"><div style="font-family:Arial;font-weight:bold;color:#7CA9ED;border-bottom:#B7CBFF 1px dashed"><i>Hint</i></div>
+Huge input, scanf is recommended. 
+</div><i style="font-size:1px"> </i></pre>
+<p> <!-- problem end --></p>
+<p>链表模拟 ，优先队列，链表合并，加上恶心的WA….</p>
+<pre class="brush:cpp ">#include &lt;iostream&gt;
+#include &lt;string&gt;
+#include &lt;list&gt;
+#include  &lt;vector&gt;
+#include &lt;set&gt;
+#include &lt;algorithm&gt;
+#include &lt;fstream&gt;
+
+struct passger
+{
+	friend bool operator&lt;(const passger&amp; l,const passger&amp; r);
+	std::string name;
+	int rp;
+};
+
+bool operator&lt;(const passger&amp; l,const passger&amp; r)
+{
+	if(l.rp&lt;r.rp){
+		return true;
+	}else if(l.rp==r.rp){
+		return l.name&gt;r.name;
+	}
+	return false;
+}
+
+struct car
+{
+	std::vector&lt;passger&gt; pas;
+	int num;
+};
+
+car unit;
+
+std::list&lt;car &gt; train;
+typedef std::list&lt;car &gt;::iterator tritr_t; 
+typedef std::vector&lt;passger&gt;::iterator psitr_t;
+
+tritr_t itr,itr2;
+psitr_t psitr;
+int n,m,xi;
+std::string command;
+passger tmp;
+std::string nm;
+int var1,var2;
+
+bool pr_insert(std::vector&lt;passger&gt;&amp; vec, passger&amp; tmp)
+{
+	psitr_t psitr;
+	if(tmp&lt;vec[0]){
+		itr-&gt;pas.insert(vec.begin(),tmp);
+		return true;
+	}else{
+		for(psitr=vec.begin();psitr!=vec.end();psitr++){
+			if(*psitr&lt;tmp){
+				continue;
+			}else{
+				vec.insert(psitr+1,tmp);
+			}
+		}
+		if(psitr==vec.end()){
+			vec.push_back(tmp);
+		}
+		return true;
+	}
+	return false;
+
+}
+   int main()
+{
+//	std::ifstream fi("1.txt"); 
+	while (std::cin&gt;&gt;n&gt;&gt;m){
+		for(int i=0;i!=n;i++){
+			std::cin&gt;&gt;xi;
+			for(int j=0;j!=xi;j++){
+				std::cin&gt;&gt;tmp.name&gt;&gt;tmp.rp;
+				unit.pas.push_back(tmp);
+			}
+			std::sort(unit.pas.begin(),unit.pas.end());
+			unit.num=i;
+			train.push_back(unit);
+			unit.pas.clear();
+		}
+
+		for(int i=0;i!=m;i++){
+			std::cin&gt;&gt;command;
+			if(command=="GETON"){
+
+				std::cin&gt;&gt;var1&gt;&gt;tmp.name&gt;&gt;tmp.rp;
+				for(itr=train.begin();itr!=train.end();itr++){
+					if(itr-&gt;num==var1-1){
+
+				         pr_insert(itr-&gt;pas,tmp);
+					}
+				}
+			}else if(command=="GETOUT"){
+
+				std::cin&gt;&gt;var1;
+				for(itr=train.begin();itr!=train.end();itr++){
+					if(itr-&gt;num==var1-1){
+						std::cout&lt;&lt;itr-&gt;pas[0].name&lt;&lt;std::endl;
+						itr-&gt;pas.erase(itr-&gt;pas.begin());
+						break;
+					}
+				}
+			}else if(command=="JOIN"){
+
+				std::cin&gt;&gt;var1&gt;&gt;var2;
+				for(itr=train.begin();itr!=train.end();itr++){
+					if(itr-&gt;num==var1-1){
+						break;
+					}
+				}
+				for(itr2=train.begin();itr2!=train.end();itr2++){
+					if(itr2-&gt;num==var2-1){
+						for(psitr=itr2-&gt;pas.begin();psitr!=itr2-&gt;pas.end();psitr++){
+							pr_insert(itr-&gt;pas,*psitr);
+						}
+						train.erase(itr2);
+						break;
+					}
+				}
+			}
+		}
+
+		train.clear();
+	}
+}</pre>
+<p>解题报告转自：http://blog.csdn.net/emiyasstar__/article/details/8907317</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-54794">
+<article class="comment" id="comment-54794">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">20122256</a></span> on <a href="http://www.acmerblog.com/hdu-1434-%E5%B9%B8%E7%A6%8F%E5%88%97%E8%BD%A6-1911.html#comment-54794" rel="nofollow"><time datetime="2015-05-21T14:20:21+00:00" pubdate="">2015年5月21日 at 下午2:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>博主您好，这是一个内容十分优秀的博客，而且界面也非常漂亮。但是为什么博客的响应速度这么慢，虽然博客的主机在国外，但是我开启VPN还是经常响应很久，再者打开某些页面经常会出现数据库连接出错的提示</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-40982">
+<article class="comment" id="comment-40982">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wizcabbit</a></span> on <a href="http://www.acmerblog.com/hdu-1434-%E5%B9%B8%E7%A6%8F%E5%88%97%E8%BD%A6-1911.html#comment-40982" rel="nofollow"><time datetime="2015-04-19T03:29:14+00:00" pubdate="">2015年4月19日 at 上午3:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>顺利测试通过了，多谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-40977">
+<article class="comment" id="comment-40977">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">JcZ</a></span> on <a href="http://www.acmerblog.com/hdu-1434-%E5%B9%B8%E7%A6%8F%E5%88%97%E8%BD%A6-1911.html#comment-40977" rel="nofollow"><time datetime="2015-03-23T19:27:42+00:00" pubdate="">2015年3月23日 at 下午7:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很赞的解答</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-40983">
+<article class="comment" id="comment-40983">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Yaunxi</a></span> on <a href="http://www.acmerblog.com/hdu-1434-%E5%B9%B8%E7%A6%8F%E5%88%97%E8%BD%A6-1911.html#comment-40983" rel="nofollow"><time datetime="2015-02-13T20:55:22+00:00" pubdate="">2015年2月13日 at 下午8:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Thanks for taking the time to examine this, I really feel strongly about it and love studying a lot more on this topic. If possible, as you acquire experience</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-54793">
+<article class="comment" id="comment-54793">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yueyanglou</a></span> on <a href="http://www.acmerblog.com/hdu-1434-%E5%B9%B8%E7%A6%8F%E5%88%97%E8%BD%A6-1911.html#comment-54793" rel="nofollow"><time datetime="2014-12-13T15:00:55+00:00" pubdate="">2014年12月13日 at 下午3:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#include &lt;stdio.h&gt;<br/>
+int main()<br/>
+{<br/>
+    int n,p,t[100]={1};<br/>
+    for(int i=1;i&lt;100;i++)<br/>
+        t <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> =i;<br/>
+    while(scanf("%d",&amp;n)&amp;&amp;n!=0){<br/>
+        if(n==1)<br/>
+        printf("Printing order for 1 pages:nSheet 1, front: Blank, 1n");<br/>
+        else {<br/>
+        if(n%4) p=n/4+1;<br/>
+        else p=n/4;<br/>
+        int q=4*p;<br/>
+        printf("Printing order for %d pages:n",n);<br/>
+        for(int i=0;i&lt;p;i++){<br/>
+            printf("Sheet %d, front: ",i+1);<br/>
+            if(q&gt;n) {printf("Blank, %dn",t[2*i+1]);}<br/>
+            else {printf("%d, %dn",q,t[2*i+1]);}<br/>
+            q–;//打印表前<br/>
+            printf("Sheet %d, back : ",i+1);<br/>
+            if(q&gt;n) {printf("%d, Blankn",t[2*i+2]);}<br/>
+            else {printf("%d, %dn",t[2*i+2],q);}<br/>
+            q–;//打印表后<br/>
+           }<br/>
+        }<br/>
+    }<br/>
+    return 0;<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-40979">
+<article class="comment" id="comment-40979">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Christmas</a></span> on <a href="http://www.acmerblog.com/hdu-1434-%E5%B9%B8%E7%A6%8F%E5%88%97%E8%BD%A6-1911.html#comment-40979" rel="nofollow"><time datetime="2014-11-22T06:39:18+00:00" pubdate="">2014年11月22日 at 上午6:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没敢用map，总怕stl用着会超时</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-40978">
+<article class="comment" id="comment-40978">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">haojunyu</a></span> on <a href="http://www.acmerblog.com/hdu-1434-%E5%B9%B8%E7%A6%8F%E5%88%97%E8%BD%A6-1911.html#comment-40978" rel="nofollow"><time datetime="2014-10-19T07:43:39+00:00" pubdate="">2014年10月19日 at 上午7:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>2的64次方是多少？ 这到底是在考什么啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-40981">
+<article class="comment" id="comment-40981">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">haojunyu</a></span> on <a href="http://www.acmerblog.com/hdu-1434-%E5%B9%B8%E7%A6%8F%E5%88%97%E8%BD%A6-1911.html#comment-40981" rel="nofollow"><time datetime="2014-07-25T02:31:38+00:00" pubdate="">2014年7月25日 at 上午2:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>博主的C++功底真是好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-40980">
+<article class="comment" id="comment-40980">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">TimeFight</a></span> on <a href="http://www.acmerblog.com/hdu-1434-%E5%B9%B8%E7%A6%8F%E5%88%97%E8%BD%A6-1911.html#comment-40980" rel="nofollow"><time datetime="2014-07-23T16:35:07+00:00" pubdate="">2014年7月23日 at 下午4:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>图像处理那题解题报告在哪儿呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-40974">
+<article class="comment" id="comment-40974">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">AE</a></span> on <a href="http://www.acmerblog.com/hdu-1434-%E5%B9%B8%E7%A6%8F%E5%88%97%E8%BD%A6-1911.html#comment-40974" rel="nofollow"><time datetime="2014-07-20T18:33:10+00:00" pubdate="">2014年7月20日 at 下午6:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不同的编译器，printf(),执行的顺序不同，所以结果也就不同，建议不要那么写</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-40975">
+<article class="comment" id="comment-40975">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">helloacm</a></span> on <a href="http://www.acmerblog.com/hdu-1434-%E5%B9%B8%E7%A6%8F%E5%88%97%E8%BD%A6-1911.html#comment-40975" rel="nofollow"><time datetime="2014-06-23T12:32:06+00:00" pubdate="">2014年6月23日 at 下午12:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真心不错，力顶作者</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-54795">
+<article class="comment" id="comment-54795">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zx123456</a></span> on <a href="http://www.acmerblog.com/hdu-1434-%E5%B9%B8%E7%A6%8F%E5%88%97%E8%BD%A6-1911.html#comment-54795" rel="nofollow"><time datetime="2014-06-09T07:01:29+00:00" pubdate="">2014年6月9日 at 上午7:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-40976">
+<article class="comment" id="comment-40976">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">_Tree</a></span> on <a href="http://www.acmerblog.com/hdu-1434-%E5%B9%B8%E7%A6%8F%E5%88%97%E8%BD%A6-1911.html#comment-40976" rel="nofollow"><time datetime="2014-03-13T10:39:49+00:00" pubdate="">2014年3月13日 at 上午10:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈呀！这个Dijkstra模板好长OwQ！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-54796">
+<article class="comment" id="comment-54796">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sgx_go</a></span> on <a href="http://www.acmerblog.com/hdu-1434-%E5%B9%B8%E7%A6%8F%E5%88%97%E8%BD%A6-1911.html#comment-54796" rel="nofollow"><time datetime="2014-01-28T07:51:23+00:00" pubdate="">2014年1月28日 at 上午7:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有一点问题。。后面动态规划的程序中<br/>
+int dp[n+1][W+1];<br/>
+会报错  提示表达式必须含有常量值。该怎么修改呢。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

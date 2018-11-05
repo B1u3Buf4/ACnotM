@@ -1,0 +1,304 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>04-07</div>
+<div class="tit"><h1 class="entry-title">扔鸡蛋问题(Egg Dropping Puzzle)</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/gaotong2055" rel="author" title="由dragon发布">dragon</a></span><span class="i1"><a href="http://www.acmerblog.com/category/offer" rel="category tag" title="查看剑指offer中的全部文章">剑指offer</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a></span><span class="i4">围观2074次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5591" href="http://www.acmerblog.com/egg-dropping-puzzle-5591.html#comments" title="《扔鸡蛋问题(Egg Dropping Puzzle)》上的评论">16 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p>据说这是一道google的面试题. 看似是一个智力题，实际是编程题。</p>
+<p>两个软硬程度一样但未知的鸡蛋，它们有可能都在一楼就摔碎，也可能从一百层楼摔下来没事。现有座36层的建筑，要你用这两个鸡蛋确定哪一层是鸡蛋可以安全落下的最高位置，可以摔碎两个鸡蛋，要求用最少的测试次数。</p>
+<pre class="brush:other">如果你从某一层楼扔下鸡蛋，它没有碎，则这个鸡蛋你可以继续用
+如果这个鸡蛋摔碎了，则你可以用来测试的鸡蛋减少一个
+所有鸡蛋的质量相同（都会在同一楼层以上摔碎）
+对于一个鸡蛋，如果其在楼层i扔下的时候摔碎了，对于任何不小于i的楼层，这个鸡蛋都会被摔碎
+如果在楼层i扔下的时候没有摔碎，则对于任何不大于i的楼层，这颗鸡蛋也不会摔碎
+从第1层扔下，鸡蛋不一定完好，从第36层扔下，鸡蛋也不一定会摔碎。</pre>
+<p>实际上，我们的终极目的是要找出连续的两层楼i，i+1。在楼层i鸡蛋没有摔碎，在楼层i+1鸡蛋碎了，问题的关键之处在于，测试之前，你并不知道鸡蛋会在哪一层摔碎，你需要找到的是一种测试方案，这种测试方案，无论鸡蛋会在哪层被摔碎，都至多只需要m次测试，在所有这些测试方案中，m的值最小。</p>
+<p>为什么是两个鸡蛋呢？如果只有一个鸡蛋，我们只能从下往上一层一层的测试。对于2个鸡蛋，比较容易想到的就是使用二分的方法，现在18层测试，如果这颗碎了，则你从第1层，到第17层，依次用第2颗鸡蛋测试。否则继续用两个鸡蛋测试上半部分的楼层，最多需要18次测试，减少了一半。看似是个不错的方法，可惜正确答案是8次。</p>
+<p>其实，对于任何连续的M层，这M层在下面或在下面，对于这M层来说需要的测试次数都没有影响。因此，可以把这个问题一般化，考虑n个鸡蛋 k层楼，记为E(n,k)。<span>解决的办法是试着从每一层掉落一个鸡蛋（从1到k）并递归计算需要在最坏的情况下需要的最小测试次数。</span>考虑用程序来穷举所有情况找到答案。</p>
+<p><strong>1) 最优子结构</strong></p>
+<p>当我们从一个楼层x扔下鸡蛋时，有可能出现两种情况（1）鸡蛋破（2）鸡蛋不破。</p>
+<p><span><span>1）鸡蛋破，那么我们只需要用剩下的鸡蛋测试 x层以下的楼层; </span><span>所以问题简化为x-1层和n-1个鸡蛋</span></span><br/>
+<span><span>2）如果鸡蛋没有破，那么我们只需要检查比x较高的楼层; </span><span>所以问题简化为 k-x 和n个鸡蛋。</span></span></p>
+<p>最优子结构可以表示为：</p>
+<pre class="brush:other">k ==&gt; 楼层数
+n ==&gt; 鸡蛋数
+  eggDrop(n, k) ==&gt;最少需要的测试次数(考虑所有情况)
+  eggDrop(n, k) = 1 + min{max(eggDrop(n - 1, x - 1), eggDrop(n, k - x)): 
+                 x 属于 {1, 2, ..., k}}</pre>
+<p>下面用递归的方法解决这个问题：</p>
+<pre class="brush:cpp"># include &lt;stdio.h&gt;
+# include &lt;limits.h&gt;
+
+int max(int a, int b) { return (a &gt; b)? a: b; }
+
+int eggDrop(int n, int k)
+{
+    // 基本情况
+    if (k == 1 || k == 0)
+        return k;
+
+    //如果只有一个鸡蛋，最坏的情况下需要k测试
+    if (n == 1)
+        return k;
+
+    int min = INT_MAX, x, res;
+
+    // 考虑从第1层到底k层扔下鸡蛋的所有情况 的最小结果
+    for (x = 1; x &lt;= k; x++)
+    {
+        res = max(eggDrop(n-1, x-1), eggDrop(n, k-x));
+        if (res &lt; min)
+            min = res;
+    }
+    return min + 1;
+}
+
+/* 测试 */
+int main()
+{
+    int n = 2, k = 10;
+    printf ("\nMinimum number of trials in worst case with %d eggs and "
+             "%d floors is %d \n", n, k, eggDrop(n, k));
+    return 0;
+}</pre>
+<p>上面的程序问题是复杂度太大 O(2^k)。如果k=36的话，基本是跑不出结果。</p>
+<p><strong>重叠子问题</strong></p>
+<p>因为上面的程序重复计算了很多子问题。以E(2,4)为例：</p>
+<pre class="brush:other">                         E(2,4)
+                           |                      
+          ------------------------------------- 
+          |             |           |         |   
+          |             |           |         |       
+      x=1/\          x=2/\      x=3/ \    x=4/ \
+        /  \           /  \       ....      ....
+       /    \         /    \
+ E(1,0)  E(2,3)     E(1,1)  E(2,2)
+          /\  /\...         /  \
+      x=1/  \               .....
+        /    \
+     E(1,0)  E(2,2)
+            /   \
+            ......
+对于2个鸡蛋，4层楼 部分递归</pre>
+<p>因此完全可以用动态规划解决。</p>
+<pre class="brush:cpp"># include &lt;stdio.h&gt;
+# include &lt;limits.h&gt;
+int max(int a, int b) { return (a &gt; b)? a: b; }
+int eggDrop(int n, int k)
+{
+    /* eggFloor[i][j] 表示对于 i个鸡蛋 j 层楼，需要的最少测试次数 */
+    int eggFloor[n+1][k+1];
+    int res;
+    int i, j, x;
+    // 初始化
+    for (i = 1; i &lt;= n; i++)
+    {
+        eggFloor[i][1] = 1;
+        eggFloor[i][0] = 0;
+    }
+
+    //只有一个鸡蛋，没得优化，需要j次
+    for (j = 1; j &lt;= k; j++)
+        eggFloor[1][j] = j;
+
+    // 最优子结构的递推
+    for (i = 2; i &lt;= n; i++)
+    {
+        for (j = 2; j &lt;= k; j++)
+        {
+            eggFloor[i][j] = INT_MAX;
+            for (x = 1; x &lt;= j; x++)
+            {
+                res = 1 + max(eggFloor[i-1][x-1], eggFloor[i][j-x]);
+                if (res &lt; eggFloor[i][j])
+                    eggFloor[i][j] = res;
+            }
+        }
+    }
+    return eggFloor[n][k];
+}
+
+/* 测试*/
+int main()
+{
+    int n = 2, k = 36;
+    printf ("\nMinimum number of trials in worst case with %d eggs and "
+             "%d floors is %d \n", n, k, eggDrop(n, k));
+    return 0;
+}</pre>
+<p>参考：http://www.geeksforgeeks.org/dynamic-programming-set-11-egg-dropping-puzzle/</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75990">
+<article class="comment" id="comment-75990">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919463775" rel="external nofollow">新用户048987</a></span> on <a href="http://www.acmerblog.com/egg-dropping-puzzle-5591.html#comment-75990" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>上次优评:Buy 0 , fuck off.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64698">
+<article class="comment" id="comment-64698">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://t.qq.com/zjczoo" rel="external nofollow">早起的菜鸟</a></span> on <a href="http://www.acmerblog.com/egg-dropping-puzzle-5591.html#comment-64698" rel="nofollow"><time datetime="2016-09-25T21:39:25+00:00" pubdate="">2016年9月25日 at 下午9:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>E(2,4)                           |                                ————————————-           |             |           |         |             |             |           |         |             x=1/          x=2/      x=3/     x=4/         /             /         ….      ….       /             /     E(1,0)  E(2,3)     E(1,1)  E(2,2)          /  /…         /        x=1/                 …..        /         E(1,0)  E(2,2)            /               ……对于2个鸡蛋，4层楼 部分递归这里的X是什么？不太懂</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30106">
+<article class="comment" id="comment-30106">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaoriqiang</a></span> on <a href="http://www.acmerblog.com/egg-dropping-puzzle-5591.html#comment-30106" rel="nofollow"><time datetime="2015-07-01T04:11:53+00:00" pubdate="">2015年7月1日 at 上午4:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>能不能说下这个是用的什么算法策略？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30107">
+<article class="comment" id="comment-30107">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mechine</a></span> on <a href="http://www.acmerblog.com/egg-dropping-puzzle-5591.html#comment-30107" rel="nofollow"><time datetime="2015-06-02T16:56:51+00:00" pubdate="">2015年6月2日 at 下午4:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>网站不错，支持一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63548">
+<article class="comment" id="comment-63548">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">BGPY</a></span> on <a href="http://www.acmerblog.com/egg-dropping-puzzle-5591.html#comment-63548" rel="nofollow"><time datetime="2015-05-21T23:10:19+00:00" pubdate="">2015年5月21日 at 下午11:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我得邮箱cwqbupt@qq.com</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30109">
+<article class="comment" id="comment-30109">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wynk0804</a></span> on <a href="http://www.acmerblog.com/egg-dropping-puzzle-5591.html#comment-30109" rel="nofollow"><time datetime="2015-03-15T14:27:41+00:00" pubdate="">2015年3月15日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>比较基础，找些自信</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30108">
+<article class="comment" id="comment-30108">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">litao</a></span> on <a href="http://www.acmerblog.com/egg-dropping-puzzle-5591.html#comment-30108" rel="nofollow"><time datetime="2015-02-17T19:55:49+00:00" pubdate="">2015年2月17日 at 下午7:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>原来欧几里德定理应用这么多</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58726">
+<article class="comment" id="comment-58726">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">feifei003603</a></span> on <a href="http://www.acmerblog.com/egg-dropping-puzzle-5591.html#comment-58726" rel="nofollow"><time datetime="2015-01-30T08:39:10+00:00" pubdate="">2015年1月30日 at 上午8:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>输入样例作为一个整体输入，带回车</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30110">
+<article class="comment" id="comment-30110">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jhxxszy</a></span> on <a href="http://www.acmerblog.com/egg-dropping-puzzle-5591.html#comment-30110" rel="nofollow"><time datetime="2014-12-15T00:47:53+00:00" pubdate="">2014年12月15日 at 上午12:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为\n\n</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63547">
+<article class="comment" id="comment-63547">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sharp</a></span> on <a href="http://www.acmerblog.com/egg-dropping-puzzle-5591.html#comment-63547" rel="nofollow"><time datetime="2014-10-11T04:58:14+00:00" pubdate="">2014年10月11日 at 上午4:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，值得借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30111">
+<article class="comment" id="comment-30111">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tzf888888</a></span> on <a href="http://www.acmerblog.com/egg-dropping-puzzle-5591.html#comment-30111" rel="nofollow"><time datetime="2014-09-08T15:17:17+00:00" pubdate="">2014年9月8日 at 下午3:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>后面的掩码变量部分乍一看比较难理解，其实就是把32位按照一个整体来看待。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30102">
+<article class="comment" id="comment-30102">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">la0bei</a></span> on <a href="http://www.acmerblog.com/egg-dropping-puzzle-5591.html#comment-30102" rel="nofollow"><time datetime="2014-09-07T18:02:06+00:00" pubdate="">2014年9月7日 at 下午6:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一题是不是可以这样想，生了n孩子的家庭等价于n个家庭各生了一个1个孩子，这样最后男女的比例还是1:1</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30105">
+<article class="comment" id="comment-30105">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zcmu_sls</a></span> on <a href="http://www.acmerblog.com/egg-dropping-puzzle-5591.html#comment-30105" rel="nofollow"><time datetime="2014-08-26T11:23:47+00:00" pubdate="">2014年8月26日 at 上午11:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>51行错了，改为：void Union(struct subset subsets[], int x, int y)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30101">
+<article class="comment" id="comment-30101">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">winter</a></span> on <a href="http://www.acmerblog.com/egg-dropping-puzzle-5591.html#comment-30101" rel="nofollow"><time datetime="2014-08-24T13:36:02+00:00" pubdate="">2014年8月24日 at 下午1:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>懂了，谢谢啦</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30103">
+<article class="comment" id="comment-30103">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">silianbo</a></span> on <a href="http://www.acmerblog.com/egg-dropping-puzzle-5591.html#comment-30103" rel="nofollow"><time datetime="2014-08-17T05:47:22+00:00" pubdate="">2014年8月17日 at 上午5:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>printf这个函数在计算的时候是从右到左，打印是从左到右。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30104">
+<article class="comment" id="comment-30104">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">895350909</a></span> on <a href="http://www.acmerblog.com/egg-dropping-puzzle-5591.html#comment-30104" rel="nofollow"><time datetime="2014-06-08T15:40:50+00:00" pubdate="">2014年6月8日 at 下午3:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是什么编译器啊，不通过</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

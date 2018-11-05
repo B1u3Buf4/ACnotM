@@ -1,0 +1,449 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>05-23</div>
+<div class="tit"><h1 class="entry-title">HDU 4316-Mission Impossible-计算几何-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/geometry/convex" rel="category tag" title="查看凸包问题中的全部文章">凸包问题</a>, <a href="http://www.acmerblog.com/category/geometry" rel="category tag" title="查看计算几何中的全部文章">计算几何</a></span><span class="i4">围观124次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7327" href="http://www.acmerblog.com/hdu-4316-mission-impossible-7327.html#comments" title="《HDU 4316-Mission Impossible-计算几何-[解题报告]HOJ》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Mission Impossible</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Flabby is an agent of CIA. At present, he has received a top-secret mission which is theft of military intelligence. After careful investigation, there is only one question to consider. In original plan, Flabby has to go through a room. In this room, there are three video cameras on the ceiling. Every video camera can photograph in any perspective, but it cannot move. It brings great difficulties to Flabby. Fortunately, there is a big machine on the ground in the room, which can be used by Flabby. Flabby has known the information about three cameras and the big machine. As his partner, your mission is to help him find the size of security zone in order to help Flabby implements the mission successfully. The size of security zone is the area of ground where cannot be photographed by cameras. <br/>The ground is represented as by z = 0. The ceiling is represented as z = 100. The machine is described as a convex polyhedron. You can always assume that the machine is placed on the ground and don’t contact with ceiling. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+There are several test cases in the input files. For each test case, the first line is an integer N (N &lt;= 100) which represents the number of points of convex polyhedron which represents the machine. Each of the following N lines contains three real numbers xi, yi, zi, which are the points’ coordinate of convex polyhedron. The last three lines describe the cameras position. Each line contains two real number x, y which represents the camera’s coordinate on the ceiling. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+There are several test cases in the input files. For each test case, the first line is an integer N (N &lt;= 100) which represents the number of points of convex polyhedron which represents the machine. Each of the following N lines contains three real numbers xi, yi, zi, which are the points’ coordinate of convex polyhedron. The last three lines describe the cameras position. Each line contains two real number x, y which represents the camera’s coordinate on the ceiling.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+4
+-1 0 0
+0 0 0
+0 1 0
+0 0 1
+-2 2
+-1 2
+-2 1</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+0.51</pre>
+<p> <!-- problem end --></p>
+<p>题目模型可以抽象为：有三个点光源，一个放在z = 0 平面的凸多面体，求三个点光源照射凸多面体在z = 0平面上的影子的公共部分。</p>
+<p>对于每个点光源，它在z = 0平面上产生的影子都是一个凸多边形，三个凸多边形的交集即为所求。</p>
+<p>凸多边形求法：每个点光源和凸多面体的每个点进行连线，和z = 0平面求交点，对于交点求凸包，即为所求凸多边形。</p>
+<p>三个凸多边形求交集：半平面交<a>http://acm.hdu.edu.cn/showproblem.php?pid=4316</a></p>
+<pre class="brush:cpp" name="code">#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+#include &lt;cmath&gt;
+#include &lt;algorithm&gt;
+using namespace std;
+const int MAXN = 1001;
+const double eps = 1e-12;
+
+int dblcmp(double x)
+{
+if(fabs(x) &lt; eps)
+{
+return 0;
+}
+return x &gt; 0 ? 1 : -1;
+}
+
+struct Point
+{
+double x, y, z;
+inline void input2d()
+{
+scanf("%lf%lf",&amp;x,&amp;y);
+z = 100.0;
+}
+inline void input3d()
+{
+scanf("%lf%lf%lf",&amp;x,&amp;y,&amp;z);
+}
+bool operator &lt; (const Point &amp;point) const
+{
+if(y == point.y)
+{
+return x &lt; point.x;
+}
+return y &lt; point.y;
+}
+}machine[MAXN], light[3], shadow[3][MAXN], final[MAXN * 3];
+
+int n, shadowNumber[3], shadowPoly[3][MAXN], shadowPolyTop[3], finalNumber;
+
+double operator * (const Point &amp;x, const Point &amp;y)
+{
+return x.x * y.y - x.y * y.x;
+}
+
+Point operator - (const Point &amp;x, const Point &amp;y)
+{
+Point r;
+r.x = x.x - y.x;
+r.y = x.y - y.y;
+return r;
+}
+
+bool operator == (const Point &amp;a, const Point &amp;b)
+{
+return fabs(a.x - b.x) &lt; eps &amp;&amp; fabs(a.y - b.y) &lt; eps;
+}
+
+struct Line
+{
+Point a, b;
+double ang;
+}line[MAXN*3], stack[MAXN*3];
+int lineNumber, stackTop;
+
+bool operator &lt; (const Line &amp;x, const Line &amp;y)
+{
+if(fabs(x.ang - y.ang) &lt; eps)
+{
+return (y.b - x.a) * (x.b - y.a) &gt; eps;
+}
+return x.ang &lt; y.ang;
+}
+
+Point operator * (const Line &amp;x, const Line &amp;y)
+{
+double a1 = (y.b - x.a) * (y.a - x.a);
+double a2 = (y.a - x.b) * (y.b - x.b);
+Point r;
+r.x = (x.a.x * a2 + x.b.x * a1) / (a1 + a2);
+r.y = (x.a.y * a2 + x.b.y * a1) / (a1 + a2);
+return r;
+}
+
+bool mult(const Point &amp;s, const Point &amp;e, const Point &amp;o)
+{
+return (s.x - o.x) * (e.y - o.y) &gt;= (e.x - o.x) * (s.y - o.y);
+}
+
+void graham(Point p[], int n, int res[], int &amp;top)
+{
+int len;
+top = 1;
+sort(p, p + n);
+if(n == 0) return;
+res[0] = 0;
+if(n == 1) return;
+res[1] = 1;
+if(n == 2) return;
+res[2] = 2;
+for(int i=2;i&lt;n;++i)
+{
+while(top &amp;&amp; mult(p[i], p[res[top]], p[res[top-1]]))
+{
+-- top;
+}
+res[++top] = i;
+}
+len = top;
+res[++top] = n - 2;
+for(int i=n-3;i&gt;=0;--i)
+{
+while(top!=len &amp;&amp; mult(p[i], p[res[top]], p[res[top-1]]))
+{
+-- top;
+}
+res[++top] = i;
+}
+}
+
+double cross(Point &amp;a, Point &amp;b, Point &amp;o)
+{
+return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+}
+
+bool judgeOut(const Line &amp;x, const Point &amp;p)
+{
+return (p - x.a) * (x.b - x.a) &gt; eps;
+}
+
+bool isParellel(const Line &amp;x, const Line &amp;y)
+{
+return fabs((x.b - x.a) * (y.b - y.a)) &lt; eps;
+}
+
+double getArea(Point p[], int n)
+{
+double ans = 0.0;
+for(int i=2;i&lt;n;++i)
+{
+ans += fabs(cross(p[i], p[i-1], p[0]));
+}
+return ans * 0.5;
+}
+
+void halfPlane()
+{
+finalNumber = 0;
+sort(line, line + lineNumber);
+stackTop = 1;
+int bottom = 0, tmp = 1;
+for(int i=1;i&lt;lineNumber;++i)
+{
+if(line[i].ang - line[i-1].ang &gt; eps)
+{
+line[tmp++] = line[i];
+}
+}
+lineNumber = tmp;
+stack[0] = line[0], stack[1] = line[1];
+for(int i=2;i&lt;lineNumber;++i)
+{
+if(isParellel(stack[stackTop], stack[stackTop-1]) || isParellel(stack[bottom], stack[bottom+1]))
+{
+return;
+}
+while(bottom &lt; stackTop &amp;&amp; judgeOut(line[i], stack[stackTop] * stack[stackTop - 1]))
+{
+-- stackTop;
+}
+while(bottom &lt; stackTop &amp;&amp; judgeOut(line[i], stack[bottom] * stack[bottom + 1]))
+{
+++ bottom;
+}
+stack[++stackTop] = line[i];
+}
+while(bottom &lt; stackTop &amp;&amp; judgeOut(stack[bottom], stack[stackTop] * stack[stackTop - 1]))
+{
+-- stackTop;
+}
+while(bottom &lt; stackTop &amp;&amp; judgeOut(stack[stackTop], stack[bottom] * stack[bottom + 1]))
+{
+++ bottom;
+}
+if(stackTop &lt;= bottom + 1)
+{
+return;
+}
+stack[++stackTop] = stack[bottom];
+for(int i=bottom;i&lt;stackTop;++i)
+{
+final[finalNumber ++] = stack[i] * stack[i+1];
+}
+}
+
+int main()
+{
+while(~scanf("%d", &amp;n))
+{
+for(int i=0;i&lt;n;++i)
+{
+machine[i].input3d();
+}
+for(int i=0;i&lt;3;++i)
+{
+light[i].input2d();
+}
+lineNumber = 0;
+for(int i=0;i&lt;3;++i)
+{
+shadowNumber[i] = 0;
+for(int j=0;j&lt;n;++j)
+{
+shadow[i][j].x = 100.0 * (light[i].x - machine[j].x) / (machine[j].z - 100.0) + light[i].x;
+shadow[i][j].y = 100.0 * (light[i].y - machine[j].y) / (machine[j].z - 100.0) + light[i].y;
+}
+graham(shadow[i], n, shadowPoly[i], shadowPolyTop[i]);
+shadowPoly[i][shadowPolyTop[i]] = shadowPoly[i][0];
+for(int j=0;j&lt;shadowPolyTop[i];++j)
+{
+line[lineNumber].a = shadow[i][shadowPoly[i][j]];
+line[lineNumber].b = shadow[i][shadowPoly[i][j+1]];
+line[lineNumber].ang = atan2(line[lineNumber].b.y - line[lineNumber].a.y,
+line[lineNumber].b.x - line[lineNumber].a.x);
+++ lineNumber;
+}
+}
+halfPlane();
+printf("%.2lf\n", getArea(final, finalNumber));
+}
+return 0;
+}
+</pre>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/julyana_lin/article/details/8086439</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-98814">
+<article class="comment" id="comment-98814">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515019" rel="external nofollow">新用户974527</a></span> on <a href="http://www.acmerblog.com/hdu-4316-mission-impossible-7327.html#comment-98814" rel="nofollow"><time datetime="2017-04-20T14:27:49+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>明明喜欢，却不能在一起，多么的悲哀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98813">
+<article class="comment" id="comment-98813">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515019" rel="external nofollow">新用户974527</a></span> on <a href="http://www.acmerblog.com/hdu-4316-mission-impossible-7327.html#comment-98813" rel="nofollow"><time datetime="2017-04-20T14:27:49+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>明明喜欢，却不能在一起，多么的悲哀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98812">
+<article class="comment" id="comment-98812">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515019" rel="external nofollow">新用户974527</a></span> on <a href="http://www.acmerblog.com/hdu-4316-mission-impossible-7327.html#comment-98812" rel="nofollow"><time datetime="2017-04-20T14:27:49+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>明明喜欢，却不能在一起，多么的悲哀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98811">
+<article class="comment" id="comment-98811">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515019" rel="external nofollow">新用户974527</a></span> on <a href="http://www.acmerblog.com/hdu-4316-mission-impossible-7327.html#comment-98811" rel="nofollow"><time datetime="2017-04-20T14:27:49+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>明明喜欢，却不能在一起，多么的悲哀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98810">
+<article class="comment" id="comment-98810">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515019" rel="external nofollow">新用户974527</a></span> on <a href="http://www.acmerblog.com/hdu-4316-mission-impossible-7327.html#comment-98810" rel="nofollow"><time datetime="2017-04-20T14:27:49+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>明明喜欢，却不能在一起，多么的悲哀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98809">
+<article class="comment" id="comment-98809">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515019" rel="external nofollow">新用户974527</a></span> on <a href="http://www.acmerblog.com/hdu-4316-mission-impossible-7327.html#comment-98809" rel="nofollow"><time datetime="2017-04-20T14:27:49+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>明明喜欢，却不能在一起，多么的悲哀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98808">
+<article class="comment" id="comment-98808">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515019" rel="external nofollow">新用户974527</a></span> on <a href="http://www.acmerblog.com/hdu-4316-mission-impossible-7327.html#comment-98808" rel="nofollow"><time datetime="2017-04-20T14:27:49+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>明明喜欢，却不能在一起，多么的悲哀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98807">
+<article class="comment" id="comment-98807">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515019" rel="external nofollow">新用户974527</a></span> on <a href="http://www.acmerblog.com/hdu-4316-mission-impossible-7327.html#comment-98807" rel="nofollow"><time datetime="2017-04-20T14:27:49+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>明明喜欢，却不能在一起，多么的悲哀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98806">
+<article class="comment" id="comment-98806">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515019" rel="external nofollow">新用户974527</a></span> on <a href="http://www.acmerblog.com/hdu-4316-mission-impossible-7327.html#comment-98806" rel="nofollow"><time datetime="2017-04-20T14:27:49+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>明明喜欢，却不能在一起，多么的悲哀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98805">
+<article class="comment" id="comment-98805">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515019" rel="external nofollow">新用户974527</a></span> on <a href="http://www.acmerblog.com/hdu-4316-mission-impossible-7327.html#comment-98805" rel="nofollow"><time datetime="2017-04-20T14:27:49+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>明明喜欢，却不能在一起，多么的悲哀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98804">
+<article class="comment" id="comment-98804">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515019" rel="external nofollow">新用户974527</a></span> on <a href="http://www.acmerblog.com/hdu-4316-mission-impossible-7327.html#comment-98804" rel="nofollow"><time datetime="2017-04-20T14:27:49+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>明明喜欢，却不能在一起，多么的悲哀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98803">
+<article class="comment" id="comment-98803">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515019" rel="external nofollow">新用户974527</a></span> on <a href="http://www.acmerblog.com/hdu-4316-mission-impossible-7327.html#comment-98803" rel="nofollow"><time datetime="2017-04-20T14:27:49+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>明明喜欢，却不能在一起，多么的悲哀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68551">
+<article class="comment" id="comment-68551">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533325" rel="external nofollow">新用户960601</a></span> on <a href="http://www.acmerblog.com/hdu-4316-mission-impossible-7327.html#comment-68551" rel="nofollow"><time datetime="2017-04-11T07:10:15+00:00" pubdate="">2017年4月11日 at 上午7:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>明确的回答你“会”，从果冻态到介于液化与气化间的状态</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68550">
+<article class="comment" id="comment-68550">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533325" rel="external nofollow">新用户960601</a></span> on <a href="http://www.acmerblog.com/hdu-4316-mission-impossible-7327.html#comment-68550" rel="nofollow"><time datetime="2017-04-11T07:10:15+00:00" pubdate="">2017年4月11日 at 上午7:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>明确的回答你“会”，从果冻态到介于液化与气化间的状态</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68549">
+<article class="comment" id="comment-68549">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533325" rel="external nofollow">新用户960601</a></span> on <a href="http://www.acmerblog.com/hdu-4316-mission-impossible-7327.html#comment-68549" rel="nofollow"><time datetime="2017-04-11T07:10:15+00:00" pubdate="">2017年4月11日 at 上午7:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>明确的回答你“会”，从果冻态到介于液化与气化间的状态</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

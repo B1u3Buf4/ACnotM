@@ -1,0 +1,351 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>02-14</div>
+<div class="tit"><h1 class="entry-title">hdu 2715 Herd Sums-网络流-[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph/shortest-path" rel="category tag" title="查看最短路径中的全部文章">最短路径</a>, <a href="http://www.acmerblog.com/category/graph/flow" rel="category tag" title="查看网络流中的全部文章">网络流</a></span><span class="i4">围观822次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4315" href="http://www.acmerblog.com/hdu-2715-herd-sums-4315.html#comments" title="《hdu 2715 Herd Sums-网络流-[解题报告]C++》上的评论">13 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Herd Sums</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+The cows in farmer John’s herd are numbered and branded with consecutive integers from 1 to N (1 &lt;= N &lt;= 10,000,000). When the cows come to the barn for milking, they always come in sequential order from 1 to N.
+<p>Farmer John, who majored in mathematics in college and loves numbers, often looks for patterns. He has noticed that when he has exactly 15 cows in his herd, there are precisely four ways that the numbers on any set of one or more consecutive cows can add up to 15 (the same as the total number of cows). They are: 15, 7+8, 4+5+6, and 1+2+3+4+5.</p>
+<p>When the number of cows in the herd is 10, the number of ways he can sum consecutive cows and get 10 drops to 2: namely 1+2+3+4 and 10.</p>
+<p>Write a program that will compute the number of ways farmer John can sum the numbers on consecutive cows to equal N. Do not use precomputation to solve this problem. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+* Line 1: A single integer: N </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+* Line 1: A single integer: N</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+15</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+4</pre>
+<p> <!-- problem end --></p>
+<p><span style="font-size:18px">跟方格取数有点类似，只是有了高度的限制。</span></p>
+<p><span style="font-size:18px">建模方法：</span></p>
+<p><span style="font-size:18px">1<span style="font-size:18px">、</span>将每个格子i拆成两个点i<span style="font-size:18px">‘</span>，i<span style="font-size:18px">”</span>，加边(i’,i”,1,-Vi)<span style="font-size:18px"><br/>
+<span style="font-size:18px">-&gt;</span></span> 保证单元内的宝物只能取一次<span style="font-size:18px">。</span></span></p>
+<p><span style="font-size:18px">2、加边(i’,i”,inf,0),(s,i’,k,0)<span style="font-size:18px"> -&gt;<br/>
+</span>保证一开始可以从任意高度出发。<span style="font-size:18px">(注意源点s到i’的容量不能为inf)</span></span></p>
+<p><span style="font-size:18px">3、对相邻的四个格子j，若Hi &gt; Hj则加边(i”,j’,inf,0)<span style="font-size:18px"> -&gt;<br/>
+</span>保证可以向相邻的格子移动。</span></p>
+<p><span style="font-size:18px">4、若格子i在边界上则加边(i”,t,inf,0)<span style="font-size:18px"> -<span style="font-size:18px">&gt;<br/>
+</span></span>在边界时结束旅行。</span></p>
+<p><span style="font-size:18px">最后需要限制增广次数小于等于k，做一次最小费用流即可。</span></p>
+<p><span style="font-size:18px">代码<span style="font-size:18px">：</span></span></p>
+<p><span style="font-size:18px"><span style="font-size:18px"></span></span></p>
+<pre class="brush:cpp ">#include&lt;cstdio&gt;
+#include&lt;cstring&gt;
+using namespace std;
+const int inf = 0x3f3f3f3f;
+const int maxn = 50 + 10;
+const int maxpoint = 10000;
+const int maxm = 200000;
+struct Edge
+{
+	int d,c,w,pos;
+	int next;
+}E[maxm];
+int w[maxn][maxn],h[maxn][maxn];
+int pre[maxpoint],dis[maxpoint],head[maxpoint];
+int que[maxm];
+bool vis[maxpoint];
+int NE,T;
+int n,m,k;
+int s,t;
+void init()
+{
+	freopen("hoj2715.in","r",stdin);
+	freopen("hoj2715.out","w",stdout);
+}
+
+void insert(int u,int v,int c,int w)
+{
+	E[NE].c = c;E[NE].pos = v;E[NE].d = u;E[NE].w = w;
+	E[NE].next = head[u];head[u] = NE++;
+    E[NE].c = 0;E[NE].pos = u;E[NE].d = v;E[NE].w = -w;
+	E[NE].next = head[v];head[v] = NE++;	
+}
+
+void build_map()
+{
+	int tmp = n * n;
+	for(int i = 1;i &lt;= n;i++)
+	{
+		for(int j = 1;j &lt;= n;j++)
+		{
+			insert((i - 1) * n + j,((i - 1) * n + j) + tmp,1,-w[i][j]);
+			insert((i - 1) * n + j,((i - 1) * n + j) + tmp,inf,0);
+			insert(s,(i - 1) * n + j,k,0);
+			if(i &gt; 1 &amp;&amp; h[i][j] &gt; h[i-1][j])insert(((i - 1) * n + j) + tmp,(i - 2) * n + j,inf,0);
+			if(i &lt; n &amp;&amp; h[i][j] &gt; h[i+1][j])insert(((i - 1) * n + j) + tmp,i * n + j,inf,0);
+			if(j &gt; 1 &amp;&amp; h[i][j] &gt; h[i][j-1])insert(((i - 1) * n + j) + tmp,(i - 1) * n + j - 1,inf,0);
+			if(j &lt; n &amp;&amp; h[i][j] &gt; h[i][j+1])insert(((i - 1) * n + j) + tmp,(i - 1) * n + j + 1,inf,0);
+			if(i == 1 || i == n || j == 1 || j == n)insert(((i - 1) * n + j) + tmp,t,inf,0);
+		}
+	}
+}
+
+int spfa()
+{
+	int l,r;
+	memset(pre,-1,sizeof(pre));
+	memset(vis,0,sizeof(vis));
+	memset(dis,0x3f,sizeof(dis));
+	dis[s] = 0;
+	l = 0,r = 0;
+	que[r++] = s;
+	vis[s] = true;
+	while(l &lt; r)
+	{
+		int u = que[l++];l %= maxm;
+		vis[u] = false;
+		for(int i = head[u];i != -1;i = E[i].next)
+		{
+			int v = E[i].pos;
+			if(E[i].c &amp;&amp; dis[u] + E[i].w &lt; dis[v])
+			{
+				dis[v] = dis[u] + E[i].w;
+				pre[v] = i;
+				if(!vis[v])
+				{
+					vis[v] = true;
+					que[r++] = v;r %= maxm;
+				}
+			}
+		}
+	}
+	if(dis[t] == inf)return false;
+	else return true;
+}
+
+int MCMF()
+{
+	int ret = 0,flow = 0,cnt = 0;
+	while(spfa())
+	{
+		int u = t;
+		int min = inf;
+		while(u != s)
+		{
+			if(E[pre[u]].c &lt; min)min = E[pre[u]].c;
+			u = E[pre[u]].d;
+		}
+		flow += min;
+		u = t;
+		while(u != s)
+		{
+			E[pre[u]].c -= min;
+			E[pre[u]^1].c += min;
+			u = E[pre[u]].d;
+		}
+		ret += dis[t];
+		cnt++;
+		if(cnt == k)break;
+	}
+	return ret;
+}
+
+void solve()
+{
+	memset(E,0,sizeof(E));
+	memset(head,-1,sizeof(head));
+	NE = 0,s = 0,t = n * n * 2 + 1;
+	build_map();
+	printf("%d\n",-MCMF());
+}
+
+void readdata()
+{
+	scanf("%d",&amp;T);
+	while(T--)
+	{
+		memset(w,0,sizeof(w));
+		memset(h,0,sizeof(h));
+		scanf("%d%d",&amp;n,&amp;k);
+		for(int i = 1;i &lt;= n;i++)
+		{
+			for(int j = 1;j &lt;= n;j++)
+			{
+				scanf("%d",&amp;w[i][j]);
+			}
+		}
+		for(int i = 1;i &lt;= n;i++)
+		{
+			for(int j = 1;j &lt;= n;j++)
+			{
+				scanf("%d",&amp;h[i][j]);
+			}
+		}
+		solve();
+	}
+}
+
+int main()
+{
+	init();
+	readdata();
+	return 0;
+}</pre>
+<p>解题转自：http://blog.csdn.net/njlcazl/article/details/8733539</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-82085">
+<article class="comment" id="comment-82085">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919464986" rel="external nofollow">新用户971562</a></span> on <a href="http://www.acmerblog.com/hdu-2715-herd-sums-4315.html#comment-82085" rel="nofollow"><time datetime="2017-04-12T19:45:08+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>坚持看完，确实后面质量不如前几季咯</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46480">
+<article class="comment" id="comment-46480">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zjd1988</a></span> on <a href="http://www.acmerblog.com/hdu-2715-herd-sums-4315.html#comment-46480" rel="nofollow"><time datetime="2015-07-16T09:09:00+00:00" pubdate="">2015年7月16日 at 上午9:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有两个重复的话结果是正确的，但解法不够严谨，后面重复的覆盖掉前面的，由于题目数据限制也比较严，所以能提交通过。已更新算法</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-46478">
+<article class="comment" id="comment-46478">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">WalkCoder</a></span> on <a href="http://www.acmerblog.com/hdu-2715-herd-sums-4315.html#comment-46478" rel="nofollow"><time datetime="2015-07-07T11:00:02+00:00" pubdate="">2015年7月7日 at 上午11:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正解，我的方法占用的内存更多些</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-24628">
+<article class="comment" id="comment-24628">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ozhfo</a></span> on <a href="http://www.acmerblog.com/hdu-2715-herd-sums-4315.html#comment-24628" rel="nofollow"><time datetime="2015-07-06T17:37:11+00:00" pubdate="">2015年7月6日 at 下午5:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>代码不错，赞一个！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-24632">
+<article class="comment" id="comment-24632">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yesMan</a></span> on <a href="http://www.acmerblog.com/hdu-2715-herd-sums-4315.html#comment-24632" rel="nofollow"><time datetime="2015-06-17T09:27:21+00:00" pubdate="">2015年6月17日 at 上午9:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈呀！这个模板好长OwQ！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-24626">
+<article class="comment" id="comment-24626">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">warriorbrant</a></span> on <a href="http://www.acmerblog.com/hdu-2715-herd-sums-4315.html#comment-24626" rel="nofollow"><time datetime="2015-05-03T05:17:39+00:00" pubdate="">2015年5月3日 at 上午5:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真心不错，力顶作者</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-24630">
+<article class="comment" id="comment-24630">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">raymanshf</a></span> on <a href="http://www.acmerblog.com/hdu-2715-herd-sums-4315.html#comment-24630" rel="nofollow"><time datetime="2015-04-19T05:47:32+00:00" pubdate="">2015年4月19日 at 上午5:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46477">
+<article class="comment" id="comment-46477">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">anthozoan77</a></span> on <a href="http://www.acmerblog.com/hdu-2715-herd-sums-4315.html#comment-46477" rel="nofollow"><time datetime="2015-03-21T07:07:41+00:00" pubdate="">2015年3月21日 at 上午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-24631">
+<article class="comment" id="comment-24631">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Trenson</a></span> on <a href="http://www.acmerblog.com/hdu-2715-herd-sums-4315.html#comment-24631" rel="nofollow"><time datetime="2015-01-27T11:49:13+00:00" pubdate="">2015年1月27日 at 上午11:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有点意思</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-24629">
+<article class="comment" id="comment-24629">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hunangangli</a></span> on <a href="http://www.acmerblog.com/hdu-2715-herd-sums-4315.html#comment-24629" rel="nofollow"><time datetime="2014-12-08T08:50:22+00:00" pubdate="">2014年12月8日 at 上午8:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>代码是给出了，但是解析的也太不清晰了吧！如 13 abejkcfghid jkebfghicda<br/>
+第一步拆分为 三部分 (bejk, cfghi, d) * C(13,3)，为什么要这样拆分，原则是什么？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-46479">
+<article class="comment" id="comment-46479">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Rosamondwu</a></span> on <a href="http://www.acmerblog.com/hdu-2715-herd-sums-4315.html#comment-46479" rel="nofollow"><time datetime="2014-11-05T22:12:43+00:00" pubdate="">2014年11月5日 at 下午10:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我觉得是D哎……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-24627">
+<article class="comment" id="comment-24627">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hunangangli</a></span> on <a href="http://www.acmerblog.com/hdu-2715-herd-sums-4315.html#comment-24627" rel="nofollow"><time datetime="2014-10-31T23:03:53+00:00" pubdate="">2014年10月31日 at 下午11:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给力，赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-24625">
+<article class="comment" id="comment-24625">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yesMan</a></span> on <a href="http://www.acmerblog.com/hdu-2715-herd-sums-4315.html#comment-24625" rel="nofollow"><time datetime="2014-07-10T08:09:09+00:00" pubdate="">2014年7月10日 at 上午8:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>int L[m+1][n+1];这样定义出错，这个在gcc上可以编译通过 在VS上不行 应该改为new 或者vector</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

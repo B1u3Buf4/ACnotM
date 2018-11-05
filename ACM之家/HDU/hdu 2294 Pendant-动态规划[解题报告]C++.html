@@ -1,0 +1,325 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>01-05</div>
+<div class="tit"><h1 class="entry-title">hdu 2294 Pendant-动态规划[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a></span><span class="i4">围观696次</span><span class="i3"><a class="ds-thread-count" data-thread-key="3524" href="http://www.acmerblog.com/hdu-2294-pendant-3524.html#comments" title="《hdu 2294 Pendant-动态规划[解题报告]C++》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Pendant </h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+On Saint Valentine’s Day, Alex imagined to present a special pendant to his girl friend made by K kind of pearls. The pendant is actually a string of pearls, and its length is defined as the number of pearls in it. As is known to all, Alex is very rich, and he has N pearls of each kind. Pendant can be told apart according to permutation of its pearls. Now he wants to know how many kind of pendant can he made, with length between 1 and N. Of course, to show his wealth, every kind of pendant must be made of K pearls.<br/>Output the answer taken modulo 1234567891. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input consists of multiple test cases. The first line contains an integer T indicating the number of test cases. Each case is on one line, consisting of two integers N and K, separated by one space.<br/>Technical Specification
+<p>1 ≤ T ≤ 10<br/>1 ≤ N ≤ 1,000,000,000<br/>1 ≤ K ≤ 30 </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input consists of multiple test cases. The first line contains an integer T indicating the number of test cases. Each case is on one line, consisting of two integers N and K, separated by one space.<br/>Technical Specification
+<p>1 ≤ T ≤ 10<br/>1 ≤ N ≤ 1,000,000,000<br/>1 ≤ K ≤ 30</p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+2 1
+3 2</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+8</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp">/*
+   本题从表面上看是排列组合题，但要推出公式还是有相当难度。所以想到用DP来做。
+   方程可通过枚举几种情况来推出。
+   以F[i][j]表示长度为i的pendant，用了j种珍珠，所构成的方案数，则F[i][j]=F[i-1][j]*j+F[i-1][j-1]*(k-j+1)。
+   结果就是F[1][k]+…+F[n][k]。但注意到N的范围很大，申请那么大的数组会MLE。
+   注意到当前状态只与上一个状态有关，那么可以使用循环数组来，并累加上每个F[I][K]的方法来做。
+   但这样的复杂度为O（NK），会TLE。
+   优化的方法是使用矩阵来做。将F[i-1]到F[i]的转移用矩阵来描述，相当于一个k*k的线性变换矩阵。
+   因此F[i]=A*F[i-1]，这里A是转移矩阵，即F[i]=Ai-1*F[1]，
+   所以F[1]+…+F[n]=A0*F[1]+…+An-1*F[1]=（E+A+A2+…+An-1)*F[1]。
+*/
+#include &lt;iostream&gt;
+#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+#include &lt;cmath&gt;
+using namespace std;
+ 
+const int mod = 1234567891;
+const int Max = 33;
+struct Mat
+{
+    __int64 Matrix[Max][Max];
+    void clear()
+    {
+        memset(Matrix, 0, sizeof(Matrix));
+    }
+}e, init, ans, temp;
+ 
+int n, k;
+ 
+Mat mul(Mat a, Mat b)
+{
+    int i, j, k;
+    Mat c;
+ 
+    c.clear();
+    for(i=0; i&lt;Max; i++)
+    {
+        for(k=0; k&lt;Max; k++)
+        {
+            if(a.Matrix[i][k])
+            {
+                for(j=0; j&lt;Max; j++)
+                {
+                    c.Matrix[i][j] = (c.Matrix[i][j] + a.Matrix[i][k] * b.Matrix[k][j])%mod;
+                    if(c.Matrix[i][j] &gt;= mod)
+                        c.Matrix[i][j] %= mod;
+                }
+            }
+        }
+    }
+    return c;
+}
+ 
+void solve(int p) //递归二分算和式:A^1+A^2+...+A^N
+{
+    if(p == 0)
+        return;
+    solve(p/2);
+ 
+    int i, j;
+    for(i=0; i&lt;=k; ++i)
+    {
+        for(j=0; j&lt;=k; ++j)
+            temp.Matrix[i][j] = e.Matrix[i][j];
+    }
+ 
+    for(i=0; i&lt;=k; ++i) //D=B+E
+    {
+        temp.Matrix[i][i] = (temp.Matrix[i][i] + 1)%mod;
+    }
+ 
+    ans = mul(ans, temp); //C=C*D=C*B+C;
+    e = mul(e, e);  //B=B*B;
+ 
+    if(p&amp;1)
+    {
+        e = mul(e, init); //B=B*A
+        for(i=0; i&lt;=k; ++i) //C=C+B
+        {
+            for(j=0; j&lt;=k; ++j)
+                ans.Matrix[i][j] = (ans.Matrix[i][j] + e.Matrix[i][j])%mod;
+        }
+    }
+}
+ 
+int main()
+{
+    int i, j, t;
+    scanf("%d",&amp;t);
+    while(t--)
+    {
+        scanf("%d %d", &amp;n, &amp;k);
+        init.clear();
+        ans.clear();
+        temp.clear();
+ 
+        for(i=0; i&lt;Max; i++)
+        {
+            for(j=0; j&lt;Max; j++)
+                e.Matrix[i][j] = (i==j);
+        }
+ 
+        //F[i][j]=F[i-1][j]*j+F[i-1][j-1]*(k-j+1)
+        for(i=1; i&lt;=k; i++)
+        {
+            init.Matrix[i-1][i] = (k-i+1);
+            init.Matrix[i][i] = i;
+        }
+ 
+        solve(n);
+        if(ans.Matrix[0][k] &lt; 0)
+            ans.Matrix[0][k] += mod;
+        printf("%I64d\n", ans.Matrix[0][k]);
+    }
+    return 0;
+}</pre>
+<p> </p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-85958">
+<article class="comment" id="comment-85958">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919464411" rel="external nofollow">新用户945416</a></span> on <a href="http://www.acmerblog.com/hdu-2294-pendant-3524.html#comment-85958" rel="nofollow"><time datetime="2017-04-13T04:24:32+00:00" pubdate="">2017年4月13日 at 上午4:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好文章！支持一下PO主！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-44646">
+<article class="comment" id="comment-44646">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gladuo</a></span> on <a href="http://www.acmerblog.com/hdu-2294-pendant-3524.html#comment-44646" rel="nofollow"><time datetime="2015-07-14T11:22:18+00:00" pubdate="">2015年7月14日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-56536">
+<article class="comment" id="comment-56536">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">final</a></span> on <a href="http://www.acmerblog.com/hdu-2294-pendant-3524.html#comment-56536" rel="nofollow"><time datetime="2015-03-26T13:18:05+00:00" pubdate="">2015年3月26日 at 下午1:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Java真是解决大数的利器</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-20729">
+<article class="comment" id="comment-20729">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">211206421</a></span> on <a href="http://www.acmerblog.com/hdu-2294-pendant-3524.html#comment-20729" rel="nofollow"><time datetime="2015-03-13T03:03:36+00:00" pubdate="">2015年3月13日 at 上午3:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>非常不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-56535">
+<article class="comment" id="comment-56535">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Rocky</a></span> on <a href="http://www.acmerblog.com/hdu-2294-pendant-3524.html#comment-56535" rel="nofollow"><time datetime="2015-03-12T20:56:20+00:00" pubdate="">2015年3月12日 at 下午8:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算法还停留在大学的知识中</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-44648">
+<article class="comment" id="comment-44648">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Aifan</a></span> on <a href="http://www.acmerblog.com/hdu-2294-pendant-3524.html#comment-44648" rel="nofollow"><time datetime="2015-02-28T12:22:37+00:00" pubdate="">2015年2月28日 at 下午12:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>题本身没错，但是HDOJ放题目的时候，前面有个题目解释了什么是XXX定律。<br/>
+这里直接放了这个题目，肯定没几个人明白是干啥</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-20723">
+<article class="comment" id="comment-20723">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mcitdkj</a></span> on <a href="http://www.acmerblog.com/hdu-2294-pendant-3524.html#comment-20723" rel="nofollow"><time datetime="2015-02-09T17:58:18+00:00" pubdate="">2015年2月9日 at 下午5:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法挺不错。NewHead代表新的头节点，通过递归找到最后一个节点之后，就把这个节点赋给NewHead，然后一直返回返回，中途这个值是没有变化的，一边返回一边把相应的指针方向颠倒，最后结束时返回新的头节点到主函数。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-56538">
+<article class="comment" id="comment-56538">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">raymanshf</a></span> on <a href="http://www.acmerblog.com/hdu-2294-pendant-3524.html#comment-56538" rel="nofollow"><time datetime="2015-01-31T21:38:09+00:00" pubdate="">2015年1月31日 at 下午9:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>1234百位上出现的次数应该是200吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-56537">
+<article class="comment" id="comment-56537">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">HaibaraAi</a></span> on <a href="http://www.acmerblog.com/hdu-2294-pendant-3524.html#comment-56537" rel="nofollow"><time datetime="2014-11-04T11:05:39+00:00" pubdate="">2014年11月4日 at 上午11:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是研发类的题还是算法类？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-20725">
+<article class="comment" id="comment-20725">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">modstart</a></span> on <a href="http://www.acmerblog.com/hdu-2294-pendant-3524.html#comment-20725" rel="nofollow"><time datetime="2014-10-26T16:26:14+00:00" pubdate="">2014年10月26日 at 下午4:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-44647">
+<article class="comment" id="comment-44647">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Riddick</a></span> on <a href="http://www.acmerblog.com/hdu-2294-pendant-3524.html#comment-44647" rel="nofollow"><time datetime="2014-10-08T18:21:50+00:00" pubdate="">2014年10月8日 at 下午6:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚开始学习，为啥会报错了，你试过了吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-20728">
+<article class="comment" id="comment-20728">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">keyyuanxin</a></span> on <a href="http://www.acmerblog.com/hdu-2294-pendant-3524.html#comment-20728" rel="nofollow"><time datetime="2014-09-11T23:14:33+00:00" pubdate="">2014年9月11日 at 下午11:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>输出规范写错了哦~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-20726">
+<article class="comment" id="comment-20726">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">123456789_xd</a></span> on <a href="http://www.acmerblog.com/hdu-2294-pendant-3524.html#comment-20726" rel="nofollow"><time datetime="2014-05-10T18:20:32+00:00" pubdate="">2014年5月10日 at 下午6:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>漏了一个"不"，已修正:)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-20727">
+<article class="comment" id="comment-20727">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">keyyuanxin</a></span> on <a href="http://www.acmerblog.com/hdu-2294-pendant-3524.html#comment-20727" rel="nofollow"><time datetime="2014-05-02T00:14:14+00:00" pubdate="">2014年5月2日 at 上午12:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>题本身没错，但是HDOJ放题目的时候，前面有个题目解释了什么是XXX定律。<br/>
+这里直接放了这个题目，肯定没几个人明白是干啥</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-20724">
+<article class="comment" id="comment-20724">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ygwx</a></span> on <a href="http://www.acmerblog.com/hdu-2294-pendant-3524.html#comment-20724" rel="nofollow"><time datetime="2014-01-26T14:43:32+00:00" pubdate="">2014年1月26日 at 下午2:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>简洁的代码</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

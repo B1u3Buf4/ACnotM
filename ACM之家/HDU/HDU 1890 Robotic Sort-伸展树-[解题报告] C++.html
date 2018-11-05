@@ -1,0 +1,603 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-23</div>
+<div class="tit"><h1 class="entry-title">HDU 1890 Robotic Sort-伸展树-[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/data-struct/trees" rel="category tag" title="查看树形结构中的全部文章">树形结构</a></span><span class="i4">围观1861次</span><span class="i3"><a class="ds-thread-count" data-thread-key="2890" href="http://www.acmerblog.com/hdu-1890-robotic-sort-2890.html#comments" title="《HDU 1890 Robotic Sort-伸展树-[解题报告] C++》上的评论">26 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Robotic Sort</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Somewhere deep in the Czech Technical University buildings, there are laboratories for examining mechanical and electrical properties of various materials. In one of yesterday’s presentations, you have seen how was one of the laboratories changed into a new multimedia lab. But there are still others, serving to their original purposes. 
+<p>In this task, you are to write software for a robot that handles samples in such a laboratory. Imagine there are material samples lined up on a running belt. The samples have different heights, which may cause troubles to the next processing unit. To eliminate such troubles, we need to sort the samples by their height into the ascending order. </p>
+<p>Reordering is done by a mechanical robot arm, which is able to pick up any number of consecutive samples and turn them round, such that their mutual order is reversed. In other words, one robot operation can reverse the order of samples on positions between A and B. </p>
+<p>A possible way to sort the samples is to find the position of the smallest one (P1) and reverse the order between positions 1 and P1, which causes the smallest sample to become first. Then we find the second one on position P and reverse the order between 2 and P2. Then the third sample is located etc. </p>
+<p></p><center><img src="http://acm.hdu.edu.cn/showproblem.php/../../../data/images/C106-1009-1.JPG"/></center>
+<p>The picture shows a simple example of 6 samples. The smallest one is on the 4th position, therefore, the robot arm reverses the first 4 samples. The second smallest sample is the last one, so the next robot operation will reverse the order of five samples on positions 2�6. The third step will be to reverse the samples 3�4, etc. </p>
+<p>Your task is to find the correct sequence of reversal operations that will sort the samples using the above algorithm. If there are more samples with the same height, their mutual order must be preserved: the one that was given first in the initial order must be placed before the others in the final order too. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input consists of several scenarios. Each scenario is described by two lines. The first line contains one integer number N , the number of samples, 1 ≤ N ≤ 100 000. The second line lists exactly N space-separated positive integers, they specify the heights of individual samples and their initial order. 
+<p>The last scenario is followed by a line containing zero. </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+For each scenario, output one line with exactly N integers P1 , P1 , . . . PN ,separated by a space.<br/>Each Pi must be an integer (1 ≤ Pi ≤ N ) giving the position of the i-th sample just before the i-th reversal operation. 
+<p>Note that if a sample is already on its correct position Pi , you should output the number Pi anyway, indicating that the “interval between Pi and Pi ” (a single sample) should be reversed. </p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+6
+3 4 5 1 6 2
+4
+3 3 2 1
+0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+4 6 4 5 6 6
+4 2 4 4</pre>
+<p> <!-- problem end --></p>
+<p>Splay Tree,重点在子树的旋转，线段树很难实现：</p>
+<pre class="brush:cpp ">#include&lt;iostream&gt;
+#define DEBUG_ENABLE 1
+using namespace std;
+#define MAXN 100005
+#define KeyNode (ch[ch[root][1]][0])
+int num[MAXN][2];
+struct Pair{int v,i;};
+struct SplayTree{
+       int sz[MAXN];             //sz[x]-x为根结点的结点数量
+       int ch[MAXN][2];          //ch[x][0]-x的左子节点;ch[x][1]-x的右子节点
+       int pre[MAXN];            //pre[x]-x的父结点 
+       int root,top1,top2;       //root-根结点;top1-未用结点队列头指针;top2-结点回收栈的栈顶指针
+       int ss[MAXN],que[MAXN];
+       
+/***********************************以下代码基本不变*********************************************/ 
+       /* Rotate(x,f):f=0-将x点左旋;f=1-将x点右旋 */
+       inline void rotate(int x,int f){
+          int y=pre[x];
+          push_down(y);
+          push_down(x);
+          ch[y][!f]=ch[x][f];
+          pre[ch[x][f]]=y;
+          pre[x]=pre[y];
+          if(pre[y])
+             if(ch[pre[y]][0]==y) ch[pre[y]][0]=x;
+             else ch[pre[y]][1]=x;
+          ch[x][f]=y;
+          pre[y]=x;
+          push_up(y);
+       }
+       
+       /* splay(x,goal):将x结点伸展为goal结点的子节点 */
+       inline void splay(int x,int goal){
+           for(push_down(x);pre[x]!=goal;){
+//               debug();
+               if(pre[pre[x]]==goal){   /* x节点的父结点的父结点为goal,进行单旋转 */
+                   if(ch[pre[x]][0]==x) rotate(x,1);
+                   else rotate(x,0);
+               }
+               else{
+                    int y=pre[x];
+                    int z=pre[y];
+                    if(ch[z][0]==y)
+                      if(ch[y][0]==x){    /* 一字形旋转 */
+                         rotate(y,1);
+                         rotate(x,1);
+                      }
+                      else{               /* 之字形旋转 */
+                         rotate(x,0);
+                         rotate(x,1);
+                      }
+                    else
+                      if(ch[y][1]==x){    /* 一字形旋转 */
+                         rotate(y,0);
+                         rotate(x,0);
+                      }
+                      else{               /* 之字形旋转 */
+                         rotate(x,1);
+                         rotate(x,0);
+                      }
+               }
+               push_up(x);
+               if(goal==0) root=x;
+           }
+       }
+       
+       /* rotateTo(k,goal):将序列中第k个数转到goal的子节点 */
+       inline void rotateTo(int k,int goal){
+            /* 第k位要利用中序遍历来查找 */
+            int tmp,t;
+            for(t=root;;){
+                push_down(t);        /* 标记下延 */
+                tmp=sz[ch[t][0]];
+                if(k==tmp+1) break;
+                if(k&lt;=tmp)           /* 第k个节点在t的左子树，向左遍历 */
+                    t=ch[t][0];
+                else{
+                    k-=tmp+1;
+                    t=ch[t][1];
+                }
+            }
+            splay(t,goal);
+       }
+       /* erase(x):把x为节点的子树删除，放到内存池 */
+       inline void erase(int x){
+            int head,tail;
+            for(que[tail++]=x;head&lt;tail;head++){
+                ss[top2++]=que[head];
+                if(ch[que[head]][0]) que[tail++]=ch[que[head]][0];
+                if(ch[que[head]][1]) que[tail++]=ch[que[head]][1];
+            }
+       }
+       
+       /* getEnd(x,c): 得到x节点最边缘的节点 c=0-最左边的 c=1-最右边的 */
+       inline int getEnd(int x,int c){
+             while(ch[x][c]){
+                 push_down(x);
+                 x=ch[x][c];
+             }
+             return x;
+       }
+       
+       /* getNear(x,c): 得到x节点最近的节点 c=0-前驱节点 c=1-后继节点 */
+       inline int getNear(int x,int c){
+              if(ch[x][c]){
+                  return getEnd(ch[x][c],1-c);
+              }
+              while(pre[x]&amp;&amp;ch[pre[x]][c]==x)
+                 x=pre[x];
+              return pre[x];
+       }
+       
+       /* getSucc(x): 得到x节点的后继节点 */
+       inline int getSucc(int x) { return getNear(x,1); }
+       
+       /* getPrev(x): 得到x节点的前驱节点 */
+       inline int getPrev(int x) { return getNear(x,0); }
+       
+/*****************************************END*********************************************/ 
+/****************************************Debug*********************************************/   
+#if (DEBUG_ENABLE == 1)
+       void debug() {printf("%d/n",root);Treaval(root);}
+	   void Treaval(int x) {
+		    if(x) {
+    			printf("结点%2d:左儿子 %2d 右儿子 %2d 父结点 %2d size = %2d ,_rev = %2d, val = %2d, index = %2d, minNode = %2d/n",x,ch[x][0],ch[x][1],pre[x],sz[x],_rev[x],val[x][0],val[x][1],minNode[x]);
+    			Treaval(ch[x][0]);
+    			Treaval(ch[x][1]);
+		    }
+       }
+#endif
+/*****************************************END**********************************************/
+ 
+        /**/
+        inline void markNode(int x){
+              if(x){
+                  _rev[x]=!_rev[x];
+                  int tmp;
+                  tmp=ch[x][0];ch[x][0]=ch[x][1];ch[x][1]=tmp;
+              }
+        }
+        
+       /* push_down 把延迟标记推到孩子 */
+       inline void push_down(int x){
+           if(_rev[x]){
+              markNode(ch[x][0]);
+              markNode(ch[x][1]);
+              _rev[x]=false;
+           }
+       }
+       
+       /* push_up 把孩子的状态更新上来 */
+       inline void push_up(int x){
+           sz[x]=1+sz[ch[x][0]]+sz[ch[x][1]];
+           
+           /* 题目的特定函数内容 */
+           minNode[x]=x;
+           if(ch[x][0]&amp;&amp;isSmaller(minNode[ch[x][0]],minNode[x]))
+              minNode[x]=minNode[ch[x][0]];
+           if(ch[x][1]&amp;&amp;isSmaller(minNode[ch[x][1]],minNode[x]))
+              minNode[x]=minNode[ch[x][1]];
+       }
+       
+       /* To create a new node 题目不同，函数内容不同 */
+       inline void newNode(int &amp;x,int m){
+           if(top2) x=ss[--top2];
+           else x=++top1;
+           
+           ch[x][0]=ch[x][1]=pre[x]=0;
+           sz[x]=1;
+           
+           _rev[x]=false;
+           minNode[x]=x;
+           val[x][0]=num[m][0];
+           val[x][1]=num[m][1];
+       }
+       
+       /* To build a splay tree 题目不同，函数内容不同 */
+       inline void makeTree(int &amp;x,int l,int r,int f){
+           if(l&gt;r) return ;
+           int m=(r+l)&gt;&gt;1;
+           newNode(x,m);
+           makeTree(ch[x][0],l,m-1,x);
+           makeTree(ch[x][1],m+1,r,x);
+           pre[x]=f;
+           push_up(x);
+       }
+       
+       /* Initial Function 题目不同，函数内容不同 */
+       inline void init(int n){
+           ch[0][0]=ch[0][1]=pre[0]=sz[0]=0;
+           _rev[0]=false;
+           
+           root=top1=top2=0;
+           
+           num[0][0]=num[0][1]=0;
+           
+           /* 增加第一个边界结点 */
+           newNode(root,0);
+           
+           /* Read into the Datas */
+           int i;
+           for(i=1;i&lt;=n;i++){
+             scanf("%d",&amp;num[i][0]);
+             num[i][1]=i;
+           }
+           
+           /* 增加第二个边界节点 */
+           num[n+1][0]=0x3fffffff;
+           num[n+1][1]=0x3fffffff;
+           
+           makeTree(ch[root][1],1,n+1,root);
+           push_up(root);
+       } 
+       
+       /* update 更新函数 题目不同内容不同 */
+/*       inline void update(){
+           int l,r,c;
+           scanf("%d%d%d",&amp;l,&amp;r,&amp;c);
+           rotateTo(l,0);
+           rotateTo(r+2,root);
+           add[KeyNode]+=c;
+           sum[KeyNode]+=(long long)c*sz[KeyNode];
+       }
+       /* query 查询函数 题目不同内容不同 */
+/*       inline void query(){
+           int l,r;
+           scanf("%d%d",&amp;l,&amp;r);
+           rotateTo(l,0);
+           rotateTo(r+2,root);
+           printf("%I64d/n",sum[KeyNode]);
+       }
+*/       
+       /* run() */
+       inline void run(int n){
+           int i;
+           int min_node=1;
+           int succ_node;
+           for(i=0;i&lt;n-1;i++){
+                 splay(min_node,0);
+//                 debug();
+//                 if(i==1) break;
+                 min_node=minNode[ch[root][1]];
+//                 cout&lt;&lt;"min_node: "&lt;&lt;min_node&lt;&lt;endl;
+                 splay(min_node,root);
+//                 debug();
+                 succ_node=getSucc(min_node);
+//                 cout&lt;&lt;"succ_node: "&lt;&lt;succ_node&lt;&lt;endl;
+                 splay(succ_node,root);
+                 printf("%d ",i+sz[ch[succ_node][0]]);
+                 markNode(ch[succ_node][0]);
+//                 debug();
+           }
+           printf("%d/n",n);
+       }
+       
+       /* isSmaller(a,b): a&lt;b retrun 1*/
+       inline int isSmaller(int a,int b){
+           if(val[a][0]&lt;val[b][0]) return 1;
+           else if(val[a][0]==val[b][0]&amp;&amp;val[a][1]&lt;val[b][1]) return 1;
+           return 0;
+       }
+       
+       /* Optional Variables 题目不同，变量不同 */
+       bool _rev[MAXN];
+       int val[MAXN][2];
+       int minNode[MAXN];
+}spt;
+int main()
+{
+    int n,m;
+    while(scanf("%d",&amp;n)&amp;&amp;n){
+          spt.init(n);
+//          spt.debug();
+          spt.run(n);
+    }
+    return 0;
+}</pre>
+<p> </p>
+<p>解题报告转自：http://blog.csdn.net/whosemario/article/details/6308824</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-88575">
+<article class="comment" id="comment-88575">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530240" rel="external nofollow">新用户895437</a></span> on <a href="http://www.acmerblog.com/hdu-1890-robotic-sort-2890.html#comment-88575" rel="nofollow"><time datetime="2017-04-13T09:02:18+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是呀，上世纪的科幻世界杂志真不错，本世纪受互联网冲击，作者流失十分严重，现在投稿水平太差了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-88574">
+<article class="comment" id="comment-88574">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530240" rel="external nofollow">新用户895437</a></span> on <a href="http://www.acmerblog.com/hdu-1890-robotic-sort-2890.html#comment-88574" rel="nofollow"><time datetime="2017-04-13T09:02:18+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是呀，上世纪的科幻世界杂志真不错，本世纪受互联网冲击，作者流失十分严重，现在投稿水平太差了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-88573">
+<article class="comment" id="comment-88573">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530240" rel="external nofollow">新用户895437</a></span> on <a href="http://www.acmerblog.com/hdu-1890-robotic-sort-2890.html#comment-88573" rel="nofollow"><time datetime="2017-04-13T09:02:18+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是呀，上世纪的科幻世界杂志真不错，本世纪受互联网冲击，作者流失十分严重，现在投稿水平太差了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-88572">
+<article class="comment" id="comment-88572">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530240" rel="external nofollow">新用户895437</a></span> on <a href="http://www.acmerblog.com/hdu-1890-robotic-sort-2890.html#comment-88572" rel="nofollow"><time datetime="2017-04-13T09:02:18+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是呀，上世纪的科幻世界杂志真不错，本世纪受互联网冲击，作者流失十分严重，现在投稿水平太差了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-88571">
+<article class="comment" id="comment-88571">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530240" rel="external nofollow">新用户895437</a></span> on <a href="http://www.acmerblog.com/hdu-1890-robotic-sort-2890.html#comment-88571" rel="nofollow"><time datetime="2017-04-13T09:02:18+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是呀，上世纪的科幻世界杂志真不错，本世纪受互联网冲击，作者流失十分严重，现在投稿水平太差了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-88570">
+<article class="comment" id="comment-88570">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530240" rel="external nofollow">新用户895437</a></span> on <a href="http://www.acmerblog.com/hdu-1890-robotic-sort-2890.html#comment-88570" rel="nofollow"><time datetime="2017-04-13T09:02:18+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是呀，上世纪的科幻世界杂志真不错，本世纪受互联网冲击，作者流失十分严重，现在投稿水平太差了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-88569">
+<article class="comment" id="comment-88569">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530240" rel="external nofollow">新用户895437</a></span> on <a href="http://www.acmerblog.com/hdu-1890-robotic-sort-2890.html#comment-88569" rel="nofollow"><time datetime="2017-04-13T09:02:18+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是呀，上世纪的科幻世界杂志真不错，本世纪受互联网冲击，作者流失十分严重，现在投稿水平太差了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-88568">
+<article class="comment" id="comment-88568">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530240" rel="external nofollow">新用户895437</a></span> on <a href="http://www.acmerblog.com/hdu-1890-robotic-sort-2890.html#comment-88568" rel="nofollow"><time datetime="2017-04-13T09:02:18+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是呀，上世纪的科幻世界杂志真不错，本世纪受互联网冲击，作者流失十分严重，现在投稿水平太差了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-88566">
+<article class="comment" id="comment-88566">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530240" rel="external nofollow">新用户895437</a></span> on <a href="http://www.acmerblog.com/hdu-1890-robotic-sort-2890.html#comment-88566" rel="nofollow"><time datetime="2017-04-13T09:02:18+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是呀，上世纪的科幻世界杂志真不错，本世纪受互联网冲击，作者流失十分严重，现在投稿水平太差了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-88565">
+<article class="comment" id="comment-88565">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530240" rel="external nofollow">新用户895437</a></span> on <a href="http://www.acmerblog.com/hdu-1890-robotic-sort-2890.html#comment-88565" rel="nofollow"><time datetime="2017-04-13T09:02:18+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是呀，上世纪的科幻世界杂志真不错，本世纪受互联网冲击，作者流失十分严重，现在投稿水平太差了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-88577">
+<article class="comment" id="comment-88577">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530240" rel="external nofollow">新用户895437</a></span> on <a href="http://www.acmerblog.com/hdu-1890-robotic-sort-2890.html#comment-88577" rel="nofollow"><time datetime="2017-04-13T09:02:18+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是呀，上世纪的科幻世界杂志真不错，本世纪受互联网冲击，作者流失十分严重，现在投稿水平太差了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-88576">
+<article class="comment" id="comment-88576">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530240" rel="external nofollow">新用户895437</a></span> on <a href="http://www.acmerblog.com/hdu-1890-robotic-sort-2890.html#comment-88576" rel="nofollow"><time datetime="2017-04-13T09:02:18+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是呀，上世纪的科幻世界杂志真不错，本世纪受互联网冲击，作者流失十分严重，现在投稿水平太差了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-43209">
+<article class="comment" id="comment-43209">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hong0220</a></span> on <a href="http://www.acmerblog.com/hdu-1890-robotic-sort-2890.html#comment-43209" rel="nofollow"><time datetime="2015-07-07T06:06:50+00:00" pubdate="">2015年7月7日 at 上午6:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>2的64次方是多少？ 这到底是在考什么啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-43204">
+<article class="comment" id="comment-43204">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wawa_zmt</a></span> on <a href="http://www.acmerblog.com/hdu-1890-robotic-sort-2890.html#comment-43204" rel="nofollow"><time datetime="2014-11-28T11:28:28+00:00" pubdate="">2014年11月28日 at 上午11:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有两个重复的话结果是正确的，但解法不够严谨，后面重复的覆盖掉前面的，由于题目数据限制也比较严，所以能提交通过。已更新算法</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-43210">
+<article class="comment" id="comment-43210">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tkdzyl2013</a></span> on <a href="http://www.acmerblog.com/hdu-1890-robotic-sort-2890.html#comment-43210" rel="nofollow"><time datetime="2014-11-13T01:05:10+00:00" pubdate="">2014年11月13日 at 上午1:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>约瑟夫也用说这么长……很成熟的一个问题了，分治的方法解起来o(n)就可以了，有兴趣可以看看具体数学的第一章，关于约瑟夫问题推导出了一系列的结论，很漂亮</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-43202">
+<article class="comment" id="comment-43202">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">magicSky</a></span> on <a href="http://www.acmerblog.com/hdu-1890-robotic-sort-2890.html#comment-43202" rel="nofollow"><time datetime="2014-11-11T12:01:57+00:00" pubdate="">2014年11月11日 at 下午12:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>5.1处，反了；“上一个操作符的优先级比操作符ch的优先级大，或栈是空的就入栈。”如代码所述，应为“上一个操作符的优先级比操作符ch的优先级小，或栈是空的就入栈。”</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-43198">
+<article class="comment" id="comment-43198">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">actlea</a></span> on <a href="http://www.acmerblog.com/hdu-1890-robotic-sort-2890.html#comment-43198" rel="nofollow"><time datetime="2014-08-29T20:37:23+00:00" pubdate="">2014年8月29日 at 下午8:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是研发类的题还是算法类？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-43207">
+<article class="comment" id="comment-43207">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">AcmDream</a></span> on <a href="http://www.acmerblog.com/hdu-1890-robotic-sort-2890.html#comment-43207" rel="nofollow"><time datetime="2014-07-18T14:47:25+00:00" pubdate="">2014年7月18日 at 下午2:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>int L[m+1][n+1];这样定义出错，这个在gcc上可以编译通过  在VS上不行 应该改为new 或者vector</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-43201">
+<article class="comment" id="comment-43201">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dreams</a></span> on <a href="http://www.acmerblog.com/hdu-1890-robotic-sort-2890.html#comment-43201" rel="nofollow"><time datetime="2014-04-30T18:27:27+00:00" pubdate="">2014年4月30日 at 下午6:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>站长好。我是一个准备创业的互联网小白,我们打算做一个有关国*际*游*学的平台。手上也有了一些境外资源。现阶段的团队现在没有cto.原意出让一些管理股寻找一个靠谱的技术专家做合伙人, 不知道是不是能得到您的帮助。发个帖子或者其他方式。期待您的回应。可以加我微信tianxielemon聊聊。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-43203">
+<article class="comment" id="comment-43203">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Trenson</a></span> on <a href="http://www.acmerblog.com/hdu-1890-robotic-sort-2890.html#comment-43203" rel="nofollow"><time datetime="2014-04-20T00:17:16+00:00" pubdate="">2014年4月20日 at 上午12:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-43206">
+<article class="comment" id="comment-43206">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Mitrenick</a></span> on <a href="http://www.acmerblog.com/hdu-1890-robotic-sort-2890.html#comment-43206" rel="nofollow"><time datetime="2014-04-13T08:00:13+00:00" pubdate="">2014年4月13日 at 上午8:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>A猴子认识的所有猴子和B猴子认识的所有猴子都能认识，这句话用《爱屋及乌》描述比较容易理解……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-43200">
+<article class="comment" id="comment-43200">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">HDC</a></span> on <a href="http://www.acmerblog.com/hdu-1890-robotic-sort-2890.html#comment-43200" rel="nofollow"><time datetime="2014-03-19T08:56:03+00:00" pubdate="">2014年3月19日 at 上午8:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第36行，struct node **head_ref，怎么理解，那个函数感觉不是很懂啊！？？弱渣求助</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-43208">
+<article class="comment" id="comment-43208">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ygxqqx</a></span> on <a href="http://www.acmerblog.com/hdu-1890-robotic-sort-2890.html#comment-43208" rel="nofollow"><time datetime="2014-03-18T23:16:45+00:00" pubdate="">2014年3月18日 at 下午11:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可以根据二叉排序树的定义进行严格的排序树创建和后序遍历操作。如果形成的排序树相同，其树的前、中、后序遍历是相同的，但在此处不能使用中序遍历，因为，中序遍历的结果就是排序的结果。经在九度测试，运行时间90ms，比楼主的要快。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-43199">
+<article class="comment" id="comment-43199">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Watson</a></span> on <a href="http://www.acmerblog.com/hdu-1890-robotic-sort-2890.html#comment-43199" rel="nofollow"><time datetime="2014-03-09T00:54:14+00:00" pubdate="">2014年3月9日 at 上午12:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很棒的网站，加油！⛽️</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-43205">
+<article class="comment" id="comment-43205">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">beizhiwu</a></span> on <a href="http://www.acmerblog.com/hdu-1890-robotic-sort-2890.html#comment-43205" rel="nofollow"><time datetime="2014-02-24T19:21:04+00:00" pubdate="">2014年2月24日 at 下午7:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>代码过于复杂了吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-17659">
+<article class="comment" id="comment-17659">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mnmlist</a></span> on <a href="http://www.acmerblog.com/hdu-1890-robotic-sort-2890.html#comment-17659" rel="nofollow"><time datetime="2014-01-10T08:40:19+00:00" pubdate="">2014年1月10日 at 上午8:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是研发类的题还是算法类？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

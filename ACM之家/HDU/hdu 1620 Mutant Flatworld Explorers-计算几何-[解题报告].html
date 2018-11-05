@@ -1,0 +1,259 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-16</div>
+<div class="tit"><h1 class="entry-title">hdu 1620 Mutant Flatworld Explorers-计算几何-[解题报告]</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/basis/simulate" rel="category tag" title="查看模拟法中的全部文章">模拟法</a>, <a href="http://www.acmerblog.com/category/geometry/analytic-geometry" rel="category tag" title="查看解析几何中的全部文章">解析几何</a></span><span class="i4">围观756次</span><span class="i3"><a class="ds-thread-count" data-thread-key="2465" href="http://www.acmerblog.com/hdu-1620-Mutant-Flatworld-Explorers-2465.html#comments" title="《hdu 1620 Mutant Flatworld Explorers-计算几何-[解题报告]》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Mutant Flatworld Explorers</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Robotics, robot motion planning, and machine learning are areas that cross the boundaries of many of the subdisciplines that comprise Computer Science: artificial intelligence, algorithms and complexity, electrical and mechanical engineering to name a few. In addition, robots as “turtles” (inspired by work by Papert, Abelson, and diSessa) and as “beeper-pickers” (inspired by work by Pattis) have been studied and used by students as an introduction to programming for many years. 
+<p>This problem involves determining the position of a robot exploring a pre-Columbian flat world</p>
+<p>Given the dimensions of a rectangular grid and a sequence of robot positions and instructions, you are to write a program that determines for each sequence of robot positions and instructions the final position of the robot. </p>
+<p>A robot position consists of a grid coordinate (a pair of integers: x-coordinate followed by y-coordinate) and an orientation (N,S,E,W for north, south, east, and west). A robot instruction is a string of the letters ‘L’, ‘R’, and ‘F’ which represent, respectively, the instructions: </p>
+<p>Left: the robot turns left 90 degrees and remains on the current grid point.<br/>Right: the robot turns right 90 degrees and remains on the current grid point.<br/>Forward: the robot moves forward one grid point in the direction of the current orientation and mantains the same orientation. <br/>The direction North corresponds to the direction from grid point (x,y) to grid point (x,y+1). </p>
+<p>Since the grid is rectangular and bounded, a robot that moves “off” an edge of the grid is lost forever. However, lost robots leave a robot “scent” that prohibits future robots from dropping off the world at the same grid point. The scent is left at the last grid position the robot occupied before disappearing over the edge. An instruction to move “off” the world from a grid point from which a robot has been previously lost is simply ignored by the current robot.  </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line of input is the upper-right coordinates of the rectangular world, the lower-left coordinates are assumed to be 0,0. 
+<p>The remaining input consists of a sequence of robot positions and instructions (two lines per robot). A position consists of two integers specifying the initial coordinates of the robot and an orientation (N,S,E,W), all separated by white space on one line. A robot instruction is a string of the letters ‘L’, ‘R’, and ‘F’ on one line. </p>
+<p>Each robot is processed sequentially, i.e., finishes executing the robot instructions before the next robot begins execution. </p>
+<p>Input is terminated by end-of-file. </p>
+<p>You may assume that all initial robot positions are within the bounds of the specified grid. The maximum value for any coordinate is 50. All instruction strings will be less than 100 characters in length </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+For each robot position/instruction in the input, the output should indicate the final grid position and orientation of the robot. If a robot falls off the edge of the grid the word “LOST” should be printed after the position and orientation. 
+</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+5 3
+1 1 E
+RFRFRFRF
+3 2 N
+FRRFLLFFRRFLL
+0 3 W
+LLFFFLFLFL</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+1 1 E
+3 3 N LOST
+2 3 S</pre>
+<p> <!-- problem end -->
+</p><pre class="brush:cpp ">#include &lt;algorithm&gt;
+#include &lt;iostream&gt;
+#include &lt;vector&gt;
+using namespace std;
+struct POINT {int x; int y;};
+int main(void) {
+	//vecScent用于记录之前损失的机器人留下的信息
+	vector&lt;int&gt; vecScent;
+	//szIns为指令集，szOri为方向转换表
+	char szIns[100], szOri[4] = {'N', 'E', 'S', 'W'};
+	//ptSize记录地图尺寸，ptPos记录当前位置，ptOri为对应的方向偏移量
+	POINT ptSize, ptPos, ptOri[4] = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}};
+	//输入地图尺寸
+	cin &gt;&gt; ptSize.x &gt;&gt; ptSize.y;
+	//循环处理输入的每一个机器人
+	for (char cOri; cin &gt;&gt; ptPos.x &gt;&gt; ptPos.y &gt;&gt; cOri &gt;&gt; szIns; ) {
+		//确定初始方向对应的编号
+		int nOri = find(&amp;szOri[0], &amp;szOri[4], cOri) - &amp;szOri[0], i = 0;
+		//循环处理每一步移动
+		for (; szIns[i] != 0; ++i) {
+			//向左转或向右转
+			if (szIns[i] != 'F') {
+				nOri = (nOri + (szIns[i] == 'L' ? 3 : 1)) % 4;
+				continue;
+			}
+			//向前移动，计算出将要移动到的坐标
+			POINT ptNew = {ptPos.x + ptOri[nOri].x, ptPos.y + ptOri[nOri].y};
+			//如果本次移动未造成损失，则保存新坐标
+			if (ptNew.x &gt;= 0 &amp;&amp; ptNew.x &lt;= ptSize.x &amp;&amp;
+				ptNew.y &gt;= 0 &amp;&amp; ptNew.y &lt;= ptSize.y) {
+					ptPos = ptNew;
+					continue;
+			}
+			//否则，按损失前的位置和方向进行损失编码
+			int nScent = ptPos.y * 51 + ptPos.x;// + nOri * 51 * 51;
+			//在历史记录中查找是否有机器人在此损失
+			vector&lt;int&gt;::iterator iEnd = vecScent.end();
+			//如果在此尚未有过损失，则损失当前机器人
+			if (find(vecScent.begin(), iEnd, nScent) == iEnd) {
+				//记录损失信息
+				vecScent.push_back(nScent);
+				break;
+			}
+		}
+		//按要求输出结果
+		cout &lt;&lt; ptPos.x &lt;&lt; ' ' &lt;&lt; ptPos.y &lt;&lt; ' ' &lt;&lt; szOri[nOri];
+		cout &lt;&lt; ((szIns[i] == 0) ? "" : " LOST") &lt;&lt; endl;
+	}
+	return 0;
+}</pre>
+<p>解题转自：http://www.cnblogs.com/devymex/archive/2010/08/13/1799316.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-42378">
+<article class="comment" id="comment-42378">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">we</a></span> on <a href="http://www.acmerblog.com/hdu-1620-Mutant-Flatworld-Explorers-2465.html#comment-42378" rel="nofollow"><time datetime="2015-03-30T02:43:07+00:00" pubdate="">2015年3月30日 at 上午2:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>[…] 答案：http://www.acmerblog.com/interview-2-1549/ […]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-55467">
+<article class="comment" id="comment-55467">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sheyty</a></span> on <a href="http://www.acmerblog.com/hdu-1620-Mutant-Flatworld-Explorers-2465.html#comment-55467" rel="nofollow"><time datetime="2015-03-22T10:48:59+00:00" pubdate="">2015年3月22日 at 上午10:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>漏了一个"不"，已修正:)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-42374">
+<article class="comment" id="comment-42374">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">cyyuen</a></span> on <a href="http://www.acmerblog.com/hdu-1620-Mutant-Flatworld-Explorers-2465.html#comment-42374" rel="nofollow"><time datetime="2015-03-12T10:06:50+00:00" pubdate="">2015年3月12日 at 上午10:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-16134">
+<article class="comment" id="comment-16134">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">geoksz</a></span> on <a href="http://www.acmerblog.com/hdu-1620-Mutant-Flatworld-Explorers-2465.html#comment-16134" rel="nofollow"><time datetime="2015-02-06T14:43:47+00:00" pubdate="">2015年2月6日 at 下午2:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>C语言版本的代码好像有点问题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-42380">
+<article class="comment" id="comment-42380">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wkhuahuo</a></span> on <a href="http://www.acmerblog.com/hdu-1620-Mutant-Flatworld-Explorers-2465.html#comment-42380" rel="nofollow"><time datetime="2015-01-11T23:49:39+00:00" pubdate="">2015年1月11日 at 下午11:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>厉害，支持</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-16131">
+<article class="comment" id="comment-16131">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">litao</a></span> on <a href="http://www.acmerblog.com/hdu-1620-Mutant-Flatworld-Explorers-2465.html#comment-16131" rel="nofollow"><time datetime="2014-11-08T17:06:47+00:00" pubdate="">2014年11月8日 at 下午5:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-16135">
+<article class="comment" id="comment-16135">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">winter</a></span> on <a href="http://www.acmerblog.com/hdu-1620-Mutant-Flatworld-Explorers-2465.html#comment-16135" rel="nofollow"><time datetime="2014-10-27T20:03:02+00:00" pubdate="">2014年10月27日 at 下午8:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一题还是比较考验智商~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-42379">
+<article class="comment" id="comment-42379">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">123zxc</a></span> on <a href="http://www.acmerblog.com/hdu-1620-Mutant-Flatworld-Explorers-2465.html#comment-42379" rel="nofollow"><time datetime="2014-10-27T19:34:27+00:00" pubdate="">2014年10月27日 at 下午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实就是DFS搜索，数据量较小，穷举了所有情况</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-16133">
+<article class="comment" id="comment-16133">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hsp_77_abc</a></span> on <a href="http://www.acmerblog.com/hdu-1620-Mutant-Flatworld-Explorers-2465.html#comment-16133" rel="nofollow"><time datetime="2014-10-16T01:12:00+00:00" pubdate="">2014年10月16日 at 上午1:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很不错！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-16130">
+<article class="comment" id="comment-16130">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rtaxa</a></span> on <a href="http://www.acmerblog.com/hdu-1620-Mutant-Flatworld-Explorers-2465.html#comment-16130" rel="nofollow"><time datetime="2014-09-08T19:35:14+00:00" pubdate="">2014年9月8日 at 下午7:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嗯，尽量吧。题目太多了，很多解题报告是用程序自动发布的，所以就只有代码了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-42376">
+<article class="comment" id="comment-42376">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ruoshui</a></span> on <a href="http://www.acmerblog.com/hdu-1620-Mutant-Flatworld-Explorers-2465.html#comment-42376" rel="nofollow"><time datetime="2014-04-06T04:44:49+00:00" pubdate="">2014年4月6日 at 上午4:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>写的很好~~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-42375">
+<article class="comment" id="comment-42375">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yunyang088</a></span> on <a href="http://www.acmerblog.com/hdu-1620-Mutant-Flatworld-Explorers-2465.html#comment-42375" rel="nofollow"><time datetime="2014-02-23T06:19:00+00:00" pubdate="">2014年2月23日 at 上午6:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为是要把从字符串s的start位到当前位在hash中重置，修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-16132">
+<article class="comment" id="comment-16132">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">howhaw</a></span> on <a href="http://www.acmerblog.com/hdu-1620-Mutant-Flatworld-Explorers-2465.html#comment-16132" rel="nofollow"><time datetime="2014-02-07T23:52:16+00:00" pubdate="">2014年2月7日 at 下午11:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>int L[m+1][n+1];这样定义出错，这个在gcc上可以编译通过 在VS上不行 应该改为new 或者vector</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-42377">
+<article class="comment" id="comment-42377">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Riddick</a></span> on <a href="http://www.acmerblog.com/hdu-1620-Mutant-Flatworld-Explorers-2465.html#comment-42377" rel="nofollow"><time datetime="2014-02-06T04:59:33+00:00" pubdate="">2014年2月6日 at 上午4:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>厉害，支持</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

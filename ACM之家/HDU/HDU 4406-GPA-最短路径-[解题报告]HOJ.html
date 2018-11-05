@@ -1,0 +1,344 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>05-24</div>
+<div class="tit"><h1 class="entry-title">HDU 4406-GPA-最短路径-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph" rel="category tag" title="查看图论中的全部文章">图论</a>, <a href="http://www.acmerblog.com/category/graph/shortest-path" rel="category tag" title="查看最短路径中的全部文章">最短路径</a></span><span class="i4">围观203次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7417" href="http://www.acmerblog.com/hdu-4406-gpa-7417.html#comments" title="《HDU 4406-GPA-最短路径-[解题报告]HOJ》上的评论">12 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">GPA</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+GPA(Grade-Point Average) is one way to measure students’ academic performance in PKU. Each course has an integer credit, ranges from 1 to 99. For each course, you will get a score at the end of the semester, which is an integer ranges from 0 to 100. Then you can calculate the Grade-Point of this course with the following formula. (Your score is x and your Grade-Point is p, using real arithmetic)<br/><center><img alt="Aeroplane chess" src="http://www.acmerblog.com/img/1441120316611.jpg"/></center> <br/>Then you can get the GPA with the following formula (the Grade-Point of course i is p<sub>i</sub>, and the credit of course i is w<sub>i</sub>).<br/><center><img alt="Aeroplane chess" src="http://www.acmerblog.com/img/1441120316701.jpg"/></center> <br/>Now it is not far from the final exam, if you do not review, you can only get a basic score in each course.
+<p>You have n days to review. There are K classes in each day. For each class, only one course can be reviewed. After the review, your score in this course will exactly increase by 1. You can get more increment by spending more classes in this course. But the score may not exceed 100.</p>
+<p>For some reasons, not any course can be reviewed in any class. Each day you can only review some of the courses.</p>
+<p>Now you want your GPA to be as high as possible, and at the same time, you do not want to fail in any course. Please calculate the highest GPA you can get.  </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input consists of several test cases. Each test case begins with 3 integers N (0&lt;=N&lt;=40), K(0&lt;K&lt;=20), M (0&lt;M&lt;=20), representing the number of days, the number of classes in each day and the number of courses. Next line contains M integers representing credits of each course and M integers representing basic scores of each course (0&lt;=score&lt;=100). Next N lines contain an N*M matrix, the j<sup>th</sup> element in i<sup>th</sup> row means whether you can review course j in i<sup>th</sup> day, 1 means you can review course j in i<sup>th</sup> day, 0 means you cannot. The Input ends with 0 0 0. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input consists of several test cases. Each test case begins with 3 integers N (0&lt;=N&lt;=40), K(0&lt;K&lt;=20), M (0&lt;M&lt;=20), representing the number of days, the number of classes in each day and the number of courses. Next line contains M integers representing credits of each course and M integers representing basic scores of each course (0&lt;=score&lt;=100). Next N lines contain an N*M matrix, the j<sup>th</sup> element in i<sup>th</sup> row means whether you can review course j in i<sup>th</sup> day, 1 means you can review course j in i<sup>th</sup> day, 0 means you cannot. The Input ends with 0 0 0.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2 10 3
+1 1 2
+50 60 90
+1 1 0
+1 0 1
+2 20 4
+1 1 1 1
+50 50 50 40
+1 1 1 0
+0 0 0 1
+0 0 0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+2.757813
+0.000000</pre>
+<p> <!-- problem end --></p>
+<p>这题问题就是当前时刻到底选择哪门课程，易知选择是和分数有关的，并且是一个变化的权值，所以可以用拆点的方式，把从基础分到100分都拆成点，但若这样拆点的话，跑费用流时就必须保证顺序，这样就麻烦了。。观察公式，发现同一门课，分数越高，权值是越低的，所以这是一个单调的，这样的话就可以对每一个分数建一条边，费用流会一条一条的跑。</p>
+<p>注意将课程放在X集</p>
+<pre class="brush:cpp" name="code">#include&lt;cstdio&gt;
+#include&lt;queue&gt;
+#include&lt;algorithm&gt;
+#include&lt;cstring&gt;
+using namespace std;
+#define eps 1e-8
+#define MAXN 100
+#define MAXM 1000000
+#define INF 100000
+struct node
+{
+    int u,v,f,next;
+    double c;
+}e[MAXM];
+int n,k,head[MAXN],pre[MAXN],vis[MAXN];
+double dist[MAXN];
+int en,s,t,maxflow,mincost,m; //s源点，t汇点
+void add(int u,int v,double c,int f)//加边
+{
+    e[en].u=u;
+    e[en].v=v;
+    e[en].c=c;
+    e[en].f=f;
+    e[en].next=head[u];
+    head[u]=en++;
+    e[en].u=v;
+    e[en].v=u;
+    e[en].c=-c;
+    e[en].f=0;
+    e[en].next=head[v];
+    head[v]=en++;
+}
+int spfa()
+{
+    int i,u,v;
+    for(i=0;i&lt;=t;i++)
+        pre[i]=-1,vis[i]=0,dist[i]=-INF;
+    dist[s]=0;
+    vis[s]=1;
+    queue&lt;int&gt;q;
+    q.push(s);
+    while(!q.empty())
+    {
+        u=q.front();
+        q.pop();
+        for(i=head[u];i!=-1;i=e[i].next)
+        {
+            v=e[i].v;
+            if(e[i].f&gt;0&amp;&amp;dist[u]+e[i].c-eps&gt;dist[v])
+            {
+                dist[v]=dist[u]+e[i].c;
+                pre[v]=i;
+                if(!vis[v])
+                {
+                    vis[v]=1;
+                    q.push(v);
+                }
+            }
+        }
+        vis[u]=0;
+    }
+    if(dist[t]==-INF)
+        return 0;
+    return 1;
+}
+void add()
+{
+    int v;
+    int maxf=INF;
+    for(v=pre[t];~v;v=pre[e[v].u])
+        maxf=min(maxf,e[v].f);
+    for(v=pre[t];~v;v=pre[e[v].u])
+    {
+        e[v].f-=maxf;
+        e[v^1].f+=maxf;
+        mincost+=maxf*e[v].c;
+    }
+    maxflow+=maxf;
+}
+int a[123];
+int w[123];
+int ADD[123];
+int mp[123][123];
+void init()
+{
+    maxflow=0;
+    mincost=0;
+    s=0;
+    t=n+m+1;
+    en=0;
+    memset(head,-1,sizeof(head));
+    memset(ADD,0,sizeof(ADD));
+}
+double cal(int x,int w)
+{
+    return (4.0-3.0*(100.0-x)*(100.0-x)/1600.0)*w;
+}
+int main()
+{
+    int k,b;
+    while(~scanf("%d%d%d",&amp;n,&amp;k,&amp;m))
+    {
+        if(n+k+m==0) break;
+        init();
+        for(int i=1;i&lt;=m;i++) scanf("%d",&amp;w[i]);
+        for(int i=1;i&lt;=m;i++) scanf("%d",&amp;a[i]);
+        for(int i=1;i&lt;=m;i++)
+        {
+            for(int q=a[i];q&lt;60;q++) add(s,i,INF,1);
+            for(int q=max(a[i],60);q&lt;100;q++) add(s,i,cal(q+1,w[i])-cal(q,w[i]),1);
+        }
+        for(int i=1;i&lt;=n;i++)
+        {
+            add(m+i,t,0,k);
+            for(int j=1;j&lt;=m;j++)
+            {
+                scanf("%d",&amp;b);
+                if(b) add(j,m+i,0,INF);
+            }
+        }
+        while(spfa()) add();
+        for(int i=head[s];~i;i=e[i].next)
+        {
+            if(e[i].v&gt;=1&amp;&amp;e[i].v&lt;=m&amp;&amp;e[i].f==0) ADD[e[i].v]++;
+        }
+        int ok=1;
+        for(int i=1;i&lt;=m;i++)
+        {
+            if(a[i]+ADD[i]&lt;60)
+            {
+                ok=0;
+                break;
+            }
+            a[i]+=ADD[i];
+        }
+        if(ok==0)
+        {
+            puts("0.000000");
+        }
+        else
+        {
+            double ans=0;
+            int d=0;
+            for(int i=1;i&lt;=m;i++)
+            {
+                ans+=cal(a[i],w[i]);
+                d+=w[i];
+            }
+            printf("%.6lf\n",ans/d);
+        }
+    }
+    return 0;
+}
+</pre>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/t1019256391/article/details/39736477</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-98144">
+<article class="comment" id="comment-98144">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919532106" rel="external nofollow">新用户207522</a></span> on <a href="http://www.acmerblog.com/hdu-4406-gpa-7417.html#comment-98144" rel="nofollow"><time datetime="2017-04-20T11:47:09+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这才是合理的宗教观念</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98143">
+<article class="comment" id="comment-98143">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919532106" rel="external nofollow">新用户207522</a></span> on <a href="http://www.acmerblog.com/hdu-4406-gpa-7417.html#comment-98143" rel="nofollow"><time datetime="2017-04-20T11:47:09+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这才是合理的宗教观念</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98142">
+<article class="comment" id="comment-98142">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919532106" rel="external nofollow">新用户207522</a></span> on <a href="http://www.acmerblog.com/hdu-4406-gpa-7417.html#comment-98142" rel="nofollow"><time datetime="2017-04-20T11:47:09+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这才是合理的宗教观念</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98141">
+<article class="comment" id="comment-98141">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919532106" rel="external nofollow">新用户207522</a></span> on <a href="http://www.acmerblog.com/hdu-4406-gpa-7417.html#comment-98141" rel="nofollow"><time datetime="2017-04-20T11:47:09+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这才是合理的宗教观念</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98140">
+<article class="comment" id="comment-98140">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919532106" rel="external nofollow">新用户207522</a></span> on <a href="http://www.acmerblog.com/hdu-4406-gpa-7417.html#comment-98140" rel="nofollow"><time datetime="2017-04-20T11:47:09+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这才是合理的宗教观念</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68069">
+<article class="comment" id="comment-68069">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517826" rel="external nofollow">新用户567869</a></span> on <a href="http://www.acmerblog.com/hdu-4406-gpa-7417.html#comment-68069" rel="nofollow"><time datetime="2017-04-11T03:57:02+00:00" pubdate="">2017年4月11日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>换个号继续扯？无数据就别再瞎扯了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68068">
+<article class="comment" id="comment-68068">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517826" rel="external nofollow">新用户567869</a></span> on <a href="http://www.acmerblog.com/hdu-4406-gpa-7417.html#comment-68068" rel="nofollow"><time datetime="2017-04-11T03:57:02+00:00" pubdate="">2017年4月11日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>换个号继续扯？无数据就别再瞎扯了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68067">
+<article class="comment" id="comment-68067">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517826" rel="external nofollow">新用户567869</a></span> on <a href="http://www.acmerblog.com/hdu-4406-gpa-7417.html#comment-68067" rel="nofollow"><time datetime="2017-04-11T03:57:02+00:00" pubdate="">2017年4月11日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>换个号继续扯？无数据就别再瞎扯了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68066">
+<article class="comment" id="comment-68066">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517826" rel="external nofollow">新用户567869</a></span> on <a href="http://www.acmerblog.com/hdu-4406-gpa-7417.html#comment-68066" rel="nofollow"><time datetime="2017-04-11T03:57:02+00:00" pubdate="">2017年4月11日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>换个号继续扯？无数据就别再瞎扯了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68065">
+<article class="comment" id="comment-68065">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517826" rel="external nofollow">新用户567869</a></span> on <a href="http://www.acmerblog.com/hdu-4406-gpa-7417.html#comment-68065" rel="nofollow"><time datetime="2017-04-11T03:57:02+00:00" pubdate="">2017年4月11日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>换个号继续扯？无数据就别再瞎扯了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68064">
+<article class="comment" id="comment-68064">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517826" rel="external nofollow">新用户567869</a></span> on <a href="http://www.acmerblog.com/hdu-4406-gpa-7417.html#comment-68064" rel="nofollow"><time datetime="2017-04-11T03:57:02+00:00" pubdate="">2017年4月11日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>换个号继续扯？无数据就别再瞎扯了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68063">
+<article class="comment" id="comment-68063">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517826" rel="external nofollow">新用户567869</a></span> on <a href="http://www.acmerblog.com/hdu-4406-gpa-7417.html#comment-68063" rel="nofollow"><time datetime="2017-04-11T03:57:02+00:00" pubdate="">2017年4月11日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>换个号继续扯？无数据就别再瞎扯了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

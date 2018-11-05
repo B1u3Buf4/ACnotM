@@ -1,0 +1,432 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>02-14</div>
+<div class="tit"><h1 class="entry-title">hdu 2704 Bulletin Board-线段树-[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/basis/enumeration" rel="category tag" title="查看枚举中的全部文章">枚举</a>, <a href="http://www.acmerblog.com/category/data-struct/trees" rel="category tag" title="查看树形结构中的全部文章">树形结构</a></span><span class="i4">围观535次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4303" href="http://www.acmerblog.com/hdu-2704-bulletin-board-4303.html#comments" title="《hdu 2704 Bulletin Board-线段树-[解题报告]C++》上的评论">27 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Bulletin Board</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+<center><img src="http://www.acmerblog.com/img/1392547020234.png"/></center><br/>The ACM Student Chapter has just been given custody of a number of school bulletin boards. Several members agreed to clear off the old posters. They found posters plastered many levels deep. They made a bet about how much area was left clear, what was the greatest depth of posters on top of each other, and how much of the area was covered to this greatest depth. To determine each bet’s winner, they made very accurate measurements of all the poster positions as they removed them. Because of the large number of posters, they now need a program to do the calculations. That is your job.<br/>A simple illustration is shown above: a bulletin board 45 units wide by 40 high, with three posters, one with corners at coordinates (10, 10) and (35, 20), another with corners at (20, 25) and (40, 35), and the last with<br/>corners at (25, 5) and (30, 30). The total area not covered by any poster is 1300. The maximum number of posters on top of each other is 2. The total area covered by exactly 2 posters is 75. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input will consist of one to twenty data sets, followed by a line containing only 0. On each line the data will consist of blank separated nonnegative integers.<br/>The first line of a dataset contains integers n w h, where n is the number of posters on the bulletin board, w and h are the width and height of the bulletin board. Constraints are 0 &lt; n &lt;= 100; 0 &lt; w &lt;= 50000; 0 &lt; h &lt;= 40000.<br/>The dataset ends with n lines, each describing the location of one poster. Each poster is rectangular and has horizontal and vertical sides. The x and y coordinates are measured from one corner of the bulletin board. Each line contains four numbers xl yl xh and yh, where xl and yl, are the lowest values of the x and y coordinates in one corner of the poster and xh and yh are the highest values in the diagonally opposite corner.Each poster fits on the bulletin board, so 0 2 xl &lt; xh 2 w, and 0 2 yl &lt; yh 2 h. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input will consist of one to twenty data sets, followed by a line containing only 0. On each line the data will consist of blank separated nonnegative integers.<br/>The first line of a dataset contains integers n w h, where n is the number of posters on the bulletin board, w and h are the width and height of the bulletin board. Constraints are 0 &lt; n &lt;= 100; 0 &lt; w &lt;= 50000; 0 &lt; h &lt;= 40000.<br/>The dataset ends with n lines, each describing the location of one poster. Each poster is rectangular and has horizontal and vertical sides. The x and y coordinates are measured from one corner of the bulletin board. Each line contains four numbers xl yl xh and yh, where xl and yl, are the lowest values of the x and y coordinates in one corner of the poster and xh and yh are the highest values in the diagonally opposite corner.Each poster fits on the bulletin board, so 0 2 xl &lt; xh 2 w, and 0 2 yl &lt; yh 2 h.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3 45 40
+10 10 35 20
+20 25 40 35
+25 5 30 30
+1 20 30
+5 5 15 25
+2 2000 1000
+0 0 1000 1000
+1000 0 2000 1000
+3 10 10
+0 0 10 10
+0 0 10 10
+0 0 10 10
+0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+1300 2 75
+400 1 200
+0 1 2000000
+0 3 100</pre>
+<p> <!-- problem end --></p>
+<p><strong><span style="font-family: 黑体; font-size: 16px;">HDU_2704</span></strong></p>
+<p><span style="font-family: 黑体; font-size: 16px;">    由于N很小，离散化之后暴力对每块格子染色应该都能过。效率比较好的办法之一是用线段树+扫描线来做（当然也可以离散化，不过这个题目W、H比较小，所以可以不必离散化），在线段树上记录当前扫描线上当前区间被覆盖的次数cnt，扫描线上被覆盖的长度len，被覆盖的最大深度dep，以及被覆盖的深度最大的部分的长度ml就可以了。</span></p>
+<pre class="brush:cpp ">#include&lt;stdio.h&gt;
+#include&lt;string.h&gt;
+#include&lt;algorithm&gt;
+#define MAXN 210
+#define MAXD 40010
+int N, W, H, dep[4 * MAXD], ml[4 * MAXD], cnt[4 * MAXD], len[4 * MAXD];
+struct Seg
+{
+    int x, y1, y2, c;
+    bool operator &lt; (const Seg &amp;t) const
+    {
+        if(x == t.x) return c &lt; t.c;
+        return x &lt; t.x;    
+    }
+    Seg(){}
+    Seg(int _x, int _y1, int _y2, int _c) : x(_x), y1(_y1), y2(_y2), c(_c){}
+}seg[MAXN];
+void build(int cur, int x, int y)
+{
+    int mid = x + y &gt;&gt; 1, ls = cur &lt;&lt; 1, rs = cur &lt;&lt; 1 | 1;
+    cnt[cur] = dep[cur] = len[cur] = 0, ml[cur] = y - x + 1;
+    if(x == y) return ;
+    build(ls, x, mid), build(rs, mid + 1, y);
+}
+void init()
+{
+    int i, x1, x2, y1, y2;
+    scanf("%d%d", &amp;W, &amp;H);
+    for(i = 0; i &lt; N; i ++)
+    {
+        scanf("%d%d%d%d", &amp;x1, &amp;y1, &amp;x2, &amp;y2);
+        seg[i &lt;&lt; 1] = Seg(x1, y1, y2, 1), seg[i &lt;&lt; 1 | 1] = Seg(x2, y1, y2, -1);
+    }
+    std::sort(seg, seg + 2 * N);
+    build(1, 1, H);
+}
+void update(int cur, int x, int y)
+{
+    int ls = cur &lt;&lt; 1, rs = cur &lt;&lt; 1 | 1;
+    if(dep[ls] &gt; dep[rs]) dep[cur] = dep[ls], ml[cur] = ml[ls];
+    else if(dep[rs] &gt; dep[ls]) dep[cur] = dep[rs], ml[cur] = ml[rs];
+    else dep[cur] = dep[ls], ml[cur] = ml[ls] + ml[rs];
+    dep[cur] += cnt[cur];
+    if(cnt[cur]) len[cur] = y - x + 1;
+    else len[cur] = len[ls] + len[rs];
+}
+void refresh(int cur, int x, int y, int s, int t, int c)
+{
+    int mid = x + y &gt;&gt; 1, ls = cur &lt;&lt; 1, rs = cur &lt;&lt; 1 | 1;
+    if(x &gt;= s &amp;&amp; y &lt;= t)
+    {
+        cnt[cur] += c;
+        if(c &gt; 0) ++ dep[cur], len[cur] = y - x + 1;
+        else
+        {
+            -- dep[cur];
+            if(cnt[cur]) len[cur] = y - x + 1;
+            else
+            {
+                if(x == y) len[cur] = 0;
+                else len[cur] = len[ls] + len[rs];    
+            }
+        }
+        return ;
+    }
+    if(mid &gt;= s) refresh(ls, x, mid, s, t, c);
+    if(mid + 1 &lt;= t) refresh(rs, mid + 1, y, s, t, c);
+    update(cur, x, y);
+}
+void solve()
+{
+    int i, md, ans, area;
+    area = md = ans = 0;
+    seg[2 * N].x = seg[2 * N - 1].x;
+    for(i = 0; i &lt; 2 * N; i ++)
+    {
+        refresh(1, 1, H, seg[i].y1 + 1, seg[i].y2, seg[i].c);
+        area += len[1] * (seg[i + 1].x - seg[i].x);
+        if(dep[1] &gt; md) md = dep[1], ans = ml[1] * (seg[i + 1].x - seg[i].x);
+        else if(dep[1] == md) ans += ml[1] * (seg[i + 1].x - seg[i].x);
+    }
+    printf("%d %d %d\n", W * H - area, md, ans);
+}
+int main()
+{
+    while(scanf("%d", &amp;N), N)
+    {
+        init();
+        solve();
+    }
+    return 0;    
+}</pre>
+<p>解题转自：http://www.cnblogs.com/staginner/archive/2012/08/27/2658259.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-82213">
+<article class="comment" id="comment-82213">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516333" rel="external nofollow">新用户968551</a></span> on <a href="http://www.acmerblog.com/hdu-2704-bulletin-board-4303.html#comment-82213" rel="nofollow"><time datetime="2017-04-12T19:45:08+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把打喷嚏那段去掉。我喜欢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-82212">
+<article class="comment" id="comment-82212">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516333" rel="external nofollow">新用户968551</a></span> on <a href="http://www.acmerblog.com/hdu-2704-bulletin-board-4303.html#comment-82212" rel="nofollow"><time datetime="2017-04-12T19:45:08+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把打喷嚏那段去掉。我喜欢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-82211">
+<article class="comment" id="comment-82211">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516333" rel="external nofollow">新用户968551</a></span> on <a href="http://www.acmerblog.com/hdu-2704-bulletin-board-4303.html#comment-82211" rel="nofollow"><time datetime="2017-04-12T19:45:08+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把打喷嚏那段去掉。我喜欢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-82210">
+<article class="comment" id="comment-82210">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516333" rel="external nofollow">新用户968551</a></span> on <a href="http://www.acmerblog.com/hdu-2704-bulletin-board-4303.html#comment-82210" rel="nofollow"><time datetime="2017-04-12T19:45:08+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把打喷嚏那段去掉。我喜欢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-82209">
+<article class="comment" id="comment-82209">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516333" rel="external nofollow">新用户968551</a></span> on <a href="http://www.acmerblog.com/hdu-2704-bulletin-board-4303.html#comment-82209" rel="nofollow"><time datetime="2017-04-12T19:45:08+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把打喷嚏那段去掉。我喜欢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-82208">
+<article class="comment" id="comment-82208">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516333" rel="external nofollow">新用户968551</a></span> on <a href="http://www.acmerblog.com/hdu-2704-bulletin-board-4303.html#comment-82208" rel="nofollow"><time datetime="2017-04-12T19:45:08+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把打喷嚏那段去掉。我喜欢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-82207">
+<article class="comment" id="comment-82207">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516333" rel="external nofollow">新用户968551</a></span> on <a href="http://www.acmerblog.com/hdu-2704-bulletin-board-4303.html#comment-82207" rel="nofollow"><time datetime="2017-04-12T19:45:08+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把打喷嚏那段去掉。我喜欢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-82206">
+<article class="comment" id="comment-82206">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516333" rel="external nofollow">新用户968551</a></span> on <a href="http://www.acmerblog.com/hdu-2704-bulletin-board-4303.html#comment-82206" rel="nofollow"><time datetime="2017-04-12T19:45:08+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把打喷嚏那段去掉。我喜欢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-82205">
+<article class="comment" id="comment-82205">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516333" rel="external nofollow">新用户968551</a></span> on <a href="http://www.acmerblog.com/hdu-2704-bulletin-board-4303.html#comment-82205" rel="nofollow"><time datetime="2017-04-12T19:45:08+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把打喷嚏那段去掉。我喜欢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-82204">
+<article class="comment" id="comment-82204">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516333" rel="external nofollow">新用户968551</a></span> on <a href="http://www.acmerblog.com/hdu-2704-bulletin-board-4303.html#comment-82204" rel="nofollow"><time datetime="2017-04-12T19:45:08+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把打喷嚏那段去掉。我喜欢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-82203">
+<article class="comment" id="comment-82203">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516333" rel="external nofollow">新用户968551</a></span> on <a href="http://www.acmerblog.com/hdu-2704-bulletin-board-4303.html#comment-82203" rel="nofollow"><time datetime="2017-04-12T19:45:08+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把打喷嚏那段去掉。我喜欢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-82202">
+<article class="comment" id="comment-82202">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516333" rel="external nofollow">新用户968551</a></span> on <a href="http://www.acmerblog.com/hdu-2704-bulletin-board-4303.html#comment-82202" rel="nofollow"><time datetime="2017-04-12T19:45:08+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把打喷嚏那段去掉。我喜欢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-82201">
+<article class="comment" id="comment-82201">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516333" rel="external nofollow">新用户968551</a></span> on <a href="http://www.acmerblog.com/hdu-2704-bulletin-board-4303.html#comment-82201" rel="nofollow"><time datetime="2017-04-12T19:45:08+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把打喷嚏那段去掉。我喜欢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-24553">
+<article class="comment" id="comment-24553">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bai</a></span> on <a href="http://www.acmerblog.com/hdu-2704-bulletin-board-4303.html#comment-24553" rel="nofollow"><time datetime="2015-06-08T14:50:12+00:00" pubdate="">2015年6月8日 at 下午2:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>great work！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-62858">
+<article class="comment" id="comment-62858">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xin</a></span> on <a href="http://www.acmerblog.com/hdu-2704-bulletin-board-4303.html#comment-62858" rel="nofollow"><time datetime="2015-05-05T23:44:16+00:00" pubdate="">2015年5月5日 at 下午11:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>一开始就规定不相邻节点颜色相同，可能得不到最优解。我想个类似的算法，也不确定是否总能得到最优解：先着一个点，随机挑一个相邻点，着第二色，继续随机选一个点，但必须至少有一个边和已着点相邻，着上不同色，当然尽量不增加新色，直到完成。我还找不到反例验证他的错误。。希望LZ也帮想想, 有想法欢迎来邮件。谢谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-24562">
+<article class="comment" id="comment-24562">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NiKaWaLi</a></span> on <a href="http://www.acmerblog.com/hdu-2704-bulletin-board-4303.html#comment-24562" rel="nofollow"><time datetime="2015-04-30T07:07:40+00:00" pubdate="">2015年4月30日 at 上午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈呀！这个Dijkstra模板好长OwQ！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-24563">
+<article class="comment" id="comment-24563">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">nwling</a></span> on <a href="http://www.acmerblog.com/hdu-2704-bulletin-board-4303.html#comment-24563" rel="nofollow"><time datetime="2015-04-21T03:28:42+00:00" pubdate="">2015年4月21日 at 上午3:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>在第 18行的，while(scanf("%d %dn", &amp;n, &amp;c), n)，这句有错吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-24561">
+<article class="comment" id="comment-24561">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ruoshui</a></span> on <a href="http://www.acmerblog.com/hdu-2704-bulletin-board-4303.html#comment-24561" rel="nofollow"><time datetime="2015-04-15T10:56:46+00:00" pubdate="">2015年4月15日 at 上午10:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正解，已改正。应该都是protected</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-24557">
+<article class="comment" id="comment-24557">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">usx13123</a></span> on <a href="http://www.acmerblog.com/hdu-2704-bulletin-board-4303.html#comment-24557" rel="nofollow"><time datetime="2015-01-11T19:47:23+00:00" pubdate="">2015年1月11日 at 下午7:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Dijkstra 不适合有负权值的边吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-24554">
+<article class="comment" id="comment-24554">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rick</a></span> on <a href="http://www.acmerblog.com/hdu-2704-bulletin-board-4303.html#comment-24554" rel="nofollow"><time datetime="2014-12-25T21:02:02+00:00" pubdate="">2014年12月25日 at 下午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学习了。找到这题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-24559">
+<article class="comment" id="comment-24559">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gyouxu</a></span> on <a href="http://www.acmerblog.com/hdu-2704-bulletin-board-4303.html#comment-24559" rel="nofollow"><time datetime="2014-12-12T12:57:18+00:00" pubdate="">2014年12月12日 at 下午12:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，算是枚举吧，已修正</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-62859">
+<article class="comment" id="comment-62859">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jxfactor</a></span> on <a href="http://www.acmerblog.com/hdu-2704-bulletin-board-4303.html#comment-62859" rel="nofollow"><time datetime="2014-09-14T13:00:36+00:00" pubdate="">2014年9月14日 at 下午1:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序只能输出一个子序列</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-24560">
+<article class="comment" id="comment-24560">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zhiqiang</a></span> on <a href="http://www.acmerblog.com/hdu-2704-bulletin-board-4303.html#comment-24560" rel="nofollow"><time datetime="2014-06-16T17:07:07+00:00" pubdate="">2014年6月16日 at 下午5:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚开始学习，为啥会报错了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-57391">
+<article class="comment" id="comment-57391">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tzf88888888</a></span> on <a href="http://www.acmerblog.com/hdu-2704-bulletin-board-4303.html#comment-57391" rel="nofollow"><time datetime="2014-06-03T03:01:33+00:00" pubdate="">2014年6月3日 at 上午3:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>辛苦了，顶</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-24558">
+<article class="comment" id="comment-24558">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tufei</a></span> on <a href="http://www.acmerblog.com/hdu-2704-bulletin-board-4303.html#comment-24558" rel="nofollow"><time datetime="2014-04-26T16:51:24+00:00" pubdate="">2014年4月26日 at 下午4:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有没有C++语言的代码？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-24556">
+<article class="comment" id="comment-24556">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mnmlist</a></span> on <a href="http://www.acmerblog.com/hdu-2704-bulletin-board-4303.html#comment-24556" rel="nofollow"><time datetime="2014-03-16T19:15:39+00:00" pubdate="">2014年3月16日 at 下午7:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Thanks i enjoy your write-up about Why We Keep track of | J Squared Consulting</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-24555">
+<article class="comment" id="comment-24555">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">haojunyu</a></span> on <a href="http://www.acmerblog.com/hdu-2704-bulletin-board-4303.html#comment-24555" rel="nofollow"><time datetime="2014-03-01T12:26:37+00:00" pubdate="">2014年3月1日 at 下午12:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>递归实现的代码部分<br/>
+14句和18句的 wt[n - 1]是不是应该改为 wt[ n ] ?</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,540 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-26</div>
+<div class="tit"><h1 class="entry-title">hdu 1955 Prison rearrangement-动态规划-[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a>, <a href="http://www.acmerblog.com/category/dp2/package" rel="category tag" title="查看背包问题中的全部文章">背包问题</a></span><span class="i4">围观730次</span><span class="i3"><a class="ds-thread-count" data-thread-key="3029" href="http://www.acmerblog.com/hdu-1955-Prison-rearrangement-3029.html#comments" title="《hdu 1955 Prison rearrangement-动态规划-[解题报告]C++》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Prison rearrangement</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+In order to lower the risk of riots and escape attempts, the boards of two nearby prisons of equal prisoner capacity, have decided to rearrange their prisoners among themselves. They want to exchange half of the prisoners of one prison, for half of the prisoners of the other. However, from the archived information of the prisoners’ crime history, they know that some pairs of prisoners are dangerous to keep in the same prison, and that is why they are separated today, i.e. for every such pair of prisoners, one prisoners serves time in the first prison, and the other in the second one. The boards agree on the importance of keeping these pairs split between the prisons, which makes their rearrangement task a bit tricky. In fact, they soon find out that sometimes it is impossible to fulfil their wish of swapping half of the prisoners. Whenever this is the case, they have to settle for exchanging as close to one half of the prisoners as possible. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+On the first line of the input is a single positive integer n, telling the number of test scenarios to follow. Each scenario begins with a line containing two non-negative integers m and r, 1&lt;m&lt;200 being the number of prisoners in each of the two prisons, and r the number of dangerous pairs among the prisoners. Then follow r lines each containing a pair xi yi of integers in the range 1 to m, which means that prisoner xi of the first prison must not be placed in the same prison as prisoner yi of the second prison. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+On the first line of the input is a single positive integer n, telling the number of test scenarios to follow. Each scenario begins with a line containing two non-negative integers m and r, 1&lt;m&lt;200 being the number of prisoners in each of the two prisons, and r the number of dangerous pairs among the prisoners. Then follow r lines each containing a pair xi yi of integers in the range 1 to m, which means that prisoner xi of the first prison must not be placed in the same prison as prisoner yi of the second prison.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3
+101 0
+3 3
+1 2
+1 3
+1 1
+8 12
+1 1
+1 2
+1 3
+1 4
+2 5
+3 5
+4 5
+5 5
+6 6
+7 6
+8 7
+8 8</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+50
+0
+3</pre>
+<p> <!-- problem end --></p>
+<p>        第一遍读完题，可能没思路。试着从数据入手，看一下求解过程（以第三组数据为例）。如果第一个监狱选中1，也就是说要把1放到第二个监狱中，那么第二个监狱必须把1,2,3,4选中，因为它们不能和1在一起，否则就会发生冲突。同理，要把第二个监狱的1,2,3,4放到第一个监狱中，那么第一个监狱又要把与1,2,3,4冲突的都选出…… 
+</p><p>        这是个“牵一发而动全身”的过程。移动一个人的时候，可能会带动一大串同时移动。这样可以把监狱的人划分成好多组，每一组表示要同时移动的一串人。如下图，左边的代表监狱A，右边的代表监狱B。现在问题就变成这样了：两个监狱要以组为单位进行交换。因为最多交换一半，所以选第3、4组进行交换，最后每个监狱的交换人数为3。 </p>
+<p align="center"><img alt="" src="http://cdn.acmerblog.com/img/0_1311506683cvmA.gif.gif"/></p>
+<p>       从另一个角度，分组后的选择问题，有点像二维背包。每一组有两个值，从A里选的人数和从B里选的人数。即，每组相当于一个物品，有重量和体积。限制条件也有两个：从A中选择的总人数和从B中选择的总人数不能超过监狱容量的一半。即，背包的重量和体积都有限。最终要使交换的人尽可能的多。即，背包装得东西尽可能多。 </p>
+<p>       哈哈，分析到这里，估计就有思路了。问题的求解可分为两个阶段：分组、二维背包。只要这两个部分解决了，问题就解决啦。 </p>
+<p>     “万里长城第一步”——分组。如何分组？DFS or 传递闭包 都可以搞定。</p>
+<blockquote dir="ltr" style="MARGIN-RIGHT: 0px"><p>(1) DFS，先A出发，沿冲突边到B，再从B出发沿冲突边到A，如此下去，直到走投无路。</p>
+<p>(2)传递闭包，用Floyd。Floyd算法简单，实现无难度。关键是从Floyd的结果构造分组信息。这里不做解释，主要看代码。 </p>
+</blockquote>
+<p>     “山穷水尽疑无路，柳暗花明又一村”——二维背包。背包问题很经典，要多练习。二维背包用的也是DP。</p>
+<p>       状态转换方程：dp[k][i][j] = dp[k-1][i-a[k]][j-b[k]] || dp[k-1][i][j]。简单解释一下：dp[k][i][j]表示对前K组，用监狱A的i个人和监狱B的j个人交换是否成功。前K组的解与前K-1组有关。当前K-1组解决后，只要加上第K组就可以搞定前K组。对第K组有两种选择：选或不选。</p>
+<blockquote dir="ltr" style="MARGIN-RIGHT: 0px"><p>不选第K组，则dp[K][i][j]能否成功取决于dp[k-1][i][j] 能否成功。</p>
+<p>选第K组，则dp[K][i][j]能否成功取决于dp[k-1][i-a[k]][j-b[k]]能否成功。</p>
+</blockquote>
+<p>  最后，两种情况只要有一种成功， dp[k][i][j] 就能成功。 好啦，已经说的太多了，具体看代码吧。</p>
+<p> 代码（1）： DSF +　背包</p>
+<pre class="brush:cpp ">#include &lt;iostream&gt;
+using namespace std;
+
+//***********************常量定义*****************************
+
+const int SIZE = 205;
+
+
+//*********************自定义数据结构*************************
+
+
+
+
+//********************题目描述中的变量************************
+
+//监狱的人数
+int m;
+//会发生冲突的对数
+int r;
+
+
+//**********************算法中的变量**************************
+
+//map[i][j]表示i和j是否会冲突
+int map[SIZE][SIZE];
+
+//A组里的人数
+int aSize;
+//b组里的人数
+int bSize;
+//dp[i][j] 表示用A组的i个人换B组的j个人是否可行
+bool dp[SIZE][SIZE];
+//visited[0][i] 表示用A组中的点i是否被访问过
+//visited[1][i] 表示用B组中的点i是否被访问过
+bool visited[2][SIZE];
+
+
+//***********************算法实现*****************************
+
+void Init()
+{
+	memset( map, 0, sizeof(map) );
+	memset( visited, 0, sizeof(visited) );
+	memset( dp, 0, sizeof(dp) );
+}
+
+void Input()
+{
+	cin &gt;&gt; m &gt;&gt; r;
+	for( int i=0; i&lt;r; i++ )
+	{
+		int a, b;
+		cin &gt;&gt; a &gt;&gt; b;
+		map[a][b] = 1;
+	}
+}
+
+//side=0  表示当前正在搜索A组
+//side=1  表示当前正在搜索B组
+//id 表示当前正在搜索的编号
+void DFS( int side, int id )
+{
+	visited[side][id] = true;
+
+	//如果当前搜索的是A组
+	if( side == 0 )
+	{
+		//记录A组中的元素个数
+		aSize++;
+		for( int i=1; i&lt;=m; i++ )
+		{
+			//搜索的是B组中对应的点
+			if( map[id][i] &amp;&amp; !visited[1][i] )
+			{
+				DFS( 1, i );
+			}
+		}
+	}	
+	else
+	{
+		bSize++;
+		for( int j=1; j&lt;=m; j++ )
+		{			
+			if( map[j][id] &amp;&amp; !visited[0][j] )
+			{
+				DFS( 0, j );
+			}
+		}
+	}
+}
+
+//利用二维背包计算
+void Knapsack()
+{
+	dp[0][0] = true;
+	for( int x=m/2; x&gt;=aSize-1; x-- )
+	{
+		for( int y=m/2; y&gt;=bSize-1; y-- )
+		{
+			//if( dp[x - aSize][y - bSize] )	dp[x][y] = true;
+			if( dp[x][y] || dp[x - aSize][y - bSize] ) dp[x][y] = true;
+		}
+	}
+}
+
+void Output()
+{
+	for( int i=m/2; i&gt;=0; i-- )
+	{
+		if( dp[i][i] )
+		{
+			cout &lt;&lt; i &lt;&lt; endl;
+			break;
+		}
+	}
+}
+
+//************************main函数****************************
+
+int main()
+{
+	freopen( "in.txt", "r", stdin );	
+	
+	int caseNum;
+	cin &gt;&gt; caseNum;
+
+	while( caseNum-- )
+	{
+		Init();		
+		Input();
+		for( int i=1; i&lt;=m; i++ )
+		{
+			//跳过已经处理过的节点
+			if( visited[0][i] ) continue;
+
+			//计算A、B中的人数
+			aSize = 0;
+			bSize = 0;
+			DFS( 0, i );	
+
+			//利用二维背包计算
+			Knapsack();
+			
+		}
+		for( int i=1; i&lt;=m; i++ )
+		{			
+			if( visited[1][i] ) continue;			
+			aSize = 0;
+			bSize = 0;
+			DFS( 1, i );
+			Knapsack();
+			
+		}
+		Output();
+	}
+	return 0;
+}</pre>
+<p>代码（２），传递闭包　＋　ＤＦＳ</p>
+<pre class="brush:cpp ">#include &lt;iostream&gt;
+using namespace std;
+
+//***********************常量定义*****************************
+
+const int SIZE = 410;
+
+
+//*********************自定义数据结构*************************
+
+
+
+
+//********************题目描述中的变量************************
+
+//监狱的人数
+int m;
+//会发生冲突的对数
+int r;
+
+
+//**********************算法中的变量**************************
+
+//map[i][j]表示i和j是否会冲突
+int map[SIZE][SIZE];
+
+int cnt;
+int visited[SIZE];
+int groupA[SIZE/2];
+int groupB[SIZE/2];
+int dp[SIZE/2][SIZE/2];
+
+//***********************算法实现*****************************
+
+void Input()
+{
+	//输入数据
+	cin &gt;&gt; m &gt;&gt; r;
+
+	//初始化map数组
+	memset( map, 0, sizeof(map) );
+	for( int j=1; j&lt;=2*m; j++ )
+	{
+		map[j][j] = 1;
+	}
+	
+	for( int i=0; i&lt;r; i++ )
+	{
+		int a, b;
+		cin &gt;&gt; a &gt;&gt; b;
+		map[a][m+b] = 1;
+		map[m+b][a] = 1;
+	}
+}
+
+//求传递闭包
+void Floyd()
+{
+	for( int i=1; i&lt;=2*m; i++)
+	{
+		for( int j=1; j&lt;=2*m; j++ )
+		{
+			if( map[i][j] == 1 )			
+			{
+				for( int k=1; k&lt;=2*m; k++ )
+				{
+					//if( map[j][k] == 1 ) map[i][k] = 1;	
+					map[i][k] = map[i][k] || ( map[i][j] &amp;&amp; map[j][k] );
+				}
+			}
+		}
+	}
+}
+
+//填充数组 groupA[], groupB[] 
+void Build()
+{
+	memset( visited, 0, sizeof(visited) );
+	memset( groupA, 0, sizeof(groupA) );
+	memset( groupB, 0, sizeof(groupB) );
+	cnt = 0;
+
+	for( int i=1; i&lt;=2*m; i++ )
+	{
+		//跳过已访问的点
+		if( visited[i] == 0 )
+		{
+			cnt++;
+
+			for( int j=1; j&lt;=2*m; j++ )
+			{
+				if( map[i][j] == 1 )
+				{
+					if( j&lt;=m ) 
+						groupA[cnt]++;
+					else 
+						groupB[cnt]++;
+
+					visited[i] = 1; 
+				}
+			}
+		}
+	}
+}
+
+void Knapsack()
+{
+	memset( dp, 0, sizeof(dp) );
+	dp[0][0] = 1;
+	
+	//二维背包问题
+	for( int i=1; i&lt;=cnt; i++ )
+	{
+		for( int j=m/2; j&gt;=groupA[i]; j-- )
+		{
+			for( int k=m/2; k&gt;=groupB[i]; k-- )
+			{
+				//dp[j][k] = dp[j][k] || dp[j - groupA[i]][k - groupB[i]];
+				if( dp[j - groupA[i]][k - groupB[i]] )
+				{
+					dp[j][k] = 1;
+				}
+			}
+		}
+	}
+
+	for( int i=m/2; i&gt;=0; i-- )
+	{
+		if( dp[i][i] == 1 ) 
+		{
+			cout &lt;&lt; i &lt;&lt; endl;
+			break;
+		}
+	}
+}
+
+//************************main函数****************************
+
+int main()
+{
+	freopen( "in.txt", "r", stdin );	
+	
+	int caseNum;
+	cin &gt;&gt; caseNum;
+
+	while( caseNum-- )
+	{
+		Input();
+		Floyd();
+		Build();
+		Knapsack();		
+	}
+	return 0;
+}</pre>
+<p> 注：代码１已ＡＣ，代码２sample数据可过，提交ＷＡ，但思路应该没问题。哎，懒的调了。</p>
+<p>解题转自：http://blog.csdn.net/sj13051180/article/details/6630031</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-43410">
+<article class="comment" id="comment-43410">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xin</a></span> on <a href="http://www.acmerblog.com/hdu-1955-Prison-rearrangement-3029.html#comment-43410" rel="nofollow"><time datetime="2015-06-13T23:15:20+00:00" pubdate="">2015年6月13日 at 下午11:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>88行是多余的，可以删除</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-43417">
+<article class="comment" id="comment-43417">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">acmer29</a></span> on <a href="http://www.acmerblog.com/hdu-1955-Prison-rearrangement-3029.html#comment-43417" rel="nofollow"><time datetime="2015-05-30T21:30:03+00:00" pubdate="">2015年5月30日 at 下午9:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法很不错啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-43414">
+<article class="comment" id="comment-43414">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Anne</a></span> on <a href="http://www.acmerblog.com/hdu-1955-Prison-rearrangement-3029.html#comment-43414" rel="nofollow"><time datetime="2015-04-06T18:41:52+00:00" pubdate="">2015年4月6日 at 下午6:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>头文件的颜色是有意设成这种灰暗色的吗？感觉看不清</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-18048">
+<article class="comment" id="comment-18048">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zhiqiang</a></span> on <a href="http://www.acmerblog.com/hdu-1955-Prison-rearrangement-3029.html#comment-18048" rel="nofollow"><time datetime="2015-01-03T11:10:15+00:00" pubdate="">2015年1月3日 at 上午11:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>全是智力分析的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-43408">
+<article class="comment" id="comment-43408">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">binqi_ren</a></span> on <a href="http://www.acmerblog.com/hdu-1955-Prison-rearrangement-3029.html#comment-43408" rel="nofollow"><time datetime="2014-11-28T10:31:03+00:00" pubdate="">2014年11月28日 at 上午10:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序输出是对的，呈三角型。原程序是按C++写的，已经改成了C的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-43411">
+<article class="comment" id="comment-43411">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">userwawa</a></span> on <a href="http://www.acmerblog.com/hdu-1955-Prison-rearrangement-3029.html#comment-43411" rel="nofollow"><time datetime="2014-11-15T19:25:45+00:00" pubdate="">2014年11月15日 at 下午7:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>一开始就规定不相邻节点颜色相同，可能得不到最优解。我想个类似的算法，也不确定是否总能得到最优解：先着一个点，随机挑一个相邻点，着第二色，继续随机选一个点，但必须至少有一个边和已着点相邻，着上不同色，当然尽量不增加新色，直到完成。我还找不到反例验证他的错误。。希望LZ也帮想想, 有想法欢迎来邮件。谢谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-55972">
+<article class="comment" id="comment-55972">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mcitdkj</a></span> on <a href="http://www.acmerblog.com/hdu-1955-Prison-rearrangement-3029.html#comment-55972" rel="nofollow"><time datetime="2014-10-22T20:48:42+00:00" pubdate="">2014年10月22日 at 下午8:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的题，还是能做出几道的，嘿嘿</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-43415">
+<article class="comment" id="comment-43415">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">reking</a></span> on <a href="http://www.acmerblog.com/hdu-1955-Prison-rearrangement-3029.html#comment-43415" rel="nofollow"><time datetime="2014-10-01T03:20:10+00:00" pubdate="">2014年10月1日 at 上午3:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>比较基础，找些自信</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-43412">
+<article class="comment" id="comment-43412">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">howhaw</a></span> on <a href="http://www.acmerblog.com/hdu-1955-Prison-rearrangement-3029.html#comment-43412" rel="nofollow"><time datetime="2014-09-02T22:53:20+00:00" pubdate="">2014年9月2日 at 下午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正确性是关键，冲突是都会有的，主要是那种算法冲突的概率低</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-43409">
+<article class="comment" id="comment-43409">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">blogpick</a></span> on <a href="http://www.acmerblog.com/hdu-1955-Prison-rearrangement-3029.html#comment-43409" rel="nofollow"><time datetime="2014-06-08T09:40:28+00:00" pubdate="">2014年6月8日 at 上午9:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有意思，有难度</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-55973">
+<article class="comment" id="comment-55973">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">123zxc</a></span> on <a href="http://www.acmerblog.com/hdu-1955-Prison-rearrangement-3029.html#comment-55973" rel="nofollow"><time datetime="2014-04-21T10:42:46+00:00" pubdate="">2014年4月21日 at 上午10:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>请问printAllCombination的时间复杂度怎么分析呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-43416">
+<article class="comment" id="comment-43416">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiao1108</a></span> on <a href="http://www.acmerblog.com/hdu-1955-Prison-rearrangement-3029.html#comment-43416" rel="nofollow"><time datetime="2014-02-07T14:01:26+00:00" pubdate="">2014年2月7日 at 下午2:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>原来如此 了解了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-55974">
+<article class="comment" id="comment-55974">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">room306</a></span> on <a href="http://www.acmerblog.com/hdu-1955-Prison-rearrangement-3029.html#comment-55974" rel="nofollow"><time datetime="2013-12-31T13:01:04+00:00" pubdate="">2013年12月31日 at 下午1:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>后面的掩码变量部分乍一看比较难理解，其实就是把32位按照一个整体来看待。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-43413">
+<article class="comment" id="comment-43413">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Bob</a></span> on <a href="http://www.acmerblog.com/hdu-1955-Prison-rearrangement-3029.html#comment-43413" rel="nofollow"><time datetime="2013-12-31T02:52:52+00:00" pubdate="">2013年12月31日 at 上午2:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>gcc环境</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

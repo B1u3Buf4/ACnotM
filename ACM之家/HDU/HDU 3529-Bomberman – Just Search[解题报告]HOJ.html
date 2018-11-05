@@ -1,0 +1,398 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>11-05</div>
+<div class="tit"><h1 class="entry-title">HDU 3529-Bomberman – Just Search![解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观378次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6490" href="http://www.acmerblog.com/hdu-3529-bomberman-just-search-6490.html#comments" title="《HDU 3529-Bomberman – Just Search![解题报告]HOJ》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Bomberman – Just Search!</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Bomberman has been a very popular game ever since it was released. As you can see above, the game is played in an N*M rectangular room. Bomberman can go around the room and place bombs. Bombs explode in 4 directions with radius r. To finish a stage, bomberman has to defeat all the foes with his bombs and find an exit behind one of the walls.<br/>Since time is limited, bomberman has to do this job quite efficiently. Now he has successfully defeated all the foes, and is searching for the exit. It’s really troublesome to destroy the walls one by one, so he’s asking for your help to calculate the minimal number of bombs he has to place in order to destroy all the walls, thus he can surely find the exit.<br/><center><img alt="The Simple Programming Language" src="http://www.acmerblog.com/img/1418324815649.jpg"/></center> </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input contains several cases. Each case begins with two integers: N and M(4 &lt;= N, M &lt;= 15). N lines follow, each contains M characters, describing the room. A ‘*’ means a concrete wall which can never be destroyed, a ‘#’ is an ordinary wall that can be destroyed by a single bomb, a ‘.’ is an empty space where bombs can only be placed. There’re at most 30 ordinary walls. The borders of the room is always surrounded by concrete walls, as you can see from the samples. You may assume that the explosion radius r is infinite, so that an explosion can reach as far as possible until it meets a wall and destroys it if it’s an ordinary one. Proceed until the end of file. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input contains several cases. Each case begins with two integers: N and M(4 &lt;= N, M &lt;= 15). N lines follow, each contains M characters, describing the room. A ‘*’ means a concrete wall which can never be destroyed, a ‘#’ is an ordinary wall that can be destroyed by a single bomb, a ‘.’ is an empty space where bombs can only be placed. There’re at most 30 ordinary walls. The borders of the room is always surrounded by concrete walls, as you can see from the samples. You may assume that the explosion radius r is infinite, so that an explosion can reach as far as possible until it meets a wall and destroys it if it’s an ordinary one. Proceed until the end of file.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+9 11
+***********
+*#.#...#.#*
+*.*.*.*.*.*
+*.........*
+*.*.*.*.*.*
+*....#....*
+*.*.*.*.*.*
+*....#....*
+***********
+3 13
+*************
+*..##...##..*
+*************</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+3
+3</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+#include &lt;algorithm&gt;
+#include &lt;vector&gt; 
+using namespace std;
+const int inf = (-1u&gt;&gt;1);
+#define N 15*15 
+#define M N
+struct node{
+	int r,c;
+	node *L,*R,*U,*D;
+};
+node DD[N*4+5], row[N + 5], col[M+5], head;
+int cnt, size[M+5];
+int n, m;
+char s[20][20]; 
+int tag[20][20]; 
+int ans; 
+int rcnt, ccnt; 
+
+inline void init(int r, int c){
+ cnt = 0;
+ head.L = head.R = head.U = head.D = &amp;head;
+ for (int i = c - 1; i &gt;= 0; i--){
+ col[i].c = i;
+ col[i].r = r;
+ col[i].L = &amp;head;
+ col[i].R = head.R;
+ col[i].L-&gt;R = col[i].R-&gt;L = &amp;col[i];
+ col[i].U = col[i].D = &amp;col[i];
+ size[i] = 0; 
+ } 
+ for (int i = r - 1; i &gt;= 0; i--){
+ row[i].r = i;
+ row[i].c = c;
+ row[i].U = &amp;head;
+ row[i].D = head.D;
+ row[i].U-&gt;D = row[i].D-&gt;U = &amp;row[i];
+ row[i].L = row[i].R = &amp;row[i]; 
+ }
+}
+
+inline void delLR(node *p){
+ p-&gt;L-&gt;R = p-&gt;R;
+ p-&gt;R-&gt;L = p-&gt;L;
+}
+inline void delUD(node *p){
+ p-&gt;U-&gt;D = p-&gt;D;
+ p-&gt;D-&gt;U = p-&gt;U;
+} 
+inline void recLR(node *p){
+ p-&gt;L-&gt;R = p-&gt;R-&gt;L = p;
+}
+inline void recUD(node *p){
+ p-&gt;U-&gt;D = p-&gt;D-&gt;U = p;
+} 
+inline void add(int r, int c){
+ node *p = &amp;DD[cnt++];
+ p-&gt;c = c;
+ p-&gt;r = r;
+ p-&gt;U = &amp;col[c];
+ p-&gt;D = col[c].D;
+ p-&gt;U-&gt;D = p-&gt;D-&gt;U = p;
+ p-&gt;L = &amp;row[r];
+ p-&gt;R = row[r].R;
+ p-&gt;L-&gt;R = p-&gt;R-&gt;L = p;
+ size[c]++;
+} 
+
+ 
+
+
+void cover(node *p){
+ if (p-&gt;c == ccnt)
+ return;
+ node *q;
+ for (q = p-&gt;D; q != p; q = q-&gt;D){
+ delLR(q); 
+ }
+} 
+
+void resume(node *p){
+ if (p-&gt;c == ccnt)
+ return;
+ node *q;
+ for (q = p-&gt;D; q != p; q = q-&gt;D){
+ recLR(q); 
+ }
+}
+
+int h(){
+ bool vis[N] = {false};
+ node *p, *q, *pi;
+ int nu = 0; 
+ for (p = head.R; p != &amp;head; p = p-&gt;R){
+ if (!vis[p-&gt;c]){
+ vis[p-&gt;c] = true;
+ nu++;
+ for (q = col[p-&gt;c].D; q != &amp;col[p-&gt;c]; q = q-&gt;D)
+ for (pi = q-&gt;R; pi != q; pi = pi-&gt;R)
+ vis[pi-&gt;c] = true;
+ }
+ } 
+ return nu;
+} 
+ 
+void DLX(int k){
+ node *p;
+ if (head.L == (&amp;head)){
+ ans = k; 
+ return;
+ }
+ if (k + h() &gt;= ans)return; 
+ 
+ int MIN = inf, c = 1;
+ for (p = head.R; p != (&amp;head); p = p-&gt;R){
+ if (size[p-&gt;c] &lt; MIN){
+ MIN = size[p-&gt;c];
+ c = p-&gt;c;
+ }
+ }
+ 
+ for (p = col[c].D; p != (&amp;col[c]); p = p-&gt;D){
+ node *q;
+ cover(p); 
+ for (q = p-&gt;L; q != p; q = q-&gt;L){
+ cover(q);
+ }
+ DLX(k + 1); 
+ for (q = p-&gt;R; q != p; q = q-&gt;R){ 
+ resume(q);
+ } 
+ resume(p); 
+ }
+}
+
+
+ 
+int main(){
+ //freopen("in.txt", "r", stdin);
+ // freopen("out.txt", "w", stdout); 
+ while (scanf("%d %d", &amp;n, &amp;m) == 2){
+ rcnt = 0, ccnt = 0;
+ for (int i = 0; i &lt; n; i++){
+ scanf("%s", s[i]);
+ for (int j = 1; s[i][j]; j++){
+ if (s[i][j] == '#')
+ tag[i][j] = ccnt++;
+ } 
+ }
+ init((n - 2 )*(m - 2), ccnt); 
+ for (int i = 1; i &lt; n - 1; i++){
+ for (int j = 1; j &lt; m - 1; j++){
+ int x, y; 
+ if (s[i][j] == '.'){
+ x = i, y = j - 1;
+ while (s[x][y] == '.')y--;
+ if (s[x][y] == '#')add(rcnt, tag[x][y]);
+ 
+ x = i - 1, y = j;
+ while (s[x][y] == '.')x--;
+ if (s[x][y] == '#')add(rcnt, tag[x][y]);
+ 
+ x = i, y = j + 1;
+ while (s[x][y] == '.')y++;
+ if (s[x][y] == '#')add(rcnt, tag[x][y]); 
+ 
+ x = i + 1, y = j;
+ while (s[x][y] == '.')x++;
+ if (s[x][y] == '#')add(rcnt, tag[x][y]);
+ 
+ rcnt++; 
+ } 
+ }
+ }
+ ans = inf;
+ DLX(0);
+ printf("%d\n", ans); 
+ }
+ return 0;
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75046">
+<article class="comment" id="comment-75046">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517114" rel="external nofollow">新用户601123</a></span> on <a href="http://www.acmerblog.com/hdu-3529-bomberman-just-search-6490.html#comment-75046" rel="nofollow"><time datetime="2017-04-12T03:53:51+00:00" pubdate="">2017年4月12日 at 上午3:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63675">
+<article class="comment" id="comment-63675">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiao1108</a></span> on <a href="http://www.acmerblog.com/hdu-3529-bomberman-just-search-6490.html#comment-63675" rel="nofollow"><time datetime="2015-07-20T03:22:34+00:00" pubdate="">2015年7月20日 at 上午3:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>nice!!!</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30949">
+<article class="comment" id="comment-30949">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">daisyleedq</a></span> on <a href="http://www.acmerblog.com/hdu-3529-bomberman-just-search-6490.html#comment-30949" rel="nofollow"><time datetime="2015-05-29T18:42:23+00:00" pubdate="">2015年5月29日 at 下午6:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有点意思</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30950">
+<article class="comment" id="comment-30950">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Riddick</a></span> on <a href="http://www.acmerblog.com/hdu-3529-bomberman-just-search-6490.html#comment-30950" rel="nofollow"><time datetime="2015-05-17T06:39:57+00:00" pubdate="">2015年5月17日 at 上午6:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法挺不错。NewHead代表新的头节点，通过递归找到最后一个节点之后，就把这个节点赋给NewHead，然后一直返回返回，中途这个值是没有变化的，一边返回一边把相应的指针方向颠倒，最后结束时返回新的头节点到主函数。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63676">
+<article class="comment" id="comment-63676">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Dick</a></span> on <a href="http://www.acmerblog.com/hdu-3529-bomberman-just-search-6490.html#comment-63676" rel="nofollow"><time datetime="2015-05-08T05:57:08+00:00" pubdate="">2015年5月8日 at 上午5:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>神奇的网站</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30948">
+<article class="comment" id="comment-30948">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">0xc0de</a></span> on <a href="http://www.acmerblog.com/hdu-3529-bomberman-just-search-6490.html#comment-30948" rel="nofollow"><time datetime="2015-04-25T13:15:59+00:00" pubdate="">2015年4月25日 at 下午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算法是程序的灵魂，算法分简单和复杂，如果不搞大数据类，程序员了解一下简单点的算法也是可以的，但是会算法的一定要会编程才行，程序员不一定要会算法，利于自己项目需要的可以简单了解。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30947">
+<article class="comment" id="comment-30947">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">digiworm</a></span> on <a href="http://www.acmerblog.com/hdu-3529-bomberman-just-search-6490.html#comment-30947" rel="nofollow"><time datetime="2015-04-04T16:47:59+00:00" pubdate="">2015年4月4日 at 下午4:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>写的好·····  Pollard Rho快速因数分解</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30943">
+<article class="comment" id="comment-30943">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zx123456</a></span> on <a href="http://www.acmerblog.com/hdu-3529-bomberman-just-search-6490.html#comment-30943" rel="nofollow"><time datetime="2015-04-03T07:47:00+00:00" pubdate="">2015年4月3日 at 上午7:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这道题这里的解法最坏情况似乎应该是指数的。回溯的时候<br/>
+O(n) = O(n-1) + O(n-2) + ….<br/>
+O(n-1) = O(n-2) + O(n-3)+ …<br/>
+O(n) – O(n-1) = O(n-1)<br/>
+O(n) = 2O(n-1)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30942">
+<article class="comment" id="comment-30942">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yupeng.bai</a></span> on <a href="http://www.acmerblog.com/hdu-3529-bomberman-just-search-6490.html#comment-30942" rel="nofollow"><time datetime="2015-03-22T20:18:09+00:00" pubdate="">2015年3月22日 at 下午8:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>哎，path[0]应该是从零开始吧，为什么是赋值1呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30944">
+<article class="comment" id="comment-30944">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Rosamondwu</a></span> on <a href="http://www.acmerblog.com/hdu-3529-bomberman-just-search-6490.html#comment-30944" rel="nofollow"><time datetime="2015-03-09T01:46:17+00:00" pubdate="">2015年3月9日 at 上午1:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>int L[m+1][n+1];这样定义出错，这个在gcc上可以编译通过 在VS上不行 应该改为new 或者vector</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30951">
+<article class="comment" id="comment-30951">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">skyand</a></span> on <a href="http://www.acmerblog.com/hdu-3529-bomberman-just-search-6490.html#comment-30951" rel="nofollow"><time datetime="2015-02-12T01:19:26+00:00" pubdate="">2015年2月12日 at 上午1:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>顶一个 赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30941">
+<article class="comment" id="comment-30941">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">michaelwen</a></span> on <a href="http://www.acmerblog.com/hdu-3529-bomberman-just-search-6490.html#comment-30941" rel="nofollow"><time datetime="2015-02-08T03:42:16+00:00" pubdate="">2015年2月8日 at 上午3:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>代码可真够长的！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30946">
+<article class="comment" id="comment-30946">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zclzcllove</a></span> on <a href="http://www.acmerblog.com/hdu-3529-bomberman-just-search-6490.html#comment-30946" rel="nofollow"><time datetime="2015-01-20T23:18:10+00:00" pubdate="">2015年1月20日 at 下午11:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我想整理一下leetcode的题解，站长能不能给权限</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30940">
+<article class="comment" id="comment-30940">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lint</a></span> on <a href="http://www.acmerblog.com/hdu-3529-bomberman-just-search-6490.html#comment-30940" rel="nofollow"><time datetime="2014-12-25T08:54:12+00:00" pubdate="">2014年12月25日 at 上午8:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是研发类的题还是算法类？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30945">
+<article class="comment" id="comment-30945">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">binqi_ren</a></span> on <a href="http://www.acmerblog.com/hdu-3529-bomberman-just-search-6490.html#comment-30945" rel="nofollow"><time datetime="2014-12-15T01:46:29+00:00" pubdate="">2014年12月15日 at 上午1:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#!/usr/bin/env python def cou(n): arr =  [1]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,836 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>09-18</div>
+<div class="tit"><h1 class="entry-title">HDU 4822-Tri-war-DFS-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/dfs" rel="category tag" title="查看DFS搜索中的全部文章">DFS搜索</a>, <a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观99次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7867" href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comments" title="《HDU 4822-Tri-war-DFS-[解题报告]HOJ》上的评论">65 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Tri-war</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Three countries, Red, Yellow, and Blue are in war. The map of battlefield is a tree, which means that there are N nodes and (N �C 1) edges that connect all the nodes. Each country has a base station located in one node. All three countries will not place their station in the same node. And each country will start from its base station to occupy other nodes. For each node, country A will occupy it iff other two country’s base stations have larger distances to that node compared to country A. Note that each edge is of the same length.
+<p>Given three country’s base station, you task is to calculate the number of nodes each country occupies (the base station is counted). </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input starts with a single integer T (1 ≤ T ≤ 10), the number of test cases.
+<p>Each test cases starts with a single integer N (3 ≤ N ≤ 10 ^ 5), which means there are N nodes in the tree.</p>
+<p>Then N – 1 lines follow, each containing two integers u and v (1 ≤ u, v ≤ N, u ≠ v), which means that there is an edge between node u and node v.</p>
+<p>Then a single integer M (1 ≤ M ≤ 10 ^ 5) follows, indicating the number of queries.</p>
+<p>Each the next M lines contains a query of three integers a, b, c (1 ≤ a, b, c ≤ N, a, b, c are distinct), which indicates the base stations of the three countries respectively. </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input starts with a single integer T (1 ≤ T ≤ 10), the number of test cases.
+<p>Each test cases starts with a single integer N (3 ≤ N ≤ 10 ^ 5), which means there are N nodes in the tree.</p>
+<p>Then N – 1 lines follow, each containing two integers u and v (1 ≤ u, v ≤ N, u ≠ v), which means that there is an edge between node u and node v.</p>
+<p>Then a single integer M (1 ≤ M ≤ 10 ^ 5) follows, indicating the number of queries.</p>
+<p>Each the next M lines contains a query of three integers a, b, c (1 ≤ a, b, c ≤ N, a, b, c are distinct), which indicates the base stations of the three countries respectively.</p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+9
+1 2
+1 3
+1 4
+2 5
+2 6
+2 7
+6 8
+6 9
+2
+1 2 8
+2 1 4</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+3 3 1
+6 2 1</pre>
+<p> <!-- problem end --></p>
+<p>首先如果是两个点那应该从中间切成两半，再判断所属</p>
+<p>所以必然需要使用树上倍增==</p>
+<p>继而如果是三个点，则需要仔细分情况讨论==</p>
+<p>参考别人的分类讨论写的，感觉那个type判断在哪条链很巧妙啊～</p>
+<pre class="brush:cpp"> #pragma comment(linker,"/STACK:16777216")
+ #include&lt;stdio.h&gt;
+ #include&lt;string.h&gt;
+ #include&lt;algorithm&gt;
+ using namespace std;
+ struct dian{
+   int type,u;
+ };
+ int now,next[200005],head[200005],point[200005];
+ int parent[200005][21],size[200005],depth[200005];
+ void add(int x,int y)
+ {
+   next[++now]=head[x];
+   head[x]=now;
+   point[now]=y;
+ }
+ void dfs(int u,int pre,int deep)
+ {
+   int i,v;
+   parent[u][0]=pre;
+   size[u]=1;
+   depth[u]=deep;
+   for (i=head[u];i!=-1;i=next[i])
+   {
+     v=point[i];
+     if (v==pre) continue;
+     dfs(v,u,deep+1);
+     size[u]+=size[v];
+   }
+ }
+ void rmq_build(int n)
+ {
+   for (int k=0;k&lt;20;k++)
+     for (int u=1;u&lt;=n;u++)
+       if (parent[u][k]==-1) parent[u][k+1]=-1;
+       else parent[u][k+1]=parent[parent[u][k]][k];
+ }
+ int go_up(int u,int deep)
+ {
+   for (int k=0;k&lt;=20;k++)
+     if ((deep&gt;&gt;k)&amp;1) u=parent[u][k];
+   return u;
+ }
+ int rmq_query(int u,int v)
+ {
+   if (depth[u]&lt;depth[v]) swap(u,v);
+   u=go_up(u,depth[u]-depth[v]);
+   if (u==v) return u;
+   for (int k=20;k&gt;=0;k--)
+     if (parent[u][k]!=parent[v][k])
+       u=parent[u][k],v=parent[v][k];
+   return parent[u][0];
+ }
+ dian get_middle(int a,int b,int ab)
+ {
+   int len=depth[a]+depth[b]-2*depth[ab];
+   dian n1;
+   if (depth[a]&gt;=depth[b])
+     n1.type=1,n1.u=go_up(a,(len-1)/2);
+   else n1.type=2,n1.u=go_up(b,len/2);
+   return n1;
+ }
+ int n;
+ int cal(int a,int b,int c,int ab,int ac)
+ {
+   dian ab_m=get_middle(a,b,ab),ac_m=get_middle(a,c,ac);
+   if (ab_m.type==1&amp;&amp;ac_m.type==1)
+     return depth[ab_m.u]&gt;depth[ac_m.u]?size[ab_m.u]:size[ac_m.u];
+   else if (ab_m.type==2&amp;&amp;ac_m.type==2){
+       if (depth[ab_m.u]&lt;depth[ac_m.u]) swap(ab_m,ac_m);
+       if (rmq_query(ab_m.u,ac_m.u)==ac_m.u) return n-size[ac_m.u];
+       return n-size[ab_m.u]-size[ac_m.u];
+   }
+   else{
+     if (ab_m.type==2) swap(ab_m,ac_m);
+     int tmp=rmq_query(ab_m.u,ac_m.u);
+     if (tmp==ab_m.u) return size[ab_m.u]-size[ac_m.u];
+     return size[ab_m.u];
+   }
+ }
+ int main()
+ {
+   int a,b,c,ab,bc,ac,T,m,i;
+   scanf("%d",&amp;T);
+   while (T--)
+   {
+     scanf("%d",&amp;n);
+     now=0;
+     memset(head,-1,sizeof(head));
+     for (i=1;i&lt;n;i++)
+     {
+       scanf("%d%d",&amp;a,&amp;b);
+       add(a,b); add(b,a);
+     }
+     dfs(1,-1,0);
+     rmq_build(n);
+     scanf("%d",&amp;m);
+     while (m--)
+     {
+       scanf("%d%d%d",&amp;a,&amp;b,&amp;c);
+       ab=rmq_query(a,b),ac=rmq_query(a,c),bc=rmq_query(b,c);
+       printf("%d %d %d\n",
+           cal(a,b,c,ab,ac),cal(b,a,c,ab,bc),cal(c,a,b,ac,bc));
+     }
+   }
+   return 0;
+ }
+</pre>
+<p>题目链接：<a target="_blank">http://acm.hdu.edu.cn/showproblem.php?pid=4822</a></p>
+<p>参考：http://www.cnblogs.com/xiao-xin/articles/4278317.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-101980">
+<article class="comment" id="comment-101980">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511936" rel="external nofollow">新用户079313</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-101980" rel="nofollow"><time datetime="2017-04-24T13:58:59+00:00" pubdate="">2017年4月24日 at 下午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>身在美国能说什么呢……  伦家还没到3月哇…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101979">
+<article class="comment" id="comment-101979">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511936" rel="external nofollow">新用户079313</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-101979" rel="nofollow"><time datetime="2017-04-24T13:58:59+00:00" pubdate="">2017年4月24日 at 下午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>身在美国能说什么呢……  伦家还没到3月哇…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101978">
+<article class="comment" id="comment-101978">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511936" rel="external nofollow">新用户079313</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-101978" rel="nofollow"><time datetime="2017-04-24T13:58:59+00:00" pubdate="">2017年4月24日 at 下午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>身在美国能说什么呢……  伦家还没到3月哇…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101977">
+<article class="comment" id="comment-101977">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511936" rel="external nofollow">新用户079313</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-101977" rel="nofollow"><time datetime="2017-04-24T13:58:59+00:00" pubdate="">2017年4月24日 at 下午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>身在美国能说什么呢……  伦家还没到3月哇…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101976">
+<article class="comment" id="comment-101976">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511936" rel="external nofollow">新用户079313</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-101976" rel="nofollow"><time datetime="2017-04-24T13:58:59+00:00" pubdate="">2017年4月24日 at 下午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>身在美国能说什么呢……  伦家还没到3月哇…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101975">
+<article class="comment" id="comment-101975">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511936" rel="external nofollow">新用户079313</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-101975" rel="nofollow"><time datetime="2017-04-24T13:58:59+00:00" pubdate="">2017年4月24日 at 下午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>身在美国能说什么呢……  伦家还没到3月哇…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101974">
+<article class="comment" id="comment-101974">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511936" rel="external nofollow">新用户079313</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-101974" rel="nofollow"><time datetime="2017-04-24T13:58:59+00:00" pubdate="">2017年4月24日 at 下午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>身在美国能说什么呢……  伦家还没到3月哇…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101973">
+<article class="comment" id="comment-101973">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511936" rel="external nofollow">新用户079313</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-101973" rel="nofollow"><time datetime="2017-04-24T13:58:59+00:00" pubdate="">2017年4月24日 at 下午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>身在美国能说什么呢……  伦家还没到3月哇…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101972">
+<article class="comment" id="comment-101972">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511936" rel="external nofollow">新用户079313</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-101972" rel="nofollow"><time datetime="2017-04-24T13:58:59+00:00" pubdate="">2017年4月24日 at 下午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>身在美国能说什么呢……  伦家还没到3月哇…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101537">
+<article class="comment" id="comment-101537">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524983" rel="external nofollow">新用户785136</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-101537" rel="nofollow"><time datetime="2017-04-23T14:02:14+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我之前抢到的沙发那  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101536">
+<article class="comment" id="comment-101536">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524983" rel="external nofollow">新用户785136</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-101536" rel="nofollow"><time datetime="2017-04-23T14:02:14+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我之前抢到的沙发那  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101535">
+<article class="comment" id="comment-101535">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524983" rel="external nofollow">新用户785136</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-101535" rel="nofollow"><time datetime="2017-04-23T14:02:14+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我之前抢到的沙发那  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101534">
+<article class="comment" id="comment-101534">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524983" rel="external nofollow">新用户785136</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-101534" rel="nofollow"><time datetime="2017-04-23T14:02:14+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我之前抢到的沙发那  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101533">
+<article class="comment" id="comment-101533">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524983" rel="external nofollow">新用户785136</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-101533" rel="nofollow"><time datetime="2017-04-23T14:02:14+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我之前抢到的沙发那  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101532">
+<article class="comment" id="comment-101532">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524983" rel="external nofollow">新用户785136</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-101532" rel="nofollow"><time datetime="2017-04-23T14:02:14+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我之前抢到的沙发那  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101531">
+<article class="comment" id="comment-101531">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524983" rel="external nofollow">新用户785136</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-101531" rel="nofollow"><time datetime="2017-04-23T14:02:14+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我之前抢到的沙发那  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101530">
+<article class="comment" id="comment-101530">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524983" rel="external nofollow">新用户785136</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-101530" rel="nofollow"><time datetime="2017-04-23T14:02:14+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我之前抢到的沙发那  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101528">
+<article class="comment" id="comment-101528">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524983" rel="external nofollow">新用户785136</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-101528" rel="nofollow"><time datetime="2017-04-23T14:02:14+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我之前抢到的沙发那  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101527">
+<article class="comment" id="comment-101527">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524983" rel="external nofollow">新用户785136</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-101527" rel="nofollow"><time datetime="2017-04-23T14:02:14+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我之前抢到的沙发那  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100710">
+<article class="comment" id="comment-100710">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919523319" rel="external nofollow">新用户286052</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-100710" rel="nofollow"><time datetime="2017-04-22T13:59:09+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>西安难道成伊斯兰国了？！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100709">
+<article class="comment" id="comment-100709">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919523319" rel="external nofollow">新用户286052</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-100709" rel="nofollow"><time datetime="2017-04-22T13:59:09+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>西安难道成伊斯兰国了？！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100708">
+<article class="comment" id="comment-100708">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919523319" rel="external nofollow">新用户286052</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-100708" rel="nofollow"><time datetime="2017-04-22T13:59:09+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>西安难道成伊斯兰国了？！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100707">
+<article class="comment" id="comment-100707">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919523319" rel="external nofollow">新用户286052</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-100707" rel="nofollow"><time datetime="2017-04-22T13:59:09+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>西安难道成伊斯兰国了？！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100706">
+<article class="comment" id="comment-100706">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919523319" rel="external nofollow">新用户286052</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-100706" rel="nofollow"><time datetime="2017-04-22T13:59:09+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>西安难道成伊斯兰国了？！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100705">
+<article class="comment" id="comment-100705">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919523319" rel="external nofollow">新用户286052</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-100705" rel="nofollow"><time datetime="2017-04-22T13:59:09+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>西安难道成伊斯兰国了？！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100153">
+<article class="comment" id="comment-100153">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527066" rel="external nofollow">新用户066686</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-100153" rel="nofollow"><time datetime="2017-04-21T14:04:08+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>北京人 你们幸苦了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100152">
+<article class="comment" id="comment-100152">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527066" rel="external nofollow">新用户066686</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-100152" rel="nofollow"><time datetime="2017-04-21T14:04:08+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>北京人 你们幸苦了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100151">
+<article class="comment" id="comment-100151">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527066" rel="external nofollow">新用户066686</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-100151" rel="nofollow"><time datetime="2017-04-21T14:04:08+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>北京人 你们幸苦了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100150">
+<article class="comment" id="comment-100150">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527066" rel="external nofollow">新用户066686</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-100150" rel="nofollow"><time datetime="2017-04-21T14:04:08+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>北京人 你们幸苦了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100149">
+<article class="comment" id="comment-100149">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527066" rel="external nofollow">新用户066686</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-100149" rel="nofollow"><time datetime="2017-04-21T14:04:08+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>北京人 你们幸苦了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100148">
+<article class="comment" id="comment-100148">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527066" rel="external nofollow">新用户066686</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-100148" rel="nofollow"><time datetime="2017-04-21T14:04:08+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>北京人 你们幸苦了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100147">
+<article class="comment" id="comment-100147">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527066" rel="external nofollow">新用户066686</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-100147" rel="nofollow"><time datetime="2017-04-21T14:04:08+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>北京人 你们幸苦了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100146">
+<article class="comment" id="comment-100146">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527066" rel="external nofollow">新用户066686</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-100146" rel="nofollow"><time datetime="2017-04-21T14:04:08+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>北京人 你们幸苦了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100145">
+<article class="comment" id="comment-100145">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527066" rel="external nofollow">新用户066686</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-100145" rel="nofollow"><time datetime="2017-04-21T14:04:08+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>北京人 你们幸苦了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100144">
+<article class="comment" id="comment-100144">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527066" rel="external nofollow">新用户066686</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-100144" rel="nofollow"><time datetime="2017-04-21T14:04:08+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>北京人 你们幸苦了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100143">
+<article class="comment" id="comment-100143">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527066" rel="external nofollow">新用户066686</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-100143" rel="nofollow"><time datetime="2017-04-21T14:04:08+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>北京人 你们幸苦了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96287">
+<article class="comment" id="comment-96287">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518836" rel="external nofollow">新用户795049</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-96287" rel="nofollow"><time datetime="2017-04-19T19:07:49+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不要在博客上追求太多了~！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96286">
+<article class="comment" id="comment-96286">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518836" rel="external nofollow">新用户795049</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-96286" rel="nofollow"><time datetime="2017-04-19T19:07:49+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不要在博客上追求太多了~！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96283">
+<article class="comment" id="comment-96283">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518836" rel="external nofollow">新用户795049</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-96283" rel="nofollow"><time datetime="2017-04-19T19:07:49+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不要在博客上追求太多了~！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96282">
+<article class="comment" id="comment-96282">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518836" rel="external nofollow">新用户795049</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-96282" rel="nofollow"><time datetime="2017-04-19T19:07:49+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不要在博客上追求太多了~！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96281">
+<article class="comment" id="comment-96281">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518836" rel="external nofollow">新用户795049</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-96281" rel="nofollow"><time datetime="2017-04-19T19:07:49+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不要在博客上追求太多了~！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96280">
+<article class="comment" id="comment-96280">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518836" rel="external nofollow">新用户795049</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-96280" rel="nofollow"><time datetime="2017-04-19T19:07:49+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不要在博客上追求太多了~！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96279">
+<article class="comment" id="comment-96279">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518836" rel="external nofollow">新用户795049</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-96279" rel="nofollow"><time datetime="2017-04-19T19:07:49+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不要在博客上追求太多了~！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96278">
+<article class="comment" id="comment-96278">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518836" rel="external nofollow">新用户795049</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-96278" rel="nofollow"><time datetime="2017-04-19T19:07:49+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不要在博客上追求太多了~！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96277">
+<article class="comment" id="comment-96277">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518836" rel="external nofollow">新用户795049</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-96277" rel="nofollow"><time datetime="2017-04-19T19:07:49+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不要在博客上追求太多了~！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96276">
+<article class="comment" id="comment-96276">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518836" rel="external nofollow">新用户795049</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-96276" rel="nofollow"><time datetime="2017-04-19T19:07:49+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不要在博客上追求太多了~！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96275">
+<article class="comment" id="comment-96275">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518836" rel="external nofollow">新用户795049</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-96275" rel="nofollow"><time datetime="2017-04-19T19:07:49+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不要在博客上追求太多了~！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96274">
+<article class="comment" id="comment-96274">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518836" rel="external nofollow">新用户795049</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-96274" rel="nofollow"><time datetime="2017-04-19T19:07:49+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不要在博客上追求太多了~！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96273">
+<article class="comment" id="comment-96273">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518836" rel="external nofollow">新用户795049</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-96273" rel="nofollow"><time datetime="2017-04-19T19:07:49+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不要在博客上追求太多了~！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96272">
+<article class="comment" id="comment-96272">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518836" rel="external nofollow">新用户795049</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-96272" rel="nofollow"><time datetime="2017-04-19T19:07:49+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不要在博客上追求太多了~！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65418">
+<article class="comment" id="comment-65418">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517398" rel="external nofollow">新用户803169</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-65418" rel="nofollow"><time datetime="2017-04-10T14:37:44+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实琉星和十月才是真cp，你们看不出来吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65417">
+<article class="comment" id="comment-65417">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517398" rel="external nofollow">新用户803169</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-65417" rel="nofollow"><time datetime="2017-04-10T14:37:44+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实琉星和十月才是真cp，你们看不出来吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65416">
+<article class="comment" id="comment-65416">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517398" rel="external nofollow">新用户803169</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-65416" rel="nofollow"><time datetime="2017-04-10T14:37:44+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实琉星和十月才是真cp，你们看不出来吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65415">
+<article class="comment" id="comment-65415">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517398" rel="external nofollow">新用户803169</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-65415" rel="nofollow"><time datetime="2017-04-10T14:37:44+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实琉星和十月才是真cp，你们看不出来吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65414">
+<article class="comment" id="comment-65414">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517398" rel="external nofollow">新用户803169</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-65414" rel="nofollow"><time datetime="2017-04-10T14:37:44+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实琉星和十月才是真cp，你们看不出来吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65413">
+<article class="comment" id="comment-65413">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517398" rel="external nofollow">新用户803169</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-65413" rel="nofollow"><time datetime="2017-04-10T14:37:44+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实琉星和十月才是真cp，你们看不出来吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65412">
+<article class="comment" id="comment-65412">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517398" rel="external nofollow">新用户803169</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-65412" rel="nofollow"><time datetime="2017-04-10T14:37:44+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实琉星和十月才是真cp，你们看不出来吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65411">
+<article class="comment" id="comment-65411">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517398" rel="external nofollow">新用户803169</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-65411" rel="nofollow"><time datetime="2017-04-10T14:37:44+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实琉星和十月才是真cp，你们看不出来吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65157">
+<article class="comment" id="comment-65157">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.wx31.com/" rel="external nofollow">超A包包</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-65157" rel="nofollow"><time datetime="2017-03-20T01:02:56+00:00" pubdate="">2017年3月20日 at 上午1:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>⒉高仿lv <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/5c/yw_org.gif"/> MARYJANE(玛丽嘉儿)ahuo.cf</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65153">
+<article class="comment" id="comment-65153">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.kaixin001.com/home/?uid=179409026" rel="external nofollow">张薇飘</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-65153" rel="nofollow"><time datetime="2017-03-20T00:59:56+00:00" pubdate="">2017年3月20日 at 上午12:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>⫻高仿奢侈品⫻ Buscemi（布塞米）UGGJKJY BY STELLAyuandan.ga</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65149">
+<article class="comment" id="comment-65149">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">丝裤美腿</span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-65149" rel="nofollow"><time datetime="2017-03-19T17:32:12+00:00" pubdate="">2017年3月19日 at 下午5:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>ꘚꘚꘚꘚꘚꘚꘚ闻丝袜脚ꘚꘚꘚꘚꘚꘚꘚꘚꘚꘚꘚꘚꘚꘚ摸丝袜脚ꘚꘚꘚꘚꘚꘚꘚꘚꘚꘚꘚꘚꘚꘚ性感丝袜女ꘚꘚꘚꘚꘚꘚꘚꘚꘚꘚꘚꘚꘚꘚ丝袜女兵ꘚꘚꘚꘚꘚꘚꘚꘚꘚꘚꘚꘚꘚꘚ丽柜丝袜ꘚꘚꘚꘚꘚꘚꘚꘚꘚꘚꘚꘚꘚꘚ丝袜文学ꘚꘚꘚꘚꘚꘚꘚꘚꘚꘚꘚꘚꘚꘚ高跟黑丝袜ꘚꘚꘚꘚꘚꘚꘚmeitui1.com</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65147">
+<article class="comment" id="comment-65147">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">美腿族</span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-65147" rel="nofollow"><time datetime="2017-03-19T17:31:40+00:00" pubdate="">2017年3月19日 at 下午5:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>干丝袜高跟ꚬ街头丝袜ꚬwww.518mei.com</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65100">
+<article class="comment" id="comment-65100">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.kaixin001.com/home/?uid=179408049" rel="external nofollow">伍馥可</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-65100" rel="nofollow"><time datetime="2017-03-19T04:23:52+00:00" pubdate="">2017年3月19日 at 上午4:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>⶯送88元现金 中国城大润发澳门金沙国际v4b.rmb88.cf</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65095">
+<article class="comment" id="comment-65095">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">开户送88元</span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-65095" rel="nofollow"><time datetime="2017-03-19T04:21:37+00:00" pubdate="">2017年3月19日 at 上午4:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>送58元红包 淘金盈四季娱乐城永利国际中信国际海立方➀➀➇Ⓣ.ⓃⒺⓉ</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65069">
+<article class="comment" id="comment-65069">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://360meimei.com/" rel="external nofollow">妩媚图片</a></span> on <a href="http://www.acmerblog.com/hdu-4822-tri-war-7867.html#comment-65069" rel="nofollow"><time datetime="2017-03-18T21:40:31+00:00" pubdate="">2017年3月18日 at 下午9:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妹子图 <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/82/one_org.gif"/> 日本av排行兵妹妹简谱上海古装写真穆婷婷比基尼烟花妹妹无红心meimei666.com</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,466 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-23</div>
+<div class="tit"><h1 class="entry-title">HDU 1861 游船出租-字典树-[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/basis/string" rel="category tag" title="查看字符串处理中的全部文章">字符串处理</a>, <a href="http://www.acmerblog.com/category/basis/simulate" rel="category tag" title="查看模拟法中的全部文章">模拟法</a></span><span class="i4">围观1011次</span><span class="i3"><a class="ds-thread-count" data-thread-key="2851" href="http://www.acmerblog.com/hdu-1861-%e6%b8%b8%e8%88%b9%e5%87%ba%e7%a7%9f-2851.html#comments" title="《HDU 1861 游船出租-字典树-[解题报告] C++》上的评论">23 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">游船出租</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+现有公园游船租赁处请你编写一个租船管理系统。当游客租船时，管理员输入船号并按下S键，系统开始计时；当游客还船时，管理员输入船号并按下E键，系统结束计时。船号为不超过100的正整数。当管理员将0作为船号输入时，表示一天租船工作结束，系统应输出当天的游客租船次数和<br/>平均租船时间。<br/>注意：由于线路偶尔会有故障，可能出现不完整的纪录，即只有租船没有还船，或者只有还船没有租船的纪录，系统应能自动忽略这种无效纪录。 </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+测试输入包含若干测试用例，每个测试用例为一整天的租船纪录，格式为<br/>船号（1~100） 键值（S或E） 发生时间（小时:分钟）<br/>每一天的纪录保证按时间递增的顺序给出。当读到船号为-1时，全部输入结束，相应的结果不要输出。 </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+对每个测试用例输出1行，即当天的游客租船次数和平均租船时间（以分钟为单位的精确到个位的整数时间）。</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1 S 08:10
+2 S 08:35
+1 E 10:00
+2 E 13:16
+0 S 17:00
+0 S 17:00
+3 E 08:10
+1 S 08:20
+2 S 09:00
+1 E 09:20
+0 E 17:00
+-1</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+2 196
+0 0
+1 60</pre>
+<p> <!-- problem end --></p>
+<p>题意：</p>
+<p><span style="white-space: pre;"> </span>给出一个船只借出和归还的信息列表，每条信息包括船只号，借出或归还的标记(S是借出，E是归还)和时间。求每次结束时一共借出多少次船只，和平均的借出分钟。（hint: 信息中列表中可能出现，有借无还或无借有还得记录，这些记录都可以忽略）。</p>
+<p> </p>
+<p>解法：</p>
+<p><span style="white-space: pre;"> </span>使用字典树来存储借出信息，当遇到归还信息时，就查询字典树，并统计借出船次和借出的总时间。</p>
+<p> </p>
+<p>AC代码如下：</p>
+<pre class="brush:cpp ">/*
+	Author: ACb0y
+	DateTime: 2011年2月11日10:28:45
+	Type: 模拟题
+	ProblemID: HDU 1861 游船出租
+	Result: 3468844	2011-02-12 10:29:14	Accepted	1861	0MS	312K	2194 B	G++	ACb0y
+ */
+#include &lt;iostream&gt;
+using namespace std;
+/*
+	字典树节点
+ */
+struct node 
+{
+	node * pNext[10];
+	//借出时间
+	char * pStrTime;
+};
+char strNum[10];
+char charFlag;
+char strTime[10];
+node * root;
+double cnt;
+double totalM;
+/*
+	申请一个节点
+ */
+node * getNode()
+{
+	node * pNew = (node *)malloc(sizeof(node));
+	memset(pNew-&gt;pNext, 0, sizeof(pNew-&gt;pNext));
+	pNew-&gt;pStrTime = NULL;
+	return pNew;
+}
+/*
+	插入借出船只信息
+ */
+void insert(node * root, char * strNum, char * strTime)
+{
+	node * pCur = root;
+	int len = strlen(strNum);
+	int index = 0;
+	for (int i = 0; i &lt; len; ++i)
+	{
+		index = strNum[0] - '0';
+		if (NULL == pCur-&gt;pNext[index])
+		{
+			pCur-&gt;pNext[index] = getNode();
+		}
+		pCur = pCur-&gt;pNext[index];
+	}
+	//这边要判断pStrTime因为有可能会发生覆盖。
+	//以免内存泄露
+	if (pCur-&gt;pStrTime != NULL) 
+	{
+		free(pCur-&gt;pStrTime);
+	}
+	pCur-&gt;pStrTime = (char *)malloc(strlen(strTime) + 1);
+	strcpy(pCur-&gt;pStrTime, strTime);
+}
+/*
+	规划船只时查询借出船只字典树，并统计
+	cnt和totalM。
+ */
+void query(node * root, char * strNum, char * strTime) 
+{
+	node * pCur = root;
+	int len = strlen(strNum);
+	int index = 0;
+	for (int i = 0; i &lt; len; ++i) 
+	{
+		index = strNum[i] - '0';
+		if (NULL == pCur-&gt;pNext[index])
+		{
+			return ;
+		}
+		pCur = pCur-&gt;pNext[index];
+	}
+	//没有该船的借出记录
+	if (NULL == pCur-&gt;pStrTime) 
+	{
+		return ;
+	}
+	int shour;
+	int shour;
+	int sminute;
+	int ehour;
+	int eminute;
+	sscanf(pCur-&gt;pStrTime, "%d:%d", &amp;shour, &amp;sminute);
+	sscanf(strTime, "%d:%d", &amp;ehour, &amp;eminute);
+	++cnt;
+	totalM += (ehour * 60 + eminute) - (shour * 60 + sminute);
+}
+/*
+	释放空间
+ */
+void clear(node * root) 
+{
+	if (NULL != root-&gt;pStrTime) 
+	{
+		free(root-&gt;pStrTime);
+	}
+	for (int i = 0; i &lt; 10; ++i) 
+	{
+		if (NULL != root-&gt;pNext[i]) 
+		{
+			clear(root-&gt;pNext[i]);
+		}
+	}
+	free(root);
+}
+int main()
+{
+#ifndef ONLINE_JUDGE
+	freopen("in.txt", "r", stdin);
+#endif
+	root = getNode();
+	cnt = 0;
+	totalM = 0;
+	while (scanf("%s", strNum) != EOF) 
+	{
+		if (0 == strcmp(strNum, "-1")) 
+		{
+			break;
+		}
+		cin &gt;&gt; charFlag &gt;&gt; strTime;
+		if (0 == strcmp(strNum, "0")) 
+		{
+			//这里打了个补丁，当cnt为零的时候
+			//totalM / cnt会RE.
+			if (0 == cnt) 
+			{
+				printf("0 0/n");
+				continue;
+			}
+			printf("%.0lf %.0lf/n", cnt, totalM / cnt);
+			cnt = 0;
+			totalM = 0;
+			clear(root);
+			root = getNode();
+			continue;
+		}
+		
+		//借出船只
+		if (charFlag == 'S')
+		{
+			insert(root, strNum, strTime);
+		}
+		//归还船只
+		else 
+		{
+			query(root, strNum, strTime);
+		}
+	}
+	return 0;
+}</pre>
+<p>解题报告转自：http://blog.csdn.net/acb0y/article/details/6180379</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-88831">
+<article class="comment" id="comment-88831">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533542" rel="external nofollow">新用户874606</a></span> on <a href="http://www.acmerblog.com/hdu-1861-%e6%b8%b8%e8%88%b9%e5%87%ba%e7%a7%9f-2851.html#comment-88831" rel="nofollow"><time datetime="2017-04-13T09:02:19+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可以，同步率满分</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-88830">
+<article class="comment" id="comment-88830">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533542" rel="external nofollow">新用户874606</a></span> on <a href="http://www.acmerblog.com/hdu-1861-%e6%b8%b8%e8%88%b9%e5%87%ba%e7%a7%9f-2851.html#comment-88830" rel="nofollow"><time datetime="2017-04-13T09:02:19+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可以，同步率满分</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-88829">
+<article class="comment" id="comment-88829">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533542" rel="external nofollow">新用户874606</a></span> on <a href="http://www.acmerblog.com/hdu-1861-%e6%b8%b8%e8%88%b9%e5%87%ba%e7%a7%9f-2851.html#comment-88829" rel="nofollow"><time datetime="2017-04-13T09:02:19+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可以，同步率满分</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-88828">
+<article class="comment" id="comment-88828">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533542" rel="external nofollow">新用户874606</a></span> on <a href="http://www.acmerblog.com/hdu-1861-%e6%b8%b8%e8%88%b9%e5%87%ba%e7%a7%9f-2851.html#comment-88828" rel="nofollow"><time datetime="2017-04-13T09:02:19+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可以，同步率满分</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-88827">
+<article class="comment" id="comment-88827">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533542" rel="external nofollow">新用户874606</a></span> on <a href="http://www.acmerblog.com/hdu-1861-%e6%b8%b8%e8%88%b9%e5%87%ba%e7%a7%9f-2851.html#comment-88827" rel="nofollow"><time datetime="2017-04-13T09:02:19+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可以，同步率满分</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-88826">
+<article class="comment" id="comment-88826">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533542" rel="external nofollow">新用户874606</a></span> on <a href="http://www.acmerblog.com/hdu-1861-%e6%b8%b8%e8%88%b9%e5%87%ba%e7%a7%9f-2851.html#comment-88826" rel="nofollow"><time datetime="2017-04-13T09:02:19+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可以，同步率满分</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-88825">
+<article class="comment" id="comment-88825">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533542" rel="external nofollow">新用户874606</a></span> on <a href="http://www.acmerblog.com/hdu-1861-%e6%b8%b8%e8%88%b9%e5%87%ba%e7%a7%9f-2851.html#comment-88825" rel="nofollow"><time datetime="2017-04-13T09:02:19+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可以，同步率满分</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-88824">
+<article class="comment" id="comment-88824">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533542" rel="external nofollow">新用户874606</a></span> on <a href="http://www.acmerblog.com/hdu-1861-%e6%b8%b8%e8%88%b9%e5%87%ba%e7%a7%9f-2851.html#comment-88824" rel="nofollow"><time datetime="2017-04-13T09:02:19+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可以，同步率满分</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-88833">
+<article class="comment" id="comment-88833">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533542" rel="external nofollow">新用户874606</a></span> on <a href="http://www.acmerblog.com/hdu-1861-%e6%b8%b8%e8%88%b9%e5%87%ba%e7%a7%9f-2851.html#comment-88833" rel="nofollow"><time datetime="2017-04-13T09:02:19+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可以，同步率满分</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-88832">
+<article class="comment" id="comment-88832">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533542" rel="external nofollow">新用户874606</a></span> on <a href="http://www.acmerblog.com/hdu-1861-%e6%b8%b8%e8%88%b9%e5%87%ba%e7%a7%9f-2851.html#comment-88832" rel="nofollow"><time datetime="2017-04-13T09:02:19+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可以，同步率满分</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-62086">
+<article class="comment" id="comment-62086">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">soasipray</a></span> on <a href="http://www.acmerblog.com/hdu-1861-%e6%b8%b8%e8%88%b9%e5%87%ba%e7%a7%9f-2851.html#comment-62086" rel="nofollow"><time datetime="2015-04-21T12:03:36+00:00" pubdate="">2015年4月21日 at 下午12:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>.net中char类型不是两个字节么</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-17470">
+<article class="comment" id="comment-17470">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wall_</a></span> on <a href="http://www.acmerblog.com/hdu-1861-%e6%b8%b8%e8%88%b9%e5%87%ba%e7%a7%9f-2851.html#comment-17470" rel="nofollow"><time datetime="2015-03-18T06:24:59+00:00" pubdate="">2015年3月18日 at 上午6:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-17469">
+<article class="comment" id="comment-17469">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">cyyuen</a></span> on <a href="http://www.acmerblog.com/hdu-1861-%e6%b8%b8%e8%88%b9%e5%87%ba%e7%a7%9f-2851.html#comment-17469" rel="nofollow"><time datetime="2015-02-24T11:27:26+00:00" pubdate="">2015年2月24日 at 上午11:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>总结的很全面，学习了！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-43092">
+<article class="comment" id="comment-43092">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">starcuan</a></span> on <a href="http://www.acmerblog.com/hdu-1861-%e6%b8%b8%e8%88%b9%e5%87%ba%e7%a7%9f-2851.html#comment-43092" rel="nofollow"><time datetime="2015-01-26T07:46:35+00:00" pubdate="">2015年1月26日 at 上午7:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>理解错了。。。。。谢谢楼主~~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-17471">
+<article class="comment" id="comment-17471">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaotongtest</a></span> on <a href="http://www.acmerblog.com/hdu-1861-%e6%b8%b8%e8%88%b9%e5%87%ba%e7%a7%9f-2851.html#comment-17471" rel="nofollow"><time datetime="2015-01-21T16:17:52+00:00" pubdate="">2015年1月21日 at 下午4:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈呀！这个Dijkstra模板好长OwQ！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-17468">
+<article class="comment" id="comment-17468">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">_Tree</a></span> on <a href="http://www.acmerblog.com/hdu-1861-%e6%b8%b8%e8%88%b9%e5%87%ba%e7%a7%9f-2851.html#comment-17468" rel="nofollow"><time datetime="2014-12-03T23:45:45+00:00" pubdate="">2014年12月3日 at 下午11:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>if(j){<br/>
+                    int ans=a <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> ;<br/>
+                    for(int x=j-1;x&gt;=0;x–){<br/>
+                        if(!a <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/d7/newx_org.gif"/> ) break;<br/>
+                        ans=min(ans,a <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/d7/newx_org.gif"/> );<br/>
+                        sum+=ans;<br/>
+                    }<br/>
+                }<br/>
+求解释，，dp的思路是什么呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-43094">
+<article class="comment" id="comment-43094">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiaobei</a></span> on <a href="http://www.acmerblog.com/hdu-1861-%e6%b8%b8%e8%88%b9%e5%87%ba%e7%a7%9f-2851.html#comment-43094" rel="nofollow"><time datetime="2014-10-17T07:54:52+00:00" pubdate="">2014年10月17日 at 上午7:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>必须试过啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-17474">
+<article class="comment" id="comment-17474">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">BGPY243956</a></span> on <a href="http://www.acmerblog.com/hdu-1861-%e6%b8%b8%e8%88%b9%e5%87%ba%e7%a7%9f-2851.html#comment-17474" rel="nofollow"><time datetime="2014-09-24T04:38:48+00:00" pubdate="">2014年9月24日 at 上午4:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>&amp;amp;这是C语言？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-43095">
+<article class="comment" id="comment-43095">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fastislow</a></span> on <a href="http://www.acmerblog.com/hdu-1861-%e6%b8%b8%e8%88%b9%e5%87%ba%e7%a7%9f-2851.html#comment-43095" rel="nofollow"><time datetime="2014-09-08T19:12:16+00:00" pubdate="">2014年9月8日 at 下午7:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>站长，你好！<br/>
+         你创办的的网站非常好，为我们学习算法练习编程提供了一个很好的平台，我想给你提个小建议，就是要能把每道题目的难度标出来就好了，这样我们学习起来会有一个循序渐进的过程！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-17473">
+<article class="comment" id="comment-17473">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lanifer</a></span> on <a href="http://www.acmerblog.com/hdu-1861-%e6%b8%b8%e8%88%b9%e5%87%ba%e7%a7%9f-2851.html#comment-17473" rel="nofollow"><time datetime="2014-09-04T08:02:09+00:00" pubdate="">2014年9月4日 at 上午8:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好。代码比书上的简练！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-62087">
+<article class="comment" id="comment-62087">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ForgetVay</a></span> on <a href="http://www.acmerblog.com/hdu-1861-%e6%b8%b8%e8%88%b9%e5%87%ba%e7%a7%9f-2851.html#comment-62087" rel="nofollow"><time datetime="2014-04-13T06:39:38+00:00" pubdate="">2014年4月13日 at 上午6:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>题目需要求解的是最小值，而且没有考虑可能存在环</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-43093">
+<article class="comment" id="comment-43093">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Supermaner</a></span> on <a href="http://www.acmerblog.com/hdu-1861-%e6%b8%b8%e8%88%b9%e5%87%ba%e7%a7%9f-2851.html#comment-43093" rel="nofollow"><time datetime="2014-03-07T13:50:54+00:00" pubdate="">2014年3月7日 at 下午1:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>隐藏最深的bug是(start+end)/2有可能上溢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-17472">
+<article class="comment" id="comment-17472">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NiKaWaLi</a></span> on <a href="http://www.acmerblog.com/hdu-1861-%e6%b8%b8%e8%88%b9%e5%87%ba%e7%a7%9f-2851.html#comment-17472" rel="nofollow"><time datetime="2014-01-28T18:52:38+00:00" pubdate="">2014年1月28日 at 下午6:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个条件 “两个数的乘积最小”可以忽略</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

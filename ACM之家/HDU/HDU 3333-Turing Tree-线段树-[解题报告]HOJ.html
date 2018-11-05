@@ -1,0 +1,309 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-16</div>
+<div class="tit"><h1 class="entry-title">HDU 3333-Turing Tree-线段树-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/data-struct/trees" rel="category tag" title="查看树形结构中的全部文章">树形结构</a></span><span class="i4">围观1020次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5265" href="http://www.acmerblog.com/hdu-3333-turing-tree-5265.html#comments" title="《HDU 3333-Turing Tree-线段树-[解题报告]HOJ》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Turing Tree</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+After inventing Turing Tree, 3xian always felt boring when solving problems about intervals, because Turing Tree could easily have the solution. As well, wily 3xian made lots of new problems about intervals. So, today, this sick thing happens again…
+<p>Now given a sequence of N numbers A1, A2, …, AN and a number of Queries(i, j) (1≤i≤j≤N). For each Query(i, j), you are to caculate the sum of distinct values in the subsequence Ai, Ai+1, …, Aj. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line is an integer T (1 ≤ T ≤ 10), indecating the number of testcases below.<br/>For each case, the input format will be like this:<br/> * Line 1: N (1 ≤ N ≤ 30,000).<br/> * Line 2: N integers A1, A2, …, AN (0 ≤ Ai ≤ 1,000,000,000).<br/> * Line 3: Q (1 ≤ Q ≤ 100,000), the number of Queries.<br/> * Next Q lines: each line contains 2 integers i, j representing a Query (1 ≤ i ≤ j ≤ N). </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The first line is an integer T (1 ≤ T ≤ 10), indecating the number of testcases below.<br/>For each case, the input format will be like this:<br/> * Line 1: N (1 ≤ N ≤ 30,000).<br/> * Line 2: N integers A1, A2, …, AN (0 ≤ Ai ≤ 1,000,000,000).<br/> * Line 3: Q (1 ≤ Q ≤ 100,000), the number of Queries.<br/> * Next Q lines: each line contains 2 integers i, j representing a Query (1 ≤ i ≤ j ≤ N).</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+3
+1 1 4
+2
+1 2
+2 3
+5
+1 1 2 1 3
+3
+1 5
+2 4
+3 5</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+5
+6
+3
+6</pre>
+<p> <!-- problem end --></p>
+<p>离线查是比较简单的，按查询的右界排序，不断加入a数组并用hash记录位置，如果某个值在前面已经出现过，删除前面那个值，这样下个查询查到这个值的时候，值就不会重复。 写的时候出现3个错误，主要还是对线段树的实现不熟吧，经常用模板的人就是这样…还有类型LL经常忘记写成int。</p>
+<p>
+</p>
+<pre class="brush:cpp ">#include&lt;iostream&gt;
+#include&lt;cstdio&gt;
+#include&lt;algorithm&gt;
+#include&lt;map&gt;
+using namespace std;
+
+#define lson l,m,rt&lt;&lt;1
+#define rson m+1,r,rt&lt;&lt;1|1
+const int N=30005;
+const int Q=100005;
+typedef long long LL;
+int n,tt,qq;
+map&lt;LL,int&gt; hashs;
+LL sum[N*4],a[N],ans[Q];
+struct QN{
+	int l,r,index;
+}q[Q];
+int cmp(QN a,QN b){
+	return a.r&lt;b.r;
+}
+void build(int l,int r,int rt){
+	sum[rt]=0;
+	if(l==r) return;
+	int m=(l+r)/2;
+	build(lson);
+	build(rson);
+}
+
+void push_up(int rt){
+	sum[rt]=sum[rt*2]+sum[rt*2+1];
+}
+
+void update(int a,LL c,int l,int r,int rt){//单点更新a的值为c
+	if(l==r){
+		sum[rt]=c;//sum[l] --wa1
+		return;
+	}
+	int m=(l+r)/2;
+	if(a&lt;=m)
+		update(a,c,lson);
+	else
+		update(a,c,rson);
+	push_up(rt);
+}
+
+LL query(int a,int b,int l,int r,int rt){
+	if(a&lt;=l&amp;&amp;b&gt;=r)
+		return sum[rt];
+	int m=(l+r)/2;
+	LL rst=0;//int -- wa3
+	if(a&lt;=m)
+		rst+=query(a,b,lson);
+	if(b&gt;m)
+		rst+=query(a,b,rson);
+	return rst;
+}
+
+void solve(){
+	int pos=1;
+	for(int i=0;i&lt;qq;i++){
+		while(q[i].r&gt;=pos){//加入a
+			if(hashs[a[pos]])//已经出现过
+				update(hashs[a[pos]],0,1,n,1);
+			hashs[a[pos]]=pos;
+			update(pos,a[pos++],1,n,1);//pos++ 建议放下面
+		}
+		ans[q[i].index]=query(q[i].l,q[i].r,1,n,1);
+	}
+}
+
+int main(){
+	for(cin&gt;&gt;tt;tt&gt;0;tt--){
+		hashs.clear();
+		cin&gt;&gt;n;
+		build(1,n,1);
+		for(int i=1;i&lt;=n;i++)
+			scanf("%d",&amp;a[i]);
+		cin&gt;&gt;qq;
+		for(int i=0;i&lt;qq;i++){//按r排序，离线查
+			scanf("%d %d",&amp;q[i].l,&amp;q[i].r);
+			q[i].index=i;
+		}
+		sort(q,q+qq,cmp);
+		solve();
+		for(int i=0;i&lt;qq;i++)
+			printf("%I64d\n",ans[i]);
+	}
+	return 0;
+}</pre>
+<p>参考：http://blog.csdn.net/mid_kkks/article/details/19681753</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-77618">
+<article class="comment" id="comment-77618">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514929" rel="external nofollow">新用户658771</a></span> on <a href="http://www.acmerblog.com/hdu-3333-turing-tree-5265.html#comment-77618" rel="nofollow"><time datetime="2017-04-12T09:15:02+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>能道歉更说明人家是难得的好网友（相比之下，大多数网友都只是喷），更要珍惜，更要爱</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48489">
+<article class="comment" id="comment-48489">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bobo</a></span> on <a href="http://www.acmerblog.com/hdu-3333-turing-tree-5265.html#comment-48489" rel="nofollow"><time datetime="2015-06-14T17:20:07+00:00" pubdate="">2015年6月14日 at 下午5:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈呀！这个Dijkstra模板好长OwQ！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28874">
+<article class="comment" id="comment-28874">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">anshansh</a></span> on <a href="http://www.acmerblog.com/hdu-3333-turing-tree-5265.html#comment-28874" rel="nofollow"><time datetime="2015-06-08T09:26:43+00:00" pubdate="">2015年6月8日 at 上午9:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个分析相当全面，经典！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58346">
+<article class="comment" id="comment-58346">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gy910210</a></span> on <a href="http://www.acmerblog.com/hdu-3333-turing-tree-5265.html#comment-58346" rel="nofollow"><time datetime="2015-03-10T19:02:23+00:00" pubdate="">2015年3月10日 at 下午7:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>华为这题目略显简单啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28876">
+<article class="comment" id="comment-28876">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaotongtest</a></span> on <a href="http://www.acmerblog.com/hdu-3333-turing-tree-5265.html#comment-28876" rel="nofollow"><time datetime="2015-02-06T02:26:15+00:00" pubdate="">2015年2月6日 at 上午2:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跟书上的解法不一样，不知道哪个效率要高些</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-1726">
+<article class="comment" id="comment-1726">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">zqdnr</span> on <a href="http://www.acmerblog.com/hdu-3333-turing-tree-5265.html#comment-1726" rel="nofollow"><time datetime="2014-12-22T09:30:07+00:00" pubdate="">2014年12月22日 at 上午9:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这种题解就相当于直接贴代码了，，想看的是思路</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48488">
+<article class="comment" id="comment-48488">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jupiterhyun</a></span> on <a href="http://www.acmerblog.com/hdu-3333-turing-tree-5265.html#comment-48488" rel="nofollow"><time datetime="2014-12-21T13:24:35+00:00" pubdate="">2014年12月21日 at 下午1:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>写的好·····  Pollard Rh</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28871">
+<article class="comment" id="comment-28871">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">MCIT</a></span> on <a href="http://www.acmerblog.com/hdu-3333-turing-tree-5265.html#comment-28871" rel="nofollow"><time datetime="2014-10-15T23:30:18+00:00" pubdate="">2014年10月15日 at 下午11:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>A的话不是不能避免冲突么？感觉出题者在考察是否考虑了冲突解决办法？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63367">
+<article class="comment" id="comment-63367">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hsp_77_abc</a></span> on <a href="http://www.acmerblog.com/hdu-3333-turing-tree-5265.html#comment-63367" rel="nofollow"><time datetime="2014-09-28T11:37:03+00:00" pubdate="">2014年9月28日 at 上午11:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>递归还真是一门学问，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28875">
+<article class="comment" id="comment-28875">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zx123456</a></span> on <a href="http://www.acmerblog.com/hdu-3333-turing-tree-5265.html#comment-28875" rel="nofollow"><time datetime="2014-07-12T22:04:16+00:00" pubdate="">2014年7月12日 at 下午10:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈呀！这个Dijkstra模板好长OwQ！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63368">
+<article class="comment" id="comment-63368">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ktcer</a></span> on <a href="http://www.acmerblog.com/hdu-3333-turing-tree-5265.html#comment-63368" rel="nofollow"><time datetime="2014-07-01T06:31:33+00:00" pubdate="">2014年7月1日 at 上午6:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好，解决了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28870">
+<article class="comment" id="comment-28870">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">melody12ab</a></span> on <a href="http://www.acmerblog.com/hdu-3333-turing-tree-5265.html#comment-28870" rel="nofollow"><time datetime="2014-06-06T13:38:14+00:00" pubdate="">2014年6月6日 at 下午1:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>a是根先忽略掉，递归子树。剩下前缀bejkcfghid和后缀jkebfghicd，分拆的原则的是每个子树前缀和后缀的节点个数是一样的，根节点出现在前缀的第一个，后缀的最后一个。根节点b出现后缀的第四个位置，则第一部分为四个节点，前缀bejk，后缀jkeb，剩下的c出现在后缀的倒数第2个，就划分为cfghi和 fghic，第3部分就为c、c</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48487">
+<article class="comment" id="comment-48487">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">20134055016</a></span> on <a href="http://www.acmerblog.com/hdu-3333-turing-tree-5265.html#comment-48487" rel="nofollow"><time datetime="2014-05-07T16:57:13+00:00" pubdate="">2014年5月7日 at 下午4:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一题还是比较考验智商~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28872">
+<article class="comment" id="comment-28872">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dream</a></span> on <a href="http://www.acmerblog.com/hdu-3333-turing-tree-5265.html#comment-28872" rel="nofollow"><time datetime="2014-04-12T04:27:32+00:00" pubdate="">2014年4月12日 at 上午4:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为nn</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28873">
+<article class="comment" id="comment-28873">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">3136869079</a></span> on <a href="http://www.acmerblog.com/hdu-3333-turing-tree-5265.html#comment-28873" rel="nofollow"><time datetime="2014-04-09T22:30:53+00:00" pubdate="">2014年4月9日 at 下午10:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

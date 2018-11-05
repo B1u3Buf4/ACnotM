@@ -1,0 +1,426 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-11</div>
+<div class="tit"><h1 class="entry-title">HDU 1469 Video Surveillance-计算几何-[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/basis/sort" rel="category tag" title="查看排序中的全部文章">排序</a>, <a href="http://www.acmerblog.com/category/data-struct/linear" rel="category tag" title="查看线性结构中的全部文章">线性结构</a>, <a href="http://www.acmerblog.com/category/geometry/analytic-geometry" rel="category tag" title="查看解析几何中的全部文章">解析几何</a></span><span class="i4">围观1942次</span><span class="i3"><a class="ds-thread-count" data-thread-key="2004" href="http://www.acmerblog.com/hdu-1469-video-surveillance-2004.html#comments" title="《HDU 1469 Video Surveillance-计算几何-[解题报告] C++》上的评论">19 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Video Surveillance</h1>
+</div>
+<div>
+<p class="mytitle">问题描述 :</p>
+</div>
+<div class="mypanel">A friend of yours has taken the job of security officer at the Star-Buy Company, a famous depart- ment store. One of his tasks is to install a video surveillance system to guarantee the security of the customers (and the security of the merchandise of course) on all of the store’s countless floors. As the company has only a limited budget, there will be only one camera on every floor. But these cameras may turn around to look in every direction.The first problem is to choose where to install the camera for every floor. The only requirement is that every part of the room must be visible from there. In the following figure the left floor can be completely surveyed from the position indicated by a dot, while for the right floor, there is no such position, the given position failing to see the lower left part of the floor.
+<p><img alt="" src="http://acm.hdu.edu.cn/data/images/1469-1.gif"/></p>
+<p>Before trying to install the cameras, your friend first wants to know whether there is indeed a suitable position for them. He therefore asks you to write a program that, given a ground plan, de- termines whether there is a position from which the whole floor is visible. All floor ground plans form rectangular polygons, whose edges do not intersect each other and touch each other only at the corners.</p>
+</div>
+<div>
+<p class="mytitle">输入:</p>
+</div>
+<div class="mypanel">The input contains several floor descriptions. Every description starts with the number n of vertices that bound the floor (4 &lt;= n &lt;= 100). The next n lines contain two integers each, the x and y coordinates for the n vertices, given in clockwise order. All vertices will be distinct and at corners of the polygon. Thus the edges alternate between horizontal and vertical.A zero value for n indicates the end of the input.
+</div>
+<div>
+<p class="mytitle">输出:</p>
+</div>
+<div class="mypanel">For every test case first output a line with the number of the floor, as shown in the sample output. Then print a line stating “Surveillance is possible.” if there exists a position from which the entire floor can be observed, or print “Surveillance is impossible.” if there is no such position.Print a blank line after each test case.
+</div>
+<div>
+<p class="mytitle">样例输入:</p>
+</div>
+<pre class="mypanel iopanel">4
+0 0
+0 1
+1 1
+1 0
+8
+0 0
+0 2
+1 2
+1 1
+2 1
+2 2
+3 2
+3 0
+0</pre>
+<div>
+<p class="mytitle">样例输出:</p>
+</div>
+<pre class="mypanel iopanel">Floor #1
+Surveillance is possible.
+
+Floor #2
+Surveillance is impossible.</pre>
+<p><!-- problem end --></p>
+<p>还是半平面交，各种模板各种套，注意点的顺序，所以就不多说了</p>
+<p>但是，这题的数据还是要提一下的，POJ 的 discuss 里面有组 <a href="http://poj.org/showmessage?message_id=125693" target="_blank"><br/>
+80+ 行的数据</a>，这组数据标程给出的是 <span style="font-family: monospace; white-space: pre;">possible ，但是这个多边形的核的面积是0，因为到最后，核只有一条边（也可以这样理解，一个矩形，长是大于 0 的，但是宽等于 0 ），也就是说，不能用面积来判断，否则，就</span></p>
+<p><span style="font-family: monospace; white-space: pre;">一直 WA 吧……</span></p>
+<p><span style="font-family: monospace; white-space: pre;">处理方法就是判断核的边数，看边数是否大于 0 </span></p>
+<p><span style="font-family: monospace; white-space: pre;"><br/>
+</span></p>
+<p><span style="font-family: monospace; white-space: pre;">代码：</span></p>
+<p> </p>
+<pre class="brush:cpp ">#include&lt;iostream&gt;
+#include&lt;algorithm&gt;
+#include&lt;cstring&gt;
+#include&lt;cstdio&gt;
+#include&lt;cmath&gt;
+using namespace std;
+
+const int N = 101;
+const double eps = 1e-8;
+const double pi = acos(-1.0);
+
+struct cpoint {//C++构造函数,默认缺省值为(0,0)
+    double x, y;
+    cpoint(double xx = 0, double yy = 0): x(xx), y(yy) {};
+};
+
+int dcmp(double x) {//判断参数的符号,负数返回-1,0返回0,正数返回1
+    if (x &lt; -eps) return -1; 
+	else return x &gt; eps;
+}
+
+double xmult(cpoint p0, cpoint p1, cpoint p2) { // p0p1 与 p0p2 叉积
+    return (p1.x - p0.x) * (p2.y - p0.y) - (p2.x - p0.x) * (p1.y - p0.y);
+}
+
+bool EqualPoint(cpoint a, cpoint b) {//两点相等
+    return dcmp(a.x - b.x) == 0 &amp;&amp; dcmp(a.y - b.y) == 0;
+}
+
+struct cvector {//向量
+    cpoint s, e;
+    double ang, d;
+};
+
+//atan (double x)弧度表示的反正切
+//atan2(double x,double y)弧度表示的反正切,相当于atan(x/y)
+
+void setline(double x1, double y1, double x2, double y2, cvector &amp;v) {
+    v.s.x = x1; v.s.y = y1;
+    v.e.x = x2; v.e.y = y2;
+    v.ang = atan2(y2 - y1, x2 - x1);
+	//这里的 d 代表向量(直线)和坐标轴的截距,正数表示 原点 在该向量的左边
+	//(这道题要求左半平面交),负号则表示 原点 在右边
+    if (dcmp(x1 - x2))          // x1 &gt; x2
+		v.d = (x1 * y2 - x2 * y1) / fabs(x1 - x2);
+    else v.d = (x1 * y2 - x2 * y1) / fabs(y1 - y2);
+}
+
+//判向量平行
+bool parallel(const cvector &amp;a, const cvector &amp;b) {
+    double u = (a.e.x - a.s.x) * (b.e.y - b.s.y) - (a.e.y - a.s.y) * (b.e.x - b.s.x);
+    return dcmp(u) == 0;
+}
+
+//求两向量(直线)交点 (两向量不能平行或重合)
+cpoint CrossPoint(const cvector &amp;a, const cvector &amp;b) {
+    cpoint res;
+    double u = xmult(a.s, a.e, b.s), v = xmult(a.e, a.s, b.e);
+    res.x = (b.s.x * v + b.e.x * u) / (u + v);
+    res.y = (b.s.y * v + b.e.y * u) / (u + v);
+    return res;
+}
+
+//半平面交排序函数[优先顺序: 1.极角 2.前面的直线在后面的左边]
+static bool VecCmp(const cvector &amp;l, const cvector &amp;r) {
+    if (dcmp(l.ang - r.ang)) return l.ang &lt; r.ang;
+    return l.d &lt; r.d;
+}
+
+cvector deq[N]; //用于计算的双端队列
+
+void HalfPanelCross(cvector vec[],int n,cpoint cp[],int &amp;m)
+{
+	int i,tn;
+	sort(vec,vec+n,VecCmp);
+	for(tn=i=1;i&lt;n;i++)
+	{
+		if(dcmp(vec[i].ang-vec[i-1].ang) != 0)
+			vec[tn++]=vec[i];
+	}n=tn;
+	int bot=0, top=1;
+	deq[0]=vec[0], deq[1]=vec[1];
+	for(i=2;i&lt;tn;i++)
+	{
+		if(parallel(deq[top],deq[top-1]) || parallel(deq[bot],deq[bot+1]))return ;
+		while(bot&lt;top &amp;&amp; dcmp(xmult(vec[i].s,vec[i].e,CrossPoint(deq[top],deq[top-1])))&lt;0)
+			top--;
+		while(bot&lt;top &amp;&amp; dcmp(xmult(vec[i].s,vec[i].e,CrossPoint(deq[bot],deq[bot+1])))&lt;0)
+			bot++;
+		deq[++top]=vec[i];
+	}
+	while(bot&lt;top &amp;&amp; dcmp(xmult(deq[bot].s,deq[bot].e,CrossPoint(deq[top],deq[top-1])))&lt;0)
+		top--;
+	while(bot&lt;top &amp;&amp; dcmp(xmult(deq[top].s,deq[top].e,CrossPoint(deq[bot],deq[bot+1])))&lt;0)
+		bot++;
+
+	if(top &lt;= bot+1)return ;
+
+	m=0;
+	for(i=bot;i&lt;top;i++)
+		cp[m++]=CrossPoint(deq[i],deq[i+1]);
+	if(bot&lt;top+1)
+		cp[m++]=CrossPoint(deq[bot],deq[top]);
+	m=unique(cp,cp+m,EqualPoint)-cp;
+}
+
+double PolygonArea(cpoint p[], int n) {
+    if (n &lt; 3) return 0;
+    double s = p[0].y * (p[n - 1].x - p[1].x);
+    for (int i = 1; i &lt; n; ++i)
+        s += p[i].y * (p[i - 1].x - p[(i + 1) % n].x);
+    return fabs(s / 2); // 顺时针方向s为负
+}
+
+int n,m;
+cvector v[N];
+cpoint cp[N];
+
+int main()
+{
+	int i,j,time=1;
+	cpoint p[N];
+	while(scanf("%d",&amp;n),n)
+	{
+		memset(cp,0,sizeof(cp));
+		memset(v,0,sizeof(v));
+
+		m=0;     //m是全局变量,注意,单纯在外部函数中初始化,有时候不靠谱
+
+		for(i=0;i&lt;n;i++)
+			scanf("%lf%lf",&amp;p[i].x,&amp;p[i].y);
+		p[n]=p[0];
+
+		for(j=0,i=n;i&gt;0;i--)
+			setline(p[i].x,p[i].y,p[i-1].x,p[i-1].y,v[j++]);
+		n=j;
+
+		HalfPanelCross(v,n,cp,m);//向量(直线)集合,长度;点集,长度
+
+		printf("Floor #%d\n",time++);
+
+		if(!m)printf("Surveillance is impossible.\n");
+		else printf("Surveillance is possible.\n");
+		puts("");
+	}
+	return 0;
+}</pre>
+<p>解题报告转自：http://blog.csdn.net/l04205613/article/details/6627531</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-92218">
+<article class="comment" id="comment-92218">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515589" rel="external nofollow">新用户505461</a></span> on <a href="http://www.acmerblog.com/hdu-1469-video-surveillance-2004.html#comment-92218" rel="nofollow"><time datetime="2017-04-13T15:37:53+00:00" pubdate="">2017年4月13日 at 下午3:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我觉得如果中国的养老福利水平能达到欧美水平的话，不婚率和离婚率会提高很多</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-92217">
+<article class="comment" id="comment-92217">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515589" rel="external nofollow">新用户505461</a></span> on <a href="http://www.acmerblog.com/hdu-1469-video-surveillance-2004.html#comment-92217" rel="nofollow"><time datetime="2017-04-13T15:37:53+00:00" pubdate="">2017年4月13日 at 下午3:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我觉得如果中国的养老福利水平能达到欧美水平的话，不婚率和离婚率会提高很多</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-92216">
+<article class="comment" id="comment-92216">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515589" rel="external nofollow">新用户505461</a></span> on <a href="http://www.acmerblog.com/hdu-1469-video-surveillance-2004.html#comment-92216" rel="nofollow"><time datetime="2017-04-13T15:37:53+00:00" pubdate="">2017年4月13日 at 下午3:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我觉得如果中国的养老福利水平能达到欧美水平的话，不婚率和离婚率会提高很多</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-92215">
+<article class="comment" id="comment-92215">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515589" rel="external nofollow">新用户505461</a></span> on <a href="http://www.acmerblog.com/hdu-1469-video-surveillance-2004.html#comment-92215" rel="nofollow"><time datetime="2017-04-13T15:37:53+00:00" pubdate="">2017年4月13日 at 下午3:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我觉得如果中国的养老福利水平能达到欧美水平的话，不婚率和离婚率会提高很多</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-92214">
+<article class="comment" id="comment-92214">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515589" rel="external nofollow">新用户505461</a></span> on <a href="http://www.acmerblog.com/hdu-1469-video-surveillance-2004.html#comment-92214" rel="nofollow"><time datetime="2017-04-13T15:37:53+00:00" pubdate="">2017年4月13日 at 下午3:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我觉得如果中国的养老福利水平能达到欧美水平的话，不婚率和离婚率会提高很多</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-92213">
+<article class="comment" id="comment-92213">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515589" rel="external nofollow">新用户505461</a></span> on <a href="http://www.acmerblog.com/hdu-1469-video-surveillance-2004.html#comment-92213" rel="nofollow"><time datetime="2017-04-13T15:37:53+00:00" pubdate="">2017年4月13日 at 下午3:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我觉得如果中国的养老福利水平能达到欧美水平的话，不婚率和离婚率会提高很多</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-92212">
+<article class="comment" id="comment-92212">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515589" rel="external nofollow">新用户505461</a></span> on <a href="http://www.acmerblog.com/hdu-1469-video-surveillance-2004.html#comment-92212" rel="nofollow"><time datetime="2017-04-13T15:37:53+00:00" pubdate="">2017年4月13日 at 下午3:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我觉得如果中国的养老福利水平能达到欧美水平的话，不婚率和离婚率会提高很多</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-13589">
+<article class="comment" id="comment-13589">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tzf888888</a></span> on <a href="http://www.acmerblog.com/hdu-1469-video-surveillance-2004.html#comment-13589" rel="nofollow"><time datetime="2015-07-05T20:09:32+00:00" pubdate="">2015年7月5日 at 下午8:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-54851">
+<article class="comment" id="comment-54851">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">magichu</a></span> on <a href="http://www.acmerblog.com/hdu-1469-video-surveillance-2004.html#comment-54851" rel="nofollow"><time datetime="2015-04-10T06:21:19+00:00" pubdate="">2015年4月10日 at 上午6:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，再多来的CF上面的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-13592">
+<article class="comment" id="comment-13592">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1832044043</a></span> on <a href="http://www.acmerblog.com/hdu-1469-video-surveillance-2004.html#comment-13592" rel="nofollow"><time datetime="2015-04-07T08:36:51+00:00" pubdate="">2015年4月7日 at 上午8:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>写的好·····  Pollard Rho快速因数分解</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-54852">
+<article class="comment" id="comment-54852">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">czw8528</a></span> on <a href="http://www.acmerblog.com/hdu-1469-video-surveillance-2004.html#comment-54852" rel="nofollow"><time datetime="2015-03-30T04:40:56+00:00" pubdate="">2015年3月30日 at 上午4:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#include &lt;cstdio&gt;</p>
+<p>int main() {<br/>
+	//answer must be odd<br/>
+    int n, u, d;<br/>
+    while(scanf("%d%d%d",&amp;n,&amp;u,&amp;d)==3 &amp;&amp; n&gt;0) {<br/>
+        if(n&lt;=u) { puts("1"); continue; }<br/>
+        n-=u; u-=d; n+=u-1; n/=u;<br/>
+        n&lt;&lt;=1, ++n;<br/>
+        printf("%dn",n);<br/>
+    }<br/>
+    return 0;<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-41113">
+<article class="comment" id="comment-41113">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaotongtest</a></span> on <a href="http://www.acmerblog.com/hdu-1469-video-surveillance-2004.html#comment-41113" rel="nofollow"><time datetime="2015-02-06T20:44:31+00:00" pubdate="">2015年2月6日 at 下午8:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，再多来的CF上面的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-13593">
+<article class="comment" id="comment-13593">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">oneal</a></span> on <a href="http://www.acmerblog.com/hdu-1469-video-surveillance-2004.html#comment-13593" rel="nofollow"><time datetime="2015-01-09T06:52:02+00:00" pubdate="">2015年1月9日 at 上午6:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>&amp;amp;这是C语言？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-13596">
+<article class="comment" id="comment-13596">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">room306</a></span> on <a href="http://www.acmerblog.com/hdu-1469-video-surveillance-2004.html#comment-13596" rel="nofollow"><time datetime="2014-12-31T11:33:08+00:00" pubdate="">2014年12月31日 at 上午11:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这道题目虽然简单，但是小编做的很到位，应该会给很多人启发吧！对于面试当中不给开辟额外空间的问题不是绝对的，实际上至少是允许少数变量存在的。之前遇到相似的问题也是恍然大悟，今天看到小编这篇文章相见恨晚。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-13595">
+<article class="comment" id="comment-13595">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Tree</a></span> on <a href="http://www.acmerblog.com/hdu-1469-video-surveillance-2004.html#comment-13595" rel="nofollow"><time datetime="2014-11-23T04:42:45+00:00" pubdate="">2014年11月23日 at 上午4:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>位运算真赞</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-13590">
+<article class="comment" id="comment-13590">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">liuyuedeyu</a></span> on <a href="http://www.acmerblog.com/hdu-1469-video-surveillance-2004.html#comment-13590" rel="nofollow"><time datetime="2014-10-29T21:37:09+00:00" pubdate="">2014年10月29日 at 下午9:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>网站做得很好看，内容也多，全。前段时间在博客园里看到有人说：网页的好坏看字体。觉得微软雅黑的字体很好看，然后现在这个网站也用的这个字体！nice!</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-13594">
+<article class="comment" id="comment-13594">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tonight</a></span> on <a href="http://www.acmerblog.com/hdu-1469-video-surveillance-2004.html#comment-13594" rel="nofollow"><time datetime="2014-10-09T07:59:44+00:00" pubdate="">2014年10月9日 at 上午7:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>约瑟夫也用说这么长……很成熟的一个问题了，分治的方法解起来o(n)就可以了，有兴趣可以看看具体数学的第一章，关于约瑟夫问题推导出了一系列的结论，很漂亮</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-13591">
+<article class="comment" id="comment-13591">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaoriqiang</a></span> on <a href="http://www.acmerblog.com/hdu-1469-video-surveillance-2004.html#comment-13591" rel="nofollow"><time datetime="2014-02-12T01:05:10+00:00" pubdate="">2014年2月12日 at 上午1:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不太懂呀，乡亲们。原理知道代码不会</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-54853">
+<article class="comment" id="comment-54853">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dongxi</a></span> on <a href="http://www.acmerblog.com/hdu-1469-video-surveillance-2004.html#comment-54853" rel="nofollow"><time datetime="2013-12-30T08:12:48+00:00" pubdate="">2013年12月30日 at 上午8:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二种解法如果数组有重复元素 就不正确</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

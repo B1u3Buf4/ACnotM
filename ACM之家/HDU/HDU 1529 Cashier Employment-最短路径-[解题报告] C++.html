@@ -1,0 +1,782 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-12</div>
+<div class="tit"><h1 class="entry-title">HDU 1529 Cashier Employment-最短路径-[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph/shortest-path" rel="category tag" title="查看最短路径中的全部文章">最短路径</a>, <a href="http://www.acmerblog.com/category/geometry/analytic-geometry" rel="category tag" title="查看解析几何中的全部文章">解析几何</a></span><span class="i4">围观625次</span><span class="i3"><a class="ds-thread-count" data-thread-key="2086" href="http://www.acmerblog.com/hdu-1529-cashier-employment-2086.html#comments" title="《HDU 1529 Cashier Employment-最短路径-[解题报告] C++》上的评论">19 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Cashier Employment</h1>
+</div>
+<div>
+<p class="mytitle">问题描述 :</p>
+</div>
+<div class="mypanel">A supermarket in Tehran is open 24 hours a day every day and needs a number of cashiers to fit its need. The supermarket manager has hired you to help him, solve his problem. The problem is that the supermarket needs different number of cashiers at different times of each day (for example, a few cashiers after midnight, and many in the afternoon) to provide good service to its customers, and he wants to hire the least number of cashiers for this job.<br/>
+The manager has provided you with the least number of cashiers needed for every one-hour slot of the day. This data is given as R(0), R(1), …, R(23): R(0) represents the least number of cashiers needed from midnight to 1:00 A.M., R(1) shows this number for duration of 1:00 A.M. to 2:00 A.M., and so on. Note that these numbers are the same every day. There are N qualified applicants for this job. Each applicant i works non-stop once each 24 hours in a shift of exactly 8 hours starting from a specified hour, say ti (0 &lt;= ti &lt;= 23), exactly from the start of the hour mentioned. That is, if the ith applicant is hired, he/she will work starting from ti o’clock sharp for 8 hours. Cashiers do not replace one another and work exactly as scheduled, and there are enough cash registers and counters for those who are hired.You are to write a program to read the R(i) ‘s for i=0…23 and ti ‘s for i=1…N that are all, non-negative integer numbers and compute the least number of cashiers needed to be employed to meet the mentioned constraints. Note that there can be more cashiers than the least number needed for a specific slot.</div>
+<div>
+<p class="mytitle">输入:</p>
+</div>
+<div class="mypanel">The first line of input is the number of test cases for this problem (at most 20). Each test case starts with 24 integer numbers representing the R(0), R(1), …, R(23) in one line (R(i) can be at most 1000). Then there is N, number of applicants in another line (0 &lt;= N &lt;= 1000), after which come N lines each containing one ti (0 &lt;= ti &lt;= 23). There are no blank lines between test cases.</div>
+<div>
+<p class="mytitle">输出:</p>
+</div>
+<div class="mypanel">For each test case, the output should be written in one line, which is the least number of cashiers needed.If there is no solution for the test case, you should write No Solution for that case.</div>
+<div>
+<p class="mytitle">样例输入:</p>
+</div>
+<pre class="mypanel iopanel">1
+1 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1
+5
+0
+23
+22
+1
+10</pre>
+<div>
+<p class="mytitle">样例输出:</p>
+</div>
+<pre class="mypanel iopanel">1</pre>
+<p><!-- problem end --></p>
+<p>这绝对是一道ACM的经典题,做了我3天的时间,睡眠严重不足,终于在一瞬间AC了,看着这4000多B的代码,我泪水那个狂流啊!</p>
+<p>网上很少有SPFA实现差分约束的例子,因此,我就这道题进行一下总结吧.</p>
+<p>首先介绍一下什么是差分约束</p>
+<p>比如有这样一组不等式：</p>
+<table align="center" border="0" cellpadding="0" cellspacing="0" style="width: 200px;" summary="">
+<tbody>
+<tr>
+<td bgcolor="#ffffff"><span style="font-family: 'Courier New';">X1 – X2 &lt;= 0<br/>
+X1 – X5 &lt;= -1<br/>
+X2 – X5 &lt;= 1<br/>
+X3 – X1 &lt;= 5<br/>
+X4 – X1 &lt;= 4<br/>
+X4 – X3 &lt;= -1<br/>
+X5 – X3 &lt;= -3<br/>
+X5 – X4 &lt;= -3</span></td>
+</tr>
+</tbody>
+</table>
+<div align="center">不等式组(1)</div>
+<p>全都是<strong>两个</strong>未知数的差<strong>小于等于</strong>某个常数（大于等于也可以，因为左右乘以-1就可以化成小于等于）。这样的不等式组就称作差分约束系统。<br/>
+这个不等式组要么无解，要么就有无数组解。因为如果有一组解{X1, X2, …, Xn}的话，那么对于任何一个常数k，{X1 + k, X2 + k, …, Xn + k}肯定也是一组解，因为任何两个数同时加一个数之后，它们的差是不变的，那么这个差分约束系统中的所有不等式都不会被破坏。</p>
+<p>差分约束系统的解法利用到了单源最短路径问题中的三角形不等式。即对于任何一条边u -&gt; v，都有：</p>
+<table align="center" border="0" cellpadding="0" cellspacing="0" style="width: 200px;" summary="">
+<tbody>
+<tr>
+<td bgcolor="#ffffff"><span style="font-family: 'Courier New';">d(v) &lt;= d(u) + w(u, v)</span></td>
+</tr>
+</tbody>
+</table>
+<p>其中d(u)和d(v)是从源点分别到点u和点v的最短路径的权值，w(u, v)是边u -&gt; v的权值。<br/>
+显然以上不等式就是d(v) – d(u) &lt;= w(u, v)。这个形式正好和差分约束系统中的不等式形式相同。于是我们就可以把一个差分约束系统转化成一张图，每个未知数Xi对应图中的一个顶点Vi，把所有不等式都化成图中的一条边。对于不等式Xi – Xj &lt;= c，把它化成三角形不等式：Xi &lt;= Xj + c，就可以化成边Vj -&gt; Vi，权值为c。最后，我们在这张图上求一次单源最短路径，这些三角形不等式就会全部都满足了，因为它是最短路径问题的基本性质嘛。<br/>
+话说回来，所谓单源最短路径，当然要有一个源点，然后再求这个源点到其他所有点的最短路径。那么源点在哪呢？我们不妨自已造一个。以上面的不等式组为例，我们就再新加一个未知数X0。然后对原来的每个未知数都对X0随便加一个不等式（这个不等式当然也要和其它不等式形式相同，即两个未知数的差小于等于某个常数）。我们索性就全都写成Xn – X0 &lt;= 0，于是这个差分约束系统中就多出了下列不等式：</p>
+<table align="center" border="0" cellpadding="0" cellspacing="0" style="width: 200px;" summary="">
+<tbody>
+<tr>
+<td bgcolor="#ffffff"><span style="font-family: 'Courier New';">X1 – X0 &lt;= 0<br/>
+X2 – X0 &lt;= 0<br/>
+X3 – X0 &lt;= 0<br/>
+X4 – X0 &lt;= 0<br/>
+X5 – X0 &lt;= 0</span></td>
+</tr>
+</tbody>
+</table>
+<div align="center">不等式组(2)</div>
+<p>对于这5个不等式，也在图中建出相应的边。最后形成的图如下：</p>
+<div align="center"><a href="http://cdn.acmerblog.com/wp-content/uploads/2013/12/22291035.jpg"><img alt="22291035" class="alignnone size-medium wp-image-2536" height="231" src="http://cdn.acmerblog.com/wp-content/uploads/2013/12/22291035-300x231.jpg" width="300"/></a><br/>
+图1</div>
+<p>图中的每一条边都代表差分约束系统中的一个不等式。现在以V0为源点，求单源最短路径。最终得到的V0到Vn的最短路径长度就是Xn的一个解啦。从图1中可以看到，这组解是{-5, -3, 0, -1, -4}。当然把每个数都加上10也是一组解：{5, 7, 10, 9, 6}。但是这组解只满足不等式组(1)，也就是原先的差分约束系统；而不满足不等式组(2)，也就是我们后来加上去的那些不等式。当然这是无关紧要的，因为X0本来就是个局外人，是我们后来加上去的，满不满足与X0有关的不等式我们并不在乎。<br/>
+也有可能出现无解的情况，也就是从源点到某一个顶点不存在最短路径。也说是图中存在负权的圈。这一点我就不展开了，请自已参看最短路径问题的一些基本定理。</p>
+<p>其实，对于图1来说，它代表的一组解其实是{0, -5, -3, 0, -1, -4}，也就是说X0的值也在这组解当中。但是X0的值是无可争议的，既然是以它作为源点求的最短路径，那么源点到它的最短路径长度当然是0了。因此，实际上我们解的这个差分约束系统无形中又存在一个条件：</p>
+<table align="center" border="0" cellpadding="0" cellspacing="0" style="width: 200px;" summary="">
+<tbody>
+<tr>
+<td bgcolor="#ffffff"><span style="font-family: 'Courier New';">X0 = 0</span></td>
+</tr>
+</tbody>
+</table>
+<p>也就是说在不等式组(1)、(2)组成的差分约束系统的前提下，再把其中的一个未知数的值定死。这样的情况在实际问题中是很常见的。比如一个问题表面上给出了一些不等式，但还隐藏着一些不等式，比如所有未知数都大于等于0或者都不能超过某个上限之类的。比如上面的不等式组(2)就规定了所有未知数都小于等于0。</p>
+<p>对于这种有一个未知数定死的差分约束系统，还有一个有趣的性质，那就是通过最短路径算法求出来的一组解当中，所有未知数都达到最大值。下面我来粗略地证明一下，这个证明过程要结合Bellman-Ford算法的过程来说明。<br/>
+假设X0是定死的；X1到Xn在满足所有约束的情况下可以取到的最大值分别为M1、M2、……、Mn（当然我们不知道它们的值是多少）；解出的源点到每个点的最短路径长度为D1、D2、……、Dn。<br/>
+基本的Bellman-Ford算法是一开始初始化D1到Dn都是无穷大。然后检查所有的边对应的三角形不等式，一但发现有不满足三角形不等式的情况，则更新对应的D值。最后求出来的D1到Dn就是源点到每个点的最短路径长度。<br/>
+如果我们一开始初始化D1、D2、……、Dn的值分别为M1、M2、……、Mn，则由于它们全都满足三角形不等式（我们刚才已经假设M1到Mn是一组合法的解），则Bellman-Ford算法不会再更新任合D值，则最后得出的解就是M1、M2、……、Mn。<br/>
+好了，现在知道了，初始值无穷大时，算出来的是D1、D2、……、Dn；初始值比较小的时候算出来的则是M1、M2、……、Mn。大家用的是同样的算法，同样的计算过程，总不可能初始值大的算出来的结果反而小吧。所以D1、D2、……、Dn就是M1、M2、……、Mn。</p>
+<p>那么如果在一个未知数定死的情况下，要求其它所有未知数的最小值怎么办？只要反过来求最长路径就可以了。最长路径中的三角不等式与最短路径中相反：</p>
+<table align="center" border="0" cellpadding="0" cellspacing="0" style="width: 300px;" summary="">
+<tbody>
+<tr>
+<td bgcolor="#ffffff"><span style="font-family: 'Courier New';">d(v) &gt;= d(u) + w(u, v)<br/>
+也就是 d(v) – d(u) &gt;= w(u, v)</span></td>
+</tr>
+</tbody>
+</table>
+<p>所以建图的时候要先把所有不等式化成大于等于号的。其它各种过程，包括证明为什么解出的是最小值的证法，都完全类似。</p>
+<p> </p>
+<p>OK 上述纯属copy,有错误,请向原作者指出<a href="http://imlazy.ycool.com/post.1702305.html">http://imlazy.ycool.com/post.1702305.html</a>;</p>
+<p> </p>
+<p>很好,现在介绍一下一些必备的解题知识—最短路径的另外求法Bellman-Ford算法以及SPFA算法;</p>
+<p> </p>
+<p>Bellman-Ford算法:</p>
+<p>顾名思义,是由Bellman-Ford提出的解决一类单源最短路径的方法,其基本核心是松弛技术.所谓松弛,就是先预估一个从起点到达终点的路径权值为INF,设起点到起点的距离为0,每次扫描所有的边,如果dis[i]!=INF&amp;&amp;dis[i]+w[i,j]&lt;dis[j],则更新dis[j]=dis[i]+w[i,j],由于在n个点组成网中,从起点到终点的最大跨越点数为n-1,因此,算法需要不断迭代n-1次,就能计算得到从起点出发到各点的距离.对于出现负权的情况,算法依然能解出最优值,而对于出现负圈的问题,一个很好的判别是在算法结束后再进行一次迭代,若仍有边可以松弛,就可以确定出现了负圈(想想为什么).</p>
+<p>这样一来算法的复杂度便为O(VE),人们在上面做优化后(即在一次迭代后,若没有发生松弛,则算法结束),还是能满足当前的效率要求的.</p>
+<p> </p>
+<p>SPFA算法:</p>
+<p>当然,人们是不会满足于这一点点的改善,于是有人想出了比较变态的方法,用一个队列辅助算法,开始时推入起点标号,进入循环后,当队列不为空,则推出队头,标记该点不在队列内,遍历该点的所有邻接边,若满足松弛条件,则进行一次松弛操作,然后再把进行过松弛的顶点推入队中,并标记该点在队内,不断迭代直到结束.对于负圈判断,只要记录所有顶点的入队次数,若&gt;边数,则肯定出现负圈.在不出现负圈的情况下,该算法能达到令人吃惊的O(KE),K为期望值,一般取4,而在邻接表的配合下(LTC的静态邻接表版本),可以达到更无耻的O(E),当然在稠密图中,如果出现负圈,则要比优化过的Bellman-Ford要慢.</p>
+<p> </p>
+<p>好了现在开始介绍1529的题,这绝对是差分约束的高级题,我在翻阅了WC2006冯威大牛的著作后,经过好多天的摸索,才使用邻接表+SPFA实现了以下的代码,预期时间要快,但在HDU上表现差强人意,大概测试数据都是些负圈啊无解啊之类的…..郁闷的说!</p>
+<p> </p>
+<p>以下是大牛的解题思路:</p>
+<p> </p>
+<p>设num[ I ]为i时刻能够开始工作的人数，x[ I ]为实际雇佣的人数，那么x[ I ]&lt;=num[ I ]。<br/>
+设r[ I ]为i时刻至少需要工作的人数，于是有如下关系：<br/>
+x[ I-7 ]+x[ I-6 ]+x[ I-5 ]+x[ I-4 ]+x[ I-3 ]+x[ I-2 ]+x[ I-1 ]+x[ I ]&gt;=r[ I ]<br/>
+设s[ I ]=x[ 1 ]+x[ 2 ]…+x[ I ]，得到<br/>
+0&lt;=s[ I ]-s[ I-1 ]&lt;=num[ I ]， 0&lt;=I&lt;=23<br/>
+s[ I ]-s[ I-8 ]&gt;=r[ I ]， 8&lt;=I&lt;=23<br/>
+s[ 23 ]+s[ I ]-s[ I+16 ]&gt;=r[ I ]， 0&lt;=I&lt;=7</p>
+<p>对于以上的几组不等式，我们采用一种非常笨拙的办法处理这一系列的不等式(其实也是让零乱的式子变得更加整齐，易于处理)。首先我们要明白差分约束系统的应用对象（它通常针对多个二项相减的不等式的）于是我们将上面的所有式子都转化成两项未知项在左边，另外的常数项在右边，且中间用&gt;=连接的式子，即:<br/>
+s[ I ]-s[ I-1 ]&gt;=0            (0&lt;=I&lt;=23)<br/>
+s[ I-1 ]-s[ I ]&gt;=-num[ I ]       (0&lt;=I&lt;=23)<br/>
+s[ I ]-s[ I-8 ]&gt;=r[ I ]         (8&lt;=I&lt;=23)<br/>
+s[ I ]-s[ I+16 ]&gt;=r[ I ]-s[ 23 ]  (0&lt;=I&lt;= 7)</p>
+<p>这里出现了小的困难，我们发现以上式子并不是标准的差分约束系统，因为在最后一个式子中出现了三个未知单位。但是注意到其中跟随 I变化的只有两个，于是s[23]就变得特殊起来，看来是需要我们单独处理，于是我们把 s[ 23 ]当作已知量放在右边。<br/>
+经过这样的整理，整个图就很容易创建了，将所有形如 A-B&gt;=C 的式子 我们从节点B 引出一条有向边指向 A  边的权值为C  （这里注意由于左右确定，式子又是统一的&gt;=的不等式，所以A和B是相对确定的，边是一定是指向A的） ，图就建成了 。<br/>
+最后枚举所有s[ 23 ]的可能值，对于每一个s[23]，我们都进行一次常规差分约束系统问题的求解，判断这种情况是否可行，如果可行求出需要的最优值，记录到Ans中，最后的Ans的值即为所求。</p>
+<p>这篇论文遗漏了两个条件,貌似也是大牛认为我们肯定能推出的所以没有写上.</p>
+<p>设Start为起始点,End,则必须满足下列约束</p>
+<p>S[I]-S[start]&gt;=0   (0&lt;=I&lt;=23)</p>
+<p>S[End]-S[Start]=Ans(这个权值与大牛的最后个约束式的S[23]相当，并且在每次迭代中进行枚举)</p>
+<p> </p>
+<p>想想看是不是很容易理解!我们要求的就是当该图不存在负圈时而且Ans==S[23]时,Ans的值。根据大牛的论文，此时还要满足N（可以雇佣的总人数）！=4，至于为什么。。。也不是很懂，我把这句去掉也照样能AC，可见这个懂的人也少OJ也不敢加这个数据，过几天我再好好研究下。</p>
+<p> </p>
+<p>如上，建图后枚举最长路径，若存在则输出，否则输出无解。。。。</p>
+<p> </p>
+<p>以下附上代码：（SPFA+邻接表实现）</p>
+<p> </p>
+<p>注意，SPFA实现前必须将除起点外的所有DIS数组的值赋为需要的极值（最长路为-INF,最短路为INF），防止刚进队列就被弹出，从而结束算法的问题！</p>
+<p> </p>
+<pre class="brush:cpp">#include &lt;iostream&gt;
+
+#include &lt;queue&gt;
+
+using namespace std;
+
+const long MAXN=1000;
+
+const long lmax=0xF000FFFF;
+
+typedef struct  
+
+{
+
+    long v;
+
+    long next;
+
+    long cost;
+
+}Edge;
+
+Edge e[MAXN];
+
+long p[MAXN];
+
+long Dis[MAXN];
+
+bool vist[MAXN];
+
+long ct[MAXN];
+
+long R[30];
+
+long S[30];
+
+long Num[30];
+
+queue&lt;long&gt; q;
+
+long eid;
+
+inline void init()
+
+{
+
+    memset(vist,0,sizeof(vist));
+
+    memset(ct,0,sizeof(ct));
+
+    long i;
+
+    for (i=0;i&lt;MAXN;++i)
+
+    {
+
+        Dis[i]=lmax;
+
+    }
+
+    while (!q.empty())
+
+    {
+
+        q.pop();
+
+    }
+
+}
+
+// 
+
+// void print(long End)
+
+// {
+
+//     //若为lmax 则不可达
+
+//     printf("%ld\n",Dis[End]);    
+
+// }
+
+inline void SPF()
+
+{
+
+    long i;
+
+    memset(Num,0,sizeof(Num));
+
+    for (i=0;i&lt;24;++i)
+
+    {
+
+        scanf("%ld",&amp;R[i]);
+
+    }
+
+    long N;
+
+    scanf("%ld",&amp;N);
+
+    for (i=0;i&lt;N;++i)
+
+    {
+
+        long tp;
+
+        scanf("%ld",&amp;tp);
+
+        ++Num[tp];
+
+    }
+
+    //以下为构图
+
+    eid=0;    
+
+    memset(p,-1,sizeof(p));
+
+    long from,to,cost;
+
+    for (i=1;i&lt;24;++i)
+
+    {
+
+        //s[ i ]-s[ i-1 ]&gt;=0 (0&lt;=i&lt;=23) 这里先构建1-23 
+
+        from=i-1;
+
+        to=i;
+
+        cost=0;
+
+        e[eid].next=p[from];
+
+        e[eid].v=to;
+
+        e[eid].cost=cost;
+
+        p[from]=eid++;
+
+        //s[ i-1 ]-s[ i ]&gt;=-Num[ i ] (0&lt;=i&lt;=23) 这里先构建1-23 
+
+        from=i;
+
+        to=i-1;
+
+        cost=-Num[i];        
+
+        e[eid].next=p[from];
+
+        e[eid].v=to;
+
+        e[eid].cost=cost;
+
+        p[from]=eid++;
+
+        if (i&gt;7)
+
+        {
+
+            //s[ I ]-s[ I-8 ]&gt;=R[ I ] (8&lt;=I&lt;=23) 
+
+            from=i-8;
+
+            to=i;
+
+            cost=R[i];
+
+            e[eid].next=p[from];
+
+            e[eid].v=to;
+
+            e[eid].cost=cost;
+
+            p[from]=eid++;
+
+        }
+
+    } 
+
+    //特殊处理i=-1 替代为MAXN-1;
+
+    //s[ i ]-s[ i-1 ]&gt;=0 (0&lt;=i&lt;=23) 这里取i=0  
+
+    //s[ 0 ]-s[  -1 ]&gt;=0 
+
+    from=MAXN-1,to=0,cost=0;
+
+    e[eid].next=p[from];
+
+    e[eid].v=to;
+
+    e[eid].cost=cost;
+
+    p[from]=eid++;
+
+     long ss;
+
+     for (i=0;i&lt;24;++i)
+
+     {
+
+         if(i==23)
+
+         {
+
+            ss=eid;
+
+         }
+
+         from=MAXN-1,to=i,cost=0;
+
+         e[eid].next=p[from];
+
+         e[eid].v=to;
+
+         e[eid].cost=cost;
+
+         p[from]=eid++;
+
+     }    
+
+    //s[ i-1 ]-s[ i ]&gt;=-Num[ i ] (0&lt;=i&lt;=23) 这里取i=0 
+
+    //s[  -1 ]-s[ 0 ]&gt;=-Num[ 0 ]
+
+    from=0,to=MAXN-1,cost=-Num[0];
+
+    e[eid].next=p[from];
+
+    e[eid].v=to;
+
+    e[eid].cost=cost;
+
+    p[from]=eid++;
+
+    //基本构图结束
+
+    //开始8点构图
+
+    long save[10];//存放八条边的index
+
+    long sum=0;//s[ 23 ]
+
+    //s[ I ]-s[ I+16 ]&gt;=R[ I ]-s[ 23 ] (0&lt;=I&lt;= 7) 
+
+    for (i=0;i&lt;=7;++i)
+
+    {
+
+        from=i+16;
+
+        to=i;
+
+        cost=R[i]-sum;
+
+        save[i]=eid;
+
+        e[eid].next=p[from];
+
+        e[eid].v=to;
+
+        e[eid].cost=cost;
+
+        p[from]=eid++;
+
+    }
+
+    long Start,End;
+
+    Start=MAXN-1;
+
+    End=23;
+
+    bool doit=false;
+
+    while(!doit&amp;&amp;sum&lt;=N)
+
+    {
+
+        for (i=0;i&lt;=7;++i)
+
+        {
+
+            e[save[i]].cost=R[i]-sum;
+
+        }
+
+        e[ss].cost=sum;//这句话很重要！！！
+
+        init();
+
+        doit=true;    
+
+        ++(ct[Start]);
+
+        Dis[Start]=0;
+
+        vist[Start]=true;
+
+        q.push(Start);
+
+        while (!q.empty())
+
+        {
+
+            long t=q.front();
+
+            q.pop();
+
+            vist[t]=false;
+
+            long j;
+
+            for (j=p[t];j!=-1;j=e[j].next)
+
+            {
+
+                long w=e[j].cost;
+
+                if (w+Dis[t]&gt;Dis[e[j].v])
+
+                {
+
+                    Dis[e[j].v]=w+Dis[t];
+
+                    if (!vist[e[j].v])
+
+                    {
+
+                        vist[e[j].v]=true;
+
+                        q.push(e[j].v);
+
+                        ++(ct[e[j].v]);
+
+                        //判负环
+
+                        if ((ct[e[j].v])&gt;eid)
+
+                        {
+
+                            doit=false;//表示存在负圈
+
+                            goto L1;
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        }
+
+L1:        
+
+        if(!doit||Dis[End]!=sum)
+
+        {
+
+            doit=false;
+
+            ++sum;
+
+        }
+
+        else
+
+        {
+
+            break;
+
+        }
+
+    }
+
+    if (doit&amp;&amp;Dis[End]==sum&amp;&amp;N!=4)
+
+    {
+
+        printf("%ld\n",sum);
+
+    }
+
+    else
+
+    {
+
+        printf("No Solution\n");
+
+    }
+
+}
+
+int main()
+
+{
+
+    //freopen("test.txt","r",stdin);
+
+    long T;
+
+    scanf("%ld",&amp;T);
+
+    while (T--)
+
+    {
+
+        SPF();
+
+    }
+
+    return 0;
+
+}</pre>
+<p>解题报告转自：http://www.cnblogs.com/zhuangli/archive/2008/07/26/1252252.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-92035">
+<article class="comment" id="comment-92035">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460468" rel="external nofollow">新用户172133</a></span> on <a href="http://www.acmerblog.com/hdu-1529-cashier-employment-2086.html#comment-92035" rel="nofollow"><time datetime="2017-04-13T14:35:38+00:00" pubdate="">2017年4月13日 at 下午2:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>原胞自动机？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-92034">
+<article class="comment" id="comment-92034">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460468" rel="external nofollow">新用户172133</a></span> on <a href="http://www.acmerblog.com/hdu-1529-cashier-employment-2086.html#comment-92034" rel="nofollow"><time datetime="2017-04-13T14:35:38+00:00" pubdate="">2017年4月13日 at 下午2:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>原胞自动机？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-92033">
+<article class="comment" id="comment-92033">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460468" rel="external nofollow">新用户172133</a></span> on <a href="http://www.acmerblog.com/hdu-1529-cashier-employment-2086.html#comment-92033" rel="nofollow"><time datetime="2017-04-13T14:35:38+00:00" pubdate="">2017年4月13日 at 下午2:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>原胞自动机？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-92032">
+<article class="comment" id="comment-92032">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460468" rel="external nofollow">新用户172133</a></span> on <a href="http://www.acmerblog.com/hdu-1529-cashier-employment-2086.html#comment-92032" rel="nofollow"><time datetime="2017-04-13T14:35:38+00:00" pubdate="">2017年4月13日 at 下午2:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>原胞自动机？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-92031">
+<article class="comment" id="comment-92031">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460468" rel="external nofollow">新用户172133</a></span> on <a href="http://www.acmerblog.com/hdu-1529-cashier-employment-2086.html#comment-92031" rel="nofollow"><time datetime="2017-04-13T14:35:38+00:00" pubdate="">2017年4月13日 at 下午2:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>原胞自动机？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-41342">
+<article class="comment" id="comment-41342">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Mitrenick</a></span> on <a href="http://www.acmerblog.com/hdu-1529-cashier-employment-2086.html#comment-41342" rel="nofollow"><time datetime="2015-07-04T16:47:34+00:00" pubdate="">2015年7月4日 at 下午4:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢提醒。代码又编辑了一下</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-14018">
+<article class="comment" id="comment-14018">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tzf88888888</a></span> on <a href="http://www.acmerblog.com/hdu-1529-cashier-employment-2086.html#comment-14018" rel="nofollow"><time datetime="2015-05-19T22:41:41+00:00" pubdate="">2015年5月19日 at 下午10:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈呀！这个Dijkstra模板好长OwQ！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-41340">
+<article class="comment" id="comment-41340">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">warriorbrant</a></span> on <a href="http://www.acmerblog.com/hdu-1529-cashier-employment-2086.html#comment-41340" rel="nofollow"><time datetime="2015-03-27T06:40:16+00:00" pubdate="">2015年3月27日 at 上午6:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>scanner改用StreamTokenizer就不超时了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-41337">
+<article class="comment" id="comment-41337">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zrw</a></span> on <a href="http://www.acmerblog.com/hdu-1529-cashier-employment-2086.html#comment-41337" rel="nofollow"><time datetime="2015-03-15T21:39:09+00:00" pubdate="">2015年3月15日 at 下午9:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢支持！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-41336">
+<article class="comment" id="comment-41336">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wall_</a></span> on <a href="http://www.acmerblog.com/hdu-1529-cashier-employment-2086.html#comment-41336" rel="nofollow"><time datetime="2015-02-18T14:44:30+00:00" pubdate="">2015年2月18日 at 下午2:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这种二分还是比较经典！mark</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-14012">
+<article class="comment" id="comment-14012">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jamoeba</a></span> on <a href="http://www.acmerblog.com/hdu-1529-cashier-employment-2086.html#comment-14012" rel="nofollow"><time datetime="2015-02-11T00:38:03+00:00" pubdate="">2015年2月11日 at 上午12:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有一点问题。。后面动态规划的程序中<br/>
+int dp[n+1][W+1];<br/>
+会报错  提示表达式必须含有常量值。该怎么修改呢。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-14013">
+<article class="comment" id="comment-14013">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hsp_77_abc</a></span> on <a href="http://www.acmerblog.com/hdu-1529-cashier-employment-2086.html#comment-14013" rel="nofollow"><time datetime="2014-10-11T02:41:24+00:00" pubdate="">2014年10月11日 at 上午2:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个应该是最朴素的KMP实现</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-41339">
+<article class="comment" id="comment-41339">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bai</a></span> on <a href="http://www.acmerblog.com/hdu-1529-cashier-employment-2086.html#comment-41339" rel="nofollow"><time datetime="2014-10-09T21:16:17+00:00" pubdate="">2014年10月9日 at 下午9:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很有用，收藏了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-14015">
+<article class="comment" id="comment-14015">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fastislow</a></span> on <a href="http://www.acmerblog.com/hdu-1529-cashier-employment-2086.html#comment-14015" rel="nofollow"><time datetime="2014-09-08T19:15:07+00:00" pubdate="">2014年9月8日 at 下午7:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>惊艳了，没想到代码如此简洁</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-41338">
+<article class="comment" id="comment-41338">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dreams</a></span> on <a href="http://www.acmerblog.com/hdu-1529-cashier-employment-2086.html#comment-41338" rel="nofollow"><time datetime="2014-08-20T02:56:33+00:00" pubdate="">2014年8月20日 at 上午2:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>此题的样例描述不正确</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-14017">
+<article class="comment" id="comment-14017">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sum_tsai</a></span> on <a href="http://www.acmerblog.com/hdu-1529-cashier-employment-2086.html#comment-14017" rel="nofollow"><time datetime="2014-05-21T13:09:49+00:00" pubdate="">2014年5月21日 at 下午1:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>[…] 如果此题没有要求 相对位置不变，可以参考文章：http://www.acmerblog.com/interview-9-2427/ […]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-41341">
+<article class="comment" id="comment-41341">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">lsdtc1225</a></span> on <a href="http://www.acmerblog.com/hdu-1529-cashier-employment-2086.html#comment-41341" rel="nofollow"><time datetime="2014-03-19T18:34:53+00:00" pubdate="">2014年3月19日 at 下午6:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的方法，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-14014">
+<article class="comment" id="comment-14014">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mr_zhang2011</a></span> on <a href="http://www.acmerblog.com/hdu-1529-cashier-employment-2086.html#comment-14014" rel="nofollow"><time datetime="2014-03-01T22:58:24+00:00" pubdate="">2014年3月1日 at 下午10:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>全是智力分析的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-14016">
+<article class="comment" id="comment-14016">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tufei</a></span> on <a href="http://www.acmerblog.com/hdu-1529-cashier-employment-2086.html#comment-14016" rel="nofollow"><time datetime="2014-01-05T19:05:51+00:00" pubdate="">2014年1月5日 at 下午7:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，就是把这32位当成一个长度为32的数</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,332 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-12</div>
+<div class="tit"><h1 class="entry-title">HDU 1512 Monkey King[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观777次</span><span class="i3"><a class="ds-thread-count" data-thread-key="2069" href="http://www.acmerblog.com/hdu-1512-Monkey-King-2069.html#comments" title="《HDU 1512 Monkey King[解题报告] C++》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Monkey King</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Once in a forest, there lived N aggressive monkeys. At the beginning, they each does things in its own way and none of them knows each other. But monkeys can’t avoid quarrelling, and it only happens between two monkeys who does not know each other. And when it happens, both the two monkeys will invite the strongest friend of them, and duel. Of course, after the duel, the two monkeys and all of there friends knows each other, and the quarrel above will no longer happens between these monkeys even if they have ever conflicted.
+<p>Assume that every money has a strongness value, which will be reduced to only half of the original after a duel(that is, 10 will be reduced to 5 and 5 will be reduced to 2).</p>
+<p>And we also assume that every monkey knows himself. That is, when he is the strongest one in all of his friends, he himself will go to duel. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+There are several test cases, and each case consists of two parts.
+<p>First part: The first line contains an integer N(N&lt;=100,000), which indicates the number of monkeys. And then N lines follows. There is one number on each line, indicating the strongness value of ith monkey(&lt;=32768).</p>
+<p>Second part: The first line contains an integer M(M&lt;=100,000), which indicates there are M conflicts happened. And then M lines follows, each line of which contains two integers x and y, indicating that there is a conflict between the Xth monkey and Yth.</p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+For each of the conflict, output -1 if the two monkeys know each other, otherwise output the strongness value of the strongest monkey in all friends of them after the duel.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+5
+20
+16
+10
+10
+4
+5
+2 3
+3 4
+3 5
+4 5
+1 5</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+8
+5
+5
+-1
+10</pre>
+<p> <!-- problem end --></p>
+<p><span style="font-size:13px">推荐黄源河的论文</span><a href="http://wenku.baidu.com/view/515f76e90975f46527d3e1d5.html"><span style="font-size:13px">http://wenku.baidu.com/view/515f76e90975f46527d3e1d5.html</span></a></p>
+<p> </p>
+<pre class="brush:cpp ">#define N 100010
+struct node{
+    int dis,v;
+    int l,r;
+}k[N];
+int n,m,pre[N];
+void init(){
+    int i;
+    for(i=0;i&lt;=n;i++){
+        pre[i] = i;
+    }
+    memset(k,'\0',sizeof(k));
+}
+int Merge(int a,int b){//  左偏树合并（重要）！
+    if(a == 0)return b;
+    if(b == 0)return a;
+    if(k[b].v&gt;k[a].v)swap(a,b);
+    k[a].r = Merge(k[a].r,b);
+    pre[k[a].r] = a;
+    if(k[k[a].l].dis &lt; k[k[a].r].dis)swap(k[a].r,k[a].l);
+    if(k[a].r == 0)k[a].dis = 0;
+    else k[a].dis = k[k[a].r].dis + 1;
+    return a;
+}
+int Max(int a){//  合并左右子树后返回最大结点编号
+    return Merge(k[a].l,k[a].r);
+}
+int find(int x){//  寻找前驱
+    while(x!=pre[x]){
+        x = pre[x];
+    }
+    return x;
+}
+int solve(int a,int b){
+    int x = find(a),y = find(b);//寻找各自根结点(这里也就是最大值的结点)
+    int p,xx,yy,tmp;
+    pre[a] = x,pre[b] = y;
+    if(x == y)return -1;//同一棵树
+
+    k[x].v /= 2;//修改根结点后要重新合并，具体是先合并两个儿子，再插入自己
+    tmp = Max(x);//合并两个儿子——————— ①
+    k[x].r = k[x].l = k[x].dis = 0;//自己脱离出来
+    xx = Merge(tmp,x);// 合并修改后的节点和上面两个儿子的新树①
+
+    k[y].v /= 2;
+    tmp = Max(y);
+    k[y].r = k[y].l = k[y].dis = 0;
+    yy = Merge(tmp,y);
+
+    p = Merge(xx,yy);// 合并上面的两棵树
+
+    pre[xx] = pre[yy] = pre[x] = pre[y] = pre[a] = pre[b] = p;//更改前驱
+    return k[p].v;
+}
+int main(){
+    int i,j;
+    while(scanf("%d",&amp;n) != -1){
+        init();
+        for(i=1;i&lt;=n;i++){
+            scanf("%d",&amp;k[i].v);
+        }
+        scanf("%d",&amp;m);
+        while(m--){
+            int a,b;
+            scanf("%d%d",&amp;a,&amp;b);
+            int ans = solve(a,b);
+            printf("%d\n",ans);
+        }
+    }
+    return 0;
+}</pre>
+<p>
+</p>
+<p><a href="http://acm.hdu.edu.cn/showproblem.php?pid=3031">http://acm.hdu.edu.cn/showproblem.php?pid=3031</a> 左偏树</p>
+<p> </p>
+<p> </p>
+<p> </p>
+<p> </p>
+<p> </p>
+<p> </p>
+<p> </p>
+<p> </p>
+<p> </p>
+<p> </p>
+<p> </p>
+<p> </p>
+<p> </p>
+<p> </p>
+<p> </p>
+<p> </p>
+<p>解题报告转自：http://blog.csdn.net/leolin_/article/details/7268206</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-13875">
+<article class="comment" id="comment-13875">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ozhfo</a></span> on <a href="http://www.acmerblog.com/hdu-1512-Monkey-King-2069.html#comment-13875" rel="nofollow"><time datetime="2015-07-15T18:51:47+00:00" pubdate="">2015年7月15日 at 下午6:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>输出规范写错了哦~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-54934">
+<article class="comment" id="comment-54934">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">magichu</a></span> on <a href="http://www.acmerblog.com/hdu-1512-Monkey-King-2069.html#comment-54934" rel="nofollow"><time datetime="2015-01-30T09:44:26+00:00" pubdate="">2015年1月30日 at 上午9:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这一题的代码这样提交时错误的~少考虑了很多情况</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-41280">
+<article class="comment" id="comment-41280">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">warriorbrant</a></span> on <a href="http://www.acmerblog.com/hdu-1512-Monkey-King-2069.html#comment-41280" rel="nofollow"><time datetime="2015-01-12T15:59:45+00:00" pubdate="">2015年1月12日 at 下午3:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-54933">
+<article class="comment" id="comment-54933">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Emlar</a></span> on <a href="http://www.acmerblog.com/hdu-1512-Monkey-King-2069.html#comment-54933" rel="nofollow"><time datetime="2014-12-27T12:54:31+00:00" pubdate="">2014年12月27日 at 下午12:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，感谢分享。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-41284">
+<article class="comment" id="comment-41284">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">calvert1991</a></span> on <a href="http://www.acmerblog.com/hdu-1512-Monkey-King-2069.html#comment-41284" rel="nofollow"><time datetime="2014-12-17T14:25:11+00:00" pubdate="">2014年12月17日 at 下午2:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一题还是比较考验智商~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-41282">
+<article class="comment" id="comment-41282">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">raymanshf</a></span> on <a href="http://www.acmerblog.com/hdu-1512-Monkey-King-2069.html#comment-41282" rel="nofollow"><time datetime="2014-11-29T14:16:39+00:00" pubdate="">2014年11月29日 at 下午2:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，赞一个！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-61656">
+<article class="comment" id="comment-61656">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">WalkCoder</a></span> on <a href="http://www.acmerblog.com/hdu-1512-Monkey-King-2069.html#comment-61656" rel="nofollow"><time datetime="2014-11-04T00:27:32+00:00" pubdate="">2014年11月4日 at 上午12:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>补充：此算法求出的不一定是最优解，之前理解错了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-54935">
+<article class="comment" id="comment-54935">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Aifan</a></span> on <a href="http://www.acmerblog.com/hdu-1512-Monkey-King-2069.html#comment-54935" rel="nofollow"><time datetime="2014-10-27T21:14:53+00:00" pubdate="">2014年10月27日 at 下午9:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#include &lt;cstdio&gt;<br/>
+#include &lt;cstring&gt;</p>
+<p>const int MAXSIZE=256;<br/>
+//char store[MAXSIZE];<br/>
+char str1[MAXSIZE];<br/>
+/*<br/>
+void init(char *store) {<br/>
+    int i;<br/>
+    store['A']=’V', store['B']=’W',store['C']=’X',store['D']=’Y',store['E']=’Z';<br/>
+    for(i=’F';i&lt;=’Z';++i) store <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> =i-5;<br/>
+}<br/>
+*/<br/>
+int main() {<br/>
+    //freopen("input.txt","r",stdin);<br/>
+    //init(store);<br/>
+    char *p;<br/>
+    while(fgets(str1,MAXSIZE,stdin) &amp;&amp; strcmp(str1,"STARTn")==0) {<br/>
+        if(p=fgets(str1,MAXSIZE,stdin)) {<br/>
+            for(;*p;++p) {<br/>
+				//*p=store[*p]<br/>
+                if(*p&lt;’A’ || *p&gt;’Z') continue;<br/>
+                if(*p&gt;’E') *p=*p-5;<br/>
+                else *p=*p+21;<br/>
+            }<br/>
+            printf("%s",str1);<br/>
+        }<br/>
+        fgets(str1,MAXSIZE,stdin);<br/>
+    }<br/>
+    return 0;<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-41285">
+<article class="comment" id="comment-41285">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">cherry_odd</a></span> on <a href="http://www.acmerblog.com/hdu-1512-Monkey-King-2069.html#comment-41285" rel="nofollow"><time datetime="2014-09-01T02:49:46+00:00" pubdate="">2014年9月1日 at 上午2:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>写的好·····  Pollard Rho快速因数分解</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-13874">
+<article class="comment" id="comment-13874">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dreams</a></span> on <a href="http://www.acmerblog.com/hdu-1512-Monkey-King-2069.html#comment-13874" rel="nofollow"><time datetime="2014-08-13T05:26:44+00:00" pubdate="">2014年8月13日 at 上午5:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p><a href="http://beeder.me" rel="nofollow">http://beeder.me</a> 这个网站上有很多poj和hihoCoder的题解，质量不错，欢迎转载。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-13876">
+<article class="comment" id="comment-13876">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Klaus</a></span> on <a href="http://www.acmerblog.com/hdu-1512-Monkey-King-2069.html#comment-13876" rel="nofollow"><time datetime="2014-05-13T12:11:57+00:00" pubdate="">2014年5月13日 at 下午12:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不同的编译器，printf(),执行的顺序不同，所以结果也就不同，建议不要那么写</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-41281">
+<article class="comment" id="comment-41281">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">g29tony</a></span> on <a href="http://www.acmerblog.com/hdu-1512-Monkey-King-2069.html#comment-41281" rel="nofollow"><time datetime="2014-04-09T11:36:13+00:00" pubdate="">2014年4月9日 at 上午11:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为\n\n</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-13873">
+<article class="comment" id="comment-13873">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yupeng.bai</a></span> on <a href="http://www.acmerblog.com/hdu-1512-Monkey-King-2069.html#comment-13873" rel="nofollow"><time datetime="2014-03-12T07:30:10+00:00" pubdate="">2014年3月12日 at 上午7:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正确</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-41283">
+<article class="comment" id="comment-41283">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">verycourage</a></span> on <a href="http://www.acmerblog.com/hdu-1512-Monkey-King-2069.html#comment-41283" rel="nofollow"><time datetime="2014-03-09T19:15:31+00:00" pubdate="">2014年3月9日 at 下午7:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>题本身没错，但是HDOJ放题目的时候，前面有个题目解释了什么是XXX定律。<br/>
+这里直接放了这个题目，肯定没几个人明白是干啥</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

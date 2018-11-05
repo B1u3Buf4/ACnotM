@@ -1,0 +1,449 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-16</div>
+<div class="tit"><h1 class="entry-title">Hdu 1630 Bumpy Objects-凸包问题[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/geometry/convex" rel="category tag" title="查看凸包问题中的全部文章">凸包问题</a></span><span class="i4">围观1640次</span><span class="i3"><a class="ds-thread-count" data-thread-key="2475" href="http://www.acmerblog.com/hdu-1630-bumpy-objects-2475.html#comments" title="《Hdu 1630 Bumpy Objects-凸包问题[解题报告] C++》上的评论">22 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Bumpy Objects</h1>
+</div>
+<div>
+<p class="mytitle">问题描述 :</p>
+</div>
+<div class="mypanel"><img alt="" src="http://acm.hdu.edu.cn/data/images/1630-1.gif"/><br/>
+Consider objects such as these. They are polygons, specified by the coordinates of a centre of mass and their vertices. In the figure, centres of mass are shown as black squares. The vertices will be numbered consecutively anti-clockwise as shown.An object can be rotated to stand stably if two vertices can be found that can be joined by a straight line that does not intersect the object, and, when this line is horizontal, the centre of mass lies above the line and strictly between its endpoints. There are typically many stable positions and each is defined by one of these lines known as its base line. A base line, and its associated stable position, is identified by the highest numbered vertex touched by that line.Write a program that will determine the stable position that has the lowest numbered base line. Thus for the above objects, the desired base lines would be 6 for object 1, 6 for object 2 and 2 for the square. You may assume that the objects are possible, that is they will be represented as non self-intersecting polygons, although they may well be concave.
+</div>
+<div>
+<p class="mytitle">输入:</p>
+</div>
+<div class="mypanel">
+<p>Successive lines of a data set will contain: a string of less than 20 characters identifying the object; the coordinates of the centre of mass; and the coordinates of successive points terminated by two zeroes (0 0), on one or more lines as necessary. There may be successive data sets (objects). The end of data will be defined by the string ‘#’.Output will consist of the identification string followed by the number of the relevant base line.</p>
+</div>
+<div>
+<p class="mytitle">样例输入:</p>
+</div>
+<pre class="mypanel iopanel">Object2
+4 3
+3 2  5 2  6 1  7 1  6 3  4 7  1 1  2 1  0 0
+Square 
+2 2
+1 1  3 1  3 3  1 3  0 0
+#</pre>
+<div>
+<p class="mytitle">样例输出:</p>
+</div>
+<pre class="mypanel iopanel">Object2             6
+Square              2</pre>
+<p><!-- problem end --><br/>
+<strong>题目大意：</strong></p>
+<p>观察上图中的三个物体。它们均由多边形表示，并给定其重心和各顶点的坐标。在上图中，重心由黑色方块表示。顶点的编号按逆时针方向依次给出。</p>
+<p>将一个物体的轮廓多边形上某两个顶点连成一条线段，且该线段未穿越多边形的内部，然后通过旋转多边形使该线段达到水平，若重心在这条线段之上且位于线段两端点之间，就认为该物体可以摆放平稳。一般情况下，物体有多个可以放稳的位置，每个稳定位置均由对应的线段（称作“基线”）表示。一条基线会经过至少两个多边形上的点（即端点），基线就由这些点中最大的编号表示。</p>
+<p>写一个程序计算出编号最小的基线。对于上图中的物体，“object 1”要求的基线为6，“object 2”为6，“square”为2。你可以假设物体都是规则的，即不存在自相交的轮廓多边形，但有可能是凹多边形。</p>
+<p>输入有多行组成，每组数据3行。第一行是不超过20个字符长度的物体标识符，第二行是物体的重心坐标，接下来的一行是物体各顶点坐标，由两个零(0 0)表示结束，没有多余的行。可能会有多组数据集（物体），输入的数据由#号字符串表示结束。</p>
+<p>输出也有多行组成，每行前面是物体标识符，后面是对应的基线编号。(译注：按照UVa OJ的管理员在官方论坛里的回复，物体标识符和基线编号之间应有1个或多个空格隔开）</p>
+<h2><strong>分析</strong></h2>
+<p>这道题又使用了求解凸包的算法，详见：<a href="http://www.cnblogs.com/devymex/archive/2010/08/09/1795392.html">Graham’s Scan法求解凸包问题</a>。类似的问题前面已经出现至少两次了，见：137 – Polygons (多边形)和109 – SCUD Busters (SCUD重磅炸弹)。</p>
+<p>我的解法没有追求效率，但思路比较简明：先求出多边形的凸包，然后根据叉积删除凸包边上多余的点（去除三点共线的情况）。再遍例凸包的每条边，检查是否能满足中心在该边的内侧（外积），且是否在两端点之间（内积）。对能满足条件的边，搜索原多边形在该边上的顶点（包括该边的端点），取最大的一个点的编号作为该边的编号。找出所有边的最小编号即可。</p>
+<pre class="brush:cpp">#include &lt;algorithm&gt;
+#include &lt;iostream&gt;
+#include &lt;vector&gt;
+#include &lt;string&gt;
+#include &lt;cmath&gt;
+using namespace std;
+struct POINT {int x; int y;};
+//判断两点是否相等
+bool operator==(const POINT &amp;p1, const POINT &amp;p2) {
+    return (p1.x == p2.x &amp;&amp; p1.y == p2.y);
+}
+//比较两点坐标大小，先比较x坐标，若相同则比较y坐标
+bool operator&gt;(const POINT &amp;p1, const POINT &amp;p2) {
+    return (p1.x &gt; p2.x || (p1.x == p2.x &amp;&amp; p1.y &gt; p2.y));
+}
+//计算两向量外积
+int operator^(const POINT &amp;p1, const POINT &amp;p2) {
+    return (p1.x * p2.y - p1.y * p2.x);
+}
+//计算两向量内积
+int operator*(const POINT &amp;p1, const POINT &amp;p2) {
+    return (p1.x * p2.x + p1.y * p2.y);
+}
+// 比较向量中哪个与x轴向量(1, 0)的夹角更大
+bool CompareVector(const POINT &amp;pt1, const POINT &amp;pt2) {
+    //求向量的模
+    float m1 = sqrt((float)(pt1.x * pt1.x + pt1.y * pt1.y));
+    float m2 = sqrt((float)(pt2.x * pt2.x + pt2.y * pt2.y));
+    //两个向量分别与(1, 0)求内积
+    float v1 = pt1.x / m1, v2 = pt2.x / m2;
+    //如果向量夹角相等，则返回离基点较近的一个，保证有序
+    return (v1 &gt; v2 || v1 == v2 &amp;&amp; m1 &lt; m2);
+}
+//计算凸包
+bool CalcConvexHull(vector&lt;POINT&gt; &amp;Src) {
+    //点集中至少应有3个点，才能构成多边形
+    if (Src.size() &lt; 3) {
+        return false;
+    }
+    //查找基点
+    vector&lt;POINT&gt;::iterator i;
+    POINT ptBase = Src.front(); //将第1个点预设为最小点
+    for (i = Src.begin() + 1; i != Src.end(); ++i) {
+        //如果当前点的y值小于最小点，或y值相等，x值较小
+        if (i-&gt;y &lt; ptBase.y || (i-&gt;y == ptBase.y &amp;&amp; i-&gt;x &gt; ptBase.x)) {
+            //将当前点作为最小点
+            ptBase = *i;
+        }
+    }
+    //计算出各点与基点构成的向量
+    for (i = Src.begin(); i != Src.end();) {
+        //排除与基点相同的点，避免后面的排序计算中出现除0错误
+        if (*i == ptBase) {
+            i = Src.erase(i);
+        }
+        else {
+            //方向由基点到目标点
+            i-&gt;x -= ptBase.x, i-&gt;y -= ptBase.y;
+            ++i;
+        }
+    }
+    //按各向量与横坐标之间的夹角排序
+    sort(Src.begin(), Src.end(), &amp;CompareVector);
+    //删除相同的向量
+    Src.erase(unique(Src.begin(), Src.end()), Src.end());
+    //点集中至少还剩2个点，加上基点才能构成多边形
+    if (Src.size() &lt; 2) {
+        return false;
+    }
+    //计算得到首尾依次相连的向量
+    for (vector&lt;POINT&gt;::reverse_iterator ri = Src.rbegin();
+        ri != Src.rend() - 1; ++ri) {
+        vector&lt;POINT&gt;::reverse_iterator riNext = ri + 1;
+        //向量三角形计算公式
+        ri-&gt;x -= riNext-&gt;x, ri-&gt;y -= riNext-&gt;y;
+    }
+    //依次删除不在凸包上的向量
+    for (i = Src.begin() + 1; i != Src.end(); ++i) {
+        //回溯删除旋转方向相反的向量，使用外积判断旋转方向
+        for (vector&lt;POINT&gt;::iterator iLast = i - 1; iLast != Src.begin();) {
+            int nCross = *i ^ *iLast;
+            //如果叉积小于0，则没有逆向旋转
+            //如果叉积等于0，还需用内积判断方向是否相逆
+            if (nCross &lt; 0 || (nCross == 0 &amp;&amp; i-&gt;x * iLast-&gt;x &gt; 0 &amp;&amp;
+                i-&gt;y * iLast-&gt;y &gt; 0)) {
+                    break;
+            }
+            //删除前一个向量后，需更新当前向量，与前面的向量首尾相连
+            //向量三角形计算公式
+            i-&gt;x += iLast-&gt;x, i-&gt;y += iLast-&gt;y;
+            iLast = (i = Src.erase(iLast)) - 1;
+        }
+    }
+    //将所有首尾相连的向量依次累加，换算成坐标
+    Src.front().x += ptBase.x, Src.front().y += ptBase.y;
+    for (i = Src.begin() + 1; i != Src.end(); ++i) {
+        i-&gt;x += (i - 1)-&gt;x, i-&gt;y += (i - 1)-&gt;y;
+    }
+    //添加基点，全部的凸包计算完成
+    Src.push_back(ptBase);
+    return (Src.size() &gt;= 3);
+}
+
+//主函数
+int main(void) {
+    while (true) {
+        string Name;
+        while (Name.empty()) {
+            getline(cin, Name);
+        }
+        if (Name[0] == '#') {
+            break;
+        }
+        POINT Mass;
+        cin &gt;&gt; Mass.x &gt;&gt; Mass.y;
+        vector&lt;POINT&gt; Poly, Convex;
+        for(POINT pt; cin &gt;&gt; pt.x &gt;&gt; pt.y &amp;&amp; pt.x != 0 &amp;&amp; pt.y != 0;) {
+            Poly.push_back(pt);
+        }
+        Convex = Poly;
+        if (!CalcConvexHull(Convex)) *(int*)0 = 0;
+        //删除删除凸包边上多余的点
+        for (int i = 0; i &lt; (int)Convex.size(); ++i) {
+            int j = (i + 1) % Convex.size();
+            int k = (j + 1) % Convex.size();
+            POINT v1 = {Convex[j].x - Convex[i].x, Convex[j].y - Convex[i].y};
+            POINT v2 = {Convex[k].x - Convex[j].x, Convex[k].y - Convex[j].y};
+            //外积为0表示共线，可以删除
+            if ((v1 ^ v2) == 0) {
+                //删除中间的点
+                Convex.erase(Convex.begin() + j);
+                --i; //这一次先不将i递增
+            }
+        }
+        int nMin = Poly.size();
+        //遍例凸包的每一条边
+        for (int i = 0; i &lt; (int)Convex.size(); ++i) {
+            int j = (i + 1) % (int)Convex.size();
+            //构造重心到该边两个顶点的向量
+            POINT v1 = {Mass.x - Convex[i].x, Mass.y - Convex[i].y};
+            POINT v2 = {Mass.x - Convex[j].x, Mass.y - Convex[j].y};
+            POINT s1 = {Convex[j].x - Convex[i].x, Convex[j].y - Convex[i].y};
+            POINT s2 = {Convex[i].x - Convex[j].x, Convex[i].y - Convex[j].y};
+            //先作外积，判断重心是否在内侧
+            //再作内积，判断重心是否在两端点之间
+            if ((s1 ^ v1) &gt;= 0 &amp;&amp; v1 * s1 &gt;= 0 &amp;&amp; v2 * s2 &gt;= 0) {
+                int nMax = 0;
+                //查找原多边形中在该边上的点
+                for (int k = 0; k &lt; (int)Poly.size(); ++k) {
+                    //利用外积判断是否点在线上
+                    s2.x = Poly[k].x - Convex[i].x;
+                    s2.y = Poly[k].y - Convex[i].y;
+                    if ((s2 ^ s1) == 0) {
+                        //找出该边的编号(边上所有点编号的最大值)
+                        nMax = max(k, nMax);
+                    }
+                }
+                //找出编号最小的边
+                nMin = min(nMin, nMax);
+            }
+        }
+        //输出结果，编号从1开始
+        cout &lt;&lt; Name &lt;&lt; ' ' &lt;&lt; nMin + 1 &lt;&lt; endl;
+    }
+    return 0;
+}</pre>
+<p>转自：http://www.cnblogs.com/devymex/archive/2010/08/20/1804606.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-90146">
+<article class="comment" id="comment-90146">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511644" rel="external nofollow">新用户633603</a></span> on <a href="http://www.acmerblog.com/hdu-1630-bumpy-objects-2475.html#comment-90146" rel="nofollow"><time datetime="2017-04-13T11:22:39+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>帝蒂娜什么时候才能回到萌学园啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-90145">
+<article class="comment" id="comment-90145">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511644" rel="external nofollow">新用户633603</a></span> on <a href="http://www.acmerblog.com/hdu-1630-bumpy-objects-2475.html#comment-90145" rel="nofollow"><time datetime="2017-04-13T11:22:39+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>帝蒂娜什么时候才能回到萌学园啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-90144">
+<article class="comment" id="comment-90144">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511644" rel="external nofollow">新用户633603</a></span> on <a href="http://www.acmerblog.com/hdu-1630-bumpy-objects-2475.html#comment-90144" rel="nofollow"><time datetime="2017-04-13T11:22:39+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>帝蒂娜什么时候才能回到萌学园啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-90143">
+<article class="comment" id="comment-90143">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511644" rel="external nofollow">新用户633603</a></span> on <a href="http://www.acmerblog.com/hdu-1630-bumpy-objects-2475.html#comment-90143" rel="nofollow"><time datetime="2017-04-13T11:22:39+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>帝蒂娜什么时候才能回到萌学园啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-90142">
+<article class="comment" id="comment-90142">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511644" rel="external nofollow">新用户633603</a></span> on <a href="http://www.acmerblog.com/hdu-1630-bumpy-objects-2475.html#comment-90142" rel="nofollow"><time datetime="2017-04-13T11:22:39+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>帝蒂娜什么时候才能回到萌学园啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-90141">
+<article class="comment" id="comment-90141">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511644" rel="external nofollow">新用户633603</a></span> on <a href="http://www.acmerblog.com/hdu-1630-bumpy-objects-2475.html#comment-90141" rel="nofollow"><time datetime="2017-04-13T11:22:39+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>帝蒂娜什么时候才能回到萌学园啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-90140">
+<article class="comment" id="comment-90140">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511644" rel="external nofollow">新用户633603</a></span> on <a href="http://www.acmerblog.com/hdu-1630-bumpy-objects-2475.html#comment-90140" rel="nofollow"><time datetime="2017-04-13T11:22:39+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>帝蒂娜什么时候才能回到萌学园啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-90139">
+<article class="comment" id="comment-90139">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511644" rel="external nofollow">新用户633603</a></span> on <a href="http://www.acmerblog.com/hdu-1630-bumpy-objects-2475.html#comment-90139" rel="nofollow"><time datetime="2017-04-13T11:22:39+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>帝蒂娜什么时候才能回到萌学园啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-16207">
+<article class="comment" id="comment-16207">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">edward2414</a></span> on <a href="http://www.acmerblog.com/hdu-1630-bumpy-objects-2475.html#comment-16207" rel="nofollow"><time datetime="2015-06-17T02:27:06+00:00" pubdate="">2015年6月17日 at 上午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个解法好像不对</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-16204">
+<article class="comment" id="comment-16204">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gyouxu</a></span> on <a href="http://www.acmerblog.com/hdu-1630-bumpy-objects-2475.html#comment-16204" rel="nofollow"><time datetime="2015-05-13T08:19:12+00:00" pubdate="">2015年5月13日 at 上午8:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有点意思</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-16210">
+<article class="comment" id="comment-16210">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xy7850151</a></span> on <a href="http://www.acmerblog.com/hdu-1630-bumpy-objects-2475.html#comment-16210" rel="nofollow"><time datetime="2015-03-08T12:40:52+00:00" pubdate="">2015年3月8日 at 下午12:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你这个代码显示风格很给你啊，怎么做出来的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-16214">
+<article class="comment" id="comment-16214">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">oneal</a></span> on <a href="http://www.acmerblog.com/hdu-1630-bumpy-objects-2475.html#comment-16214" rel="nofollow"><time datetime="2015-02-12T19:42:47+00:00" pubdate="">2015年2月12日 at 下午7:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，就是把这32位当成一个长度为32的数</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-16206">
+<article class="comment" id="comment-16206">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Supermaner</a></span> on <a href="http://www.acmerblog.com/hdu-1630-bumpy-objects-2475.html#comment-16206" rel="nofollow"><time datetime="2015-02-03T13:55:23+00:00" pubdate="">2015年2月3日 at 下午1:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>能不能说一下tmp数组和solve都是干嘛的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-16212">
+<article class="comment" id="comment-16212">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1173954900</a></span> on <a href="http://www.acmerblog.com/hdu-1630-bumpy-objects-2475.html#comment-16212" rel="nofollow"><time datetime="2015-01-17T10:19:07+00:00" pubdate="">2015年1月17日 at 上午10:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢支持！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-16209">
+<article class="comment" id="comment-16209">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">HDC</a></span> on <a href="http://www.acmerblog.com/hdu-1630-bumpy-objects-2475.html#comment-16209" rel="nofollow"><time datetime="2014-10-20T10:12:58+00:00" pubdate="">2014年10月20日 at 上午10:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>代码过于复杂了吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-16216">
+<article class="comment" id="comment-16216">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">modstart</a></span> on <a href="http://www.acmerblog.com/hdu-1630-bumpy-objects-2475.html#comment-16216" rel="nofollow"><time datetime="2014-07-23T06:25:32+00:00" pubdate="">2014年7月23日 at 上午6:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是什么编译器啊，不通过</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-16211">
+<article class="comment" id="comment-16211">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Aliens</a></span> on <a href="http://www.acmerblog.com/hdu-1630-bumpy-objects-2475.html#comment-16211" rel="nofollow"><time datetime="2014-07-20T13:48:12+00:00" pubdate="">2014年7月20日 at 下午1:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>以了解 想問為甚麼 Tbl[6001] = {1} 初始化都是1<br/>
+為何不是Tbl[0]=1 其他為0</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-16217">
+<article class="comment" id="comment-16217">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">digiworm</a></span> on <a href="http://www.acmerblog.com/hdu-1630-bumpy-objects-2475.html#comment-16217" rel="nofollow"><time datetime="2014-05-04T20:28:00+00:00" pubdate="">2014年5月4日 at 下午8:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为是要把从字符串s的start位到当前位在hash中重置，修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-16208">
+<article class="comment" id="comment-16208">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">becool456</a></span> on <a href="http://www.acmerblog.com/hdu-1630-bumpy-objects-2475.html#comment-16208" rel="nofollow"><time datetime="2014-03-24T15:13:42+00:00" pubdate="">2014年3月24日 at 下午3:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>写的好·····  Pollard Rh</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-16215">
+<article class="comment" id="comment-16215">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">lsdtc1225</a></span> on <a href="http://www.acmerblog.com/hdu-1630-bumpy-objects-2475.html#comment-16215" rel="nofollow"><time datetime="2014-03-10T09:14:41+00:00" pubdate="">2014年3月10日 at 上午9:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>mark, 备用</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-16205">
+<article class="comment" id="comment-16205">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangdilj</a></span> on <a href="http://www.acmerblog.com/hdu-1630-bumpy-objects-2475.html#comment-16205" rel="nofollow"><time datetime="2014-02-02T17:08:59+00:00" pubdate="">2014年2月2日 at 下午5:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>非常好，初学者就应该先理解递归</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-16213">
+<article class="comment" id="comment-16213">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xun.gong</a></span> on <a href="http://www.acmerblog.com/hdu-1630-bumpy-objects-2475.html#comment-16213" rel="nofollow"><time datetime="2014-01-02T22:15:44+00:00" pubdate="">2014年1月2日 at 下午10:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚开始学习，为啥会报错了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

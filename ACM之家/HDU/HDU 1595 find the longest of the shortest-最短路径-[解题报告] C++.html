@@ -1,0 +1,414 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-12</div>
+<div class="tit"><h1 class="entry-title">HDU 1595 find the longest of the shortest-最短路径-[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph/shortest-path" rel="category tag" title="查看最短路径中的全部文章">最短路径</a></span><span class="i4">围观804次</span><span class="i3"><a class="ds-thread-count" data-thread-key="2153" href="http://www.acmerblog.com/hdu-1595-find-the-longest-of-the-shortest-2153.html#comments" title="《HDU 1595 find the longest of the shortest-最短路径-[解题报告] C++》上的评论">22 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">find the longest of the shortest</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Marica is very angry with Mirko because he found a new girlfriend and she seeks revenge.Since she doesn’t live in the same city, she started preparing for the long journey.We know for every road how many minutes it takes to come from one city to another.<br/>  Mirko overheard in the car that one of the roads is under repairs, and that it is blocked, but didn’t konw exactly which road. It is possible to come from Marica’s city to Mirko’s no matter which road is closed.<br/>  Marica will travel only by non-blocked roads, and she will travel by shortest route. Mirko wants to know how long will it take for her to get to his city in the worst case, so that he could make sure that his girlfriend is out of town for long enough.Write a program that helps Mirko in finding out what is the longest time in minutes it could take for Marica to come by shortest route by non-blocked roads to his city. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+Each case there are two numbers in the first row, N and M, separated by a single space, the number of towns,and the number of roads between the towns. 1 ≤ N ≤ 1000, 1 ≤ M ≤ N*(N-1)/2. The cities are markedwith numbers from 1 to N, Mirko is located in city 1, and Marica in city N.<br/>In the next M lines are three numbers A, B and V, separated by commas. 1 ≤ A,B ≤ N, 1 ≤ V ≤ 1000.Those numbers mean that there is a two-way road between cities A and B, and that it is crossable in V minutes. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+In the first line of the output file write the maximum time in minutes, it could take Marica to come to Mirko.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+5 6
+1 2 4
+1 3 3
+2 3 1
+2 4 4
+2 5 7
+4 5 1
+
+6 7
+1 2 1
+2 3 4
+3 4 4
+4 6 4
+1 5 5
+2 5 2
+5 6 5
+
+5 7
+1 2 8
+1 4 10
+2 3 9
+2 4 10
+2 5 1
+3 4 7
+3 5 10</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+11
+13
+27</pre>
+<p> <!-- problem end --></p>
+<p>转载请注明出处，谢谢 <a href="http://blog.csdn.net/ACM_cxlove?viewmode=contents">http://blog.csdn.net/ACM_cxlove?viewmode=contents</a>           by—cxlove
+</p>
+<p>题意是说任意去掉一条边之后的最短路的最长长度为多少。</p>
+<p>顶点数为N达到1000的范围，显然枚举所有边再求最短路，复杂度为N^2*O(spfa),会超时的。</p>
+<p>仔细想想便知，原图上求一次最短路，如果我们删掉最短路之外的边，之后的最短路还是原图的最短路，那我们只要枚举最短路上的边，然后再求最短路就行了。</p>
+<p>最多路径上会有N条边，复杂度为N*O(spfa),1S左右AC。写的代码很囧，特别是记录最短路径上的边的时候，有许多地方可以改进，之前WA了，是因为我只删掉了单向边，因为是无向图，所以需要双向都删除，我找了两次，其实u-&gt;v，和v-&gt;u的边在前向星中的存储必然是相邻的，idx^1便是另外一条边的位置。懒得改了</p>
+<p> </p>
+<pre class="brush:cpp ">/*ID:cxlove
+PROB:HDU 1595
+DATA:2012.4.4
+HINT:最短路径+枚举最短路径上的边
+*/
+#include&lt;iostream&gt;
+#include&lt;cstdio&gt;
+#include&lt;cstring&gt;
+#include&lt;cmath&gt;
+#include&lt;queue&gt;
+#define inf 1&lt;&lt;30
+using namespace std;
+struct Node{
+    int u,v,w,next;
+}edge[1000005];
+struct EDGE{
+    int u,v,w,idx1,idx2;
+}path[1005];
+int start[1005],pre[1005],dist[1005];
+int n,m,cnt,tot;
+void addedge(int u,int v,int w){
+    edge[cnt].u=u;edge[cnt].v=v;edge[cnt].w=w;
+    edge[cnt].next=start[u];start[u]=cnt++;
+}
+void Init(){
+    int u,v,w;
+    cnt=0;tot=0;
+    memset(start,-1,sizeof(start));
+    memset(pre,-1,sizeof(pre));
+    while(m--){
+        scanf("%d%d%d",&amp;u,&amp;v,&amp;w);
+        addedge(u,v,w);
+        addedge(v,u,w);
+    }
+}
+void spfa(){
+    bool flag[1005];
+    for(int i=1;i&lt;=n;i++)
+        dist[i]=inf;
+    memset(flag,false,sizeof(flag));
+    queue&lt;int &gt;que;
+    que.push(1);
+    flag[1]=true;
+    dist[1]=0;
+    while(!que.empty()){
+        int u=que.front();
+        que.pop();
+        flag[u]=false;
+        for(int i=start[u];i!=-1;i=edge[i].next){
+            int v=edge[i].v,w=edge[i].w;
+            if(dist[v]&gt;dist[u]+w){
+                dist[v]=dist[u]+w;
+                pre[v]=u;
+                if(!flag[v]){
+                    flag[v]=true;
+                    que.push(v);
+                }
+            }
+        }
+    }
+}
+void find_path(){
+    int v=n;
+    while(pre[v]!=-1){
+        path[tot].u=pre[v];
+        path[tot].v=v;
+        path[tot].w=dist[v]-dist[pre[v]];
+        int k=start[pre[v]];
+        while(edge[k].v!=v)
+            k=edge[k].next;
+        path[tot].idx1=k;
+        k=start[v];
+        while(edge[k].v!=pre[v])
+            k=edge[k].next;
+        path[tot++].idx2=k;
+        v=pre[v];
+    }
+}
+void slove(){
+    int ans=0;
+    for(int i=0;i&lt;tot;i++){
+        int idx1=path[i].idx1,idx2=path[i].idx2;
+        int t1=edge[idx1].w,t2=edge[idx2].w;
+        edge[idx1].w=inf;edge[idx2].w=inf;
+        spfa();
+        ans=max(ans,dist[n]);
+        edge[idx1].w=t1;edge[idx2].w=t2;
+    }
+    printf("%d\n",ans);
+}
+int main(){
+    while(scanf("%d%d",&amp;n,&amp;m)!=EOF){
+        Init();
+        spfa();;
+        find_path();
+        slove();
+    }
+    return 0;
+}</pre>
+<p>
+ </p>
+<p>解题报告转自：http://blog.csdn.net/acm_cxlove/article/details/7426697</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-91772">
+<article class="comment" id="comment-91772">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520352" rel="external nofollow">新用户717640</a></span> on <a href="http://www.acmerblog.com/hdu-1595-find-the-longest-of-the-shortest-2153.html#comment-91772" rel="nofollow"><time datetime="2017-04-13T14:35:36+00:00" pubdate="">2017年4月13日 at 下午2:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我爸跟我抢吃的，抢不过，生气了，想拍我屁股，打在椅子上了。。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-91771">
+<article class="comment" id="comment-91771">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520352" rel="external nofollow">新用户717640</a></span> on <a href="http://www.acmerblog.com/hdu-1595-find-the-longest-of-the-shortest-2153.html#comment-91771" rel="nofollow"><time datetime="2017-04-13T14:35:36+00:00" pubdate="">2017年4月13日 at 下午2:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我爸跟我抢吃的，抢不过，生气了，想拍我屁股，打在椅子上了。。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-91770">
+<article class="comment" id="comment-91770">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520352" rel="external nofollow">新用户717640</a></span> on <a href="http://www.acmerblog.com/hdu-1595-find-the-longest-of-the-shortest-2153.html#comment-91770" rel="nofollow"><time datetime="2017-04-13T14:35:36+00:00" pubdate="">2017年4月13日 at 下午2:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我爸跟我抢吃的，抢不过，生气了，想拍我屁股，打在椅子上了。。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-91769">
+<article class="comment" id="comment-91769">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520352" rel="external nofollow">新用户717640</a></span> on <a href="http://www.acmerblog.com/hdu-1595-find-the-longest-of-the-shortest-2153.html#comment-91769" rel="nofollow"><time datetime="2017-04-13T14:35:36+00:00" pubdate="">2017年4月13日 at 下午2:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我爸跟我抢吃的，抢不过，生气了，想拍我屁股，打在椅子上了。。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-91768">
+<article class="comment" id="comment-91768">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520352" rel="external nofollow">新用户717640</a></span> on <a href="http://www.acmerblog.com/hdu-1595-find-the-longest-of-the-shortest-2153.html#comment-91768" rel="nofollow"><time datetime="2017-04-13T14:35:36+00:00" pubdate="">2017年4月13日 at 下午2:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我爸跟我抢吃的，抢不过，生气了，想拍我屁股，打在椅子上了。。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-91767">
+<article class="comment" id="comment-91767">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520352" rel="external nofollow">新用户717640</a></span> on <a href="http://www.acmerblog.com/hdu-1595-find-the-longest-of-the-shortest-2153.html#comment-91767" rel="nofollow"><time datetime="2017-04-13T14:35:36+00:00" pubdate="">2017年4月13日 at 下午2:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我爸跟我抢吃的，抢不过，生气了，想拍我屁股，打在椅子上了。。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-91766">
+<article class="comment" id="comment-91766">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520352" rel="external nofollow">新用户717640</a></span> on <a href="http://www.acmerblog.com/hdu-1595-find-the-longest-of-the-shortest-2153.html#comment-91766" rel="nofollow"><time datetime="2017-04-13T14:35:36+00:00" pubdate="">2017年4月13日 at 下午2:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我爸跟我抢吃的，抢不过，生气了，想拍我屁股，打在椅子上了。。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-91765">
+<article class="comment" id="comment-91765">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520352" rel="external nofollow">新用户717640</a></span> on <a href="http://www.acmerblog.com/hdu-1595-find-the-longest-of-the-shortest-2153.html#comment-91765" rel="nofollow"><time datetime="2017-04-13T14:35:36+00:00" pubdate="">2017年4月13日 at 下午2:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我爸跟我抢吃的，抢不过，生气了，想拍我屁股，打在椅子上了。。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-14489">
+<article class="comment" id="comment-14489">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">crazymage</a></span> on <a href="http://www.acmerblog.com/hdu-1595-find-the-longest-of-the-shortest-2153.html#comment-14489" rel="nofollow"><time datetime="2015-06-10T23:02:48+00:00" pubdate="">2015年6月10日 at 下午11:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>比较基础，找些自信</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-14487">
+<article class="comment" id="comment-14487">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mazilian</a></span> on <a href="http://www.acmerblog.com/hdu-1595-find-the-longest-of-the-shortest-2153.html#comment-14487" rel="nofollow"><time datetime="2015-06-08T02:30:53+00:00" pubdate="">2015年6月8日 at 上午2:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#include &lt;stdio.h&gt;<br/>
+int main(void)<br/>
+{<br/>
+int arr[] = {10,20,30,40,50,60};<br/>
+int *p=arr;<br/>
+printf("%d,%d,",*p++,*++p);<br/>
+printf("%d,%d,%d",*p,*p++,*++p);<br/>
+return 0;<br/>
+}</p>
+<p>为什么是 20,20,50,40,50. 我觉得的应该是 20,20,40,40,50 . 谁能解释下？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-41541">
+<article class="comment" id="comment-41541">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">soasipray</a></span> on <a href="http://www.acmerblog.com/hdu-1595-find-the-longest-of-the-shortest-2153.html#comment-41541" rel="nofollow"><time datetime="2015-04-04T05:00:17+00:00" pubdate="">2015年4月4日 at 上午5:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序输出是对的，呈三角型。原程序是按C++写的，已经改成了C的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-55074">
+<article class="comment" id="comment-55074">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jue</a></span> on <a href="http://www.acmerblog.com/hdu-1595-find-the-longest-of-the-shortest-2153.html#comment-55074" rel="nofollow"><time datetime="2015-01-29T00:53:16+00:00" pubdate="">2015年1月29日 at 上午12:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>加了星号 (*) 表示跳过此数据不读入. 因为scanf是不读取本行回车的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-55072">
+<article class="comment" id="comment-55072">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mnmlist</a></span> on <a href="http://www.acmerblog.com/hdu-1595-find-the-longest-of-the-shortest-2153.html#comment-55072" rel="nofollow"><time datetime="2014-11-12T05:08:39+00:00" pubdate="">2014年11月12日 at 上午5:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为\n\n</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-55077">
+<article class="comment" id="comment-55077">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">lsdtc1225</a></span> on <a href="http://www.acmerblog.com/hdu-1595-find-the-longest-of-the-shortest-2153.html#comment-55077" rel="nofollow"><time datetime="2014-09-27T08:39:44+00:00" pubdate="">2014年9月27日 at 上午8:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序员会算法，等于一个古惑仔带了zhi抢啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-55071">
+<article class="comment" id="comment-55071">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangduanjing</a></span> on <a href="http://www.acmerblog.com/hdu-1595-find-the-longest-of-the-shortest-2153.html#comment-55071" rel="nofollow"><time datetime="2014-08-11T21:19:57+00:00" pubdate="">2014年8月11日 at 下午9:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你的理解应该是：即使主持人拿走一个箱子对结果没有影响。这样想，主持人拿走的箱子只是没有影响到你初始选择的那个箱子中有奖品的概率，但是改变了其余两个箱子的概率分布。由 1/3,1/3 变成了 0, 2/3</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-55078">
+<article class="comment" id="comment-55078">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tufei</a></span> on <a href="http://www.acmerblog.com/hdu-1595-find-the-longest-of-the-shortest-2153.html#comment-55078" rel="nofollow"><time datetime="2014-07-27T15:11:37+00:00" pubdate="">2014年7月27日 at 下午3:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>从数学角度确实是C(n,r)，能给个递推关系式吗，从分治的角度不好理解</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-41542">
+<article class="comment" id="comment-41542">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zhenghao</a></span> on <a href="http://www.acmerblog.com/hdu-1595-find-the-longest-of-the-shortest-2153.html#comment-41542" rel="nofollow"><time datetime="2014-07-22T08:19:20+00:00" pubdate="">2014年7月22日 at 上午8:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为nn</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-55076">
+<article class="comment" id="comment-55076">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">0xc0de</a></span> on <a href="http://www.acmerblog.com/hdu-1595-find-the-longest-of-the-shortest-2153.html#comment-55076" rel="nofollow"><time datetime="2014-07-12T00:02:22+00:00" pubdate="">2014年7月12日 at 上午12:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Excellent Web-site! I required to ask if I might webpages and use a component of the net web website and use a number of factors for just about any faculty process. Please notify me through email regardless of whether that would be excellent. Many thanks</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-55075">
+<article class="comment" id="comment-55075">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yipwinghong</a></span> on <a href="http://www.acmerblog.com/hdu-1595-find-the-longest-of-the-shortest-2153.html#comment-55075" rel="nofollow"><time datetime="2014-06-03T00:41:36+00:00" pubdate="">2014年6月3日 at 上午12:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>比较基础，找些自信</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-55073">
+<article class="comment" id="comment-55073">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">130920099</a></span> on <a href="http://www.acmerblog.com/hdu-1595-find-the-longest-of-the-shortest-2153.html#comment-55073" rel="nofollow"><time datetime="2014-01-14T01:48:52+00:00" pubdate="">2014年1月14日 at 上午1:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这排版…你都打开来看看改改</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-41540">
+<article class="comment" id="comment-41540">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tkdzyl2013</a></span> on <a href="http://www.acmerblog.com/hdu-1595-find-the-longest-of-the-shortest-2153.html#comment-41540" rel="nofollow"><time datetime="2014-01-11T05:04:59+00:00" pubdate="">2014年1月11日 at 上午5:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为是要把从字符串s的start位到当前位在hash中重置，修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-14488">
+<article class="comment" id="comment-14488">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">943965021</a></span> on <a href="http://www.acmerblog.com/hdu-1595-find-the-longest-of-the-shortest-2153.html#comment-14488" rel="nofollow"><time datetime="2013-12-17T05:41:19+00:00" pubdate="">2013年12月17日 at 上午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>楼主你能把scanf( "%d%*" ,&amp;T );中%*的用法详细说明吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

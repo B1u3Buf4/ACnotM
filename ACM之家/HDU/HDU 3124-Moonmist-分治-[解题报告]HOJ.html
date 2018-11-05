@@ -1,0 +1,435 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-03</div>
+<div class="tit"><h1 class="entry-title">HDU 3124-Moonmist-分治-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/basis/recursion" rel="category tag" title="查看递归和分治中的全部文章">递归和分治</a></span><span class="i4">围观720次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4939" href="http://www.acmerblog.com/hdu-3124-moonmist-4939.html#comments" title="《HDU 3124-Moonmist-分治-[解题报告]HOJ》上的评论">25 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Moonmist</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+An Unidentified Flying Object (Commonly abbreviated as UFO) is the popular term for any aerial phenomenon whose cause cannot be easily or immediately identified. We always believe UFO is the vehicle of aliens. But there is an interrogation about why UFO always likes a circular saucer? There must be a reason. Actually our scientists are developing a new traffic system “Moonmist”. It is distinguished from the traditional traffic. We use circular saucers in this new traffic system and the saucers moves extremely fast. When our scientists did their test, they found that traffic accident was too hard to be avoided because of the high speed of the advanced saucer. They need us to develop a system that can tell them the nearest saucer. The distance between two saucers is defined as the shortest distance between any two points in different saucers. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line consists of an integer T, indicating the number of test cases.<br/>The first line of each case consists of an integer N, indicating the number of saucers. Each saucer is represented on a single line, consisting of three integers X, Y, R, indicating the coordinate and the radius. You can assume that the distance between any two saucers will never be zero. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The first line consists of an integer T, indicating the number of test cases.<br/>The first line of each case consists of an integer N, indicating the number of saucers. Each saucer is represented on a single line, consisting of three integers X, Y, R, indicating the coordinate and the radius. You can assume that the distance between any two saucers will never be zero.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+2
+0 0 1
+10 10 1</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+12.142136</pre>
+<p> <!-- problem end --></p>
+<p><span style="font-size:12px">题目链接：</span><a href="http://acm.hdu.edu.cn/showproblem.php?pid=3124" style="font-size:12px" target="_blank">http://acm.hdu.edu.cn/showproblem.php?pid=3124</a></p>
+<p>这个题目开始拿到的时候就一心想用平面最近点对的方法去套，折腾了好一会都没得出结果，无奈在网上搜解题报告发现这篇博文</p>
+<p><a href="http://blog.sina.com.cn/s/blog_6e7b12310100qnex.html" target="_blank">http://blog.sina.com.cn/s/blog_6e7b12310100qnex.html</a>
+</p>
+<p>一看见二分半径，似乎就明白了，可惜这个不是重点，重点是怎么在线性时间内判断是否存在相交的圆，这个就要用到扫描线的</p>
+<p>方法，这个方法我看了好一会才有点眉目，阅读了大神的代码后自己尝试写的代码，自己觉得重要的部分稍微加了点注释，思想</p>
+<p>是别人的建议不要在此逗留太久，去上面的博客链接看看吧！</p>
+<pre class="brush:cpp ">#include &lt;iostream&gt;
+#include &lt;string.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;math.h&gt;
+#include &lt;set&gt;
+#include &lt;algorithm&gt;
+using namespace std;
+#define left Left
+#define right Right
+#define eps 1e-8
+#define maxn 60000
+double x[maxn],y[maxn],r[maxn];
+int left[maxn],right[maxn],up[maxn],rank_up[maxn];
+int n;
+set&lt;int&gt; my_set;
+double mid;
+bool cmp_left(const int &amp;a,const int &amp;b)
+{
+    return x[a]-r[a] &lt; x[b]-r[b];
+}
+bool cmp_right(const int &amp;a,const int &amp;b)
+{
+    return x[a]+r[a] &lt; x[b]+r[b];
+}
+bool cmp_up(const int &amp;a,const int &amp;b)
+{
+    if(y[a]==y[b])
+    return  x[a] &lt; x[b];
+    else return y[a] &lt; y[b];
+}
+double my_sqr(double a)
+{
+    return a*a;
+}
+bool is_cross(int a,int b)//检测高度排名为a和b的圆是否相交
+{
+    a=up[a],b=up[b];
+    double t1,t2;
+    t1=my_sqr(x[a]-x[b])+my_sqr(y[a]-y[b]),t2=my_sqr(r[a]+r[b]+mid+mid);
+    if(t1&lt;=t2)
+    return true;//表示相交
+    return false;
+}
+/*
+ * 这个函数插入的是当前在集合里面圆心y值，每次再插入
+ * 的同时返回插入的位置，由于set是排序了的，所以前后相邻位置
+ * 的大小关系也是相邻的，那么在检测当前插入的这个圆是否与当前集合里面的圆相交
+ * 就只要判断当前插入的圆与其上下两个圆是否相交就OK了
+ */
+bool insert(int a)//这个函数在插入的同时检测是否发生相交的情况
+{
+    set&lt;int&gt;::iterator it=my_set.insert(a).first;//这个first指向当前插入的这个元素位置的迭代器
+    if(it!=my_set.begin())
+    {
+        if(is_cross(a,*--it))//相交
+        return true;
+        it++;//恢复
+    }
+    //注意set开始位置是元素，结束位置是位置，所以处理起来就不同了
+    if(++it!=my_set.end())
+    {
+        if(is_cross(a,*it))
+        return true;
+    }
+    return false;
+}
+bool is_ok()
+{
+    my_set.clear();
+    int i=0,j=0;
+    while(i&lt;n || j&lt;n)
+    {
+        if(j==n ||(i!=n &amp;&amp; x[left[i]]-r[left[i]]-mid&lt;x[right[j]]+r[right[j]]+mid))
+        {
+            /*这里代码在处理的时候插入的是y坐标的排名，这样的好处是插入set是
+             *排序的，这样就能保证set某个元素的前后位置就是在真实圆的上下相邻位置，所以这里每次插入的是排名
+             *也就是插入的不是元素，是排名，在插的时候直接插你排第几
+             */
+            if(insert(rank_up[left[i++]]))
+                return true;//
+        }
+        else
+        my_set.erase(rank_up[right[j++]]);
+    }
+    return false;
+}
+double find_ans()
+{
+    double l=0,ri=sqrt(my_sqr(x[0]-x[1])+my_sqr(y[0]-y[1]))-r[0]-r[1];//求最小的距离嘛，左值为0，右边随便取一个两个圆距离就OK了
+    while(l+eps&lt;ri)//这里不加eps可能对于某些测试数据导致超时
+    {
+        mid=(l+ri)/2;
+        if(is_ok())
+        ri=mid;
+        else
+        l=mid;
+    }
+    printf("%.6lf\n",l+ri);
+    return 0;
+}
+int main()
+{
+    int t,i,j,k;
+    scanf("%d",&amp;t);
+    while(t--)
+    {
+        scanf("%d",&amp;n);
+        for(i=0;i&lt;n;i++)
+        scanf("%lf%lf%lf",&amp;x[i],&amp;y[i],&amp;r[i]);
+        for(i=0;i&lt;n;i++)
+        {
+            left[i]=i;
+            right[i]=i;
+            up[i]=i;
+        }
+        sort(left,left+n,cmp_left);
+        sort(right,right+n,cmp_right);
+        sort(up,up+n,cmp_up);
+        for(i=0;i&lt;n;i++)
+        rank_up[up[i]]=i;
+        find_ans();
+    }
+    return 0;
+}</pre>
+<p>参考：http://blog.csdn.net/sunrain_chy/article/details/9955445</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-78847">
+<article class="comment" id="comment-78847">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514709" rel="external nofollow">新用户383246</a></span> on <a href="http://www.acmerblog.com/hdu-3124-moonmist-4939.html#comment-78847" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有点螳螂感染铁线虫的感觉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78846">
+<article class="comment" id="comment-78846">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514709" rel="external nofollow">新用户383246</a></span> on <a href="http://www.acmerblog.com/hdu-3124-moonmist-4939.html#comment-78846" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有点螳螂感染铁线虫的感觉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-78845">
+<article class="comment" id="comment-78845">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514709" rel="external nofollow">新用户383246</a></span> on <a href="http://www.acmerblog.com/hdu-3124-moonmist-4939.html#comment-78845" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有点螳螂感染铁线虫的感觉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78844">
+<article class="comment" id="comment-78844">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514709" rel="external nofollow">新用户383246</a></span> on <a href="http://www.acmerblog.com/hdu-3124-moonmist-4939.html#comment-78844" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有点螳螂感染铁线虫的感觉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-78843">
+<article class="comment" id="comment-78843">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514709" rel="external nofollow">新用户383246</a></span> on <a href="http://www.acmerblog.com/hdu-3124-moonmist-4939.html#comment-78843" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有点螳螂感染铁线虫的感觉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78842">
+<article class="comment" id="comment-78842">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514709" rel="external nofollow">新用户383246</a></span> on <a href="http://www.acmerblog.com/hdu-3124-moonmist-4939.html#comment-78842" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有点螳螂感染铁线虫的感觉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-78841">
+<article class="comment" id="comment-78841">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514709" rel="external nofollow">新用户383246</a></span> on <a href="http://www.acmerblog.com/hdu-3124-moonmist-4939.html#comment-78841" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有点螳螂感染铁线虫的感觉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78840">
+<article class="comment" id="comment-78840">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514709" rel="external nofollow">新用户383246</a></span> on <a href="http://www.acmerblog.com/hdu-3124-moonmist-4939.html#comment-78840" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有点螳螂感染铁线虫的感觉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-78850">
+<article class="comment" id="comment-78850">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514709" rel="external nofollow">新用户383246</a></span> on <a href="http://www.acmerblog.com/hdu-3124-moonmist-4939.html#comment-78850" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有点螳螂感染铁线虫的感觉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78849">
+<article class="comment" id="comment-78849">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514709" rel="external nofollow">新用户383246</a></span> on <a href="http://www.acmerblog.com/hdu-3124-moonmist-4939.html#comment-78849" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有点螳螂感染铁线虫的感觉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-78848">
+<article class="comment" id="comment-78848">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514709" rel="external nofollow">新用户383246</a></span> on <a href="http://www.acmerblog.com/hdu-3124-moonmist-4939.html#comment-78848" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有点螳螂感染铁线虫的感觉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27289">
+<article class="comment" id="comment-27289">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">congve1</a></span> on <a href="http://www.acmerblog.com/hdu-3124-moonmist-4939.html#comment-27289" rel="nofollow"><time datetime="2015-06-30T01:43:34+00:00" pubdate="">2015年6月30日 at 上午1:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>太变态了。我用hash居然超时了。这样break掉居然都行啊。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-27290">
+<article class="comment" id="comment-27290">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">usx13123</a></span> on <a href="http://www.acmerblog.com/hdu-3124-moonmist-4939.html#comment-27290" rel="nofollow"><time datetime="2015-05-24T02:32:44+00:00" pubdate="">2015年5月24日 at 上午2:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>居然看懂了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-47816">
+<article class="comment" id="comment-47816">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Dwayne</a></span> on <a href="http://www.acmerblog.com/hdu-3124-moonmist-4939.html#comment-47816" rel="nofollow"><time datetime="2015-05-14T16:04:19+00:00" pubdate="">2015年5月14日 at 下午4:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这道题目虽然简单，但是小编做的很到位，应该会给很多人启发吧！对于面试当中不给开辟额外空间的问题不是绝对的，实际上至少是允许少数变量存在的。之前遇到相似的问题也是恍然大悟，今天看到小编这篇文章相见恨晚。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-27286">
+<article class="comment" id="comment-27286">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jiakcstudio</a></span> on <a href="http://www.acmerblog.com/hdu-3124-moonmist-4939.html#comment-27286" rel="nofollow"><time datetime="2015-04-10T16:29:29+00:00" pubdate="">2015年4月10日 at 下午4:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>抱歉，确实是弄错了，原来的代码是错误的，删掉了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-47814">
+<article class="comment" id="comment-47814">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hehe_snail</a></span> on <a href="http://www.acmerblog.com/hdu-3124-moonmist-4939.html#comment-47814" rel="nofollow"><time datetime="2015-03-27T13:45:00+00:00" pubdate="">2015年3月27日 at 下午1:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>&amp;amp;这是C语言？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-27291">
+<article class="comment" id="comment-27291">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiao1108</a></span> on <a href="http://www.acmerblog.com/hdu-3124-moonmist-4939.html#comment-27291" rel="nofollow"><time datetime="2015-01-20T00:21:54+00:00" pubdate="">2015年1月20日 at 上午12:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很高兴你会喜欢这个网站。目前还没有一个开发团队，网站是我一个人在维护，都是用的开源系统，也没有太多需要开发的部分，主要是内容整理。非常感谢你的关注。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27284">
+<article class="comment" id="comment-27284">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">anthozoan77</a></span> on <a href="http://www.acmerblog.com/hdu-3124-moonmist-4939.html#comment-27284" rel="nofollow"><time datetime="2014-12-14T16:41:53+00:00" pubdate="">2014年12月14日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正解，已改正。应该都是protected</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-27283">
+<article class="comment" id="comment-27283">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jdliyao</a></span> on <a href="http://www.acmerblog.com/hdu-3124-moonmist-4939.html#comment-27283" rel="nofollow"><time datetime="2014-12-13T09:16:55+00:00" pubdate="">2014年12月13日 at 上午9:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很强大啊，佩服</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-47815">
+<article class="comment" id="comment-47815">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tzf888888</a></span> on <a href="http://www.acmerblog.com/hdu-3124-moonmist-4939.html#comment-47815" rel="nofollow"><time datetime="2014-10-10T01:14:54+00:00" pubdate="">2014年10月10日 at 上午1:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/d8/good_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-27287">
+<article class="comment" id="comment-27287">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">slowlight</a></span> on <a href="http://www.acmerblog.com/hdu-3124-moonmist-4939.html#comment-27287" rel="nofollow"><time datetime="2014-09-24T21:34:27+00:00" pubdate="">2014年9月24日 at 下午9:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Excellent Web-site! I required to ask if I might webpages and use a component of the net web website and use a number of factors for just about any faculty process. Please notify me through email regardless of whether that would be excellent. Many thanks</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27282">
+<article class="comment" id="comment-27282">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gy910210</a></span> on <a href="http://www.acmerblog.com/hdu-3124-moonmist-4939.html#comment-27282" rel="nofollow"><time datetime="2014-07-13T16:55:10+00:00" pubdate="">2014年7月13日 at 下午4:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>必须试过啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-57964">
+<article class="comment" id="comment-57964">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">linyanjin</a></span> on <a href="http://www.acmerblog.com/hdu-3124-moonmist-4939.html#comment-57964" rel="nofollow"><time datetime="2014-05-26T12:21:07+00:00" pubdate="">2014年5月26日 at 下午12:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我得邮箱cwqbupt@qq.com</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27285">
+<article class="comment" id="comment-27285">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">liluvu</a></span> on <a href="http://www.acmerblog.com/hdu-3124-moonmist-4939.html#comment-27285" rel="nofollow"><time datetime="2014-04-21T18:08:41+00:00" pubdate="">2014年4月21日 at 下午6:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正解，已改正。应该都是protected</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-27288">
+<article class="comment" id="comment-27288">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Sacomplex</a></span> on <a href="http://www.acmerblog.com/hdu-3124-moonmist-4939.html#comment-27288" rel="nofollow"><time datetime="2014-03-31T07:46:53+00:00" pubdate="">2014年3月31日 at 上午7:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>约瑟夫也用说这么长……很成熟的一个问题了，分治的方法解起来o(n)就可以了，有兴趣可以看看具体数学的第一章，关于约瑟夫问题推导出了一系列的结论，很漂亮</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

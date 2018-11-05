@@ -1,0 +1,342 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>11-09</div>
+<div class="tit"><h1 class="entry-title">POJ 1315 Don’t Get Rooked [解题报告] Java</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/zhuanti/java-poj" rel="category tag" title="查看Java解POJ中的全部文章">Java解POJ</a>, <a href="http://www.acmerblog.com/category/problemset/poj2" rel="category tag" title="查看POJ-北大中的全部文章">POJ-北大</a>, <a href="http://www.acmerblog.com/category/search/backtracking" rel="category tag" title="查看回溯和剪枝中的全部文章">回溯和剪枝</a>, <a href="http://www.acmerblog.com/category/data-struct/trees" rel="category tag" title="查看树形结构中的全部文章">树形结构</a></span><span class="i4">围观595次</span><span class="i3"><a class="ds-thread-count" data-thread-key="356" href="http://www.acmerblog.com/POJ-1315-Don%27t-Get-Rooked-blog-356.html#comments" title="《POJ 1315 Don’t Get Rooked [解题报告] Java》上的评论">13 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Don’t Get Rooked</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+In chess, the rook is a piece that can move any number of squares vertically or horizontally. In this problem we will consider small chess boards (at most 4×4) that can also contain walls through which rooks cannot move. The goal is to place as many rooks on a board as possible so that no two can capture each other. A configuration of rooks is legal provided that no two rooks are on the same horizontal row or vertical column unless there is at least one wall separating them. 
+<p>The following image shows five pictures of the same board. The first picture is the empty board, the second and third pictures show legal configurations, and the fourth and fifth pictures show illegal configurations. For this board, the maximum number of rooks in a legal configuration is 5; the second picture shows one way to do it, but there are several other ways.<br/>
+<br/></p><center><img src="http://www.acmerblog.com/img/poj/1315-7.jpg"/></center><br/>
+<br/>Your task is to write a program that, given a description of a board, calculates the maximum number of rooks that can be placed on the board in a legal configuration.
+ </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input contains one or more board descriptions, followed by a line containing the number 0 that signals the end of the file. Each board description begins with a line containing a positive integer n that is the size of the board; n will be at most 4. The next n lines each describe one row of the board, with a ‘.’ indicating an open space and an uppercase ‘X’ indicating a wall. There are no spaces in the input.  </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+For each test case, output one line containing the maximum number of rooks that can be placed on the board in a legal configuration. </div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+4
+.X..
+....
+XX..
+....
+2
+XX
+.X
+3
+.X.
+X.X
+.X.
+3
+...
+.XX
+.XX
+4
+....
+....
+....
+....
+0
+</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+5
+1
+5
+2
+4</pre>
+<div class="mybigtile mysubmit"> <a href="http://poj.org/submit?problem_id=1315">提交代码</a>   <a href="http://poj.org/bbs?problem_id=1315">问题讨论</a>   <a href="http://poj.org/problemstatus?problem_id=1315">数据统计</a> </div>
+<div>
+<p class="mytitle"> 解题代码:</p>
+</div>
+<pre class="brush:java">//* @author: 
+import java.io.*;
+import java.util.StringTokenizer;
+
+/*回溯,每个非Wall的位置有两种情况,有rook或无,可以构造解子集空间树,回溯得到可以放的最大rook数
+ *其解空间树为一棵二叉树,最大深度n为16,时间复杂度为O(2^n)&lt;=65536,于是算法可行
+ *这里的约束条件是rook不垂直或水平碰面且此位置不为墙..
+ */
+
+class cin
+{
+static int leave=0;
+static StringTokenizer st;
+static BufferedReader in=new BufferedReader(new InputStreamReader(System.in));
+static int nextInt() throws IOException
+{
+   while(leave==0)
+   {
+    st=new StringTokenizer(in.readLine());
+    leave=st.countTokens();
+   }
+   int a=Integer.parseInt(st.nextToken());
+   leave--;
+   return a;
+}
+static String nextLine() throws IOException
+{
+   return in.readLine();
+}
+}
+class Chess
+{
+char board[][];
+int best,n,now,max;
+
+void set(char b[][],int num)
+{
+   board=b;
+   n=num;
+   best=0;
+   now=0;
+   max=n*n;
+}
+
+boolean place(int x,int y)   //约束函数
+{
+   int i;
+   if(board[x][y]=='X')return false;
+   i=x-1;
+   while(i&gt;=0) //左面无rook
+   {
+    if(board[i][y]=='r')return false;
+    if(board[i][y]=='X')break;
+    i--;
+   }
+   i=x+1;
+   while(i&lt; n) //右面无rook
+   {
+    if(board[i][y]=='r')return false;
+    if(board[i][y]=='X')break;
+    i++;
+   }
+   i=y-1;
+   while(i&gt;=0) //上面无rook
+   {
+    if(board[x][i]=='r')return false;
+    if(board[x][i]=='X')break;
+    i--;
+   }
+   i=y+1;
+   while(i&lt; n) //下面无rook
+   {
+    if(board[i][y]=='r')return false;
+    if(board[i][y]=='X')break;
+    i++;
+   }
+   return true;
+}
+
+void backTrack(int t) //回溯
+{
+   if(t==max)
+   {
+    if(now&gt;best)best=now;
+   }
+   else 
+   {
+    if(max-t+1&lt; best-now)return;
+    int i=t/n,j=t%n;
+    if(place(i,j))
+    {
+     now++;
+     board[i][j]='r';
+     backTrack(t+1);
+     board[i][j]='.';
+     now--;
+    }
+    backTrack(t+1);
+   }
+}
+int outSum()
+{
+   backTrack(0);
+   return best;
+}
+}
+
+public class Main {
+    public static void main(String args[]) throws IOException
+    {
+    char board[][]=new char[4][4];
+    String temp;
+    Chess data=new Chess();
+    int n,i,j;
+    while(true)
+    {
+       n=cin.nextInt();
+       if(n==0)break;
+       for(i=0;i&lt; n;i++)
+       {
+        temp=cin.nextLine();
+        for(j=0;j&lt; n;j++)
+         board[i][j]=temp.charAt(j);
+       }
+       data.set(board,n);
+       System.out.println(data.outSum());
+    }
+    }
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-36786">
+<article class="comment" id="comment-36786">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Anne</a></span> on <a href="http://www.acmerblog.com/POJ-1315-Don%27t-Get-Rooked-blog-356.html#comment-36786" rel="nofollow"><time datetime="2015-07-08T09:33:44+00:00" pubdate="">2015年7月8日 at 上午9:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有没有C++编译的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-4746">
+<article class="comment" id="comment-4746">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1520006273</a></span> on <a href="http://www.acmerblog.com/POJ-1315-Don%27t-Get-Rooked-blog-356.html#comment-4746" rel="nofollow"><time datetime="2015-04-07T15:31:09+00:00" pubdate="">2015年4月7日 at 下午3:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>信息不全</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-36788">
+<article class="comment" id="comment-36788">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tzf888888</a></span> on <a href="http://www.acmerblog.com/POJ-1315-Don%27t-Get-Rooked-blog-356.html#comment-36788" rel="nofollow"><time datetime="2015-02-06T09:07:05+00:00" pubdate="">2015年2月6日 at 上午9:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>整理的很好，多谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-4743">
+<article class="comment" id="comment-4743">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mechine</a></span> on <a href="http://www.acmerblog.com/POJ-1315-Don%27t-Get-Rooked-blog-356.html#comment-4743" rel="nofollow"><time datetime="2014-12-30T20:45:04+00:00" pubdate="">2014年12月30日 at 下午8:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚开始学习，为啥会报错了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-4740">
+<article class="comment" id="comment-4740">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zwj0571</a></span> on <a href="http://www.acmerblog.com/POJ-1315-Don%27t-Get-Rooked-blog-356.html#comment-4740" rel="nofollow"><time datetime="2014-12-28T03:43:47+00:00" pubdate="">2014年12月28日 at 上午3:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么不直接用STL排序呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-4744">
+<article class="comment" id="comment-4744">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">645198</a></span> on <a href="http://www.acmerblog.com/POJ-1315-Don%27t-Get-Rooked-blog-356.html#comment-4744" rel="nofollow"><time datetime="2014-10-25T12:06:27+00:00" pubdate="">2014年10月25日 at 下午12:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>太变态了。我用hash居然超时了。这样break掉居然都行啊。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-4747">
+<article class="comment" id="comment-4747">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">didiaozuoren</a></span> on <a href="http://www.acmerblog.com/POJ-1315-Don%27t-Get-Rooked-blog-356.html#comment-4747" rel="nofollow"><time datetime="2014-10-21T06:52:11+00:00" pubdate="">2014年10月21日 at 上午6:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>88行是多余的，可以删除</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-36785">
+<article class="comment" id="comment-36785">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">pain</a></span> on <a href="http://www.acmerblog.com/POJ-1315-Don%27t-Get-Rooked-blog-356.html#comment-36785" rel="nofollow"><time datetime="2014-10-07T02:38:56+00:00" pubdate="">2014年10月7日 at 上午2:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正是我要找的，适合新手</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-4741">
+<article class="comment" id="comment-4741">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">becool456</a></span> on <a href="http://www.acmerblog.com/POJ-1315-Don%27t-Get-Rooked-blog-356.html#comment-4741" rel="nofollow"><time datetime="2014-09-02T19:26:21+00:00" pubdate="">2014年9月2日 at 下午7:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个..  真没看出来</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-4742">
+<article class="comment" id="comment-4742">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Aliens</a></span> on <a href="http://www.acmerblog.com/POJ-1315-Don%27t-Get-Rooked-blog-356.html#comment-4742" rel="nofollow"><time datetime="2014-08-14T17:36:14+00:00" pubdate="">2014年8月14日 at 下午5:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>太变态了。我用hash居然超时了。这样break掉居然都行啊。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-36787">
+<article class="comment" id="comment-36787">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaotongtest</a></span> on <a href="http://www.acmerblog.com/POJ-1315-Don%27t-Get-Rooked-blog-356.html#comment-36787" rel="nofollow"><time datetime="2014-07-27T23:42:25+00:00" pubdate="">2014年7月27日 at 下午11:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>map[nodes <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .index][nodes <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> .index] == 0 就是判断不相邻的。这个是可以证明的。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-52688">
+<article class="comment" id="comment-52688">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Mayboy</a></span> on <a href="http://www.acmerblog.com/POJ-1315-Don%27t-Get-Rooked-blog-356.html#comment-52688" rel="nofollow"><time datetime="2014-06-11T19:18:59+00:00" pubdate="">2014年6月11日 at 下午7:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>都是一些基础题啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-4745">
+<article class="comment" id="comment-4745">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">AcmDream</a></span> on <a href="http://www.acmerblog.com/POJ-1315-Don%27t-Get-Rooked-blog-356.html#comment-4745" rel="nofollow"><time datetime="2014-05-04T08:19:02+00:00" pubdate="">2014年5月4日 at 上午8:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>约瑟夫也用说这么长……很成熟的一个问题了，分治的方法解起来o(n)就可以了，有兴趣可以看看具体数学的第一章，关于约瑟夫问题推导出了一系列的结论，很漂亮</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

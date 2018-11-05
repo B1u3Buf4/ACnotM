@@ -1,0 +1,286 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-16</div>
+<div class="tit"><h1 class="entry-title">HDU 3326-Cover Up[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观412次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5258" href="http://www.acmerblog.com/hdu-3326-cover-up-5258.html#comments" title="《HDU 3326-Cover Up[解题报告]HOJ》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Cover Up</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+“The Price is Right” is a popular game show where contestants play various games to win fabulous prizes. One of the games played on the show is called “Cover Up” whose object is to guess a 5-digit number (actually, the price of a new car). In the actual game, contestants are given two numbers to choose from for the first digit, three numbers to choose from for the second digit, and so on. A contestant selects one number for each digit (from the set of yet unpicked numbers for that digit) and then is told which ones are correct; if at least one is correct, the player is allowed to guess again for all incorrect digits. The contestant keeps guessing as long as they keep getting at least one new digit correct. The game ends when either all the digits are correct (a win for the contestant) or after a turn when no new digit is guessed correctly (a loss).
+<p>Typically this game is not sheer luck. For example, suppose you had the following five possibilities for the last digit: 1, 3, 5, 8 and 9. Many car prices end with either a 5 or a 9, so you might have, say, a 70% chance that one of these two numbers is correct; this breaks down to a 35% chance for either the 5 or the 9 and a 10% chance for each of the other three digits. Now say you pick the 5 and it’s wrong, but some other guess you made was right so you still get to play. With this additional information the probabilities for the remaining 4 numbers change: the probability for the 9 is now close to around 54%, while each of the other three numbers now has a little over a 15% chance. (We’ll let you figure out how we got these values). We’ll call the 5 and the 9 in the original group the known candidates, and typically there are known candidates in other columns as well. For example, if the two numbers for the first (high order) digit are 1 and 9, the contestant can be 100% sure that the 1 is the correct digit (there aren’t too many $90,000 cars to be given away).</p>
+<p>For this problem, you are to determine the probability of winning the game if an optimal strategy for picking the numbers (based on probabilities such as those described above) is used. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+Each test case will consist of two lines. The first will be <i>n</i>, the number of digits in the number to be guessed. The maximum value of <i>n</i> will be 5. The second line will contain <i>n</i> triplets of numbers of the form <i>m l p</i> where <i>m</i> is the number of choices for a digit, <i>l</i> is the number of known candidates, and <i>p</i> is the probability that one of the known candidates is correct. In all cases 0 ≤ <i>l</i> &lt; <i>m</i> ≤ 10 and 0.0 ≤ <i>p</i> ≤ 1.0. Whenever <i>l</i> = 0 (i.e., when there are no known candidates) <i>p</i> will always be 0.0. A line containing a single 0 will terminate the input. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+Each test case will consist of two lines. The first will be <i>n</i>, the number of digits in the number to be guessed. The maximum value of <i>n</i> will be 5. The second line will contain <i>n</i> triplets of numbers of the form <i>m l p</i> where <i>m</i> is the number of choices for a digit, <i>l</i> is the number of known candidates, and <i>p</i> is the probability that one of the known candidates is correct. In all cases 0 ≤ <i>l</i> &lt; <i>m</i> ≤ 10 and 0.0 ≤ <i>p</i> ≤ 1.0. Whenever <i>l</i> = 0 (i.e., when there are no known candidates) <i>p</i> will always be 0.0. A line containing a single 0 will terminate the input.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+3 1 0.8 2 0 0.0
+2
+3 2 0.8 2 0 0.0
+2
+3 2 0.82 2 1 0.57
+3
+4 1 1.0 3 0 0.0 10 1 1.0
+0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+0.85
+0.6
+0.644
+1</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include&lt;cstdio&gt; 
+#include&lt;iostream&gt;
+#include&lt;cstring&gt;
+using namespace std;
+int n,m[5],l[5],len;
+double p[5],dp[6][3125][32];
+bool f[6][3125][32];
+char ans[100];
+double solve(int g,int r,int mask)
+{
+	if(mask==0) return 1.0;
+	if(f[g][r][mask]) return dp[g][r][mask];
+	int a[5],c=r;
+	double b[2][5],t1,t2;
+	for(int i=n-1;i&gt;=0;--i)
+	{
+		a[i]=c%5;
+		c/=5;
+	}
+	for(int i=0;i&lt;n;++i)
+	{
+		if(l[i]) t1=p[i]/l[i]*(l[i]-a[i]);
+		else t1=0.0;
+		t2=(1-p[i])/(m[i]-l[i])*(m[i]-l[i]-g+a[i]); 
+		if(t1+t2&lt;1e-8) b[0][i]=b[1][i]=0.0;
+		else
+		{
+			b[0][i]=(1-p[i])/(m[i]-l[i])/(t1+t2);
+			b[1][i]=p[i]/l[i]/(t1+t2);
+		}
+	}
+	dp[g][r][mask]=0.0;
+	for(int i=mask;;i=((i-1)&amp;mask))
+	{
+		double tmp=0.0;
+		int choose[5],chs=0;
+		for(int j=0;j&lt;n;++j)
+		{
+			if(i&amp;(1&lt;&lt;j)) choose[j]=1;
+			else choose[j]=0;
+			if((mask&amp;(1&lt;&lt;j))&amp;&amp;choose[j]+a[j]&gt;l[j]) goto fuck;
+			if((mask&amp;(1&lt;&lt;j))&amp;&amp;choose[j]==0&amp;&amp;m[j]-l[j]-g+a[j]&lt;=0) goto fuck;
+			chs=chs*5+choose[j]+a[j];
+		}
+		for(int j=mask;j;j=((j-1)&amp;mask))
+		{
+			double pp=1.0;
+			for(int k=0;k&lt;n;++k)
+				if(j&amp;(1&lt;&lt;k)) pp*=b[choose[k]][k];
+				else if(mask&amp;(1&lt;&lt;k)) pp*=1-b[choose[k]][k];
+			tmp+=pp*solve(g+1,chs,mask-j);
+		}
+		dp[g][r][mask]=max(dp[g][r][mask],tmp);
+		fuck:if(i==0) break;
+	}
+	f[g][r][mask]=1;
+	return dp[g][r][mask];
+}
+int main()
+{
+	while(scanf("%d",&amp;n)&amp;&amp;n)
+	{
+		for(int i=0;i&lt;n;++i) scanf("%d%d%lf",m+i,l+i,p+i);
+		memset(f,0,sizeof(f));
+		memset(ans,0,sizeof(ans));
+		sprintf(ans,"%.3lf",solve(0,0,(1&lt;&lt;n)-1));
+		len=strlen(ans);
+		while(ans[len-1]=='0')
+			ans[--len]='\0';
+		if(ans[len-1]=='.') ans[len-1]='\0';
+		printf("%s\n",ans);
+	}
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-77631">
+<article class="comment" id="comment-77631">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527039" rel="external nofollow">新用户514402</a></span> on <a href="http://www.acmerblog.com/hdu-3326-cover-up-5258.html#comment-77631" rel="nofollow"><time datetime="2017-04-12T09:15:02+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>乖….我好像不能理解你的脑洞  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48455">
+<article class="comment" id="comment-48455">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wizcabbit</a></span> on <a href="http://www.acmerblog.com/hdu-3326-cover-up-5258.html#comment-48455" rel="nofollow"><time datetime="2015-07-13T14:28:54+00:00" pubdate="">2015年7月13日 at 下午2:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚开始学习，为啥会报错了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48462">
+<article class="comment" id="comment-48462">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xrjervis</a></span> on <a href="http://www.acmerblog.com/hdu-3326-cover-up-5258.html#comment-48462" rel="nofollow"><time datetime="2015-07-07T05:58:11+00:00" pubdate="">2015年7月7日 at 上午5:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>具体实现上有所差别，但思路是一样的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58337">
+<article class="comment" id="comment-58337">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">super157</a></span> on <a href="http://www.acmerblog.com/hdu-3326-cover-up-5258.html#comment-58337" rel="nofollow"><time datetime="2015-05-09T19:10:28+00:00" pubdate="">2015年5月9日 at 下午7:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/d8/good_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48457">
+<article class="comment" id="comment-48457">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Emlar</a></span> on <a href="http://www.acmerblog.com/hdu-3326-cover-up-5258.html#comment-48457" rel="nofollow"><time datetime="2015-03-20T11:51:49+00:00" pubdate="">2015年3月20日 at 上午11:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的题，还是能做出几道的，嘿嘿</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48458">
+<article class="comment" id="comment-48458">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">April</a></span> on <a href="http://www.acmerblog.com/hdu-3326-cover-up-5258.html#comment-48458" rel="nofollow"><time datetime="2015-03-11T11:48:15+00:00" pubdate="">2015年3月11日 at 上午11:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是什么编译器啊，不通过</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48461">
+<article class="comment" id="comment-48461">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zclzcllove</a></span> on <a href="http://www.acmerblog.com/hdu-3326-cover-up-5258.html#comment-48461" rel="nofollow"><time datetime="2014-12-03T23:26:30+00:00" pubdate="">2014年12月3日 at 下午11:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为是要把从字符串s的start位到当前位在hash中重置，修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58338">
+<article class="comment" id="comment-58338">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">leowww</a></span> on <a href="http://www.acmerblog.com/hdu-3326-cover-up-5258.html#comment-58338" rel="nofollow"><time datetime="2014-09-30T20:14:39+00:00" pubdate="">2014年9月30日 at 下午8:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不是有公式吗？何不直接计算</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58339">
+<article class="comment" id="comment-58339">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ForgetVay</a></span> on <a href="http://www.acmerblog.com/hdu-3326-cover-up-5258.html#comment-58339" rel="nofollow"><time datetime="2014-08-23T05:25:30+00:00" pubdate="">2014年8月23日 at 上午5:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>helpful！！ mark</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48460">
+<article class="comment" id="comment-48460">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">211206421</a></span> on <a href="http://www.acmerblog.com/hdu-3326-cover-up-5258.html#comment-48460" rel="nofollow"><time datetime="2014-07-25T16:09:48+00:00" pubdate="">2014年7月25日 at 下午4:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>补充：此算法求出的不一定是最优解，之前理解错了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58340">
+<article class="comment" id="comment-58340">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wuzirui</a></span> on <a href="http://www.acmerblog.com/hdu-3326-cover-up-5258.html#comment-58340" rel="nofollow"><time datetime="2014-07-12T08:50:03+00:00" pubdate="">2014年7月12日 at 上午8:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58336">
+<article class="comment" id="comment-58336">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NiKaWaLi2015</a></span> on <a href="http://www.acmerblog.com/hdu-3326-cover-up-5258.html#comment-58336" rel="nofollow"><time datetime="2014-06-07T05:08:11+00:00" pubdate="">2014年6月7日 at 上午5:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>helpful！！ mark</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58335">
+<article class="comment" id="comment-58335">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">21435048</a></span> on <a href="http://www.acmerblog.com/hdu-3326-cover-up-5258.html#comment-58335" rel="nofollow"><time datetime="2014-05-17T08:59:18+00:00" pubdate="">2014年5月17日 at 上午8:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正是我要找的，适合新手</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48459">
+<article class="comment" id="comment-48459">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Dick</a></span> on <a href="http://www.acmerblog.com/hdu-3326-cover-up-5258.html#comment-48459" rel="nofollow"><time datetime="2014-04-15T09:53:12+00:00" pubdate="">2014年4月15日 at 上午9:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，就是把这32位当成一个长度为32的数</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48456">
+<article class="comment" id="comment-48456">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gladuo</a></span> on <a href="http://www.acmerblog.com/hdu-3326-cover-up-5258.html#comment-48456" rel="nofollow"><time datetime="2014-03-21T13:41:50+00:00" pubdate="">2014年3月21日 at 下午1:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

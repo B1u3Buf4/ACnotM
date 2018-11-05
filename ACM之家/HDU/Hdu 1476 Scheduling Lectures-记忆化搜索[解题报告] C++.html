@@ -1,0 +1,330 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-11</div>
+<div class="tit"><h1 class="entry-title">Hdu 1476 Scheduling Lectures-记忆化搜索[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/search/cut" rel="category tag" title="查看记忆化搜索中的全部文章">记忆化搜索</a></span><span class="i4">围观1323次</span><span class="i3"><a class="ds-thread-count" data-thread-key="2015" href="http://www.acmerblog.com/hdu-1476-scheduling-lectures-2015.html#comments" title="《Hdu 1476 Scheduling Lectures-记忆化搜索[解题报告] C++》上的评论">19 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Scheduling Lectures</h1>
+</div>
+<div>
+<p class="mytitle">问题描述 :</p>
+</div>
+<div class="mypanel">You are teaching a course and must cover n (1 &lt;= n &lt;= 1000) topics. The length of each lecture is L (1 &lt;= L &lt;= 500) minutes. The topics require t1, t2, …, tn (1 &lt;= ti &lt;= L) minutes each. For each topic, you must decide in which lecture it should be covered. There are two scheduling restrictions:<br/>
+1. Each topic must be covered in a single lecture. It cannot be divided into two lectures. This reduces discontinuity between lectures.<br/>
+2. Topic i must be covered before topic i + 1 for all 1 &lt;= i &lt; n. Otherwise, students may not have the prerequisites to understand topic i + 1.With the above restrictions, it is sometimes necessary to have free time at the end of a lecture. If the amount of free time is at most 10 minutes, the students will be happy to leave early. However, if the amount of free time is more, they would feel that their tuition fees are wasted. Therefore, we will model the dissatisfaction index (DI) of a lecture by the formula:
+<p><img alt="" src="http://acm.hdu.edu.cn/data/images/1476-1.gif"/></p>
+<p>where C is a positive integer, and t is the amount of free time at the end of a lecture. The total dissatisfaction index is the sum of the DI for each lecture.</p>
+<p>For this problem, you must find the minimum number of lectures that is needed to satisfy the above constraints. If there are multiple lecture schedules with the minimum number of lectures, also minimize the total dissatisfaction index.</p>
+<p>This problem contains multiple test cases!</p>
+<p>The first line of a multiple input is an integer N, then a blank line followed by N input blocks. Each input block is in the format indicated in the problem description. There is a blank line between input blocks.</p>
+<p>The output format consists of N output blocks. There is a blank line between output blocks.</p>
+</div>
+<div>
+<p class="mytitle">输入:</p>
+</div>
+<div class="mypanel">The input consists of a number of cases. The first line of each case contains the integer n, or 0 if there are no more cases. The next line contains the integers L and C. These are followed by n integers t1, t2, …, tn.</div>
+<div>
+<p class="mytitle">输出:</p>
+</div>
+<div class="mypanel">For each case, print the case number, the minimum number of lectures used, and the total dissatisfaction index for the corresponding lecture schedule on three separate lines. Output a blank line between cases.</div>
+<div>
+<p class="mytitle">样例输入:</p>
+</div>
+<pre class="mypanel iopanel">6
+30 15
+10
+10
+10
+10
+10
+10
+10
+120 10
+80
+80
+10
+50
+30
+20
+40
+30
+120
+100
+0</pre>
+<div>
+<p class="mytitle">样例输出:</p>
+</div>
+<pre class="mypanel iopanel">Case 1:
+
+Minimum number of lectures: 2
+Total dissatisfaction index: 0
+
+Case 2:
+
+Minimum number of lectures: 6
+Total dissatisfaction index: 2700</pre>
+<p><!-- problem end --><br/>
+题意：给n节课时间，然后有一个一课时时间ti，和一个常数c，课必须连续着上不能换顺序，要求出最少需要的课时，和在该课时下学生不满意度最小值。<br/>
+思路：前一步利用贪心，可以算出最少课时，就是尽量让多的课挤到一起上，然后在用记忆化搜索，求出该课时下最小满意度<br/>
+代码：</p>
+<pre class="brush:cpp">#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+const int N = 1005;
+const int INF = 1 &lt;&lt; 30;
+int min(int a, int b) {return a &lt; b ? a : b;}
+int n, ti, c, count, t[N], dp[N][N], vis[N][N], i, j, num; 
+
+int get(int x) {
+	if (x == 0) return 0;
+	else if (x &lt;= 10) return -c;
+	else return (x - 10) * (x - 10);
+}
+
+int solve(int x, int y) {
+	if (vis[x][y]) return dp[x][y];
+	int &amp;ans = dp[x][y];
+	if (x == 0) return y ? INF : 0;
+	else {
+		ans = INF;
+		int sum = 0;
+		for (int i = y; i &gt; 0; i --) {
+			sum += t[i];
+			if (sum &gt; ti) break;
+			int now = solve(x - 1, i - 1);
+			if (now != INF)
+				ans = min(now + get(ti - sum), ans);
+		}
+		vis[x][y] = 1;
+		return ans;
+	}
+}
+
+int main() {
+	int tt = 0;
+	while (~scanf("%d", &amp;n) &amp;&amp; n) {
+		num = 0;
+		int sum = 1;
+		memset(vis, 0, sizeof(vis));
+		scanf("%d%d", &amp;ti, &amp;c);
+		for (i = 1; i &lt;= n; i ++) {
+			scanf("%d", &amp;t[i]);
+			num += t[i];
+			if (num &gt; ti) {
+				num = t[i];
+				sum ++;
+			}
+		}
+		if (tt) printf("\n");
+		printf("Case %d:\n", ++ tt);
+		printf("Minimum number of lectures: %d\n", sum);
+		printf("Total dissatisfaction index: %d\n", solve(sum, n));
+	}
+	return 0;
+}</pre>
+<p> </p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-92196">
+<article class="comment" id="comment-92196">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919463953" rel="external nofollow">新用户324782</a></span> on <a href="http://www.acmerblog.com/hdu-1476-scheduling-lectures-2015.html#comment-92196" rel="nofollow"><time datetime="2017-04-13T15:37:52+00:00" pubdate="">2017年4月13日 at 下午3:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>之所以XX是因为太长了！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-92195">
+<article class="comment" id="comment-92195">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919463953" rel="external nofollow">新用户324782</a></span> on <a href="http://www.acmerblog.com/hdu-1476-scheduling-lectures-2015.html#comment-92195" rel="nofollow"><time datetime="2017-04-13T15:37:52+00:00" pubdate="">2017年4月13日 at 下午3:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>之所以XX是因为太长了！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-92194">
+<article class="comment" id="comment-92194">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919463953" rel="external nofollow">新用户324782</a></span> on <a href="http://www.acmerblog.com/hdu-1476-scheduling-lectures-2015.html#comment-92194" rel="nofollow"><time datetime="2017-04-13T15:37:52+00:00" pubdate="">2017年4月13日 at 下午3:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>之所以XX是因为太长了！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-92193">
+<article class="comment" id="comment-92193">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919463953" rel="external nofollow">新用户324782</a></span> on <a href="http://www.acmerblog.com/hdu-1476-scheduling-lectures-2015.html#comment-92193" rel="nofollow"><time datetime="2017-04-13T15:37:52+00:00" pubdate="">2017年4月13日 at 下午3:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>之所以XX是因为太长了！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-92192">
+<article class="comment" id="comment-92192">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919463953" rel="external nofollow">新用户324782</a></span> on <a href="http://www.acmerblog.com/hdu-1476-scheduling-lectures-2015.html#comment-92192" rel="nofollow"><time datetime="2017-04-13T15:37:52+00:00" pubdate="">2017年4月13日 at 下午3:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>之所以XX是因为太长了！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-13627">
+<article class="comment" id="comment-13627">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1193658339</a></span> on <a href="http://www.acmerblog.com/hdu-1476-scheduling-lectures-2015.html#comment-13627" rel="nofollow"><time datetime="2015-07-01T20:26:48+00:00" pubdate="">2015年7月1日 at 下午8:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真心不错，力顶作者</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-13621">
+<article class="comment" id="comment-13621">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wizcabbit</a></span> on <a href="http://www.acmerblog.com/hdu-1476-scheduling-lectures-2015.html#comment-13621" rel="nofollow"><time datetime="2015-06-21T09:10:13+00:00" pubdate="">2015年6月21日 at 上午9:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感谢分享 学习了`(*∩_∩*)′</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-13620">
+<article class="comment" id="comment-13620">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Aifan</a></span> on <a href="http://www.acmerblog.com/hdu-1476-scheduling-lectures-2015.html#comment-13620" rel="nofollow"><time datetime="2015-06-14T03:38:01+00:00" pubdate="">2015年6月14日 at 上午3:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>排版</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-13626">
+<article class="comment" id="comment-13626">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tangzhihua</a></span> on <a href="http://www.acmerblog.com/hdu-1476-scheduling-lectures-2015.html#comment-13626" rel="nofollow"><time datetime="2015-05-27T04:18:28+00:00" pubdate="">2015年5月27日 at 上午4:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对于输出格式不用控制？？还是直接使用cout输出。？？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-54866">
+<article class="comment" id="comment-54866">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiao1108</a></span> on <a href="http://www.acmerblog.com/hdu-1476-scheduling-lectures-2015.html#comment-54866" rel="nofollow"><time datetime="2015-03-01T07:04:49+00:00" pubdate="">2015年3月1日 at 上午7:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>非常好，初学者就应该先理解递归</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-13625">
+<article class="comment" id="comment-13625">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaoriqiang2</a></span> on <a href="http://www.acmerblog.com/hdu-1476-scheduling-lectures-2015.html#comment-13625" rel="nofollow"><time datetime="2015-01-19T08:54:57+00:00" pubdate="">2015年1月19日 at 上午8:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序是对的。有些地方用了C++的写法</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-13631">
+<article class="comment" id="comment-13631">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yupeng.bai</a></span> on <a href="http://www.acmerblog.com/hdu-1476-scheduling-lectures-2015.html#comment-13631" rel="nofollow"><time datetime="2015-01-12T10:21:53+00:00" pubdate="">2015年1月12日 at 上午10:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p><a href="http://www.realoj.com/problem/7如果楼主不介意，以可以在这个oj上做下，按照你的代码是错的。。。直接复制粘贴你的也是错。。不懂错在哪。" rel="nofollow">http://www.realoj.com/problem/7如果楼主不介意，以可以在这个oj上做下，按照你的代码是错的。。。直接复制粘贴你的也是错。。不懂错在哪。</a></p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-13623">
+<article class="comment" id="comment-13623">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">winter</a></span> on <a href="http://www.acmerblog.com/hdu-1476-scheduling-lectures-2015.html#comment-13623" rel="nofollow"><time datetime="2014-07-06T06:48:46+00:00" pubdate="">2014年7月6日 at 上午6:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一题还是比较考验智商~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-13629">
+<article class="comment" id="comment-13629">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">nwling</a></span> on <a href="http://www.acmerblog.com/hdu-1476-scheduling-lectures-2015.html#comment-13629" rel="nofollow"><time datetime="2014-07-03T22:48:22+00:00" pubdate="">2014年7月3日 at 下午10:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>辛苦了，顶</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-13622">
+<article class="comment" id="comment-13622">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">stamwoo</a></span> on <a href="http://www.acmerblog.com/hdu-1476-scheduling-lectures-2015.html#comment-13622" rel="nofollow"><time datetime="2014-06-22T20:44:05+00:00" pubdate="">2014年6月22日 at 下午8:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>[…] 答案：http://www.acmerblog.com/interview-2-1549/ […]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-13624">
+<article class="comment" id="comment-13624">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">cherry_odd</a></span> on <a href="http://www.acmerblog.com/hdu-1476-scheduling-lectures-2015.html#comment-13624" rel="nofollow"><time datetime="2014-05-11T13:34:34+00:00" pubdate="">2014年5月11日 at 下午1:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-13628">
+<article class="comment" id="comment-13628">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NiKaWaLi2015</a></span> on <a href="http://www.acmerblog.com/hdu-1476-scheduling-lectures-2015.html#comment-13628" rel="nofollow"><time datetime="2014-05-05T12:19:30+00:00" pubdate="">2014年5月5日 at 下午12:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>在第 18行的，while(scanf("%d %dn", &amp;n, &amp;c), n)，这句有错吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-13630">
+<article class="comment" id="comment-13630">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">211206421</a></span> on <a href="http://www.acmerblog.com/hdu-1476-scheduling-lectures-2015.html#comment-13630" rel="nofollow"><time datetime="2014-01-26T03:38:10+00:00" pubdate="">2014年1月26日 at 上午3:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>原来的主机不行，目前更换到了国内主机</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-54867">
+<article class="comment" id="comment-54867">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bobo</a></span> on <a href="http://www.acmerblog.com/hdu-1476-scheduling-lectures-2015.html#comment-54867" rel="nofollow"><time datetime="2014-01-05T21:42:39+00:00" pubdate="">2014年1月5日 at 下午9:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>漏了一个"不"，已修正:)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

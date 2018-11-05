@@ -1,0 +1,363 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>04-13</div>
+<div class="tit"><h1 class="entry-title">HDU 3867-Light and Shadow-计算几何-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/basis/sort" rel="category tag" title="查看排序中的全部文章">排序</a>, <a href="http://www.acmerblog.com/category/geometry" rel="category tag" title="查看计算几何中的全部文章">计算几何</a></span><span class="i4">围观382次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6869" href="http://www.acmerblog.com/hdu-3867-light-and-shadow-6869.html#comments" title="《HDU 3867-Light and Shadow-计算几何-[解题报告]HOJ》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Light and Shadow</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+<center><img alt="Moonfang's Birthday" src="http://www.acmerblog.com/img/1436138802723.jpg"/></center> <br/>A nuclear explosion happened and how many sticks on the ground will be illuminated by the radiation? You can assume that the ground is flat, and no radiation can go through the sticks, and any two sticks have no intersections.<br/>To simplify the problem, no two endpoints located on the path of a single radiation. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+For each case, the first line contains the number of sticks n(1~10,000), until the end of file.
+<p>The second line includes (sx, sy) to denote the position of explosion center.</p>
+<p>Then following n lines are the sticks expressed in (ax, ay) and (bx, by). </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+For each case, the first line contains the number of sticks n(1~10,000), until the end of file.
+<p>The second line includes (sx, sy) to denote the position of explosion center.</p>
+<p>Then following n lines are the sticks expressed in (ax, ay) and (bx, by).</p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+6
+0.5 0.5
+1.0 -1.0 1.0 1.0
+1.5 1.0 1.5 -1.0
+2.0 -1.0 2.0 1.0
+-1.0 -1.0 -1.0 1.0
+-1.5 1.0 -1.5 -1.0
+-2.0 -1.0 -2.0 1.0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+2</pre>
+<p> <!-- problem end --></p>
+<p>题意：原子弹爆炸，一些互不相交的线段，求能辐射到的线段（可以将原子弹爆炸点视为泛光源）<br/>
+以辐射源为中心对周围的点按照极坐标角度进行排序，然后在极坐标上使用扫描线方法。<br/>
+维护一个集合，集合内的元素是与扫描线相交的线段，排序依据是线段与扫描线的交点到辐射源的距离。该集合中的最小元素就是被照射到的线段。</p>
+<p>有关容器（set）排序依据的说明：</p>
+<p>在扫描线运动前后，如果有两个线段存在于容器中，这两个线段与扫描线的交点到辐射源的距离远近关系不会发生变化。若发生变化，表示扫描线运动范围内两个线段有交点，与题目提供的已知条件不符。</p>
+<p>
+</p>
+<p><img alt="Light and Shadow" height="303" src="http://cdn.acmerblog.com/img/1436138827704.gif" width="424"/>
+</p>
+<p></p>
+<p>PS：此题各种重载 各种stl</p>
+<pre class="brush:cpp" name="code">#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+#include &lt;cmath&gt;
+#include &lt;set&gt;
+#include &lt;algorithm&gt;
+using namespace std;
+#define EPS 1e-8
+#define LS0(a) (a &lt;&lt; 1)
+#define LS1(a) ((a &lt;&lt; 1) | 1)
+
+const int MAXN = 20010;
+struct Point { 
+	double x, y;
+	Point(double _x = 0.0, double _y = 0.0): x(_x), y(_y) {}
+	Point operator + (const Point &amp;b) const {
+		return Point(x + b.x, y + b.y);
+	}
+	Point operator - (const Point &amp;b) const {
+		return Point(x - b.x, y - b.y);
+	}
+	double operator ^ (const Point &amp;b) const {
+		return x * b.y - y * b.x;
+	}
+	bool operator &lt; (const Point &amp;b) const {  //逆时针
+		return x * b.y &lt; y * b.x;
+	}
+	void input() {
+		scanf("%lf%lf", &amp;x, &amp;y);
+	}
+	double diso() {
+		return sqrt(x * x + y * y);
+	}
+
+}cur,ps[MAXN];
+
+Point lnlncross_pt(Point aa, Point ad, Point ba, Point bd) { // 求直线交点
+	ad = ad - aa;
+	bd = bd - ba;
+	double tmp = bd ^ ad;
+	return Point(
+		(ad.x * bd.x * (ba.y - aa.y) + aa.x * bd.x * ad.y - ba.x * ad.x * bd.y) / tmp,
+		(ad.y * bd.y * (aa.x - ba.x) + ba.y * ad.y * bd.x - aa.y * bd.y * ad.x) / tmp);
+}
+
+struct Item { // 扫描线的点类型
+	Point *u, *v;
+	int type; // 1: 线段起点; 0: 线段终点;
+	int sgid; // 线段序号
+	Item(Point *_u = NULL, Point *_v = NULL, int _ty = 0, int _id = 0)
+		: u(_u), v(_v), type(_ty), sgid(_id) {}
+	bool operator &lt; (const Item &amp;b) const {
+		if(u == b.u &amp;&amp; v == b.v)
+			return false;
+		Point au = lnlncross_pt(Point(0.0, 0.0), cur, *u, *v);
+		Point bu = lnlncross_pt(Point(0.0, 0.0), cur, *b.u, *b.v);
+		return au.diso() &lt; bu.diso();
+	}
+
+}item[MAXN];
+
+bool flag[MAXN];
+set&lt;Item&gt; Scan;
+
+                    
+bool cmp(const Item &amp;a, const Item &amp;b) { //极角排序 从-PI到-PI内 
+		return atan2(a.u-&gt;y, a.u-&gt;x) &lt; atan2(b.u-&gt;y, b.u-&gt;x);
+
+}
+
+void inputps(int n) {
+	Point src, a, b;
+	src.input();
+	for(int i = 0; i &lt; n; ++i) {
+		// 读取线段并求得相对于光源的坐标
+		a.input(); a = a - src;
+		b.input(); b = b - src;
+		// 保证线段的极角序
+		if(b &lt; a) swap(a, b);
+		ps[LS0(i)] = a;
+		ps[LS1(i)] = b;
+		item[LS0(i)] = Item(&amp;ps[LS0(i)], &amp;ps[LS1(i)], 0, i);
+		item[LS1(i)] = Item(&amp;ps[LS1(i)], &amp;ps[LS0(i)], 1, i);
+	}
+	sort(item, item + 2 * n, cmp);
+}
+
+
+
+bool sgcross_with_ax(Item &amp;a) {   //与射线相交判断   good 以前不知道的东西
+	Point tmp(-1.0, 0.0);
+	return (*a.u ^ *a.v) * (*a.u ^ tmp) &gt; 0.0
+		&amp;&amp; (*a.u ^ tmp) * (tmp ^ *a.v) &gt; 0.0;
+}
+
+
+
+int main() {
+	int n;
+	while(scanf("%d", &amp;n) != EOF) {
+		inputps(n);
+		memset(flag,0,sizeof(flag));
+		// 初始化极角扫描器  初始射线向量为（-1.0，0)
+		Scan.clear();
+		for(int i = 0; i &lt; 2 * n; ++i) {
+		        cur = *item[i].u;
+			if(item[i].type == 1 &amp;&amp; sgcross_with_ax(item[i]))
+				Scan.insert(item[i]);
+		}
+		// 极角扫描
+		for(int i = 0; i &lt; 2 * n; ++i) {
+		        cur = *item[i].u;
+			if(item[i].type == 1)
+				Scan.insert(item[i]);
+			else
+				Scan.erase(Item(item[i].v, item[i].u, 1, item[i].sgid));
+			if(!Scan.empty())
+				flag[Scan.begin()-&gt;sgid] = true;
+		}
+		int ans = 0;
+		for(int i = 0; i &lt; n; ++i)
+			if(flag[i])ans ++;
+		printf("%d\n", ans);
+	}
+	return 0;
+
+}</pre>
+<p></p>
+<style type="text/css">
+<!--
+@page
+	{margin:2cm}
+p
+	{margin-bottom:0.21cm}
+-->
+</style>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/accry/article/details/6676009</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-72295">
+<article class="comment" id="comment-72295">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529316" rel="external nofollow">新用户715233</a></span> on <a href="http://www.acmerblog.com/hdu-3867-light-and-shadow-6869.html#comment-72295" rel="nofollow"><time datetime="2017-04-11T17:41:13+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>索尼子 压面盖···</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51401">
+<article class="comment" id="comment-51401">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">actlea</a></span> on <a href="http://www.acmerblog.com/hdu-3867-light-and-shadow-6869.html#comment-51401" rel="nofollow"><time datetime="2015-07-14T10:45:40+00:00" pubdate="">2015年7月14日 at 上午10:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是研发类的题还是算法类？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51402">
+<article class="comment" id="comment-51402">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">a997930294</a></span> on <a href="http://www.acmerblog.com/hdu-3867-light-and-shadow-6869.html#comment-51402" rel="nofollow"><time datetime="2015-07-09T13:57:21+00:00" pubdate="">2015年7月9日 at 下午1:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是什么鬼，怎么多头文件</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-34385">
+<article class="comment" id="comment-34385">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Spike</a></span> on <a href="http://www.acmerblog.com/hdu-3867-light-and-shadow-6869.html#comment-34385" rel="nofollow"><time datetime="2015-06-29T12:27:19+00:00" pubdate="">2015年6月29日 at 下午12:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序是对的。有些地方用了C++的写法</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51399">
+<article class="comment" id="comment-51399">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dongxi</a></span> on <a href="http://www.acmerblog.com/hdu-3867-light-and-shadow-6869.html#comment-51399" rel="nofollow"><time datetime="2015-06-18T22:23:47+00:00" pubdate="">2015年6月18日 at 下午10:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>顺利测试通过了，多谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-34386">
+<article class="comment" id="comment-34386">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zcmu_sls</a></span> on <a href="http://www.acmerblog.com/hdu-3867-light-and-shadow-6869.html#comment-34386" rel="nofollow"><time datetime="2015-06-16T11:35:06+00:00" pubdate="">2015年6月16日 at 上午11:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>具体实现上有所差别，但思路是一样的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51393">
+<article class="comment" id="comment-51393">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">lintong</a></span> on <a href="http://www.acmerblog.com/hdu-3867-light-and-shadow-6869.html#comment-51393" rel="nofollow"><time datetime="2015-06-12T18:26:47+00:00" pubdate="">2015年6月12日 at 下午6:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>具体实现上有所差别，但思路是一样的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51398">
+<article class="comment" id="comment-51398">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">helloacm</a></span> on <a href="http://www.acmerblog.com/hdu-3867-light-and-shadow-6869.html#comment-51398" rel="nofollow"><time datetime="2015-06-09T19:27:24+00:00" pubdate="">2015年6月9日 at 下午7:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>18题的C也是错误的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51395">
+<article class="comment" id="comment-51395">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">testnew</a></span> on <a href="http://www.acmerblog.com/hdu-3867-light-and-shadow-6869.html#comment-51395" rel="nofollow"><time datetime="2015-05-11T07:45:10+00:00" pubdate="">2015年5月11日 at 上午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法挺不错。NewHead代表新的头节点，通过递归找到最后一个节点之后，就把这个节点赋给NewHead，然后一直返回返回，中途这个值是没有变化的，一边返回一边把相应的指针方向颠倒，最后结束时返回新的头节点到主函数。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-34387">
+<article class="comment" id="comment-34387">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">weijieut</a></span> on <a href="http://www.acmerblog.com/hdu-3867-light-and-shadow-6869.html#comment-34387" rel="nofollow"><time datetime="2015-05-10T23:18:43+00:00" pubdate="">2015年5月10日 at 下午11:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感觉我好像很多都不会做。。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-34384">
+<article class="comment" id="comment-34384">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaoriqiang2</a></span> on <a href="http://www.acmerblog.com/hdu-3867-light-and-shadow-6869.html#comment-34384" rel="nofollow"><time datetime="2015-05-06T17:27:41+00:00" pubdate="">2015年5月6日 at 下午5:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>辛苦了，顶</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51394">
+<article class="comment" id="comment-51394">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Happiness</a></span> on <a href="http://www.acmerblog.com/hdu-3867-light-and-shadow-6869.html#comment-51394" rel="nofollow"><time datetime="2015-05-03T12:58:55+00:00" pubdate="">2015年5月3日 at 下午12:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>scanner改用StreamTokenizer就不超时了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51397">
+<article class="comment" id="comment-51397">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">753951</a></span> on <a href="http://www.acmerblog.com/hdu-3867-light-and-shadow-6869.html#comment-51397" rel="nofollow"><time datetime="2015-04-26T19:12:45+00:00" pubdate="">2015年4月26日 at 下午7:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有一点问题。。后面动态规划的程序中<br/>
+int dp[n+1][W+1];<br/>
+会报错  提示表达式必须含有常量值。该怎么修改呢。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51396">
+<article class="comment" id="comment-51396">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">OrangeGuy</a></span> on <a href="http://www.acmerblog.com/hdu-3867-light-and-shadow-6869.html#comment-51396" rel="nofollow"><time datetime="2015-04-22T04:37:09+00:00" pubdate="">2015年4月22日 at 上午4:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个是python代码啊。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51400">
+<article class="comment" id="comment-51400">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yelawolf</a></span> on <a href="http://www.acmerblog.com/hdu-3867-light-and-shadow-6869.html#comment-51400" rel="nofollow"><time datetime="2015-04-20T00:15:10+00:00" pubdate="">2015年4月20日 at 上午12:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为nn</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

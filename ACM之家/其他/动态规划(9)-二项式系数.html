@@ -1,0 +1,351 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-16</div>
+<div class="tit"><h1 class="entry-title">动态规划(9)-二项式系数</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/zhuanti/algorithm" rel="category tag" title="查看算法分析中的全部文章">算法分析</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a>, <a href="http://www.acmerblog.com/category/zhuanti/classic" rel="category tag" title="查看经典问题中的全部文章">经典问题</a></span><span class="i4">围观2049次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5131" href="http://www.acmerblog.com/dp9-binomial-coefficient-5131.html#comments" title="《动态规划(9)-二项式系数》上的评论">23 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p>以下是常见的二项式系数的定义:</p>
+<p>1) 一个二项式系数 C(n, k)  可以被定义为(1 + X)^n 的展开式中  X^k  的系数。</p>
+<p>2) 二项式系数对组合数学很重要，因它的意义是从<i>n</i>件物件中，不分先后地选取<i>k</i>件的方法总数，因此也叫做<b>组合数.</b></p>
+<h2><strong>问题</strong></h2>
+<p>写一个函数，它接受两个参数n和k，返回二项式系数C(n,k)。例如，你的函数应该返回6 当n = 4 k = 2时，返回10当 n = 5 k = 2时。</p>
+<p><strong>1) 最优子结构</strong></p>
+<p>C(n,k)的值可以递归地使用以下标准公式计算，这个应该是高二的数学：</p>
+<pre class="brush:other">   C(n, k) = C(n-1, k-1) + C(n-1, k)
+   C(n, 0) = C(n, n) = 1</pre>
+<p><strong>2) 重叠子问题</strong></p>
+<p>下面是一个直接用上面的公式写的递归程序解决：</p>
+<pre class="brush:cpp">// 直接递归实现
+#include&lt;stdio.h&gt;
+
+// 返回二项式系数的值 C(n, k)
+int binomialCoeff(int n, int k)
+{
+  // 基本情况
+  if (k==0 || k==n)
+    return 1;
+
+  // Recur
+  return  binomialCoeff(n-1, k-1) + binomialCoeff(n-1, k);
+}
+
+/* 测试程序 */
+int main()
+{
+    int n = 5, k = 2;
+    printf("Value of C(%d, %d) is %d ", n, k, binomialCoeff(n, k));
+    return 0;
+}</pre>
+<p>应该指出的是，上面的程序一次又一次计算相同的子问题。看到下面的递归树n = 5 k = 2。函数C(3,1)执行两次。对于较大的n 值,将会有许多共同的子问题。</p>
+<pre class="brush:other">                             C(5, 2)
+                    /                      \
+           C(4, 1)                           C(4, 2)
+            /   \                          /           \
+       C(3, 0)   C(3, 1)             C(3, 1)               C(3, 2)
+                /    \               /     \               /     \
+         C(2, 0)    C(2, 1)      C(2, 0) C(2, 1)          C(2, 1)  C(2, 2)
+                   /        \              /   \            /    \
+               C(1, 0)  C(1, 1)      C(1, 0)  C(1, 1)   C(1, 0)  C(1, 1)</pre>
+<p>很明显，这个问题可以用动态规划来解决，因为包含了动态规划的两个基本属性(见<a href="http://www.acmerblog.com/dynamic-programming-4577.html" rel="bookmark" title="链向 动态规划(1)-重叠子问题的性质 的固定链接">重叠子问题</a>和<a href="http://www.acmerblog.com/optimal-substructure-property-4581.html" rel="bookmark" title="链向 动态规划(2)-最优子结构的性质 的固定链接">最优子结构</a>）</p>
+<p>和经典的动态规划解决办法一样，这里通过自下而上的构建数组 C[][] 保存子问题的值。</p>
+<pre class="brush:cpp">#include&lt;stdio.h&gt;
+int min(int a, int b);
+// 返回二项式系数 C(n, k)
+int binomialCoeff(int n, int k)
+{
+    int C[n+1][k+1];
+    int i, j;
+
+    // 通过自下而上的方式打表
+    for (i = 0; i &lt;= n; i++)
+    {
+        for (j = 0; j &lt;= min(i, k); j++)
+        {
+            if (j == 0 || j == i)
+                C[i][j] = 1;
+             else
+                C[i][j] = C[i-1][j-1] + C[i-1][j];
+        }
+    }
+    return C[n][k];
+}
+int min(int a, int b)
+{
+    return (a&lt;b)? a: b;
+}
+
+/* 测试程序*/
+int main()
+{
+    int n = 5, k = 2;
+    printf ("Value of C(%d, %d) is %d ", n, k, binomialCoeff(n, k) );
+    return 0;
+}</pre>
+<p>时间复杂度: O(n*k)</p>
+<p>空间复杂度: O(n*k)</p>
+<p>其实，空间复杂度可以优化到 O(k).  但是实际应用中，还是直接用二维数组打表使用比较多。</p>
+<pre class="brush:cpp">// 空间优化
+int binomialCoeff(int n, int k)
+{
+    int* C = (int*)calloc(k+1, sizeof(int));
+    int i, j, res;
+
+    C[0] = 1;
+
+    for(i = 1; i &lt;= n; i++)
+    {
+        for(j = min(i, k); j &gt; 0; j--)
+            C[j] = C[j] + C[j-1];
+    }
+    res = C[k];  // 在释放内存前存储结果
+    free(C); 
+    return res;
+}</pre>
+<p>参考：http://www.geeksforgeeks.org/dynamic-programming-set-9-binomial-coefficient/</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-77296">
+<article class="comment" id="comment-77296">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516924" rel="external nofollow">新用户134678</a></span> on <a href="http://www.acmerblog.com/dp9-binomial-coefficient-5131.html#comment-77296" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77295">
+<article class="comment" id="comment-77295">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516924" rel="external nofollow">新用户134678</a></span> on <a href="http://www.acmerblog.com/dp9-binomial-coefficient-5131.html#comment-77295" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77294">
+<article class="comment" id="comment-77294">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516924" rel="external nofollow">新用户134678</a></span> on <a href="http://www.acmerblog.com/dp9-binomial-coefficient-5131.html#comment-77294" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77293">
+<article class="comment" id="comment-77293">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516924" rel="external nofollow">新用户134678</a></span> on <a href="http://www.acmerblog.com/dp9-binomial-coefficient-5131.html#comment-77293" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77292">
+<article class="comment" id="comment-77292">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516924" rel="external nofollow">新用户134678</a></span> on <a href="http://www.acmerblog.com/dp9-binomial-coefficient-5131.html#comment-77292" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77291">
+<article class="comment" id="comment-77291">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516924" rel="external nofollow">新用户134678</a></span> on <a href="http://www.acmerblog.com/dp9-binomial-coefficient-5131.html#comment-77291" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77290">
+<article class="comment" id="comment-77290">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516924" rel="external nofollow">新用户134678</a></span> on <a href="http://www.acmerblog.com/dp9-binomial-coefficient-5131.html#comment-77290" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77289">
+<article class="comment" id="comment-77289">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516924" rel="external nofollow">新用户134678</a></span> on <a href="http://www.acmerblog.com/dp9-binomial-coefficient-5131.html#comment-77289" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77288">
+<article class="comment" id="comment-77288">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516924" rel="external nofollow">新用户134678</a></span> on <a href="http://www.acmerblog.com/dp9-binomial-coefficient-5131.html#comment-77288" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77287">
+<article class="comment" id="comment-77287">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516924" rel="external nofollow">新用户134678</a></span> on <a href="http://www.acmerblog.com/dp9-binomial-coefficient-5131.html#comment-77287" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48683">
+<article class="comment" id="comment-48683">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1173954900</a></span> on <a href="http://www.acmerblog.com/dp9-binomial-coefficient-5131.html#comment-48683" rel="nofollow"><time datetime="2015-05-14T07:09:09+00:00" pubdate="">2015年5月14日 at 上午7:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第36行，struct node **head_ref，怎么理解，那个函数感觉不是很懂啊！？？弱渣求助</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48680">
+<article class="comment" id="comment-48680">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">H.Watson</a></span> on <a href="http://www.acmerblog.com/dp9-binomial-coefficient-5131.html#comment-48680" rel="nofollow"><time datetime="2015-05-06T05:48:02+00:00" pubdate="">2015年5月6日 at 上午5:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这种题解就相当于直接贴代码了，，想看的是思路</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29209">
+<article class="comment" id="comment-29209">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Rocky</a></span> on <a href="http://www.acmerblog.com/dp9-binomial-coefficient-5131.html#comment-29209" rel="nofollow"><time datetime="2015-01-31T12:39:49+00:00" pubdate="">2015年1月31日 at 下午12:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>DFS方法的原理还是不太清楚啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29208">
+<article class="comment" id="comment-29208">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">123456789_xd</a></span> on <a href="http://www.acmerblog.com/dp9-binomial-coefficient-5131.html#comment-29208" rel="nofollow"><time datetime="2015-01-09T18:17:38+00:00" pubdate="">2015年1月9日 at 下午6:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好网站，肯定会火的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29207">
+<article class="comment" id="comment-29207">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bai</a></span> on <a href="http://www.acmerblog.com/dp9-binomial-coefficient-5131.html#comment-29207" rel="nofollow"><time datetime="2014-12-11T22:35:40+00:00" pubdate="">2014年12月11日 at 下午10:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>太好了，收藏</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48681">
+<article class="comment" id="comment-48681">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Rosamondwu</a></span> on <a href="http://www.acmerblog.com/dp9-binomial-coefficient-5131.html#comment-48681" rel="nofollow"><time datetime="2014-11-06T05:56:48+00:00" pubdate="">2014年11月6日 at 上午5:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不对吧 你算的an是前面说有的项的和</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63414">
+<article class="comment" id="comment-63414">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">April</a></span> on <a href="http://www.acmerblog.com/dp9-binomial-coefficient-5131.html#comment-63414" rel="nofollow"><time datetime="2014-11-04T12:29:08+00:00" pubdate="">2014年11月4日 at 下午12:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我得邮箱cwqbupt@qq.com</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48679">
+<article class="comment" id="comment-48679">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">winter</a></span> on <a href="http://www.acmerblog.com/dp9-binomial-coefficient-5131.html#comment-48679" rel="nofollow"><time datetime="2014-09-06T22:32:03+00:00" pubdate="">2014年9月6日 at 下午10:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈呀！这个Dijkstra模板好长OwQ！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48677">
+<article class="comment" id="comment-48677">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">siaswj</a></span> on <a href="http://www.acmerblog.com/dp9-binomial-coefficient-5131.html#comment-48677" rel="nofollow"><time datetime="2014-06-03T06:36:19+00:00" pubdate="">2014年6月3日 at 上午6:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48682">
+<article class="comment" id="comment-48682">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiao1108</a></span> on <a href="http://www.acmerblog.com/dp9-binomial-coefficient-5131.html#comment-48682" rel="nofollow"><time datetime="2014-05-16T23:49:50+00:00" pubdate="">2014年5月16日 at 下午11:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48678">
+<article class="comment" id="comment-48678">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Riddick</a></span> on <a href="http://www.acmerblog.com/dp9-binomial-coefficient-5131.html#comment-48678" rel="nofollow"><time datetime="2014-04-11T08:14:42+00:00" pubdate="">2014年4月11日 at 上午8:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个解法好像不对</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-234">
+<article class="comment" id="comment-234">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">易阳</span> on <a href="http://www.acmerblog.com/dp9-binomial-coefficient-5131.html#comment-234" rel="nofollow"><time datetime="2014-03-20T00:53:45+00:00" pubdate="">2014年3月20日 at 上午12:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不是有公式吗？何不直接计算</p>
+</div>
+</article><!-- #comment-## -->
+<ul class="children">
+<li class="comment byuser comment-author-admin bypostauthor even depth-2" id="li-comment-235">
+<article class="comment" id="comment-235">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://weibo.com/itong2055" rel="external nofollow">管理员</a></span> on <a href="http://www.acmerblog.com/dp9-binomial-coefficient-5131.html#comment-235" rel="nofollow"><time datetime="2014-03-20T10:07:39+00:00" pubdate="">2014年3月20日 at 上午10:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可以用公式。主要为了说明动态规划，如果要打表的话，这种方法也是较简单和高效的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ul><!-- .children -->
+</li><!-- #comment-## -->
+</ol>

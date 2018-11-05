@@ -1,0 +1,371 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>11-13</div>
+<div class="tit"><h1 class="entry-title">POJ 3657 Haybale Guessing [解题报告] Java</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/zhuanti/java-poj" rel="category tag" title="查看Java解POJ中的全部文章">Java解POJ</a>, <a href="http://www.acmerblog.com/category/problemset/poj2" rel="category tag" title="查看POJ-北大中的全部文章">POJ-北大</a>, <a href="http://www.acmerblog.com/category/data-struct/union-find" rel="category tag" title="查看并查集中的全部文章">并查集</a>, <a href="http://www.acmerblog.com/category/data-struct/trees" rel="category tag" title="查看树形结构中的全部文章">树形结构</a></span><span class="i4">围观2063次</span><span class="i3"><a class="ds-thread-count" data-thread-key="1118" href="http://www.acmerblog.com/POJ-3657-Haybale-Guessing-blog-1118.html#comments" title="《POJ 3657 Haybale Guessing [解题报告] Java》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Haybale Guessing</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+<div>
+<p>The cows, who always have an inferiority complex about their intelligence, have a new guessing game to sharpen their brains.</p>
+<p>A designated ‘Hay Cow’ hides behind the barn and creates <i>N</i> (1 ≤ <i>N</i> ≤ 1,000,000) uniquely-sized stacks (conveniently numbered 1..<i>N</i>) of hay bales, each with 1..1,000,000,000 bales of hay.</p>
+<p>The other cows then ask the Hay Cow a series of <i>Q</i> (1 ≤ <i>Q</i> ≤ 25,000) questions about the the stacks, all having the same form:</p>
+<blockquote><p>What is the smallest number of bales of any stack in the range of stack numbers <i>Q</i><sub>l</sub>..<i>Q<sub>h</sub></i> (1 ≤ <i>Q</i><sub>l</sub> ≤ <i>N</i>; <i>Q</i><sub>l</sub> ≤ <i>Q<sub>h</sub></i> ≤ <i>N</i>)?</p></blockquote>
+<p>The Hay Cow answers each of these queries with a single integer <i>A</i> whose truthfulness is not guaranteed.</p>
+<p>Help the other cows determine if the answers given by the Hay Cow are self-consistent or if certain answers contradict others.</p>
+</div></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+<p>* Line 1: Two space-separated integers: <i>N</i> and <i>Q</i><br/>* Lines 2..<i>Q</i>+1: Each line contains three space-separated integers that represent a single query and its reply: <i>Q</i><sub>l</sub>, <i>Q<sub>h</sub></i>, and <i>A</i></p>
+</div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+<p>* Line 1: Print the single integer 0 if there are no inconsistencies among the replies (i.e., if there exists a valid realization of the hay stacks that agrees with all Q queries). Otherwise, print the index from 1..Q of the earliest query whose answer is inconsistent with the answers to the queries before it.</p>
+</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+20 4
+1 10 7
+5 19 7
+3 12 8
+11 15 12
+</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+3
+</pre>
+<div class="mybigtile mysubmit"> <a href="http://poj.org/submit?problem_id=3657">提交代码</a>   <a href="http://poj.org/bbs?problem_id=3657">问题讨论</a>   <a href="http://poj.org/problemstatus?problem_id=3657">数据统计</a> </div>
+<div>
+<p class="mytitle"> 解题代码:</p>
+</div>
+<pre class="brush:java ">//* @author 
+/*题目问题可以转化为判断questions是否矛盾, 然后二分找到最先发生矛盾的question.
+ *那如何判断矛盾? 若我们把questions依照Ai值从大到小的顺序进行区间覆盖, 若一个区间加入时,
+ * 此区间已被完全覆盖, 则说明此区间的取 
+
+*值均比Ai大, 故questions矛盾, 否则一定可以构造出一个取值分布. 
+ *区间覆盖最好的方法应该是线段树, 然而此题只需要判断某段区间是否被覆盖, 所以可以用并查集维护. 
+ *复杂度O(aQlogQ)(a为并查集系数)
+  */
+/**
+ * @version 2009/08/22
+ * @author sbzlyessit
+ */
+
+import java.io.*;
+import java.util.*;
+
+public class Main {
+
+    private static final int        MAX_N = 25000;
+
+    private static BufferedReader   in =
+            new BufferedReader(new InputStreamReader(System.in));
+    private static StringTokenizer  st;
+    private static int[][]          que = new int[MAX_N][3];
+    private static int[]            x = new int[2 * MAX_N];
+    private static Integer[]        list = new Integer[MAX_N];
+    private static int[]            r = new int[2 * MAX_N];
+    private static boolean[]        used = new boolean[2 * MAX_N];
+    private static int              N, xSize;
+
+    public static void main(String[] argv) throws Exception {
+        readIn();
+        solve();
+    }
+
+    private static void readIn() throws Exception {
+        int i, temp;
+        nextInt();
+        N = nextInt();
+        for (xSize = 0, i = 0; i &lt; N; i++) {
+            que[i][0] = x[xSize++] = nextInt();
+            que[i][1] = x[xSize++] = nextInt() + 1;
+            que[i][2] = nextInt();
+            list[i] = i;
+        }
+        Arrays.sort(x, 0, xSize);
+        for (temp = xSize, xSize = i = 1; i &lt; temp; i++) {
+            if (x[i] != x[i - 1]) {
+                x[xSize++] = x[i];
+            }
+        }
+        for (i = 0; i &lt; N; i++) {
+            que[i][0] = Arrays.binarySearch(x, 0, xSize, que[i][0]);
+            que[i][1] = Arrays.binarySearch(x, 0, xSize, que[i][1]);
+        }
+        Arrays.sort(list, 0, N, new Comparator<integer>(){
+            public int compare(Integer a, Integer b) {
+                return que[a][2] &lt; que[b][2] ? 1 : -1;
+            }
+        });
+    }
+
+    private static void solve() {
+        int min = 0, max = N - 1, mid;
+        while (min &lt; max) {
+            mid = (min + max + 1) / 2;
+            if (check(mid)) {
+                min = mid;
+            } else {
+                max = mid - 1;
+            }
+        }
+        if (min == N - 1) {
+            System.out.println(0);
+        } else {
+            System.out.println(min + 2);
+        }
+    }
+
+    private static boolean check(int pos) {
+        int     i, j, x, min, max;
+        boolean found;
+        for (i = 0; i &lt; xSize - 1; i++) {
+            r[i] = -1;
+            used[i] = false;
+        }
+        for (i = 0; i &lt; N; i++) {
+            x = list[i];
+            if (i == 0 || que[x][2] != que[list[i - 1]][2]) {
+                min = Integer.MIN_VALUE;
+                max = Integer.MAX_VALUE;
+                for (j = i; j &lt; N &amp;&amp; que[list[j]][2] == que[x][2]; j++) {
+                    if (list[j] &lt;= pos) {
+                        min = Math.max(min, que[list[j]][0]);
+                        max = Math.min(max, que[list[j]][1]);
+                    }
+                }
+                if (min != Integer.MIN_VALUE) {
+                    for (found = false, j = min; j &lt; max; j++) {
+                        if (!used[j]) {
+                            used[j] = found = true;
+                            insert(j);
+                        }
+                        j = find(j);
+                    }
+                    if (!found) {
+                        return false;
+                    }
+                }
+            }
+            if (x &lt;= pos) {
+                for (j = que[x][0]; j &lt; que[x][1]; j++) {
+                    if (!used[j]) {
+                        used[j] = true;
+                        insert(j);
+                    }
+                    j = find(j);
+                }
+            }
+        }
+        return true;
+    }
+
+    private static void insert(int pos) {
+        if (pos &gt; 0 &amp;&amp; used[pos - 1]) {
+            r[pos - 1] = pos;
+        }
+        if (pos &lt; xSize - 2 &amp;&amp; used[pos + 1]) {
+            r[pos] = find(pos + 1);
+        }
+    }
+
+    private static int find(int x) {
+        int y = x, z;
+        while (r[y] != -1) {
+            y = r[y];
+        }
+        while (x != y) {
+            z = x;
+            x = r[x];
+            r[z] = y;
+        }
+        return y;
+    }
+
+    private static int nextInt() throws Exception {
+        while (st == null || !st.hasMoreTokens()) {
+            st = new StringTokenizer(in.readLine());
+        }
+        return Integer.parseInt(st.nextToken());
+    }
+
+}</integer></pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-53896">
+<article class="comment" id="comment-53896">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Dick</a></span> on <a href="http://www.acmerblog.com/POJ-3657-Haybale-Guessing-blog-1118.html#comment-53896" rel="nofollow"><time datetime="2015-04-22T19:08:21+00:00" pubdate="">2015年4月22日 at 下午7:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>根本过不了。。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-9950">
+<article class="comment" id="comment-9950">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jixiangniao993</a></span> on <a href="http://www.acmerblog.com/POJ-3657-Haybale-Guessing-blog-1118.html#comment-9950" rel="nofollow"><time datetime="2015-04-21T18:49:22+00:00" pubdate="">2015年4月21日 at 下午6:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>网站不错，支持一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-9945">
+<article class="comment" id="comment-9945">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jiakcstudio</a></span> on <a href="http://www.acmerblog.com/POJ-3657-Haybale-Guessing-blog-1118.html#comment-9945" rel="nofollow"><time datetime="2015-04-12T10:23:21+00:00" pubdate="">2015年4月12日 at 上午10:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>此题的样例描述不正确</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-53897">
+<article class="comment" id="comment-53897">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ycaxgjd</a></span> on <a href="http://www.acmerblog.com/POJ-3657-Haybale-Guessing-blog-1118.html#comment-53897" rel="nofollow"><time datetime="2015-03-14T12:22:39+00:00" pubdate="">2015年3月14日 at 下午12:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>原来欧几里德定理应用这么多</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-9944">
+<article class="comment" id="comment-9944">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">czw8528</a></span> on <a href="http://www.acmerblog.com/POJ-3657-Haybale-Guessing-blog-1118.html#comment-9944" rel="nofollow"><time datetime="2015-02-27T20:15:08+00:00" pubdate="">2015年2月27日 at 下午8:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>约瑟夫也用说这么长……很成熟的一个问题了，分治的方法解起来o(n)就可以了，有兴趣可以看看具体数学的第一章，关于约瑟夫问题推导出了一系列的结论，很漂亮</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-9946">
+<article class="comment" id="comment-9946">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Miracle-cc</a></span> on <a href="http://www.acmerblog.com/POJ-3657-Haybale-Guessing-blog-1118.html#comment-9946" rel="nofollow"><time datetime="2014-11-30T09:58:09+00:00" pubdate="">2014年11月30日 at 上午9:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，感谢分享。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-9952">
+<article class="comment" id="comment-9952">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">943965021</a></span> on <a href="http://www.acmerblog.com/POJ-3657-Haybale-Guessing-blog-1118.html#comment-9952" rel="nofollow"><time datetime="2014-10-19T10:10:38+00:00" pubdate="">2014年10月19日 at 上午10:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Thanks for taking the time to examine this, I really feel strongly about it and love studying a lot more on this topic. If possible, as you acquire experience</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-9953">
+<article class="comment" id="comment-9953">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">youpushipop</a></span> on <a href="http://www.acmerblog.com/POJ-3657-Haybale-Guessing-blog-1118.html#comment-9953" rel="nofollow"><time datetime="2014-10-13T06:56:38+00:00" pubdate="">2014年10月13日 at 上午6:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我又来学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-9949">
+<article class="comment" id="comment-9949">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tangxiansheng</a></span> on <a href="http://www.acmerblog.com/POJ-3657-Haybale-Guessing-blog-1118.html#comment-9949" rel="nofollow"><time datetime="2014-08-14T22:00:08+00:00" pubdate="">2014年8月14日 at 下午10:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>能不能说下这个是用的什么算法策略？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-9951">
+<article class="comment" id="comment-9951">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">geoksz</a></span> on <a href="http://www.acmerblog.com/POJ-3657-Haybale-Guessing-blog-1118.html#comment-9951" rel="nofollow"><time datetime="2014-03-19T11:49:48+00:00" pubdate="">2014年3月19日 at 上午11:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这一题的代码这样提交时错误的~少考虑了很多情况</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-39293">
+<article class="comment" id="comment-39293">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1193658339</a></span> on <a href="http://www.acmerblog.com/POJ-3657-Haybale-Guessing-blog-1118.html#comment-39293" rel="nofollow"><time datetime="2014-01-24T16:36:12+00:00" pubdate="">2014年1月24日 at 下午4:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我觉得是D哎……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-9947">
+<article class="comment" id="comment-9947">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fermi</a></span> on <a href="http://www.acmerblog.com/POJ-3657-Haybale-Guessing-blog-1118.html#comment-9947" rel="nofollow"><time datetime="2013-12-14T20:11:25+00:00" pubdate="">2013年12月14日 at 下午8:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>前排支持</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-9948">
+<article class="comment" id="comment-9948">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hwp</a></span> on <a href="http://www.acmerblog.com/POJ-3657-Haybale-Guessing-blog-1118.html#comment-9948" rel="nofollow"><time datetime="2013-12-04T17:30:09+00:00" pubdate="">2013年12月4日 at 下午5:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#include &lt;stdio.h&gt;<br/>
+int main(void)<br/>
+{<br/>
+int arr[] = {10,20,30,40,50,60};<br/>
+int *p=arr;<br/>
+printf("%d,%d,",*p++,*++p);<br/>
+printf("%d,%d,%d",*p,*p++,*++p);<br/>
+return 0;<br/>
+}</p>
+<p>为什么是 20,20,50,40,50. 我觉得的应该是 20,20,40,40,50 . 谁能解释下？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-3">
+<article class="comment" id="comment-3">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">haybale</span> on <a href="http://www.acmerblog.com/POJ-3657-Haybale-Guessing-blog-1118.html#comment-3" rel="nofollow"><time datetime="2013-11-14T22:37:12+00:00" pubdate="">2013年11月14日 at 下午10:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>代码过于复杂了吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

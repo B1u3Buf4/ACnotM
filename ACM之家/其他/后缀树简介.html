@@ -1,0 +1,213 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>10-04</div>
+<div class="tit"><h1 class="entry-title">后缀树简介</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/basis/string" rel="category tag" title="查看字符串处理中的全部文章">字符串处理</a>, <a href="http://www.acmerblog.com/category/data-struct/trees" rel="category tag" title="查看树形结构中的全部文章">树形结构</a></span><span class="i4">围观1922次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6152" href="http://www.acmerblog.com/suffix-tree-6152.html#comments" title="《后缀树简介》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<h2><strong>模式匹配问题</strong></h2>
+<p>给定一个文本text[0...n-1], 和一个模式串 pattern[0...m-1]，写一个函数 search(char pattern[], char text[]), 打印出pattern在text中出现的所有位置(n &gt; m)。</p>
+<p>这个问题已经有两个经典的算法：<a href="http://www.acmerblog.com/kmp-algorithm-4407.html" rel="bookmark" target="_blank" title="链向 常用算法-KMP算法[含代码] 的固定链接">KMP算法</a> ，<a href="http://www.acmerblog.com/finite-automata-5804.html" rel="bookmark" target="_blank" title="链向 模式匹配-有限自动机 的固定链接">有限自动机</a>，前者是对模式串pattern做预处理，后者是对待查证文本text做预处理。在进行完预处理后，可以到达O(n)的时间复杂度，n是text的长度。</p>
+<p>后缀树可以用对text进行预处理，构造一个text的后缀树，就可以在 O(m) 的时间内搜索任意一个pattern，m是模式串pattern的长度。</p>
+<h2><strong>后缀字典树</strong></h2>
+<p>想象一下，你刚成为一个DNA序列化项目中的程序员。研究人员正在对病毒的遗传物质进行切片和切块，以产生核苷酸序列的片段。他们把这些遗传物质序列片段送人你的服务器进行匹配，希望能够在基因组数据库中定位到这些序列。一个特定的病毒的基因组可能有数十万的核苷酸，并且在你的数据库中存储了成千上万的病毒的信息。希望你能够实现一个C/S结构的项目，来实时的为研究人员提供服务。怎么做才比较好呢？</p>
+<p>因为数据库是不变的，所以对它进行预处理以使得搜索变得简单。一种预处理的方式是建立一个<a href="http://www.acmerblog.com/trie-tree-template-3700.html" rel="bookmark" target="_blank" title="链向 字典树(Trie树)基础模版 的固定链接">字典树(Trie树)</a> ，该字典树中存放的是给定字符串的所有后缀，用这种方式生成的字典树，称为<strong>后缀字典树（suffix trie）</strong>，后缀字典树只差一步就是我最终要引入的数据结构——后缀树。字典树是一种N叉树，其中N是字母表的大小。</p>
+<p>对于字符串：<strong>“banana\0″ </strong>的所有后缀为：</p>
+<pre class="brush:other">banana\0
+anana\0
+nana\0
+ana\0
+na\0
+a\0
+\0</pre>
+<p>其标准的后缀字典树结构是这样的：</p>
+<p><a href="http://cdn.acmerblog.com/wp-content/uploads/2014/10/suffixtrie.png"><img alt="suffixtrie" height="298" src="http://cdn.acmerblog.com/wp-content/uploads/2014/10/suffixtrie.png" width="542"/></a></p>
+<p>很显然，有了这样的一个树，我只需要4次字符比较就可以确定pattern：“nana”是否出现。当然仅仅有一个小问题会拖后腿儿，那就是创建字典树所耗费的时间。</p>
+<p>但是，构造后缀字典树需要O(N<strong><sup>2</sup></strong>)时间和空间复杂度。这种平方级的性能使它不能在最需要用到它的地方使用，即不能在大数据量场合使用。</p>
+<h2><strong>后缀树</strong></h2>
+<p>Edward McCreight 在1976年提出了一个合理的解决方法摆脱了后缀字典树在应用上的困境，他发表的论文中提出了<strong>后缀树（suffix tree）</strong>。</p>
+<p><strong>一个给定的文本text的后缀树就是一个压缩的后缀字典树。</strong>压缩至的是路径压缩，去除了只有一个子边的节点。例如对上上图中最左边的 <strong>banana\0  </strong>,即为一个没有分叉的单边，可以进行压缩：</p>
+<p><a href="http://cdn.acmerblog.com/wp-content/uploads/2014/10/suffix-tree.png"><img alt="suffix-tree" class="alignnone wp-image-6157" height="208" src="http://cdn.acmerblog.com/wp-content/uploads/2014/10/suffix-tree.png" width="389"/></a></p>
+<p>上面这个图是靠是手动生成的，实际上这里还是有一些比较复杂的算法，后续再做讨论。节点数量的减少，使构造后缀树的时间和空间复杂度从O(N<sup>2</sup>)减少到了O(N)。在最坏的情况下，一个后缀树最多包含2N个节点，其中N是输入文本的长度。所以对输入文本的一次性投资，可以使我们的每次搜索都受益。</p>
+<h2><strong>应用</strong></h2>
+<p>(1). 查找字符串o是否在字符串S中。<br/>
+方案：用S构造后缀树，按在trie中搜索字串的方法搜索o即可。<br/>
+原理：若o在S中，则o必然是S的某个后缀的前缀。<br/>
+例如S: leconte，查找o: con是否在S中,则o(con)必然是S(leconte)的后缀之一conte的前缀.有了这个前提，采用trie搜索的方法就不难理解了。<br/>
+(2). 指定字符串T在字符串S中的重复次数。<br/>
+方案：用S+’$’构造后缀树，搜索T节点下的叶节点数目即为重复次数<br/>
+原理：如果T在S中重复了两次，则S应有两个后缀以T为前缀，重复次数就自然统计出来了。<br/>
+(3). 字符串S中的最长重复子串<br/>
+方案：原理同2，具体做法就是找到最深的非叶节点。<br/>
+这个深是指从root所经历过的字符个数，最深非叶节点所经历的字符串起来就是最长重复子串。<br/>
+为什么要非叶节点呢?因为既然是要重复，当然叶节点个数要&gt;=2。<br/>
+(4). 两个字符串S1，S2的最长公共部分<br/>
+方案：将S1#S2$作为字符串压入后缀树，找到最深的非叶节点，且该节点的叶节点既有#也有$(无#)。</p>
+<p>参考：<a href="http://blog.csdn.net/fanzitao/article/details/8042015">http://blog.csdn.net/fanzitao/article/details/8042015</a></p>
+<p><a href="http://www.geeksforgeeks.org/pattern-searching-set-8-suffix-tree-introduction/">http://www.geeksforgeeks.org/pattern-searching-set-8-suffix-tree-introduction/</a></p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75056">
+<article class="comment" id="comment-75056">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919531056" rel="external nofollow">新用户805831</a></span> on <a href="http://www.acmerblog.com/suffix-tree-6152.html#comment-75056" rel="nofollow"><time datetime="2017-04-12T03:53:51+00:00" pubdate="">2017年4月12日 at 上午3:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>但毕竟没让别人再写几个一样的瓶子扔出去。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49581">
+<article class="comment" id="comment-49581">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jupiterhyun</a></span> on <a href="http://www.acmerblog.com/suffix-tree-6152.html#comment-49581" rel="nofollow"><time datetime="2015-06-11T04:45:35+00:00" pubdate="">2015年6月11日 at 上午4:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Thanks for taking the time to examine this, I really feel strongly about it and love studying a lot more on this topic. If possible, as you acquire experience</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49587">
+<article class="comment" id="comment-49587">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sum_tsai</a></span> on <a href="http://www.acmerblog.com/suffix-tree-6152.html#comment-49587" rel="nofollow"><time datetime="2015-05-22T02:41:54+00:00" pubdate="">2015年5月22日 at 上午2:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>题本身没错，但是HDOJ放题目的时候，前面有个题目解释了什么是XXX定律。<br/>
+这里直接放了这个题目，肯定没几个人明白是干啥</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58897">
+<article class="comment" id="comment-58897">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sam_justin</a></span> on <a href="http://www.acmerblog.com/suffix-tree-6152.html#comment-58897" rel="nofollow"><time datetime="2015-03-29T06:53:23+00:00" pubdate="">2015年3月29日 at 上午6:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49582">
+<article class="comment" id="comment-49582">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zjd1988</a></span> on <a href="http://www.acmerblog.com/suffix-tree-6152.html#comment-49582" rel="nofollow"><time datetime="2015-03-24T09:10:11+00:00" pubdate="">2015年3月24日 at 上午9:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不同的编译器，printf(),执行的顺序不同，所以结果也就不同，建议不要那么写</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49589">
+<article class="comment" id="comment-49589">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiao1108</a></span> on <a href="http://www.acmerblog.com/suffix-tree-6152.html#comment-49589" rel="nofollow"><time datetime="2015-03-16T13:42:13+00:00" pubdate="">2015年3月16日 at 下午1:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法挺不错。NewHead代表新的头节点，通过递归找到最后一个节点之后，就把这个节点赋给NewHead，然后一直返回返回，中途这个值是没有变化的，一边返回一边把相应的指针方向颠倒，最后结束时返回新的头节点到主函数。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49590">
+<article class="comment" id="comment-49590">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">becool456</a></span> on <a href="http://www.acmerblog.com/suffix-tree-6152.html#comment-49590" rel="nofollow"><time datetime="2015-03-09T22:19:54+00:00" pubdate="">2015年3月9日 at 下午10:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，现在就缺少新的资料</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49588">
+<article class="comment" id="comment-49588">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">April</a></span> on <a href="http://www.acmerblog.com/suffix-tree-6152.html#comment-49588" rel="nofollow"><time datetime="2015-02-26T18:24:53+00:00" pubdate="">2015年2月26日 at 下午6:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>沙发呢，我抢到了沙发</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49583">
+<article class="comment" id="comment-49583">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tangxiansheng</a></span> on <a href="http://www.acmerblog.com/suffix-tree-6152.html#comment-49583" rel="nofollow"><time datetime="2015-02-03T20:29:04+00:00" pubdate="">2015年2月3日 at 下午8:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，就是把这32位当成一个长度为32的数</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49586">
+<article class="comment" id="comment-49586">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zzzzzz</a></span> on <a href="http://www.acmerblog.com/suffix-tree-6152.html#comment-49586" rel="nofollow"><time datetime="2015-01-22T12:42:46+00:00" pubdate="">2015年1月22日 at 下午12:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>题本身没错，但是HDOJ放题目的时候，前面有个题目解释了什么是XXX定律。<br/>
+这里直接放了这个题目，肯定没几个人明白是干啥</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49580">
+<article class="comment" id="comment-49580">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Trenson</a></span> on <a href="http://www.acmerblog.com/suffix-tree-6152.html#comment-49580" rel="nofollow"><time datetime="2014-12-23T20:00:18+00:00" pubdate="">2014年12月23日 at 下午8:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正解，应该是200！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49579">
+<article class="comment" id="comment-49579">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">keyyuanxin</a></span> on <a href="http://www.acmerblog.com/suffix-tree-6152.html#comment-49579" rel="nofollow"><time datetime="2014-11-29T01:04:45+00:00" pubdate="">2014年11月29日 at 上午1:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感觉这里的评分标准没啥作用阿，反而显得显得赘余，还不如直接去掉好了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58896">
+<article class="comment" id="comment-58896">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Klaus</a></span> on <a href="http://www.acmerblog.com/suffix-tree-6152.html#comment-58896" rel="nofollow"><time datetime="2014-11-25T22:00:27+00:00" pubdate="">2014年11月25日 at 下午10:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>题目和代码都不一样好吗！！！搞错了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49584">
+<article class="comment" id="comment-49584">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">crazymage</a></span> on <a href="http://www.acmerblog.com/suffix-tree-6152.html#comment-49584" rel="nofollow"><time datetime="2014-10-09T12:53:23+00:00" pubdate="">2014年10月9日 at 下午12:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是研发的在线笔试题吗?发现很多C啊，阿里不是JAVA多么？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49585">
+<article class="comment" id="comment-49585">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tangxiansheng</a></span> on <a href="http://www.acmerblog.com/suffix-tree-6152.html#comment-49585" rel="nofollow"><time datetime="2014-10-05T01:50:46+00:00" pubdate="">2014年10月5日 at 上午1:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢支持！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

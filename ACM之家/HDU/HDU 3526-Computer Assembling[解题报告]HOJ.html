@@ -1,0 +1,344 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>11-05</div>
+<div class="tit"><h1 class="entry-title">HDU 3526-Computer Assembling[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观242次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6487" href="http://www.acmerblog.com/hdu-3526-computer-assembling-6487.html#comments" title="《HDU 3526-Computer Assembling[解题报告]HOJ》上的评论">18 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Computer Assembling</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+XiaoA is becoming more and more unsatisfied with his computer since he is learning hacker technologies these days but his computer always fails whenever he changes the configurations of the NIC. He buys a new NIC but the motherboard doesn’t recognize it. He then pays for a motherboard from the same company as the NIC. This time the display card is in collision with the motherboard so he cannot even start his computer.<br/>After days of affliction, XiaoA decides to assemble a computer himself. He has to buy n components. Two companies are finally chosen after he searches the web. They both offer all the n components but the prices may vary. There are some pairs of components such that if XiaoA buys them from different companies he has to spend an additional fee to buy adapters to avoid the collision problem.<br/>XiaoA wants to spend as little as possible. Please tell him the minimum dollars he has to pay. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+There are multiple test cases.<br/>For each test case, the first line contains two integers n and m(1&lt;=n&lt;=500, 0&lt;=m&lt;=n*(n-1)/2), indicating the number of components and the number of pairs. The components are conveniently numbered from 1 to n and all pairs are distinct. The next two lines both have n integers(in the range [1, 200]), describing the price in dollar for each component they offer in order. The next m lines contain three integers i, j and c(1&lt;=i, j&lt;=n, i!=j, 1&lt;=c&lt;=200) each, indicating that if he buys component i and j from different companies, he has to spend another c dollars for an adapter.<br/>Proceed to the end of file. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+There are multiple test cases.<br/>For each test case, the first line contains two integers n and m(1&lt;=n&lt;=500, 0&lt;=m&lt;=n*(n-1)/2), indicating the number of components and the number of pairs. The components are conveniently numbered from 1 to n and all pairs are distinct. The next two lines both have n integers(in the range [1, 200]), describing the price in dollar for each component they offer in order. The next m lines contain three integers i, j and c(1&lt;=i, j&lt;=n, i!=j, 1&lt;=c&lt;=200) each, indicating that if he buys component i and j from different companies, he has to spend another c dollars for an adapter.<br/>Proceed to the end of file.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+5 3
+2 3 4 5 2
+1 5 3 6 4
+1 2 3
+2 3 5
+3 4 2</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+16</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include &lt;iostream&gt;
+#include &lt;string.h&gt;
+#include &lt;stdio.h&gt;
+#define min(a, b) ((a) &lt; (b) ? (a) : (b))
+using namespace std;
+const int maxn = 505;
+const int maxm = maxn * maxn * 2;
+const int inf = 0x3f3f3f3f;
+
+int pt[maxm], next[maxm], head[maxn], flow[maxm];
+int level[maxn], queue[maxn], pos;
+int n, m;
+
+void AddEdge(int a, int b, int c)
+{
+	pt[++pos] = b;
+	next[pos] = head[a];
+	head[a] = pos;
+	flow[pos] = c;
+}
+
+void Connect(int a, int b, int c)
+{
+	AddEdge(a, b, c);
+	AddEdge(b, a, 0);
+}
+
+bool bfs(int s, int t)
+{
+	int qs, qe, v, e;
+	memset (level, 0, sizeof level);
+	qs = qe = 0;
+	queue[qe++] = s;
+	level[s] = 1;
+	while (qs &lt; qe)
+	{
+		v = queue[qs++];
+		for (e = head[v]; e != -1; e = next[e])
+			if (flow[e] &gt; 0 &amp;&amp; level[pt[e]] == 0)
+			{
+				queue[qe++] = pt[e];
+				level[pt[e]] = level[v] + 1;
+			}
+	}
+	return level[t] &gt; 0;
+}
+
+int Update(int v, int t, int tmpflow)
+{
+	int e, tmp, res = 0;
+	if (v == t) return tmpflow;
+	for (e = head[v]; e != -1; e = next[e])
+		if (flow[e] &gt; 0 &amp;&amp; level[pt[e]] == level[v] + 1)
+		{
+			tmp = Update(pt[e], t, min(flow[e], tmpflow));
+			flow[e] -= tmp; flow[e^1] += tmp;
+			res += tmp; tmpflow -= tmp;
+			if (tmpflow == 0) break;
+		}
+	level[v] = -1;
+	return res;
+}
+
+int dinic(int s, int t)
+{
+	int res = 0;
+	while (bfs(s, t))
+		res += Update(s, t, inf);
+	return res;
+}
+
+void init()
+{
+	int i, a, b, c;
+	pos = -1;
+	memset (head, -1, sizeof head);
+	for (i = 1; i &lt;= n; i++)
+	{
+		scanf("%d", &amp;a);
+		Connect(0, i, a);
+	}
+	for (i = 1; i &lt;= n; i++)
+	{
+		scanf("%d", &amp;a);
+		Connect(i, n + 1, a);
+	}
+	for (i = 0; i &lt; m; i++)
+	{
+		scanf ("%d%d%d", &amp;a, &amp;b, &amp;c);
+		AddEdge(a, b, c);
+		AddEdge(b, a, c);
+	}
+}
+
+void Solve()
+{
+	int res = dinic(0, n + 1);
+	printf("%d\n", res);
+}
+
+int main()
+{
+	while (scanf ("%d%d", &amp;n, &amp;m) != EOF)
+	{
+		init();
+		Solve();
+	}
+	return 0;
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75034">
+<article class="comment" id="comment-75034">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919523140" rel="external nofollow">新用户768878</a></span> on <a href="http://www.acmerblog.com/hdu-3526-computer-assembling-6487.html#comment-75034" rel="nofollow"><time datetime="2017-04-12T03:53:50+00:00" pubdate="">2017年4月12日 at 上午3:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>go AGAiN!</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75033">
+<article class="comment" id="comment-75033">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919523140" rel="external nofollow">新用户768878</a></span> on <a href="http://www.acmerblog.com/hdu-3526-computer-assembling-6487.html#comment-75033" rel="nofollow"><time datetime="2017-04-12T03:53:50+00:00" pubdate="">2017年4月12日 at 上午3:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>go AGAiN!</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75032">
+<article class="comment" id="comment-75032">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919523140" rel="external nofollow">新用户768878</a></span> on <a href="http://www.acmerblog.com/hdu-3526-computer-assembling-6487.html#comment-75032" rel="nofollow"><time datetime="2017-04-12T03:53:50+00:00" pubdate="">2017年4月12日 at 上午3:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>go AGAiN!</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75031">
+<article class="comment" id="comment-75031">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919523140" rel="external nofollow">新用户768878</a></span> on <a href="http://www.acmerblog.com/hdu-3526-computer-assembling-6487.html#comment-75031" rel="nofollow"><time datetime="2017-04-12T03:53:50+00:00" pubdate="">2017年4月12日 at 上午3:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>go AGAiN!</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30917">
+<article class="comment" id="comment-30917">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">oneal</a></span> on <a href="http://www.acmerblog.com/hdu-3526-computer-assembling-6487.html#comment-30917" rel="nofollow"><time datetime="2015-07-08T19:33:55+00:00" pubdate="">2015年7月8日 at 下午7:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49653">
+<article class="comment" id="comment-49653">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jiakcstudio</a></span> on <a href="http://www.acmerblog.com/hdu-3526-computer-assembling-6487.html#comment-49653" rel="nofollow"><time datetime="2015-06-13T13:37:08+00:00" pubdate="">2015年6月13日 at 下午1:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>27行 minStack.push(minValue); 去掉就对了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30923">
+<article class="comment" id="comment-30923">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">PriceKiller</a></span> on <a href="http://www.acmerblog.com/hdu-3526-computer-assembling-6487.html#comment-30923" rel="nofollow"><time datetime="2015-05-26T16:21:59+00:00" pubdate="">2015年5月26日 at 下午4:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>“再把所有不和该节点相邻的节点着相同的颜色”，程序中没有进行不和该节点相邻的其他节点是否相邻进行判断。再说求出来的也不一样是颜色数最少的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30922">
+<article class="comment" id="comment-30922">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangdilj</a></span> on <a href="http://www.acmerblog.com/hdu-3526-computer-assembling-6487.html#comment-30922" rel="nofollow"><time datetime="2015-05-20T11:52:36+00:00" pubdate="">2015年5月20日 at 上午11:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>This write-up presents the gentle in which we can notice the fact. this is extremely wonderful one and gives in depth info.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30924">
+<article class="comment" id="comment-30924">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">YangXiaoZhong</a></span> on <a href="http://www.acmerblog.com/hdu-3526-computer-assembling-6487.html#comment-30924" rel="nofollow"><time datetime="2015-05-02T02:34:41+00:00" pubdate="">2015年5月2日 at 上午2:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没有对题目进行一番分析，真是美中不足啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30916">
+<article class="comment" id="comment-30916">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lanifer</a></span> on <a href="http://www.acmerblog.com/hdu-3526-computer-assembling-6487.html#comment-30916" rel="nofollow"><time datetime="2015-04-09T15:52:43+00:00" pubdate="">2015年4月9日 at 下午3:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感谢~速度真快，我很喜欢这个网站，从基础看起。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30919">
+<article class="comment" id="comment-30919">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">acmer29</a></span> on <a href="http://www.acmerblog.com/hdu-3526-computer-assembling-6487.html#comment-30919" rel="nofollow"><time datetime="2015-04-08T04:58:28+00:00" pubdate="">2015年4月8日 at 上午4:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>此题的样例描述不正确</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30921">
+<article class="comment" id="comment-30921">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">asdass</a></span> on <a href="http://www.acmerblog.com/hdu-3526-computer-assembling-6487.html#comment-30921" rel="nofollow"><time datetime="2015-03-19T11:31:50+00:00" pubdate="">2015年3月19日 at 上午11:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>int L[m+1][n+1];这样定义出错，这个在gcc上可以编译通过 在VS上不行 应该改为new 或者vector</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49651">
+<article class="comment" id="comment-49651">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Trenson</a></span> on <a href="http://www.acmerblog.com/hdu-3526-computer-assembling-6487.html#comment-49651" rel="nofollow"><time datetime="2015-03-09T02:42:30+00:00" pubdate="">2015年3月9日 at 上午2:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚开始学习，为啥会报错了，你试过了吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49652">
+<article class="comment" id="comment-49652">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Supermaner</a></span> on <a href="http://www.acmerblog.com/hdu-3526-computer-assembling-6487.html#comment-49652" rel="nofollow"><time datetime="2015-02-06T02:47:53+00:00" pubdate="">2015年2月6日 at 上午2:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>哇，算法有这么多呢！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30920">
+<article class="comment" id="comment-30920">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zx123456</a></span> on <a href="http://www.acmerblog.com/hdu-3526-computer-assembling-6487.html#comment-30920" rel="nofollow"><time datetime="2015-02-05T22:54:13+00:00" pubdate="">2015年2月5日 at 下午10:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个是python代码啊。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63673">
+<article class="comment" id="comment-63673">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Amber</a></span> on <a href="http://www.acmerblog.com/hdu-3526-computer-assembling-6487.html#comment-63673" rel="nofollow"><time datetime="2015-01-28T20:19:02+00:00" pubdate="">2015年1月28日 at 下午8:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>确实有点难度，搞了好久。int溢出要注意</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30918">
+<article class="comment" id="comment-30918">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">we</a></span> on <a href="http://www.acmerblog.com/hdu-3526-computer-assembling-6487.html#comment-30918" rel="nofollow"><time datetime="2014-12-27T15:49:40+00:00" pubdate="">2014年12月27日 at 下午3:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个后缀数组不是常用的那个.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63672">
+<article class="comment" id="comment-63672">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">crazymage</a></span> on <a href="http://www.acmerblog.com/hdu-3526-computer-assembling-6487.html#comment-63672" rel="nofollow"><time datetime="2014-11-19T16:11:46+00:00" pubdate="">2014年11月19日 at 下午4:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法挺不错。NewHead代表新的头节点，通过递归找到最后一个节点之后，就把这个节点赋给NewHead，然后一直返回返回，中途这个值是没有变化的，一边返回一边把相应的指针方向颠倒，最后结束时返回新的头节点到主函数。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

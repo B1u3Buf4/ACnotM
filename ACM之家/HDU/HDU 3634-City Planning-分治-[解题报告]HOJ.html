@@ -1,0 +1,311 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>11-29</div>
+<div class="tit"><h1 class="entry-title">HDU 3634-City Planning-分治-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/math/number-theory" rel="category tag" title="查看数论应用中的全部文章">数论应用</a>, <a href="http://www.acmerblog.com/category/basis/recursion" rel="category tag" title="查看递归和分治中的全部文章">递归和分治</a></span><span class="i4">围观523次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6598" href="http://www.acmerblog.com/hdu-3634-city-planning-6598.html#comments" title="《HDU 3634-City Planning-分治-[解题报告]HOJ》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">City Planning</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+After many years, the buildings in HDU has become very old. It need to rebuild the buildings now. So Mr dragon (the president of HDU’s logistics department ) ask Mr Wan (a very famous engineer) for help.<br/>Mr Wan only draw one building on a construction design drawings(all the buildings are rectangle and each edge of buildings’ is paraller or perpendicular to others buildings’ edge ). And total draw n drawings (all the drawings have same width and length . And bottomleft point is (0, 0)). Due to possible overlap of conditions, so when they build a new building, they should to remove all the overlapping part of it. And for each building, HDU have a jury evaluate the value per unit area. Now Mr dragon want to know how to arrange the order of build these buildings can make the highest value. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line of input is a number T which indicate the number of cases . (1 &lt; T &lt; 3000);<br/>Each test case will begin with a single line containing a single integer n (where 1 &lt;= n &lt;= 20). <br/>Next n line will contain five integers x1, y1, x2, y2 ,value . x1,y1 is bottomleft point and x2,y2 is topright point , value is the value of the buildings’ unit area.((0 &lt;= x1, y1, x2, y2 &lt;= 10000) (x1 &lt; x2, &amp;&amp; y1 &lt; y2) (1 &lt;= value &lt;= 22) </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The first line of input is a number T which indicate the number of cases . (1 &lt; T &lt; 3000);<br/>Each test case will begin with a single line containing a single integer n (where 1 &lt;= n &lt;= 20). <br/>Next n line will contain five integers x1, y1, x2, y2 ,value . x1,y1 is bottomleft point and x2,y2 is topright point , value is the value of the buildings’ unit area.((0 &lt;= x1, y1, x2, y2 &lt;= 10000) (x1 &lt; x2, &amp;&amp; y1 &lt; y2) (1 &lt;= value &lt;= 22)</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+3
+1 1 10 10 4
+4 4 15 5 5
+7 8 20 30 6</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case 1: 2047</pre>
+<p> <!-- problem end --></p>
+<p>这一题其实并不难，昨天比赛时WA了，下来请教了队友，原来是用的矩形切割</p>
+<p><a target="_blank">Problem 3634</a> 62MS 224K</p>
+<p>本题思路：以出现的矩形端点为交点将所有的矩形分割成一个个小矩形，这里的点要求不重复且升序，正好用到set很方便（相当于离散化）。</p>
+<p>然后再把原来的矩形按照value的降序排列，将每个矩形所覆盖的且还没有着色小矩形块统统着色，并求价值和，即得结果。</p>
+<p>查找矩形覆盖的小矩形块时可用二分，但本题数据规模较小，就线性扫描查找了。</p>
+<p>另外，本题我刚开始定义结果为long long型，用G++提交WA了。后将结果定义为__int64，用C++交，闪亮AC！</p>
+<pre class="brush:cpp">#include&lt;iostream&gt;
+#include&lt;set&gt;
+using namespace std;
+struct rect{
+    int x1,y1,x2,y2,v;
+}r[22];
+set&lt;int&gt; col[2];
+int map[50][50],xcol[50],ycol[50],xnum,ynum;
+int cmp(const void *a,const void *b)
+{
+    struct rect *aa=(struct rect *)a;
+    struct rect *bb=(struct rect *)b;
+    return bb-&gt;v -aa-&gt;v;
+}
+int findx(int a)
+{
+    for(int i=0;i&lt;xnum;i++)
+        if(a==xcol[i])
+            return i;
+}
+int findy(int a)
+{
+    for(int i=0;i&lt;ynum;i++)
+        if(a==ycol[i])
+            return i;
+}
+int main()
+{
+    int cas,ca,n,i,j,k;
+    __int64 ans;
+    int sx,sy,ex,ey;
+    scanf("%d",&amp;cas);
+    for(ca=1;ca&lt;=cas;ca++)
+    {
+        col[0].clear(); 
+        col[1].clear();
+        scanf("%d",&amp;n);
+        for(i=0;i&lt;n;i++)
+        {
+            scanf("%d%d%d%d%d",&amp;r[i].x1,&amp;r[i].y1,&amp;r[i].x2,&amp;r[i].y2,&amp;r[i].v);
+            col[0].insert(r[i].x1); col[0].insert(r[i].x2);
+            col[1].insert(r[i].y1); col[1].insert(r[i].y2);
+        }
+        qsort(r,n,sizeof(r[0]),cmp);
+        memset(map,0,sizeof(map));
+        xnum=ynum=0;
+        set&lt;int&gt;::iterator it;
+        for(it=col[0].begin();it!=col[0].end();it++)
+            xcol[xnum++]=*it;
+        for(it=col[1].begin();it!=col[1].end();it++)
+            ycol[ynum++]=*it;
+       /*for(i=0;i&lt;xnum;i++)
+            printf("%d ",xcol[i]);
+        puts("");
+        for(i=0;i&lt;ynum;i++)
+            printf("%d ",ycol[i]);
+        puts("");*/
+
+        printf("Case %d: ",ca);
+        ans=0;
+        for(i=0;i&lt;n;i++)
+        {
+            sx=findx(r[i].x1);  ex=findx(r[i].x2);
+            sy=findy(r[i].y1);  ey=findy(r[i].y2);
+            //printf("%d %d %d %d \n",sx,xcol[sx],sy,ycol[sy]);
+            //printf("%d %d %d %d \n",ex,xcol[ex],ey,ycol[ey]);
+            //printf("%lld\n",(__int64)(r[i].v));
+            for(j=sx;j&lt;ex;j++)
+            {
+                for(k=sy;k&lt;ey;k++){
+                    if(map[j][k]==0)
+                    {
+                        map[j][k]=1;
+                        ans+=(__int64)(xcol[j+1]-xcol[j])*(__int64)(ycol[k+1]-ycol[k])*(__int64)(r[i].v);
+                        //printf("//%d %d %d %d\n",(xcol[j+1]-xcol[j]),(ycol[k+1]-ycol[k]),(r[i].v),ans);
+                    }
+                }
+            }
+        }
+        printf("%I64d\n",ans);
+    }
+    return 0;
+}</pre>
+<p> 昨天比赛做的是多校（十九），悲剧收场！提一下每题的大致意思吧，以后也好回忆……</p>
+<p>3632 决斗问题 DP</p>
+<p>3635 并查集 最简单的一题</p>
+<p>3636 最优搜索</p>
+<p>3637 在区间内找一个分子分母和最小的分数 数论</p>
+<p>3638 应该也用搜索解决吧 怪兽的视野会移动 咬笔杆……</p>
+<p>3639 老鹰捉小鸡 图论连通问题</p>
+<p>参考：http://www.cnblogs.com/DreamUp/archive/2010/10/03/1841662.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-73543">
+<article class="comment" id="comment-73543">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517412" rel="external nofollow">新用户368048</a></span> on <a href="http://www.acmerblog.com/hdu-3634-city-planning-6598.html#comment-73543" rel="nofollow"><time datetime="2017-04-12T00:07:33+00:00" pubdate="">2017年4月12日 at 上午12:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还好画风烂到这般, 完全没有影响到对原著的感受.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-73542">
+<article class="comment" id="comment-73542">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517412" rel="external nofollow">新用户368048</a></span> on <a href="http://www.acmerblog.com/hdu-3634-city-planning-6598.html#comment-73542" rel="nofollow"><time datetime="2017-04-12T00:07:33+00:00" pubdate="">2017年4月12日 at 上午12:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还好画风烂到这般, 完全没有影响到对原著的感受.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-32727">
+<article class="comment" id="comment-32727">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">digiworm</a></span> on <a href="http://www.acmerblog.com/hdu-3634-city-planning-6598.html#comment-32727" rel="nofollow"><time datetime="2015-06-15T16:13:25+00:00" pubdate="">2015年6月15日 at 下午4:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p><a href="http://beeder.me" rel="nofollow">http://beeder.me</a> 这个网站上有很多poj和hihoCoder的题解，质量不错，欢迎转载。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50601">
+<article class="comment" id="comment-50601">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NiKaWaLi2015</a></span> on <a href="http://www.acmerblog.com/hdu-3634-city-planning-6598.html#comment-50601" rel="nofollow"><time datetime="2015-06-15T13:09:10+00:00" pubdate="">2015年6月15日 at 下午1:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为避免精度问题，PI值请使用arccos(-1)。应该是acos</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-32724">
+<article class="comment" id="comment-32724">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hong0220</a></span> on <a href="http://www.acmerblog.com/hdu-3634-city-planning-6598.html#comment-32724" rel="nofollow"><time datetime="2015-05-15T12:13:49+00:00" pubdate="">2015年5月15日 at 下午12:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一题选错了，答案是A</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-59392">
+<article class="comment" id="comment-59392">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">H.Watson</a></span> on <a href="http://www.acmerblog.com/hdu-3634-city-planning-6598.html#comment-59392" rel="nofollow"><time datetime="2015-04-17T22:09:55+00:00" pubdate="">2015年4月17日 at 下午10:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这道题目的核心一句话是：取还是不取。<br/>
+如果当前取，则index+1作为参数。如果当前不取，则任用index作为参数。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-32721">
+<article class="comment" id="comment-32721">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sgx_go</a></span> on <a href="http://www.acmerblog.com/hdu-3634-city-planning-6598.html#comment-32721" rel="nofollow"><time datetime="2015-03-23T19:44:17+00:00" pubdate="">2015年3月23日 at 下午7:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一题还有个解释：没说桌子有多大，可以假设桌子和硬币一样大，肯定是先手胜</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-32725">
+<article class="comment" id="comment-32725">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hanyi</a></span> on <a href="http://www.acmerblog.com/hdu-3634-city-planning-6598.html#comment-32725" rel="nofollow"><time datetime="2015-03-15T20:03:25+00:00" pubdate="">2015年3月15日 at 下午8:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有的，已更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63925">
+<article class="comment" id="comment-63925">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">489365227</a></span> on <a href="http://www.acmerblog.com/hdu-3634-city-planning-6598.html#comment-63925" rel="nofollow"><time datetime="2015-03-01T05:34:31+00:00" pubdate="">2015年3月1日 at 上午5:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好，找的就是这一题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50600">
+<article class="comment" id="comment-50600">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zoe_music</a></span> on <a href="http://www.acmerblog.com/hdu-3634-city-planning-6598.html#comment-50600" rel="nofollow"><time datetime="2015-02-09T17:00:05+00:00" pubdate="">2015年2月9日 at 下午5:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/d8/good_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59394">
+<article class="comment" id="comment-59394">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">MCIT</a></span> on <a href="http://www.acmerblog.com/hdu-3634-city-planning-6598.html#comment-59394" rel="nofollow"><time datetime="2015-02-03T09:32:37+00:00" pubdate="">2015年2月3日 at 上午9:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢提醒</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-59393">
+<article class="comment" id="comment-59393">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dreams</a></span> on <a href="http://www.acmerblog.com/hdu-3634-city-planning-6598.html#comment-59393" rel="nofollow"><time datetime="2015-01-10T09:14:22+00:00" pubdate="">2015年1月10日 at 上午9:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#!/usr/bin/env python def cou(n): arr =  [1]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-32722">
+<article class="comment" id="comment-32722">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">20122256</a></span> on <a href="http://www.acmerblog.com/hdu-3634-city-planning-6598.html#comment-32722" rel="nofollow"><time datetime="2015-01-08T09:47:00+00:00" pubdate="">2015年1月8日 at 上午9:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>51行错了，改为：void Union(struct subset subsets[], int x, int y)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-32723">
+<article class="comment" id="comment-32723">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jade1827</a></span> on <a href="http://www.acmerblog.com/hdu-3634-city-planning-6598.html#comment-32723" rel="nofollow"><time datetime="2014-12-20T21:22:28+00:00" pubdate="">2014年12月20日 at 下午9:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>for(int i=1; i&lt;=m; i++){<br/>
+            for(int j=1; j&lt;=n; j++){<br/>
+                    dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> [j-1] + 1;<br/>
+                if(s1.charAt(i-1) == s3.charAt(i+j-1))<br/>
+                    dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = dp[i-1] <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  + 1;<br/>
+                if(s2.charAt(j-1) == s3.charAt(i+j-1))<br/>
+                    dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = Math.max(dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> [j - 1] + 1, dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> );<br/>
+            }<br/>
+        }<br/>
+这里的代码似乎有点问题？ dp(i)(j) = dp(i)(j-1) + 1;这个例子System.out.println(ils.isInterleave("aa","dbbca", "aadbbcb"));返回的应该是false</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-32726">
+<article class="comment" id="comment-32726">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">starcuan</a></span> on <a href="http://www.acmerblog.com/hdu-3634-city-planning-6598.html#comment-32726" rel="nofollow"><time datetime="2014-12-17T17:41:13+00:00" pubdate="">2014年12月17日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真心不错，力顶作者</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

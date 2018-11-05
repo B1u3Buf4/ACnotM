@@ -1,0 +1,324 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>11-27</div>
+<div class="tit"><h1 class="entry-title">HDU 3586- Information Disturbing-动态规划-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a>, <a href="http://www.acmerblog.com/category/basis/recursion" rel="category tag" title="查看递归和分治中的全部文章">递归和分治</a></span><span class="i4">围观342次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6550" href="http://www.acmerblog.com/hdu-3586-information-disturbing-6550.html#comments" title="《HDU 3586- Information Disturbing-动态规划-[解题报告]HOJ》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile"> Information Disturbing</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+In the battlefield , an effective way to defeat enemies is to break their communication system.<br/>The information department told you that there are n enemy soldiers and their network which have n-1 communication routes can cover all of their soldiers. Information can exchange between any two soldiers by the communication routes. The number 1 soldier is the total commander and other soldiers who have only one neighbour is the frontline soldier.<br/>Your boss zzn ordered you to cut off some routes to make any frontline soldiers in the network cannot reflect the information they collect from the battlefield to the total commander( number 1 soldier).<br/>There is a kind of device who can choose some routes to cut off . But the cost (w) of any route you choose to cut off can’t be more than the device’s upper limit power. And the sum of the cost can’t be more than the device’s life m.<br/>Now please minimize the upper limit power of your device to finish your task. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input consists of several test cases. <br/>The first line of each test case contains 2 integers: n(n&lt;=1000）m(m&lt;=1000000).<br/>Each of the following N-1 lines is of the form:<br/>ai bi wi<br/>It means there’s one route from ai to bi(undirected) and it takes  wi cost to cut off the route with the device.<br/>(1&lt;=ai,bi&lt;=n,1&lt;=wi&lt;=1000)<br/>The input ends with n=m=0. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input consists of several test cases. <br/>The first line of each test case contains 2 integers: n(n&lt;=1000）m(m&lt;=1000000).<br/>Each of the following N-1 lines is of the form:<br/>ai bi wi<br/>It means there’s one route from ai to bi(undirected) and it takes  wi cost to cut off the route with the device.<br/>(1&lt;=ai,bi&lt;=n,1&lt;=wi&lt;=1000)<br/>The input ends with n=m=0.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+5 5
+1 3 2
+1 4 3
+3 5 5
+4 2 6
+0 0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+3</pre>
+<p> <!-- problem end --></p>
+<div style="color:rgb(69,69,69); font-family:Tahoma,Arial,Helvetica,STHeiti; font-size:14px; line-height:25px">
+<p style="margin-top:0px; margin-bottom:0px; padding-top:0px; padding-bottom:0px">
+题意：</p>
+<p style="margin-top:0px; margin-bottom:0px; padding-top:0px; padding-bottom:0px">
+给出一棵树，和每条边的cost值，设置一个界限，要求切断所有叶子结点，切断的边的cost不能超过界限值，并且切断的边的总和不能超过m,求出这个最小界限值。</p>
+</div>
+<div style="color:rgb(69,69,69); font-family:Tahoma,Arial,Helvetica,STHeiti; font-size:14px; line-height:25px">
+<p style="margin-top:0px; margin-bottom:0px; padding-top:0px; padding-bottom:0px">
+解题思路:</p>
+<p style="margin-top:0px; margin-bottom:0px; padding-top:0px; padding-bottom:0px">
+很明显的一道树型DP，DP[v],表示切断根结点的v的子树的最小花费，那么这个界限怎么处理呢，由于界限值范围要比总和m小得多，才1－1000，可以用二分枚举，这样在选择切边时可以根据这个枚举值进行判断处理。每个结点v，设其儿子结点为x1,x2,x3…则DP[v] = Min{DP[x1],Node[x1].cost} + Min{DP[x2], Node[x2].cost} + …，当然，要判断Node[x].cost是否小于枚举的界限，Node[x].cost表示边（v,x）的cost值。</p>
+<pre class="brush:cpp" name="code">#include&lt;iostream&gt;
+#include&lt;algorithm&gt;
+#include&lt;cstdio&gt;
+#include&lt;memory.h&gt;
+using namespace std;
+int dp[1002],n,m,NE,mid;
+int head[1002],vis[1002];
+const int INF=1000001;
+struct node
+{
+    int u,v,val,next;
+} Edge[2002];
+void addEdge(int u,int v,int w)
+{
+    Edge[NE].u=u,Edge[NE].v=v,Edge[NE].next=head[u];
+    Edge[NE].val=w;
+    head[u]=NE++;
+}
+int dfs(int u,int fa)
+{
+    int i,sum=0;
+    vis[u]=1;
+    for(i=head[u]; i!=-1; i=Edge[i].next)
+    {
+        int r=Edge[i].v;
+        if(fa==r) continue;
+        int rr=dfs(r,u);
+        if(rr&gt;Edge[i].val&amp;&amp;Edge[i].val&lt;=mid)
+        {
+            rr=Edge[i].val;
+        }
+        sum+=rr;
+    }
+    if(!sum)return INF;
+    return sum;
+}
+int main()
+{
+    while(cin&gt;&gt;n&gt;&gt;m,(n||m))
+    {
+        NE=0;
+        int i,j,k,a,b,w,ans=INF;
+        int l=1002,r=0;
+        memset(vis,0,sizeof(vis));
+        memset(head,-1,sizeof(head));
+        for(i=1; i&lt;n; i++)
+        {
+            cin&gt;&gt;a&gt;&gt;b&gt;&gt;w;
+            addEdge(a,b,w);
+            addEdge(b,a,w);
+            l=min(l,w);
+            r=max(r,w);
+        }
+        while(l&lt;=r)
+        {
+            mid=(l+r)&gt;&gt;1;
+            if(dfs(1,0)&lt;=m)
+            {
+                ans=min(ans,mid);
+                r=mid-1;
+            }
+            else l=mid+1;
+        }
+        if(ans&gt;=INF)cout&lt;&lt;-1&lt;&lt;endl;
+        else cout&lt;&lt;ans&lt;&lt;endl;
+    }
+    return 0;
+}
+</pre>
+<p>
+</p>
+</div>
+<p>参考：http://blog.csdn.net/azheng51714/article/details/7795962</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-73609">
+<article class="comment" id="comment-73609">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520455" rel="external nofollow">新用户675864</a></span> on <a href="http://www.acmerblog.com/hdu-3586-information-disturbing-6550.html#comment-73609" rel="nofollow"><time datetime="2017-04-12T00:07:34+00:00" pubdate="">2017年4月12日 at 上午12:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我妈姓即墨，要是跟我妈姓就好了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63898">
+<article class="comment" id="comment-63898">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">melody12ab</a></span> on <a href="http://www.acmerblog.com/hdu-3586-information-disturbing-6550.html#comment-63898" rel="nofollow"><time datetime="2015-07-03T22:46:29+00:00" pubdate="">2015年7月3日 at 下午10:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>printf这个函数在计算的时候是从右到左，打印是从左到右。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59293">
+<article class="comment" id="comment-59293">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">crazymage</a></span> on <a href="http://www.acmerblog.com/hdu-3586-information-disturbing-6550.html#comment-59293" rel="nofollow"><time datetime="2015-06-28T19:18:38+00:00" pubdate="">2015年6月28日 at 下午7:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么不直接用STL排序呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-32363">
+<article class="comment" id="comment-32363">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Trenson</a></span> on <a href="http://www.acmerblog.com/hdu-3586-information-disturbing-6550.html#comment-32363" rel="nofollow"><time datetime="2015-06-25T21:19:23+00:00" pubdate="">2015年6月25日 at 下午9:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#include &lt;cstdio&gt;<br/>
+#include &lt;algorithm&gt;</p>
+<p>struct LWPair{<br/>
+    int l,w;<br/>
+};</p>
+<p>int main() {<br/>
+    //freopen("input.txt","r",stdin);<br/>
+    const int MAXSIZE=5000, MAXVAL=10000;<br/>
+    LWPair sticks[MAXSIZE];<br/>
+    int store[MAXSIZE];<br/>
+    int ncase, nstick, length,width, tmp, time, i,j;<br/>
+    if(scanf("%d",&amp;ncase)!=1) return -1;<br/>
+    while(ncase– &amp;&amp; scanf("%d",&amp;nstick)==1) {<br/>
+        for(i=0;i&lt;nstick;++i) scanf("%d%d",&amp;sticks <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .l,&amp;sticks <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .w);<br/>
+        std::sort(sticks,sticks+nstick,[](const LWPair &amp;lhs, const LWPair &amp;rhs) { return lhs.l&gt;rhs.l || lhs.l==rhs.l &amp;&amp; lhs.w&gt;rhs.w; });<br/>
+        for(time=-1,i=0;i&lt;nstick;++i) {<br/>
+            tmp=sticks <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .w;<br/>
+            for(j=time;j&gt;=0 &amp;&amp; store <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> &gt;=tmp;–j) ; // search from right to left<br/>
+            if(j==time) { store[++time]=tmp; }<br/>
+            else { store[j+1]=tmp; }<br/>
+        }<br/>
+        printf("%dn",time+1);<br/>
+    }<br/>
+    return 0;<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-32365">
+<article class="comment" id="comment-32365">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">soasipray</a></span> on <a href="http://www.acmerblog.com/hdu-3586-information-disturbing-6550.html#comment-32365" rel="nofollow"><time datetime="2015-06-14T11:59:46+00:00" pubdate="">2015年6月14日 at 上午11:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>此题的样例描述不正确</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63899">
+<article class="comment" id="comment-63899">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">missliuxin</a></span> on <a href="http://www.acmerblog.com/hdu-3586-information-disturbing-6550.html#comment-63899" rel="nofollow"><time datetime="2015-04-16T21:25:55+00:00" pubdate="">2015年4月16日 at 下午9:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>非常不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-32367">
+<article class="comment" id="comment-32367">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hunangangli</a></span> on <a href="http://www.acmerblog.com/hdu-3586-information-disturbing-6550.html#comment-32367" rel="nofollow"><time datetime="2015-04-12T17:53:11+00:00" pubdate="">2015年4月12日 at 下午5:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这配图…..</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-32364">
+<article class="comment" id="comment-32364">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaoriqiang</a></span> on <a href="http://www.acmerblog.com/hdu-3586-information-disturbing-6550.html#comment-32364" rel="nofollow"><time datetime="2015-03-01T05:10:57+00:00" pubdate="">2015年3月1日 at 上午5:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>厉害啊，我遇见数学问题就头疼！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63900">
+<article class="comment" id="comment-63900">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">MCIT</a></span> on <a href="http://www.acmerblog.com/hdu-3586-information-disturbing-6550.html#comment-63900" rel="nofollow"><time datetime="2015-02-10T16:30:12+00:00" pubdate="">2015年2月10日 at 下午4:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很赞的解答</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-32366">
+<article class="comment" id="comment-32366">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hanyi</a></span> on <a href="http://www.acmerblog.com/hdu-3586-information-disturbing-6550.html#comment-32366" rel="nofollow"><time datetime="2015-01-20T01:11:01+00:00" pubdate="">2015年1月20日 at 上午1:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>比较基础，找些自信</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-32362">
+<article class="comment" id="comment-32362">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">lsdtc1225</a></span> on <a href="http://www.acmerblog.com/hdu-3586-information-disturbing-6550.html#comment-32362" rel="nofollow"><time datetime="2015-01-19T05:54:07+00:00" pubdate="">2015年1月19日 at 上午5:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>头文件的颜色是有意设成这种灰暗色的吗？感觉看不清</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-32368">
+<article class="comment" id="comment-32368">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xy7850151</a></span> on <a href="http://www.acmerblog.com/hdu-3586-information-disturbing-6550.html#comment-32368" rel="nofollow"><time datetime="2014-12-27T03:11:56+00:00" pubdate="">2014年12月27日 at 上午3:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>在方法1里面：</p>
+<p>    //遍历所有的边，计算入度<br/>
+    for(int i=0; i&lt;V; i++)<br/>
+  {<br/>
+        degree <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/>  = 0;<br/>
+        for (j = adj <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .begin(); j != adj <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .end(); ++j)<br/>
+       {<br/>
+            degree[*j]++;<br/>
+        }<br/>
+    }</p>
+<p>为什么每遍历一条链表，要首先将每个链表头的顶点的入度置为0呢？<br/>
+比如顶点5，若在顶点1、2、3、4的链表中出现过顶点5，那么要增加顶点5的入度，但是在遍历顶点5的链表时，又将顶点5的入度置为0了，那之前的从顶点1234到顶点5的边不是都没了吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50447">
+<article class="comment" id="comment-50447">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fastislow</a></span> on <a href="http://www.acmerblog.com/hdu-3586-information-disturbing-6550.html#comment-50447" rel="nofollow"><time datetime="2014-12-21T10:36:06+00:00" pubdate="">2014年12月21日 at 上午10:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好，注释很详细啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50446">
+<article class="comment" id="comment-50446">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">kate19930802</a></span> on <a href="http://www.acmerblog.com/hdu-3586-information-disturbing-6550.html#comment-50446" rel="nofollow"><time datetime="2014-12-10T11:00:00+00:00" pubdate="">2014年12月10日 at 上午11:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Excellent Web-site! I required to ask if I might webpages and use a component of the net web website and use a number of factors for just about any faculty process. Please notify me through email regardless of whether that would be excellent. Many thanks</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50448">
+<article class="comment" id="comment-50448">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mnmlist</a></span> on <a href="http://www.acmerblog.com/hdu-3586-information-disturbing-6550.html#comment-50448" rel="nofollow"><time datetime="2014-11-27T08:53:19+00:00" pubdate="">2014年11月27日 at 上午8:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是研发的在线笔试题吗?发现很多C啊，阿里不是JAVA多么？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

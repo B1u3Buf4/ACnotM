@@ -1,0 +1,369 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>02-17</div>
+<div class="tit"><h1 class="entry-title">HDU 2890-Longest Repeated subsequence-后缀数组-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/basis/string" rel="category tag" title="查看字符串处理中的全部文章">字符串处理</a>, <a href="http://www.acmerblog.com/category/basis/tanxin" rel="category tag" title="查看贪心中的全部文章">贪心</a></span><span class="i4">围观1046次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4533" href="http://www.acmerblog.com/hdu-2890-longest-repeated-subsequence-4533.html#comments" title="《HDU 2890-Longest Repeated subsequence-后缀数组-[解题报告]HOJ》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Longest Repeated subsequence</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Write a program that takes a sequence of number and returns length of the longest repeated <br/>subsequence. A repeated subsequence which repeats identically at least K times without overlaps.<br/>For example 1 2 3 1 2 3 2 3 1 repeats 2 3 for three times. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+Line 1: The input contains a single integer T , the number of test cases.<br/>Line 2: Two space-separated integers: N and K (1 &lt;= n &lt;= 50000), (2 &lt;= k &lt;= n)<br/>Lines 3..N+2: N integers, one per line. The integer is between 0 and 10^9.<br/>It is guaranteed that at least one subsequence is repeated at least K times. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+Line 1: The input contains a single integer T , the number of test cases.<br/>Line 2: Two space-separated integers: N and K (1 &lt;= n &lt;= 50000), (2 &lt;= k &lt;= n)<br/>Lines 3..N+2: N integers, one per line. The integer is between 0 and 10^9.<br/>It is guaranteed that at least one subsequence is repeated at least K times.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+8 2
+1
+2
+3
+2
+3
+2
+3
+1</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+2
+3</pre>
+<p> <!-- problem end --></p>
+<p>题目链接：<a href="http://acm.hdu.edu.cn/showproblem.php?pid=2890">http://acm.hdu.edu.cn/showproblem.php?pid=2890</a></p>
+<p> </p>
+<p>题目大意:给你一个含n个数的序列，再给你一个k，让你求最少重复k次的最长子序列（子序列不能重叠）。</p>
+<p> </p>
+<p>解题思路：先吐槽一下，题意不明，蛋疼许久。 </p>
+<p>我可以这么理解 ： 1、保证子序列重复次数cnt大于k的前提下，len为一个子序列长度，然后最长子序列最长，即cnt*len最大。</p>
+<p>                          2、保证子序列重复次数cnt大于k的前提下，只需让子序列长度len最长即可。</p>
+<p>我在理解1中挣扎了许久才发现我题目都理解错了，题目意思是理解2，擦擦擦。</p>
+<p>          这题X值很大，先离散化处理一下。 以前写过一道最少重复k次子序列可相互覆盖的题目，这题是不可覆盖。所以这里要特殊处理一下，开始我用标记，后来发现处理的时候还是有点问题，后来改成贪心做，即多开一个que数组，记录sa[]值，每次遇见height&lt;mid（枚举的长度）时，对que中序列排序一下，这样就保证了处理的时候就是从左往右了。</p>
+<pre class="brush:cpp ">#include &lt;iostream&gt;
+ #include &lt;cstdio&gt;
+ #include &lt;cmath&gt;
+ #include &lt;algorithm&gt;
+ #include &lt;cstring&gt;
+ using namespace std;
+ const int maxn=50050;
+ char str[maxn];
+ int  num[maxn];
+ int sa[maxn]; ///（你排第几）下标：排名情况， 数组值：首字符序号
+ int rank[maxn];/// （排第几的是谁）  下标：首字符序号， 数组值：排名情况
+ int height[maxn]; /// height[i]表示后缀i和后缀i-1的最长公共前缀
+ int wa[maxn], wb[maxn], wv[maxn], wd[maxn];
+ int X[maxn],  que[maxn];
+ int pos;
+ 
+ 
+ int cmp(int *r, int a, int b, int l)
+ {
+     return r[a]==r[b]&amp;&amp;r[a+l]==r[b+l];
+ }
+ 
+ void da(int *r, int n, int m){          ///  倍增算法 r为待匹配数组  n为总长度 m为字符范围
+     int i, j, p, *x = wa, *y = wb, *t;
+     for(i = 0; i &lt; m; i ++) wd[i] = 0;
+     for(i = 0; i &lt; n; i ++) wd[x[i]=r[i]] ++;
+     for(i = 1; i &lt; m; i ++) wd[i] += wd[i-1];
+     for(i = n-1; i &gt;= 0; i --) sa[-- wd[x[i]]] = i;
+     for(j = 1, p = 1; p &lt; n; j *= 2, m = p){
+         for(p = 0, i = n-j; i &lt; n; i ++) y[p ++] = i;
+         for(i = 0; i &lt; n; i ++) if(sa[i] &gt;= j) y[p ++] = sa[i] - j;
+         for(i = 0; i &lt; n; i ++) wv[i] = x[y[i]];
+         for(i = 0; i &lt; m; i ++) wd[i] = 0;
+         for(i = 0; i &lt; n; i ++) wd[wv[i]] ++;
+         for(i = 1; i &lt; m; i ++) wd[i] += wd[i-1];
+         for(i = n-1; i &gt;= 0; i --) sa[-- wd[wv[i]]] = y[i];
+         for(t = x, x = y, y = t, p = 1, x[sa[0]] = 0, i = 1; i &lt; n; i ++){
+             x[sa[i]] = cmp(y, sa[i-1], sa[i], j) ? p - 1: p ++;
+         }
+     }
+ }
+ 
+ void calHeight(int *r, int n){           ///  求height数组。
+     int i, j, k = 0;
+     for(i = 1; i &lt;= n; i ++) rank[sa[i]] = i;
+     for(i = 0; i &lt; n; height[rank[i ++]] = k){
+         for(k ? k -- : 0, j = sa[rank[i]-1]; r[i+k] == r[j+k]; k ++);
+     }
+ }
+ 
+ int find(int tmp, int n)
+ {
+     int l=0, r=n, mid;
+     while(l&lt;=r)
+     {
+         mid=(l+r)&gt;&gt;1;
+         if(X[mid]==tmp) return mid;
+         else if(X[mid]&lt;tmp) l=mid+1;
+         else r=mid-1;
+     }
+ }
+ 
+ bool judge(int mid, int rear, int k)
+ {
+     sort(que,que+rear);
+     int pre=que[0], cnt=1;
+     for(int i=1; i&lt;rear; i++)
+         if(que[i]-pre&gt;=mid) pre=que[i], cnt++;
+     return cnt&gt;=k;
+ }
+ 
+ bool check(int mid, int n, int k)
+ {
+     int rear=0;
+     for(int i=1; i&lt;=n; i++)
+     {
+         if(height[i]&lt;mid)
+         {
+             if(judge(mid,rear,k))
+             {
+                 pos=sa[i-1];
+                 return true;
+             }
+             rear=0, que[rear++]=sa[i];
+         }
+         else que[rear++]=sa[i];
+     }
+     if(judge(mid,rear,k))
+     {
+         pos=sa[n-1];
+         return true;
+     }
+     return false;
+ }
+ 
+ int main()
+ {
+     int n, k, T;
+     cin &gt;&gt; T;
+     while(T--)
+     {
+         scanf("%d%d",&amp;n,&amp;k);
+         for(int i=0; i&lt;n; i++) scanf("%d",num+i), X[i]=num[i];
+         sort(X,X+n);
+         int ep=0;
+         for(int i=1; i&lt;n; i++)
+             if(X[i]!=X[ep]) X[++ep]=X[i];
+         for(int i=0; i&lt;n; i++)
+             num[i]=find(num[i],ep)+2;
+         num[n]=0;
+         da(num,n+1,n+5);
+         calHeight(num,n);
+         int l=1, r=n, mid, ans=0;
+         while(l&lt;=r)
+         {
+             mid=(l+r)&gt;&gt;1;
+             if(check(mid,n,k))
+             {
+                 l=mid+1;
+                 ans=mid;
+             }
+             else r=mid-1;
+         }
+         printf("%d\n",ans);
+         for(int i=pos; i&lt;pos+ans; i++) printf("%d\n",X[num[i]-2]);
+         if(T) puts("");
+     }
+     return 0;
+ }</pre>
+<p> </p>
+<p> </p>
+<p>解题参考：http://www.cnblogs.com/kane0526/archive/2013/04/21/3033924.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-81537">
+<article class="comment" id="comment-81537">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519309" rel="external nofollow">新用户981754</a></span> on <a href="http://www.acmerblog.com/hdu-2890-longest-repeated-subsequence-4533.html#comment-81537" rel="nofollow"><time datetime="2017-04-12T18:13:50+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>求win7 64位旗舰版的激活钥匙  邮箱：jerryxyj@qq.com</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46889">
+<article class="comment" id="comment-46889">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">starcuan</a></span> on <a href="http://www.acmerblog.com/hdu-2890-longest-repeated-subsequence-4533.html#comment-46889" rel="nofollow"><time datetime="2015-06-14T02:50:49+00:00" pubdate="">2015年6月14日 at 上午2:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嗯   分析得很到位，确实用模板编程能让面试官对你的印象更好。在设置辅助栈的时候可以这样：push时，比较要push的elem和辅助栈的栈顶，elem&lt;=min.top()，则min.push(elem).否则只要push（elem）就好。在pop的时候，比较stack.top()与min.top(),if(stack.top()&lt;=min.top()),则{stack.pop();min.pop();}，否则{stack.pop();}.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-25466">
+<article class="comment" id="comment-25466">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">la0bei</a></span> on <a href="http://www.acmerblog.com/hdu-2890-longest-repeated-subsequence-4533.html#comment-25466" rel="nofollow"><time datetime="2015-06-10T01:31:48+00:00" pubdate="">2015年6月10日 at 上午1:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>97行缺一个分号</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46891">
+<article class="comment" id="comment-46891">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">linyanjin</a></span> on <a href="http://www.acmerblog.com/hdu-2890-longest-repeated-subsequence-4533.html#comment-46891" rel="nofollow"><time datetime="2015-05-29T16:24:18+00:00" pubdate="">2015年5月29日 at 下午4:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>文章写得挺好，就是最后的斐波那契那个没有看明白</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-25468">
+<article class="comment" id="comment-25468">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">985836927</a></span> on <a href="http://www.acmerblog.com/hdu-2890-longest-repeated-subsequence-4533.html#comment-25468" rel="nofollow"><time datetime="2015-03-09T02:43:25+00:00" pubdate="">2015年3月9日 at 上午2:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个分析相当全面，经典！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46887">
+<article class="comment" id="comment-46887">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiao1108</a></span> on <a href="http://www.acmerblog.com/hdu-2890-longest-repeated-subsequence-4533.html#comment-46887" rel="nofollow"><time datetime="2014-11-09T17:03:38+00:00" pubdate="">2014年11月9日 at 下午5:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-25465">
+<article class="comment" id="comment-25465">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">AcmDream</a></span> on <a href="http://www.acmerblog.com/hdu-2890-longest-repeated-subsequence-4533.html#comment-25465" rel="nofollow"><time datetime="2014-10-29T13:16:42+00:00" pubdate="">2014年10月29日 at 下午1:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈呀！这个Dijkstra模板好长OwQ！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46888">
+<article class="comment" id="comment-46888">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">0xc0de</a></span> on <a href="http://www.acmerblog.com/hdu-2890-longest-repeated-subsequence-4533.html#comment-46888" rel="nofollow"><time datetime="2014-07-29T02:03:34+00:00" pubdate="">2014年7月29日 at 上午2:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法挺不错。NewHead代表新的头节点，通过递归找到最后一个节点之后，就把这个节点赋给NewHead，然后一直返回返回，中途这个值是没有变化的，一边返回一边把相应的指针方向颠倒，最后结束时返回新的头节点到主函数。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-57582">
+<article class="comment" id="comment-57582">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">753951</a></span> on <a href="http://www.acmerblog.com/hdu-2890-longest-repeated-subsequence-4533.html#comment-57582" rel="nofollow"><time datetime="2014-07-08T09:49:36+00:00" pubdate="">2014年7月8日 at 上午9:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>请问printAllCombination的时间复杂度怎么分析呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46890">
+<article class="comment" id="comment-46890">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Anne</a></span> on <a href="http://www.acmerblog.com/hdu-2890-longest-repeated-subsequence-4533.html#comment-46890" rel="nofollow"><time datetime="2014-06-30T13:26:16+00:00" pubdate="">2014年6月30日 at 下午1:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>5.1处，反了；“上一个操作符的优先级比操作符ch的优先级大，或栈是空的就入栈。”如代码所述，应为“上一个操作符的优先级比操作符ch的优先级小，或栈是空的就入栈。”</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-25471">
+<article class="comment" id="comment-25471">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">TimeFight</a></span> on <a href="http://www.acmerblog.com/hdu-2890-longest-repeated-subsequence-4533.html#comment-25471" rel="nofollow"><time datetime="2014-06-30T13:08:28+00:00" pubdate="">2014年6月30日 at 下午1:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实就是DFS搜索，数据量较小，穷举了所有情况</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-25469">
+<article class="comment" id="comment-25469">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xrjervis</a></span> on <a href="http://www.acmerblog.com/hdu-2890-longest-repeated-subsequence-4533.html#comment-25469" rel="nofollow"><time datetime="2014-06-01T10:21:33+00:00" pubdate="">2014年6月1日 at 上午10:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>The site You have write is very nicely prepared and quite insightful thanks for nice posta?|</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-25467">
+<article class="comment" id="comment-25467">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hongfieyu</a></span> on <a href="http://www.acmerblog.com/hdu-2890-longest-repeated-subsequence-4533.html#comment-25467" rel="nofollow"><time datetime="2014-03-20T05:12:56+00:00" pubdate="">2014年3月20日 at 上午5:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第23行：<br/>
+hash <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = -1是否应该改成hash[s <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> ] = -1</p>
+<p>因为是要把从字符串s的start位到当前位在hash中重置</p>
+<p>修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-25470">
+<article class="comment" id="comment-25470">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">verycourage</a></span> on <a href="http://www.acmerblog.com/hdu-2890-longest-repeated-subsequence-4533.html#comment-25470" rel="nofollow"><time datetime="2014-02-17T20:52:18+00:00" pubdate="">2014年2月17日 at 下午8:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#include &lt;cstdio&gt;<br/>
+#include &lt;algorithm&gt;</p>
+<p>struct LWPair{<br/>
+    int l,w;<br/>
+};</p>
+<p>int main() {<br/>
+    //freopen("input.txt","r",stdin);<br/>
+    const int MAXSIZE=5000, MAXVAL=10000;<br/>
+    LWPair sticks[MAXSIZE];<br/>
+    int store[MAXSIZE];<br/>
+    int ncase, nstick, length,width, tmp, time, i,j;<br/>
+    if(scanf("%d",&amp;ncase)!=1) return -1;<br/>
+    while(ncase– &amp;&amp; scanf("%d",&amp;nstick)==1) {<br/>
+        for(i=0;i&lt;nstick;++i) scanf("%d%d",&amp;sticks <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .l,&amp;sticks <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .w);<br/>
+        std::sort(sticks,sticks+nstick,[](const LWPair &amp;lhs, const LWPair &amp;rhs) { return lhs.l&gt;rhs.l || lhs.l==rhs.l &amp;&amp; lhs.w&gt;rhs.w; });<br/>
+        for(time=-1,i=0;i&lt;nstick;++i) {<br/>
+            tmp=sticks <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .w;<br/>
+            for(j=time;j&gt;=0 &amp;&amp; store <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> &gt;=tmp;–j) ; // search from right to left<br/>
+            if(j==time) { store[++time]=tmp; }<br/>
+            else { store[j+1]=tmp; }<br/>
+        }<br/>
+        printf("%dn",time+1);<br/>
+    }<br/>
+    return 0;<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

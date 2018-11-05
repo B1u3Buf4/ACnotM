@@ -1,0 +1,393 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-03</div>
+<div class="tit"><h1 class="entry-title">HDU 1154 Cutting a Polygon-计算几何-[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/basis/sort" rel="category tag" title="查看排序中的全部文章">排序</a>, <a href="http://www.acmerblog.com/category/geometry/analytic-geometry" rel="category tag" title="查看解析几何中的全部文章">解析几何</a></span><span class="i4">围观804次</span><span class="i3"><a class="ds-thread-count" data-thread-key="1494" href="http://www.acmerblog.com/hdu-1154-Cutting-a-Polygon-1494.html#comments" title="《HDU 1154 Cutting a Polygon-计算几何-[解题报告] C++》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Cutting a Polygon</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Given is a simple but not necessarily convex polygon. Given is also a line in the plane. If the polygon is cut along the line then we may get several smaller polygons. Your task is to find the length of the cut, that is the total length of the segments in the intersection of the line and the polygon.  </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+Input consists of a number of cases. The data of each case appears on a number of input lines, the first of which contains two non negative integers n and m giving the number of the vertices of the polygon and the number of cutting lines to consider, 3 ≤ n ≤ 1000. The following n lines contain coordinates of the vertices of the polygon; each line contains the x and y coordinates of a vertex. The vertices are given either in clockwise or counterclockwise order. Each of the following m lines of input contains four numbers; these are x and y coordinates of the two points defining the cutting line. If a vertex of the polygon is closer than 10e-8 to the cutting line then we consider that the vertex lies on the cutting line. <br/>Input is terminated by a line with n and m equal to 0. <br/><img src="http://acm.hdu.edu.cn/data/images/1154-1.jpg"/> </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+For each cutting line, print the total length of the segments in the intersection of the line and the polygon defined for this test case, with 3 digits after the decimal point. Note: the perimiter of a polygon belongs the polygon. <br/>The picture above illustrates the first cutting line for the polygon from the sample. </div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+9 5
+0 0
+0 2
+1 1
+2 2
+3 1
+4 2
+5 1
+6 2
+6 0
+-1 2 7.5 1
+0 1 6 1
+0 1.5 6 1.5
+0 2 6 1
+0 0 0 2
+0 0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+2.798
+6.000
+3.000
+2.954
+2.000</pre>
+<p><!-- problem end --></p>
+<p>题目链接：<a href="http://acm.hdu.edu.cn/showproblem.php?pid=1154" target="_blank">http://acm.hdu.edu.cn/showproblem.php?pid=1154</a></p>
+<p>首先这个题目用到的知识点比较多，而且，思想也很好，精度也有要求，做这个题目对计算几何的要求还是有一点的</p>
+<p>表示这个题目不是像杭电上标难度1的那么好做；</p>
+<p>首先用到很多模板，模板的精度和正确性一定要保证</p>
+<p>其次就是这个题目到底是怎么做</p>
+<p>解题思路：求出直线与所有多边形的交点，然后按照交点排序，按照X从左到右排序，那么任意两个相邻之间的点的连线线段如果在</p>
+<p>这个多边形内部那么中点一定是在这个多边形内部，然后基本上注意几个细节就搞定了</p>
+<p>细节一：这个相交要求是直线与线段的非规范相交，也就是端点相交也算，如果这个题目相交于某个端点呢，也不怕，因为只要相交</p>
+<p>于某个端点，那么就一定是两次，两次同样的点排序后一定还是在一起，这个情况就不用考虑了，如果不是非规范相交，那么万一一</p>
+<p>个交于端点一个交于非端点就完了；</p>
+<p>细节二：如果多边形的某个边与在这条直线上，那么这条线段的两个端点全部加入到点的集合里面，否则会漏解</p>
+<p>
+</p>
+<p>代码（好长的说）：</p>
+<pre class="brush:cpp ">#include &lt;iostream&gt;
+#include &lt;string.h&gt;
+#include &lt;algorithm&gt;
+#include &lt;cmath&gt;
+#include &lt;stdio.h&gt;
+using namespace std;
+#define maxn 1200
+#define eps 1e-8
+struct point
+{
+    double x;
+    double y;
+}po[maxn],rec[maxn];
+struct line
+{
+    point a;
+    point b;
+}temp,temp1;
+double xmulit(point &amp;a,point &amp;b,point &amp;c)
+{
+    return (a.x-b.x)*(a.y-c.y)-(a.y-b.y)*(a.x-c.x);
+}
+bool across(point &amp;a,point &amp;b,point &amp;c,point &amp;d)//直线ab和线段cd是否相交
+{
+double p=xmulit(a,b,c),p1=xmulit(a,b,d);
+if( fabs(p1) &lt;= eps || fabs(p) &lt;= eps ) return true;
+if( p*p1 &lt; -eps )
+return true;
+return false;
+}
+bool one_line(point &amp;a,point &amp;b,point &amp;c,point &amp;d)//直线ab和线段cd是否相交
+{
+double p=xmulit(a,b,c),p1=xmulit(a,b,d);
+if( fabs(p1) &lt; eps &amp;&amp; fabs(p) &lt; eps ) return true;
+return false;
+}
+bool is_equal(point &amp;a,point &amp;b)//判断点a和点b是否相等
+{
+return (fabs(a.x-b.x) &lt;= eps) &amp;&amp; (fabs(a.y-b.y) &lt;=eps);
+}
+point intersection(line &amp;u,line &amp;v)
+{
+point ret=u.a;
+double t=((u.a.x-v.a.x)*(v.a.y-v.b.y) - (u.a.y-v.a.y)*(v.a.x-v.b.x))/((u.a.x-u.b.x)*(v.a.y-v.b.y)-(u.a.y-u.b.y)*(v.a.x-v.b.x));
+ret.x+=(u.b.x-u.a.x)*t;
+ret.y+=(u.b.y-u.a.y)*t;
+return ret;
+}
+int n,m;
+double dis(point &amp;a,point &amp;b)
+{
+    return sqrt((a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y));
+}
+int cmp(point a, point b)
+{
+    if(fabs(a.x-b.x)&lt;eps)
+        return a.y&lt;b.y;
+    return a.x&lt;b.x;
+}
+bool on_segment(point pi,point pj,point pk)//判断点pk时候在线段pi, pj上
+{
+    if(xmulit(pi, pj, pk)==0)
+    {
+        if(pk.x&gt;=min(pi.x,pj.x)&amp;&amp;pk.x&lt;=max(pi.x,pj.x)&amp;&amp;pk.y&gt;=min(pi.y,pj.y)&amp;&amp;pk.y&lt;=max(pi.y,pj.y))
+            return true;
+    }
+    return false;
+}
+bool segments_intersect(point p1,point p2,point p3,point p4)//判断线段是否相交
+{
+    double d1=xmulit(p3,p4,p1);
+    double d2=xmulit(p3,p4,p2);
+    double d3=xmulit(p1,p2,p3);
+    double d4=xmulit(p1,p2,p4);
+    if(d1*d2&lt;0&amp;&amp;d3*d4&lt;0)
+        return true;
+    else if(d1==0&amp;&amp;on_segment(p3,p4,p1))
+        return true;
+    else if(d2==0&amp;&amp;on_segment(p3,p4,p2))
+        return true;
+    else if(d3==0&amp;&amp;on_segment(p1,p2,p3))
+        return true;
+    else if(d4==0&amp;&amp;on_segment(p1,p2,p4))
+        return true;
+    return false;
+}
+int inpoto(point a)//判断点是否在多边形的内部
+{
+    int i;
+    point b,c,d;
+    b.y=a.y;
+    b.x=1e15;//定义射线
+    int flag=0;
+    int count=0;
+    for(i=0;i&lt;n;i++)
+    {
+        c = po[i];
+        d = po[i + 1];
+        if(on_segment(c,d,a))//该点在多边形的一条边上
+            return 1;
+        if(abs(c.y-d.y)&lt;eps)
+            continue;
+        if(on_segment(a,b,c))//和顶点相交的情况，如果y值较大则取
+        {
+            if(c.y&gt;d.y)
+                count++;
+        }
+        else if(on_segment(a,b,d))//和顶点相交的情况，如果y值较大则取
+        {
+            if(d.y&gt;c.y)
+                count++;
+        }
+        else if(segments_intersect(a,b,c,d))//和边相交
+            count++;
+    }
+    return count%2;//当L和多边形的交点数目C是奇数的时候，P在多边形内，是偶数的话P在多边形外。
+}
+point mid(point &amp;a,point &amp;b)
+{
+    point c;
+    c.x=(a.x+b.x)/2;
+    c.y=(a.y+b.y)/2;
+    return c;
+}
+double find_ans()
+{
+    point a,b;
+    int i,j,k,pos=0;
+    double ans=0;
+    po[n]=po[0];
+    for(i=0;i&lt;n;i++)
+    {
+        if(one_line(temp.a,temp.b,po[i],po[i+1]))
+        {
+          rec[pos++]=po[i];
+          rec[pos++]=po[i];
+          continue;
+        }
+        if(across(temp.a,temp.b,po[i],po[i+1]))
+        {
+          temp1.a=po[i],temp1.b=po[i+1];
+          rec[pos++]=intersection(temp,temp1);
+        }
+    }
+    sort(rec,rec+pos,cmp);
+    for(i=0;i&lt;pos-1;i++)
+    {
+       if(inpoto(mid(rec[i],rec[i+1])))
+          ans+=dis(rec[i],rec[i+1]);
+    }
+    return ans;
+}
+int main()
+{
+    int i,j,k;
+    while(scanf("%d%d",&amp;n,&amp;m))
+    {
+        if(m==0 &amp;&amp; m==0)
+        return 0;
+        for(i=0;i&lt;n;i++)
+        scanf("%lf%lf",&amp;po[i].x,&amp;po[i].y);
+        for(i=0;i&lt;m;i++)
+        {
+            scanf("%lf%lf%lf%lf",&amp;temp.a.x,&amp;temp.a.y,&amp;temp.b.x,&amp;temp.b.y);
+            printf("%.3lf\n",find_ans());
+        }
+    }
+    return 0;
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-40061">
+<article class="comment" id="comment-40061">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hsp_77_abc</a></span> on <a href="http://www.acmerblog.com/hdu-1154-Cutting-a-Polygon-1494.html#comment-40061" rel="nofollow"><time datetime="2015-06-02T18:06:25+00:00" pubdate="">2015年6月2日 at 下午6:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>信息不全</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-11303">
+<article class="comment" id="comment-11303">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">April</a></span> on <a href="http://www.acmerblog.com/hdu-1154-Cutting-a-Polygon-1494.html#comment-11303" rel="nofollow"><time datetime="2015-04-08T18:40:35+00:00" pubdate="">2015年4月8日 at 下午6:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已经挂掉了，给个参考呗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-11307">
+<article class="comment" id="comment-11307">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Monkey_Sun</a></span> on <a href="http://www.acmerblog.com/hdu-1154-Cutting-a-Polygon-1494.html#comment-11307" rel="nofollow"><time datetime="2015-02-05T07:35:23+00:00" pubdate="">2015年2月5日 at 上午7:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>题本身没错，但是HDOJ放题目的时候，前面有个题目解释了什么是XXX定律。<br/>
+这里直接放了这个题目，肯定没几个人明白是干啥</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-40064">
+<article class="comment" id="comment-40064">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">BGPY243956</a></span> on <a href="http://www.acmerblog.com/hdu-1154-Cutting-a-Polygon-1494.html#comment-40064" rel="nofollow"><time datetime="2014-11-13T16:52:07+00:00" pubdate="">2014年11月13日 at 下午4:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>都是一些基础题啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-40062">
+<article class="comment" id="comment-40062">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ssjssh</a></span> on <a href="http://www.acmerblog.com/hdu-1154-Cutting-a-Polygon-1494.html#comment-40062" rel="nofollow"><time datetime="2014-10-02T12:49:46+00:00" pubdate="">2014年10月2日 at 下午12:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>居然看懂了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-40065">
+<article class="comment" id="comment-40065">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mnmlist</a></span> on <a href="http://www.acmerblog.com/hdu-1154-Cutting-a-Polygon-1494.html#comment-40065" rel="nofollow"><time datetime="2014-09-23T03:36:16+00:00" pubdate="">2014年9月23日 at 上午3:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈呀！这个Dijkstra模板好长OwQ！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-40060">
+<article class="comment" id="comment-40060">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jade1827</a></span> on <a href="http://www.acmerblog.com/hdu-1154-Cutting-a-Polygon-1494.html#comment-40060" rel="nofollow"><time datetime="2014-09-18T16:31:38+00:00" pubdate="">2014年9月18日 at 下午4:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>约瑟夫也用说这么长……很成熟的一个问题了，分治的方法解起来o(n)就可以了，有兴趣可以看看具体数学的第一章，关于约瑟夫问题推导出了一系列的结论，很漂亮</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-11306">
+<article class="comment" id="comment-11306">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">woweizhineng</a></span> on <a href="http://www.acmerblog.com/hdu-1154-Cutting-a-Polygon-1494.html#comment-11306" rel="nofollow"><time datetime="2014-08-27T04:20:23+00:00" pubdate="">2014年8月27日 at 上午4:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>代码可真够长的！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-54325">
+<article class="comment" id="comment-54325">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">reking</a></span> on <a href="http://www.acmerblog.com/hdu-1154-Cutting-a-Polygon-1494.html#comment-54325" rel="nofollow"><time datetime="2014-06-23T11:14:35+00:00" pubdate="">2014年6月23日 at 上午11:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不同的编译器，printf(),执行的顺序不同，所以结果也就不同，建议不要那么写</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-40063">
+<article class="comment" id="comment-40063">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">windy</a></span> on <a href="http://www.acmerblog.com/hdu-1154-Cutting-a-Polygon-1494.html#comment-40063" rel="nofollow"><time datetime="2014-05-25T03:12:38+00:00" pubdate="">2014年5月25日 at 上午3:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题别太纠结了，不同的编译器结果不一</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-11304">
+<article class="comment" id="comment-11304">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">winter</a></span> on <a href="http://www.acmerblog.com/hdu-1154-Cutting-a-Polygon-1494.html#comment-11304" rel="nofollow"><time datetime="2014-04-03T05:24:12+00:00" pubdate="">2014年4月3日 at 上午5:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>太好了，收藏</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-40059">
+<article class="comment" id="comment-40059">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">a997930294</a></span> on <a href="http://www.acmerblog.com/hdu-1154-Cutting-a-Polygon-1494.html#comment-40059" rel="nofollow"><time datetime="2014-03-09T16:02:49+00:00" pubdate="">2014年3月9日 at 下午4:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很有意思，可惜我很菜啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-11305">
+<article class="comment" id="comment-11305">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">liuyuedeyu</a></span> on <a href="http://www.acmerblog.com/hdu-1154-Cutting-a-Polygon-1494.html#comment-11305" rel="nofollow"><time datetime="2014-01-29T15:50:18+00:00" pubdate="">2014年1月29日 at 下午3:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，值得借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-61310">
+<article class="comment" id="comment-61310">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">michaelwen</a></span> on <a href="http://www.acmerblog.com/hdu-1154-Cutting-a-Polygon-1494.html#comment-61310" rel="nofollow"><time datetime="2014-01-18T14:09:53+00:00" pubdate="">2014年1月18日 at 下午2:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的模板</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

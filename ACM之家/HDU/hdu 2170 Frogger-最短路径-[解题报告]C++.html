@@ -1,0 +1,397 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-30</div>
+<div class="tit"><h1 class="entry-title">hdu 2170 Frogger-最短路径-[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph/shortest-path" rel="category tag" title="查看最短路径中的全部文章">最短路径</a></span><span class="i4">围观1022次</span><span class="i3"><a class="ds-thread-count" data-thread-key="3323" href="http://www.acmerblog.com/hdu-2170-frogger-3323.html#comments" title="《hdu 2170 Frogger-最短路径-[解题报告]C++》上的评论">24 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Frogger</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Philip J. Frog just wanted to go for a mid-afternoon swim, but in typical frog fashion he’s ended up in the middle of a busy street. Help Phil figure out how long he’ll be hopping on hot asphalt before he finds his way to the nice cool water.
+<p>Phil may hop one square horizontally or vertically per second. He may only hop onto road, grass, or water. Additionally, he cannot occupy any square occupied by a car. Phil and the cars move at the same time, meaning Phil can “hop over” an oncoming car. Phil can also remain in the same square if he wishes.  All horizontal movement wraps (e.g., a rightward hop from the rightmost column places Phil in the leftmost column). Cars move horizontally in the direction indicated on the map (‘&lt;’ means leftward, ‘&gt;’ means rightward) at a rate of one square per second and never collide with anything. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+Input begins with a single integer specifying the number of test maps. Each map begins with two integers R and C (0 &lt; R, C &lt;= 30) specifying the number of rows and columns, respectively, followed by R lines each C characters long, specifying the map. The possible map characters are:
+<p>Phil (‘&amp;’) – Phil’s starting location. Each map contains exactly one. Always indicates road underneath.<br/>Tree (‘T’) – Impassable.<br/>Grass (‘.’) –  Phil can move freely in the grass.<br/>Road (‘-’) – Hot!<br/>Car (‘&lt;’, ‘&gt;’) – Always indicates road underneath.<br/>Water (‘~’) – Phil’s goal. </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+Input begins with a single integer specifying the number of test maps. Each map begins with two integers R and C (0 &lt; R, C &lt;= 30) specifying the number of rows and columns, respectively, followed by R lines each C characters long, specifying the map. The possible map characters are:
+<p>Phil (‘&amp;’) – Phil’s starting location. Each map contains exactly one. Always indicates road underneath.<br/>Tree (‘T’) – Impassable.<br/>Grass (‘.’) –  Phil can move freely in the grass.<br/>Road (‘-’) – Hot!<br/>Car (‘&lt;’, ‘&gt;’) – Always indicates road underneath.<br/>Water (‘~’) – Phil’s goal.</p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3
+2 1
+~
+&amp;
+4 7
+~TTTTTT
+.------
+--&gt;-&lt;--
+---&amp;---
+3 5
+~~~~~
+..T..
+&gt;&gt;&amp;&lt;&lt;</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+6
+Impassable</pre>
+<p> <!-- problem end --></p>
+<p> </p>
+<p><strong>转载请注明出处：優YoU  <a href="http://user.qzone.qq.com/289065406/blog/1299339470" target="_blank"></a></strong></p>
+<p>http://user.qzone.qq.com/289065406/blog/1299339470</p>
+<p> </p>
+<p><strong>提示：唉。。不说了，又是Floyd…注意精度就是了</strong></p>
+<p> </p>
+<p><strong>题目大意:</strong></p>
+<p>给出两只青蛙的坐标A、B，和其他的n-2个坐标，任一两个坐标点间都是双向连通的。显然从A到B存在至少一条的通路，每一条通路的元素都是这条通路中前后两个点的距离，这些距离中又有一个最大距离。</p>
+<p>现在要求求出所有通路的最大距离，并把这些最大距离作比较，把最小的一个最大距离作为青蛙的最小跳远距离。</p>
+<p> </p>
+<p><strong>Floyd算法</strong></p>
+<p>用Floyd算法求出两两最短路，再求出从每个点开始的最长路，最后从这n个最长路中求出最小的那个即为所求。</p>
+<p> </p>
+<p> </p>
+<pre class="brush:cpp ">//Memory Time 
+//584K   63MS 
+
+#include&lt;iostream&gt;
+#include&lt;math.h&gt;
+#include&lt;iomanip&gt;
+using namespace std;
+
+class coordinate
+{
+public:
+	double x,y;
+}point[201];
+
+double path[201][201];   //两点间的权值
+
+int main(void)
+{
+	int i,j,k;
+
+	int cases=1;
+	while(cases)
+	{
+		/*Read in*/
+
+		int n;   //numbers of stones;
+		cin&gt;&gt;n;
+		if(!n)break;
+
+		for(i=1;i&lt;=n;i++)
+			cin&gt;&gt;point[i].x&gt;&gt;point[i].y;
+
+		/*Compute the weights of any two points*/
+
+		for(i=1;i&lt;=n-1;i++)
+			for(j=i+1;j&lt;=n;j++)
+			{
+				double x2=point[i].x-point[j].x;
+				double y2=point[i].y-point[j].y;
+				path[i][j]=path[j][i]=sqrt(x2*x2+y2*y2);  //双向性
+			}
+
+		/*Floyd Algorithm*/
+
+		for(k=1;k&lt;=n;k++)    //k点是第3点
+			for(i=1;i&lt;=n-1;i++)    //主要针对由i到j的松弛,最终任意两点间的权值都会被分别松弛为最大跳的最小（但每个两点的最小不一定相同）
+				for(j=i+1;j&lt;=n;j++)
+					if(path[i][k]&lt;path[i][j] &amp;&amp; path[k][j]&lt;path[i][j])    //当边ik,kj的权值都小于ij时，则走i-&gt;k-&gt;j路线，否则走i-&gt;j路线
+						if(path[i][k]&lt;path[k][j])               //当走i-&gt;k-&gt;j路线时，选择max{ik,kj},只有选择最大跳才能保证连通
+							path[i][j]=path[j][i]=path[k][j];
+						else
+							path[i][j]=path[j][i]=path[i][k];
+
+		cout&lt;&lt;"Scenario #"&lt;&lt;cases++&lt;&lt;endl;
+		cout&lt;&lt;fixed&lt;&lt;setprecision(3)&lt;&lt;"Frog Distance = "&lt;&lt;path[1][2]&lt;&lt;endl;
+		//fixed用固定的小数点位数来显示浮点数（包括小数位全为0)
+		//setprecision(3)设置小数位数为3
+		cout&lt;&lt;endl;
+	}
+	return 0;
+}</pre>
+<p>
+ </p>
+<p>解题转自：http://blog.csdn.net/lyy289065406/article/details/6645854</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-86783">
+<article class="comment" id="comment-86783">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529762" rel="external nofollow">新用户197939</a></span> on <a href="http://www.acmerblog.com/hdu-2170-frogger-3323.html#comment-86783" rel="nofollow"><time datetime="2017-04-13T05:36:39+00:00" pubdate="">2017年4月13日 at 上午5:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>梯子p掉效果更佳</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-86782">
+<article class="comment" id="comment-86782">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529762" rel="external nofollow">新用户197939</a></span> on <a href="http://www.acmerblog.com/hdu-2170-frogger-3323.html#comment-86782" rel="nofollow"><time datetime="2017-04-13T05:36:39+00:00" pubdate="">2017年4月13日 at 上午5:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>梯子p掉效果更佳</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-86781">
+<article class="comment" id="comment-86781">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529762" rel="external nofollow">新用户197939</a></span> on <a href="http://www.acmerblog.com/hdu-2170-frogger-3323.html#comment-86781" rel="nofollow"><time datetime="2017-04-13T05:36:39+00:00" pubdate="">2017年4月13日 at 上午5:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>梯子p掉效果更佳</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-86780">
+<article class="comment" id="comment-86780">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529762" rel="external nofollow">新用户197939</a></span> on <a href="http://www.acmerblog.com/hdu-2170-frogger-3323.html#comment-86780" rel="nofollow"><time datetime="2017-04-13T05:36:39+00:00" pubdate="">2017年4月13日 at 上午5:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>梯子p掉效果更佳</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-86779">
+<article class="comment" id="comment-86779">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529762" rel="external nofollow">新用户197939</a></span> on <a href="http://www.acmerblog.com/hdu-2170-frogger-3323.html#comment-86779" rel="nofollow"><time datetime="2017-04-13T05:36:39+00:00" pubdate="">2017年4月13日 at 上午5:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>梯子p掉效果更佳</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-86778">
+<article class="comment" id="comment-86778">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529762" rel="external nofollow">新用户197939</a></span> on <a href="http://www.acmerblog.com/hdu-2170-frogger-3323.html#comment-86778" rel="nofollow"><time datetime="2017-04-13T05:36:39+00:00" pubdate="">2017年4月13日 at 上午5:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>梯子p掉效果更佳</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-86777">
+<article class="comment" id="comment-86777">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529762" rel="external nofollow">新用户197939</a></span> on <a href="http://www.acmerblog.com/hdu-2170-frogger-3323.html#comment-86777" rel="nofollow"><time datetime="2017-04-13T05:36:39+00:00" pubdate="">2017年4月13日 at 上午5:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>梯子p掉效果更佳</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-86776">
+<article class="comment" id="comment-86776">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529762" rel="external nofollow">新用户197939</a></span> on <a href="http://www.acmerblog.com/hdu-2170-frogger-3323.html#comment-86776" rel="nofollow"><time datetime="2017-04-13T05:36:39+00:00" pubdate="">2017年4月13日 at 上午5:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>梯子p掉效果更佳</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-86785">
+<article class="comment" id="comment-86785">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529762" rel="external nofollow">新用户197939</a></span> on <a href="http://www.acmerblog.com/hdu-2170-frogger-3323.html#comment-86785" rel="nofollow"><time datetime="2017-04-13T05:36:39+00:00" pubdate="">2017年4月13日 at 上午5:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>梯子p掉效果更佳</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-86784">
+<article class="comment" id="comment-86784">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529762" rel="external nofollow">新用户197939</a></span> on <a href="http://www.acmerblog.com/hdu-2170-frogger-3323.html#comment-86784" rel="nofollow"><time datetime="2017-04-13T05:36:39+00:00" pubdate="">2017年4月13日 at 上午5:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>梯子p掉效果更佳</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-44222">
+<article class="comment" id="comment-44222">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">a997930294</a></span> on <a href="http://www.acmerblog.com/hdu-2170-frogger-3323.html#comment-44222" rel="nofollow"><time datetime="2015-07-14T14:15:47+00:00" pubdate="">2015年7月14日 at 下午2:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个应该是最朴素的KMP实现</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-19678">
+<article class="comment" id="comment-19678">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangdilj</a></span> on <a href="http://www.acmerblog.com/hdu-2170-frogger-3323.html#comment-19678" rel="nofollow"><time datetime="2015-06-24T08:56:22+00:00" pubdate="">2015年6月24日 at 上午8:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>哎，path[0]应该是从零开始吧，为什么是赋值1呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-44224">
+<article class="comment" id="comment-44224">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hao555sky</a></span> on <a href="http://www.acmerblog.com/hdu-2170-frogger-3323.html#comment-44224" rel="nofollow"><time datetime="2015-05-09T14:50:56+00:00" pubdate="">2015年5月9日 at 下午2:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>递归实现的代码部分<br/>
+14句和18句的 wt[n - 1]是不是应该改为 wt[ n ] ?</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-44227">
+<article class="comment" id="comment-44227">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ygwx</a></span> on <a href="http://www.acmerblog.com/hdu-2170-frogger-3323.html#comment-44227" rel="nofollow"><time datetime="2015-03-25T11:41:32+00:00" pubdate="">2015年3月25日 at 上午11:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，就是把这32位当成一个长度为32的数组</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-44225">
+<article class="comment" id="comment-44225">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wall_</a></span> on <a href="http://www.acmerblog.com/hdu-2170-frogger-3323.html#comment-44225" rel="nofollow"><time datetime="2015-03-15T13:34:26+00:00" pubdate="">2015年3月15日 at 下午1:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>什么破题，题意好难懂啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-44226">
+<article class="comment" id="comment-44226">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">oneal</a></span> on <a href="http://www.acmerblog.com/hdu-2170-frogger-3323.html#comment-44226" rel="nofollow"><time datetime="2015-03-11T10:58:07+00:00" pubdate="">2015年3月11日 at 上午10:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我是来看评论的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-56349">
+<article class="comment" id="comment-56349">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Yaunxi</a></span> on <a href="http://www.acmerblog.com/hdu-2170-frogger-3323.html#comment-56349" rel="nofollow"><time datetime="2015-01-28T04:15:14+00:00" pubdate="">2015年1月28日 at 上午4:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已更正。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-44228">
+<article class="comment" id="comment-44228">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lint</a></span> on <a href="http://www.acmerblog.com/hdu-2170-frogger-3323.html#comment-44228" rel="nofollow"><time datetime="2014-11-15T10:06:22+00:00" pubdate="">2014年11月15日 at 上午10:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，再多来的CF上面的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-19680">
+<article class="comment" id="comment-19680">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fermi</a></span> on <a href="http://www.acmerblog.com/hdu-2170-frogger-3323.html#comment-19680" rel="nofollow"><time datetime="2014-10-05T10:52:08+00:00" pubdate="">2014年10月5日 at 上午10:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>mark, 备用</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-56351">
+<article class="comment" id="comment-56351">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaoriqiang2</a></span> on <a href="http://www.acmerblog.com/hdu-2170-frogger-3323.html#comment-56351" rel="nofollow"><time datetime="2014-10-04T08:41:00+00:00" pubdate="">2014年10月4日 at 上午8:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这怎么用Catalan数啊？求解答！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-44223">
+<article class="comment" id="comment-44223">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">congve1</a></span> on <a href="http://www.acmerblog.com/hdu-2170-frogger-3323.html#comment-44223" rel="nofollow"><time datetime="2014-08-04T11:34:15+00:00" pubdate="">2014年8月4日 at 上午11:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已更正。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-19681">
+<article class="comment" id="comment-19681">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bai</a></span> on <a href="http://www.acmerblog.com/hdu-2170-frogger-3323.html#comment-19681" rel="nofollow"><time datetime="2014-07-26T19:39:42+00:00" pubdate="">2014年7月26日 at 下午7:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我想整理一下leetcode的题解，站长能不能给权限</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-56350">
+<article class="comment" id="comment-56350">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tzf88888888</a></span> on <a href="http://www.acmerblog.com/hdu-2170-frogger-3323.html#comment-56350" rel="nofollow"><time datetime="2014-06-16T01:31:57+00:00" pubdate="">2014年6月16日 at 上午1:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>厉害，支持</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-19679">
+<article class="comment" id="comment-19679">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zzzzzz</a></span> on <a href="http://www.acmerblog.com/hdu-2170-frogger-3323.html#comment-19679" rel="nofollow"><time datetime="2014-05-15T11:06:27+00:00" pubdate="">2014年5月15日 at 上午11:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#include &lt;cstdio&gt;</p>
+<p>int main() {<br/>
+	//answer must be odd<br/>
+    int n, u, d;<br/>
+    while(scanf("%d%d%d",&amp;n,&amp;u,&amp;d)==3 &amp;&amp; n&gt;0) {<br/>
+        if(n&lt;=u) { puts("1"); continue; }<br/>
+        n-=u; u-=d; n+=u-1; n/=u;<br/>
+        n&lt;&lt;=1, ++n;<br/>
+        printf("%dn",n);<br/>
+    }<br/>
+    return 0;<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

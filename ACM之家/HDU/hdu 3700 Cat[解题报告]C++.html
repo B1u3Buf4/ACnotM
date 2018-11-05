@@ -1,0 +1,453 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>02-21</div>
+<div class="tit"><h1 class="entry-title">hdu 3700 Cat[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观223次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6676" href="http://www.acmerblog.com/hdu-3700-cat-6676.html#comments" title="《hdu 3700 Cat[解题报告]C++》上的评论">20 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Cat</h1>
+</div>
+<div>
+<p class="mytitle">问题描述 :</p>
+</div>
+<div class="mypanel">There is a cat, cat likes to sleep.<br/>
+If he sleeps, he sleeps continuously no less than A hours.<br/>
+For some strange reason, the cat can not stay awake continuously more than B hours.<br/>
+The cat is lazy, it could sleep all the time,<br/>
+but sometimes interesting events occur(such as cat food, TV show, etc) .<br/>
+The cat loves these events very much.<br/>
+So, Please help the cat plan their day so as not to miss any interesting events.<br/>
+Every day the cat wants to live on the same schedule.</div>
+<div>
+<p class="mytitle">输入:</p>
+</div>
+<div class="mypanel">The first line of the input file contains two integers A and B (1 &lt;= A, B &lt;= 24).<br/>
+The second line of the input file contains the number n, the number of interesting events (1 &lt;= n &lt;= 20).<br/>
+Following n rows describe the interesting events.<br/>
+Each event is described line of the form hh:mm-hh:mm, which specifies<br/>
+the time period during which it occurs. Time varies from 00:00 to 23:59.<br/>
+No two interesting events will overlap.<br/>
+If the event is completed earlier than the beginning, This means that it captures midnight.<br/>
+The event is considered to be occupying the whole minute,<br/>
+when it begins and the moment when it ends (event 12:00-13:59 lasted exactly 120 minutes). Start time and time end of the event are different.</div>
+<div>
+<p class="mytitle">输出:</p>
+</div>
+<div class="mypanel">The first line of the input file contains two integers A and B (1 &lt;= A, B &lt;= 24).<br/>
+The second line of the input file contains the number n, the number of interesting events (1 &lt;= n &lt;= 20).<br/>
+Following n rows describe the interesting events.<br/>
+Each event is described line of the form hh:mm-hh:mm, which specifies<br/>
+the time period during which it occurs. Time varies from 00:00 to 23:59.<br/>
+No two interesting events will overlap.<br/>
+If the event is completed earlier than the beginning, This means that it captures midnight.<br/>
+The event is considered to be occupying the whole minute,<br/>
+when it begins and the moment when it ends (event 12:00-13:59 lasted exactly 120 minutes). Start time and time end of the event are different.</div>
+<div>
+<p class="mytitle">样例输入:</p>
+</div>
+<pre class="mypanel iopanel">12 12
+1
+23:00-01:00
+3 4
+3
+07:00-08:00
+11:00-11:09
+19:00-19:59</pre>
+<div>
+<p class="mytitle">样例输出:</p>
+</div>
+<pre class="mypanel iopanel">Yes
+1
+01:07-22:13
+No</pre>
+<p><!-- problem end --></p>
+<pre class="brush:cpp">#include&lt;iostream&gt;
+#include&lt;stdlib.h&gt;
+using namespace std;
+#define N 21
+int n,sleep,awake;
+struct Time
+{
+    int hour;
+    int minite;
+    int sec;
+    void trans()
+    {        sec=hour*60+minite;    }
+    void retrans()
+    {        sec+=24*60;        }
+    void minusonesecond()
+    {
+        if(minite==0)
+            hour--,minite=59;
+        else minite--;
+        if(hour&lt;0)
+            hour+=24;
+    }
+    void addonesecond()
+    {
+        if(minite==59)
+            hour++,minite=0;
+        else minite++;
+        if(hour&gt;23)
+            hour-=24;
+    }
+    bool operator &lt; (const Time a)const
+    {    
+        if(hour==a.hour)
+        {
+            return minite&lt;a.minite;
+        }
+        return hour&lt;a.hour;        
+    }
+};
+
+struct Arrange
+{
+    Time tb,te;
+} affire[N];
+
+int cmp(const void *a,const void *b)
+{
+    struct Arrange *A=(Arrange*)a;
+    struct Arrange *B=(Arrange*)b;
+    if(B-&gt;tb&lt;A-&gt;tb)
+        return 1;
+    return -1;
+}
+
+Time sle[N][2];//sleep segment
+char evn[20];
+
+void solve(bool flag)
+{
+    int i,j,begin,end,temp=0,nowlast=0,segn=0;
+    Time temp1,temp2;
+    for(i=2;i&lt;=n;i++)
+    {
+        end=affire[i].tb.sec-1;
+        begin=affire[i-1].te.sec+1;
+        if(end&lt;begin&amp;&amp;begin-end!=1)
+            end+=24*60;
+        if(end-begin+1&gt;=sleep)//can sleep
+        {
+            ++segn;
+            temp1=affire[i-1].te;
+            temp1.addonesecond();
+            sle[segn][0]=temp1;
+            temp1=affire[i].tb;
+            temp1.minusonesecond();
+            sle[segn][1]=temp1;
+            nowlast=0;
+        }
+        else if(end-begin+1&lt;sleep)//cannot sleep
+        {
+            if(nowlast==0)
+                nowlast+=affire[i-1].te.sec-affire[i-1].tb.sec+1;
+            nowlast+=affire[i].te.sec-affire[i-1].te.sec+1;
+            if(nowlast&gt;awake)
+            {
+                printf("No/n");
+                return ;
+            }
+        }
+    }
+// [deal with the n-th and 1-st]
+        end=affire[1].tb.sec-1;
+        begin=affire[n].te.sec+1;
+        if(end&lt;begin&amp;&amp;begin-end!=1)
+            end+=24*60;
+        if(end-begin+1&gt;=sleep)//can sleep
+        {
+            ++segn;
+            temp2=affire[n].te;
+            temp2.addonesecond();
+            sle[segn][0]=temp2;
+            temp1=affire[1].tb;
+            temp1.minusonesecond();
+            sle[segn][1]=temp1;
+            nowlast=0;
+        }
+        else if(end-begin+1&lt;sleep)//cannot sleep
+        {
+            if(nowlast==0)
+                nowlast+=affire[n].te.sec-affire[n].tb.sec+1;
+            nowlast+=affire[1].te.sec-affire[n].te.sec+1;
+            if(nowlast&gt;awake)
+            {
+                printf("No/n");
+                return ;
+            }
+        }
+
+    if(n==0)
+    {
+        segn=1;
+        printf("Yes/n%d/n",segn);
+        printf("00:00-23:59/n");
+        return;
+    }
+    else
+    {
+        if(segn!=0)
+        {
+        printf("Yes/n%d/n",segn);
+        for(i=1;i&lt;=segn;i++)
+        {
+            printf("%02d:%02d-%02d:%02d/n",sle[i][0].hour,sle[i][0].minite,sle[i][1].hour,sle[i][1].minite);
+        }
+        }
+        else
+            printf("No/n");
+    }
+}
+
+int main()
+{
+    while(scanf("%d%d",&amp;sleep,&amp;awake)!=EOF)
+    {
+        sleep*=60,awake*=60;
+        scanf("%d",&amp;n);
+        int i,j;
+        bool flag=false;
+        bool ss=false;
+        for(i=1;i&lt;=n;i++)
+        {
+            Time T1,T2;
+            scanf("%d:%d-%d:%d",&amp;T1.hour,&amp;T1.minite,&amp;T2.hour,&amp;T2.minite);
+            T1.trans(),T2.trans();
+
+            if(T2.sec-T1.sec+1&gt;awake)
+            {
+                ss=true;
+            }
+            if(T2&lt;T1)
+            {
+                flag=true;
+                T2.retrans();
+            }
+            affire[i].tb=T1,affire[i].te=T2;
+        }
+        if(ss)
+        {
+            printf("No/n");
+            continue;
+        }
+        qsort(affire+1,n,sizeof(Time)*2,cmp);
+        solve(flag);//flag-&gt;是否跨午夜
+    }
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-73261">
+<article class="comment" id="comment-73261">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514921" rel="external nofollow">新用户822298</a></span> on <a href="http://www.acmerblog.com/hdu-3700-cat-6676.html#comment-73261" rel="nofollow"><time datetime="2017-04-11T22:05:33+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>也就是说，那时候就有人叫网管了？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-73260">
+<article class="comment" id="comment-73260">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514921" rel="external nofollow">新用户822298</a></span> on <a href="http://www.acmerblog.com/hdu-3700-cat-6676.html#comment-73260" rel="nofollow"><time datetime="2017-04-11T22:05:33+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>也就是说，那时候就有人叫网管了？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-73259">
+<article class="comment" id="comment-73259">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514921" rel="external nofollow">新用户822298</a></span> on <a href="http://www.acmerblog.com/hdu-3700-cat-6676.html#comment-73259" rel="nofollow"><time datetime="2017-04-11T22:05:33+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>也就是说，那时候就有人叫网管了？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-73258">
+<article class="comment" id="comment-73258">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514921" rel="external nofollow">新用户822298</a></span> on <a href="http://www.acmerblog.com/hdu-3700-cat-6676.html#comment-73258" rel="nofollow"><time datetime="2017-04-11T22:05:33+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>也就是说，那时候就有人叫网管了？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-73257">
+<article class="comment" id="comment-73257">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514921" rel="external nofollow">新用户822298</a></span> on <a href="http://www.acmerblog.com/hdu-3700-cat-6676.html#comment-73257" rel="nofollow"><time datetime="2017-04-11T22:05:33+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>也就是说，那时候就有人叫网管了？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-73256">
+<article class="comment" id="comment-73256">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514921" rel="external nofollow">新用户822298</a></span> on <a href="http://www.acmerblog.com/hdu-3700-cat-6676.html#comment-73256" rel="nofollow"><time datetime="2017-04-11T22:05:33+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>也就是说，那时候就有人叫网管了？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-73255">
+<article class="comment" id="comment-73255">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514921" rel="external nofollow">新用户822298</a></span> on <a href="http://www.acmerblog.com/hdu-3700-cat-6676.html#comment-73255" rel="nofollow"><time datetime="2017-04-11T22:05:33+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>也就是说，那时候就有人叫网管了？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33139">
+<article class="comment" id="comment-33139">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">kate19930802</a></span> on <a href="http://www.acmerblog.com/hdu-3700-cat-6676.html#comment-33139" rel="nofollow"><time datetime="2015-06-17T11:19:54+00:00" pubdate="">2015年6月17日 at 上午11:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>辛苦了，顶</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33146">
+<article class="comment" id="comment-33146">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zoe_music</a></span> on <a href="http://www.acmerblog.com/hdu-3700-cat-6676.html#comment-33146" rel="nofollow"><time datetime="2015-06-14T18:26:13+00:00" pubdate="">2015年6月14日 at 下午6:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第63行是不是漏了 return 1 + dis_right; ?</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33143">
+<article class="comment" id="comment-33143">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">943965021</a></span> on <a href="http://www.acmerblog.com/hdu-3700-cat-6676.html#comment-33143" rel="nofollow"><time datetime="2015-06-13T17:09:47+00:00" pubdate="">2015年6月13日 at 下午5:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>懂了，谢谢啦</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33142">
+<article class="comment" id="comment-33142">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Cloudy</a></span> on <a href="http://www.acmerblog.com/hdu-3700-cat-6676.html#comment-33142" rel="nofollow"><time datetime="2015-06-02T23:43:28+00:00" pubdate="">2015年6月2日 at 下午11:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法很不错啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33145">
+<article class="comment" id="comment-33145">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fastislow</a></span> on <a href="http://www.acmerblog.com/hdu-3700-cat-6676.html#comment-33145" rel="nofollow"><time datetime="2015-05-26T03:38:37+00:00" pubdate="">2015年5月26日 at 上午3:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我又来学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50870">
+<article class="comment" id="comment-50870">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">binqi_ren</a></span> on <a href="http://www.acmerblog.com/hdu-3700-cat-6676.html#comment-50870" rel="nofollow"><time datetime="2015-05-21T15:04:24+00:00" pubdate="">2015年5月21日 at 下午3:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>看来学好代数很重要啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33141">
+<article class="comment" id="comment-33141">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">HenrryCheng</a></span> on <a href="http://www.acmerblog.com/hdu-3700-cat-6676.html#comment-33141" rel="nofollow"><time datetime="2015-04-01T19:22:40+00:00" pubdate="">2015年4月1日 at 下午7:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不是HDU 2411。。标题党么。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33140">
+<article class="comment" id="comment-33140">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gladuo</a></span> on <a href="http://www.acmerblog.com/hdu-3700-cat-6676.html#comment-33140" rel="nofollow"><time datetime="2015-04-01T19:18:16+00:00" pubdate="">2015年4月1日 at 下午7:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>您没有考虑 树的根节点是负数的情况， 若树的根节点是个很大的负数，那么就要考虑过不过另外一边子树了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50871">
+<article class="comment" id="comment-50871">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">3136869079</a></span> on <a href="http://www.acmerblog.com/hdu-3700-cat-6676.html#comment-50871" rel="nofollow"><time datetime="2015-03-21T22:26:55+00:00" pubdate="">2015年3月21日 at 下午10:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>為甚麼fln*20+0.5f</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50872">
+<article class="comment" id="comment-50872">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">la0bei</a></span> on <a href="http://www.acmerblog.com/hdu-3700-cat-6676.html#comment-50872" rel="nofollow"><time datetime="2015-03-21T20:27:36+00:00" pubdate="">2015年3月21日 at 下午8:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>怎么输入两个0程序还没退出</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33144">
+<article class="comment" id="comment-33144">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Ding Qiangyuan</a></span> on <a href="http://www.acmerblog.com/hdu-3700-cat-6676.html#comment-33144" rel="nofollow"><time datetime="2015-03-16T07:28:56+00:00" pubdate="">2015年3月16日 at 上午7:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个分析相当全面，经典！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33147">
+<article class="comment" id="comment-33147">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">woweizhineng</a></span> on <a href="http://www.acmerblog.com/hdu-3700-cat-6676.html#comment-33147" rel="nofollow"><time datetime="2015-03-06T13:49:34+00:00" pubdate="">2015年3月6日 at 下午1:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>总结的很全面，学习了！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33138">
+<article class="comment" id="comment-33138">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">haojunyu</a></span> on <a href="http://www.acmerblog.com/hdu-3700-cat-6676.html#comment-33138" rel="nofollow"><time datetime="2015-02-27T17:29:23+00:00" pubdate="">2015年2月27日 at 下午5:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很有意思，可惜我很菜啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

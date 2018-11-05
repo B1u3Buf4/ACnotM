@@ -1,0 +1,508 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>09-17</div>
+<div class="tit"><h1 class="entry-title">HDU 4766-Network-分治-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/geometry" rel="category tag" title="查看计算几何中的全部文章">计算几何</a>, <a href="http://www.acmerblog.com/category/basis/recursion" rel="category tag" title="查看递归和分治中的全部文章">递归和分治</a></span><span class="i4">围观77次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7811" href="http://www.acmerblog.com/hdu-4766-network-7811.html#comments" title="《HDU 4766-Network-分治-[解题报告]HOJ》上的评论">27 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Network</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+With the help of the Ares L, the Emperor of Law and some stars of the future, General M succeeded in setting foot on the mountain, and had set up a kingdom, known as ACMSYSU. In order to reward these founding heroes, General M decided to share her network.<br/>General M has manufactured a router. One can use this network if the Euclidean distance between his/her house and the router is not greater than d. Because of General M’s excellent technology, the distance between her house and the router can be infinite.<br/>There are n heroes in the kingdom besides General M. General M is not an eccentric person, so she hopes everyone can use the network. Because the farther the router is away from her house, the worse the signal, General M wants the router being as close to her house as possible. Please help General M place the router so that the distance between her house and the router is minimized, and every one can use the router. You just need to tell General M the minimum distance. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input will consist of multiple test cases. <br/>For each case, the first line contains 3 integers x, y and d, which represent that the General M’s house locates at the point (x, y) and one can use the network if his/her distance to the router is not greater than d.<br/>The second line is a positive integer n, the number of heroes of the kingdom.<br/>Then n lines follow. Each line has 2 integers x_i and y_i, indicating that the i-th hero locates at point (x_i, y_i)。
+<p>All integers in the input satisfy that their absolute values are less than or equal to 10^5, and 1&lt;=n&lt;=10^3. </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input will consist of multiple test cases. <br/>For each case, the first line contains 3 integers x, y and d, which represent that the General M’s house locates at the point (x, y) and one can use the network if his/her distance to the router is not greater than d.<br/>The second line is a positive integer n, the number of heroes of the kingdom.<br/>Then n lines follow. Each line has 2 integers x_i and y_i, indicating that the i-th hero locates at point (x_i, y_i)。
+<p>All integers in the input satisfy that their absolute values are less than or equal to 10^5, and 1&lt;=n&lt;=10^3.</p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+0 0 5
+2
+5 3
+5 -3
+0 0 1
+2
+5 3
+5 -3</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+1.00
+X</pre>
+<p> <!-- problem end --></p>
+<p>题目链接：<a target="_blank">http://acm.hdu.edu.cn/showproblem.php?pid=4766</a></p>
+<p>这个题目标准解法估计不是二分+三分，不过我一见到这个题目就认为是二分或者三分，所以一直想下去就写成了下面的代码，dubug好久才AC</p>
+<p>二分枚举到房子的距离也就是路由器到房子的距离，然后三分判断在以房子为圆心这个距离为半径的的圆周上是否存在点能使这点到所有其他点</p>
+<p>距离&lt;r，这个三分判断利用圆的凸性很好判断，关键问题就是二分枚举距离的时候上下界无法确定，因为不具有单调性，但是如果能找到一点满足</p>
+<p>题目条件，以这点为二分枚举的右端点，那么单调性就产生了。那么怎么找这个点呢，想起点集最小圆覆盖，求出圆心与半径（最小 是否存在问题</p>
+<p>也解决了），最后二分！</p>
+<p>
+</p>
+<pre class="brush:cpp" name="code">#include &lt;string.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;algorithm&gt;
+#include &lt;iostream&gt;
+#include &lt;math.h&gt;
+using namespace std;
+#define MIN(a,b) (a&lt;b?a:b)
+#define MAX(a,b) (a&gt;b?a:b)
+#define inf 1e12
+#define eps 1e-8
+#define maxn 1500
+const double PI=acos(-1.0);
+struct point{
+    double x,y;
+    point(double _x=0,double _y=0):x(_x),y(_y){}
+}po[maxn],cir,temp,na;
+int n;
+double r,LL;
+double dis(point &amp;a,point &amp;b){
+    return sqrt((a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y));
+}
+bool is_ok(){
+    double re=r*2,t=0,p;
+    point pp;
+    for(int i=1;i&lt;=n;i++)
+    for(int j=i+1;j&lt;=n;j++){
+        p=dis(po[i],po[j]);
+        if(p&gt;t){
+            t=p;
+            pp=point((po[i].x+po[j].x)/2,(po[i].y+po[j].y)/2);
+            LL=dis(pp,cir);
+        }
+    }
+    if(t&gt;re) return false;
+    return true;
+}
+int get_max_point(point &amp;a){
+    int num=0,i;
+    double m=-1,re;
+    for(i=1;i&lt;=n;i++){
+        re=dis(a,po[i]);
+        if(re&gt;m) m=re,num=i;
+    }
+    return num;
+}
+bool solve(double left,double right,double R){//三分枚举
+    double ans,mid;
+    int num;
+    while(left&lt;=right){
+        mid=(left+right)/2;
+        temp.x=cir.x+R*cos(mid);
+        temp.y=cir.y+R*sin(mid);
+        num=get_max_point(temp);
+        ans=dis(temp,po[num]);
+        if(ans&lt;=r) return true;
+        mid+=eps;
+        temp.x=cir.x+R*cos(mid);
+        temp.y=cir.y+R*sin(mid);
+        mid-=eps;
+        if(dis(temp,po[num]) &gt; ans)
+        right=mid-eps;
+        else left=mid+eps;
+    }
+    return false;
+}
+int find_ans(){
+    double left=0,right=LL,ans=LL,mid,th,th1,a,b;
+    int num,num1;
+    point t,t1;
+    while(left&lt;=right){
+        mid=(left+right)/2;
+        if(solve(0,PI,mid) || solve(PI,PI*2,mid)) ans=MIN(ans,mid),right=mid-eps;
+        else left=mid+eps;
+    }
+    printf("%.2f\n",ans);
+    return 0;
+}
+#define MAXN 2000
+struct POINTSET{
+    double x, y;
+};
+const double precison=1.0e-8;
+POINTSET maxcic, point[MAXN];
+double radius;
+int curset[MAXN], posset[3];
+int set_cnt, pos_cnt;
+inline double dis_2(POINTSET &amp;from, POINTSET&amp; to){
+    return ((from.x-to.x)*(from.x-to.x)+(from.y-to.y)*(from.y-to.y));
+}
+int in_cic(int pt){
+    if(sqrt(dis_2(maxcic, point[pt]))&lt;radius+precison) return 1;
+    return 0;
+}
+int cal_mincic(){
+    if(pos_cnt==1 || pos_cnt==0)
+        return 0;
+    else if(pos_cnt==3){
+        double A1, B1, C1, A2, B2, C2;
+        int t0=posset[0], t1=posset[1], t2=posset[2];
+        A1=2*(point[t1].x-point[t0].x);
+        B1=2*(point[t1].y-point[t0].y);
+        C1=point[t1].x*point[t1].x-point[t0].x*point[t0].x+
+            point[t1].y*point[t1].y-point[t0].y*point[t0].y;
+        A2=2*(point[t2].x-point[t0].x);
+        B2=2*(point[t2].y-point[t0].y);
+        C2=point[t2].x*point[t2].x-point[t0].x*point[t0].x+
+            point[t2].y*point[t2].y-point[t0].y*point[t0].y;
+        maxcic.y=(C1*A2-C2*A1)/(A2*B1-A1*B2);
+        maxcic.x=(C1*B2-C2*B1)/(A1*B2-A2*B1);
+        radius=sqrt(dis_2(maxcic, point[t0]));
+    }
+    else if(pos_cnt==2){
+        maxcic.x=(point[posset[0]].x+point[posset[1]].x)/2;
+        maxcic.y=(point[posset[0]].y+point[posset[1]].y)/2;
+        radius=sqrt(dis_2(point[posset[0]], point[posset[1]]))/2;
+    }
+    return 1;
+}
+int mindisk(){
+    if(set_cnt==0 || pos_cnt==3){
+        return cal_mincic();
+    }
+    int tt=curset[--set_cnt];
+    int res=mindisk();
+    set_cnt++;
+    if(!res || !in_cic(tt)){
+        set_cnt--;
+        posset[pos_cnt++]=curset[set_cnt];
+        res=mindisk();
+        pos_cnt--;
+        curset[set_cnt++]=curset[0];
+        curset[0]=tt;
+    }
+    return res;
+}
+int main1(int n){
+        int i;
+        for(i=0; i&lt;n; i++)
+        point[i].x=po[i+1].x, point[i].y=po[i+1].y;
+            if(n==1){
+                maxcic.x=point[0].x;
+                maxcic.y=point[0].y;
+                radius=0;
+            }
+            set_cnt=n; pos_cnt=0;
+            for(i=0 ;i&lt;n ;i++)  curset[i]=i;
+            mindisk();
+    return 0;
+}
+int main(){
+    int i,j,k;
+    while(scanf("%lf%lf%lf",&amp;cir.x,&amp;cir.y,&amp;r)!=EOF){
+        scanf("%d",&amp;n);
+        for(i=1;i&lt;=n;i++) scanf("%lf%lf",&amp;po[i].x,&amp;po[i].y);
+        if(n==1){
+            printf("%.2lf\n",dis(cir,po[1])-r);
+            continue;
+        }
+        main1(n);
+        if(radius&gt;r){
+            printf("X\n");continue;
+        }
+        na.x=maxcic.x,na.y=maxcic.y;
+        LL=dis(cir,na);
+        find_ans();
+    }
+    return 0;
+}
+</pre>
+<p>参考：http://blog.csdn.net/sunrain_chy/article/details/12207129</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-102368">
+<article class="comment" id="comment-102368">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517670" rel="external nofollow">新用户770723</a></span> on <a href="http://www.acmerblog.com/hdu-4766-network-7811.html#comment-102368" rel="nofollow"><time datetime="2017-04-24T13:59:05+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>同是大量平民被灭，蛋友的态度似乎很不一样。一边是没什么直接关系的巴勒斯坦，一边是屠杀奸杀过很多很多很多很多很多很多很多汉人同胞的日本。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101894">
+<article class="comment" id="comment-101894">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515014" rel="external nofollow">新用户488721</a></span> on <a href="http://www.acmerblog.com/hdu-4766-network-7811.html#comment-101894" rel="nofollow"><time datetime="2017-04-23T14:02:18+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>增加动作机最后一段行程适当降低射速，然后装上两门双23  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101408">
+<article class="comment" id="comment-101408">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517690" rel="external nofollow">新用户410366</a></span> on <a href="http://www.acmerblog.com/hdu-4766-network-7811.html#comment-101408" rel="nofollow"><time datetime="2017-04-22T13:59:13+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>后人哀之而不鉴之，亦使后人而复哀后人也。——送给日本最精辟的一句话！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101407">
+<article class="comment" id="comment-101407">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517690" rel="external nofollow">新用户410366</a></span> on <a href="http://www.acmerblog.com/hdu-4766-network-7811.html#comment-101407" rel="nofollow"><time datetime="2017-04-22T13:59:13+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>后人哀之而不鉴之，亦使后人而复哀后人也。——送给日本最精辟的一句话！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101406">
+<article class="comment" id="comment-101406">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517690" rel="external nofollow">新用户410366</a></span> on <a href="http://www.acmerblog.com/hdu-4766-network-7811.html#comment-101406" rel="nofollow"><time datetime="2017-04-22T13:59:13+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>后人哀之而不鉴之，亦使后人而复哀后人也。——送给日本最精辟的一句话！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101405">
+<article class="comment" id="comment-101405">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517690" rel="external nofollow">新用户410366</a></span> on <a href="http://www.acmerblog.com/hdu-4766-network-7811.html#comment-101405" rel="nofollow"><time datetime="2017-04-22T13:59:13+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>后人哀之而不鉴之，亦使后人而复哀后人也。——送给日本最精辟的一句话！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100624">
+<article class="comment" id="comment-100624">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518491" rel="external nofollow">新用户418322</a></span> on <a href="http://www.acmerblog.com/hdu-4766-network-7811.html#comment-100624" rel="nofollow"><time datetime="2017-04-21T14:04:12+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>恐怖分子是恐怖分子，请不要把恐怖分子看成维族同胞的代名词，绝大多数维族同胞都是善良可爱的，同在一片蓝天下，我们都是中国人。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100623">
+<article class="comment" id="comment-100623">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518491" rel="external nofollow">新用户418322</a></span> on <a href="http://www.acmerblog.com/hdu-4766-network-7811.html#comment-100623" rel="nofollow"><time datetime="2017-04-21T14:04:12+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>恐怖分子是恐怖分子，请不要把恐怖分子看成维族同胞的代名词，绝大多数维族同胞都是善良可爱的，同在一片蓝天下，我们都是中国人。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100622">
+<article class="comment" id="comment-100622">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518491" rel="external nofollow">新用户418322</a></span> on <a href="http://www.acmerblog.com/hdu-4766-network-7811.html#comment-100622" rel="nofollow"><time datetime="2017-04-21T14:04:12+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>恐怖分子是恐怖分子，请不要把恐怖分子看成维族同胞的代名词，绝大多数维族同胞都是善良可爱的，同在一片蓝天下，我们都是中国人。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96803">
+<article class="comment" id="comment-96803">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522398" rel="external nofollow">新用户478191</a></span> on <a href="http://www.acmerblog.com/hdu-4766-network-7811.html#comment-96803" rel="nofollow"><time datetime="2017-04-19T19:07:52+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>结果里面只有222块。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96802">
+<article class="comment" id="comment-96802">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522398" rel="external nofollow">新用户478191</a></span> on <a href="http://www.acmerblog.com/hdu-4766-network-7811.html#comment-96802" rel="nofollow"><time datetime="2017-04-19T19:07:52+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>结果里面只有222块。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96801">
+<article class="comment" id="comment-96801">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522398" rel="external nofollow">新用户478191</a></span> on <a href="http://www.acmerblog.com/hdu-4766-network-7811.html#comment-96801" rel="nofollow"><time datetime="2017-04-19T19:07:52+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>结果里面只有222块。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65987">
+<article class="comment" id="comment-65987">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521812" rel="external nofollow">新用户883778</a></span> on <a href="http://www.acmerblog.com/hdu-4766-network-7811.html#comment-65987" rel="nofollow"><time datetime="2017-04-10T14:37:46+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>时隔多年，依然留着那熟悉的号码，但是存留在黑名单里。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65986">
+<article class="comment" id="comment-65986">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521812" rel="external nofollow">新用户883778</a></span> on <a href="http://www.acmerblog.com/hdu-4766-network-7811.html#comment-65986" rel="nofollow"><time datetime="2017-04-10T14:37:46+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>时隔多年，依然留着那熟悉的号码，但是存留在黑名单里。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65985">
+<article class="comment" id="comment-65985">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521812" rel="external nofollow">新用户883778</a></span> on <a href="http://www.acmerblog.com/hdu-4766-network-7811.html#comment-65985" rel="nofollow"><time datetime="2017-04-10T14:37:46+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>时隔多年，依然留着那熟悉的号码，但是存留在黑名单里。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65984">
+<article class="comment" id="comment-65984">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521812" rel="external nofollow">新用户883778</a></span> on <a href="http://www.acmerblog.com/hdu-4766-network-7811.html#comment-65984" rel="nofollow"><time datetime="2017-04-10T14:37:46+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>时隔多年，依然留着那熟悉的号码，但是存留在黑名单里。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65983">
+<article class="comment" id="comment-65983">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521812" rel="external nofollow">新用户883778</a></span> on <a href="http://www.acmerblog.com/hdu-4766-network-7811.html#comment-65983" rel="nofollow"><time datetime="2017-04-10T14:37:46+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>时隔多年，依然留着那熟悉的号码，但是存留在黑名单里。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65982">
+<article class="comment" id="comment-65982">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521812" rel="external nofollow">新用户883778</a></span> on <a href="http://www.acmerblog.com/hdu-4766-network-7811.html#comment-65982" rel="nofollow"><time datetime="2017-04-10T14:37:46+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>时隔多年，依然留着那熟悉的号码，但是存留在黑名单里。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65981">
+<article class="comment" id="comment-65981">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521812" rel="external nofollow">新用户883778</a></span> on <a href="http://www.acmerblog.com/hdu-4766-network-7811.html#comment-65981" rel="nofollow"><time datetime="2017-04-10T14:37:46+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>时隔多年，依然留着那熟悉的号码，但是存留在黑名单里。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65980">
+<article class="comment" id="comment-65980">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521812" rel="external nofollow">新用户883778</a></span> on <a href="http://www.acmerblog.com/hdu-4766-network-7811.html#comment-65980" rel="nofollow"><time datetime="2017-04-10T14:37:46+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>时隔多年，依然留着那熟悉的号码，但是存留在黑名单里。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65979">
+<article class="comment" id="comment-65979">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521812" rel="external nofollow">新用户883778</a></span> on <a href="http://www.acmerblog.com/hdu-4766-network-7811.html#comment-65979" rel="nofollow"><time datetime="2017-04-10T14:37:46+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>时隔多年，依然留着那熟悉的号码，但是存留在黑名单里。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65978">
+<article class="comment" id="comment-65978">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521812" rel="external nofollow">新用户883778</a></span> on <a href="http://www.acmerblog.com/hdu-4766-network-7811.html#comment-65978" rel="nofollow"><time datetime="2017-04-10T14:37:46+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>时隔多年，依然留着那熟悉的号码，但是存留在黑名单里。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65977">
+<article class="comment" id="comment-65977">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521812" rel="external nofollow">新用户883778</a></span> on <a href="http://www.acmerblog.com/hdu-4766-network-7811.html#comment-65977" rel="nofollow"><time datetime="2017-04-10T14:37:46+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>时隔多年，依然留着那熟悉的号码，但是存留在黑名单里。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65976">
+<article class="comment" id="comment-65976">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521812" rel="external nofollow">新用户883778</a></span> on <a href="http://www.acmerblog.com/hdu-4766-network-7811.html#comment-65976" rel="nofollow"><time datetime="2017-04-10T14:37:46+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>时隔多年，依然留着那熟悉的号码，但是存留在黑名单里。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65975">
+<article class="comment" id="comment-65975">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521812" rel="external nofollow">新用户883778</a></span> on <a href="http://www.acmerblog.com/hdu-4766-network-7811.html#comment-65975" rel="nofollow"><time datetime="2017-04-10T14:37:46+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>时隔多年，依然留着那熟悉的号码，但是存留在黑名单里。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65974">
+<article class="comment" id="comment-65974">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521812" rel="external nofollow">新用户883778</a></span> on <a href="http://www.acmerblog.com/hdu-4766-network-7811.html#comment-65974" rel="nofollow"><time datetime="2017-04-10T14:37:46+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>时隔多年，依然留着那熟悉的号码，但是存留在黑名单里。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65973">
+<article class="comment" id="comment-65973">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521812" rel="external nofollow">新用户883778</a></span> on <a href="http://www.acmerblog.com/hdu-4766-network-7811.html#comment-65973" rel="nofollow"><time datetime="2017-04-10T14:37:46+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>时隔多年，依然留着那熟悉的号码，但是存留在黑名单里。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

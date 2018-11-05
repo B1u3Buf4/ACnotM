@@ -1,0 +1,351 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>05-23</div>
+<div class="tit"><h1 class="entry-title">HDU 4226-Sunday Drive-动态规划-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a></span><span class="i4">围观125次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7235" href="http://www.acmerblog.com/hdu-4226-sunday-drive-7235.html#comments" title="《HDU 4226-Sunday Drive-动态规划-[解题报告]HOJ》上的评论">19 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Sunday Drive</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+After wracking your brains at a programing contest on Saturday, you’d like to relax by taking a leisurely Sunday drive. But, gasoline is so expensive nowadays! Maybe, by creatively changing lanes, you can minimize the distance you travel<br/>and save some money!<br/>You will be given a description of several sections of a highway. All sections will have the same number of lanes. Think of your car as a point mass, moving down the center of the lane. Each lane will be 10 feet wide. There are two kinds of highway sections: curved and straight. You can only change lanes on straight sections, and it takes a minimum of 100 feet of the straight section to move over one lane. You can take longer than that, of course, if you choose.<br/>All curve sections will make 90 degree turns. You cannot change lanes on a curve section. In addition, you must be driving along the exact middle of a lane during a turn. So during a turn your position will be 5 feet, or 15 feet, or 25 feet from the edge, etc.<br/>Given a description of a highway, compute the minimum total distance required travel the entire highway, including curves and lane changes. You can start, and end, in any lane you choose. Assume that your car is a point mass in the center of the lane. The highway may cross over/under itself, but the changes in elevation are miniscule, so you shouldn’t worry about their impact on your distance traveled.<br/><center>In order to be used to cross 2 lanes,</center><br/><center>this straight section must be at least 200 feet long.</center><br/><center><img alt="Simulation?" src="http://www.acmerblog.com/img/1440995023139.jpg"/></center> </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+There will be several test cases in the input. Each test case will begin with two integers<br/>N M<br/>Where N (1 ≤ N ≤ 1,000) is the number of segments, and M (2 ≤ M ≤ 10) is the number of lanes. <br/>On each of the next N lines will be a description of a segment, consisting of a letter and a number, with a single space between them:<br/>T K<br/>The letter T is one of S, L, or R (always capital). This indicates the type of the section: a straight section (S), a left curve (L) or a right curve (R). If the section is a straight section, then the number K (10 ≤ K ≤ 10,000) is simply its length, in feet. If the section is a right or left curve, then the number K (10 ≤ K ≤ 10,000) is the radius of the inside edge of the highway, again in feet. There will never be consecutive straight sections in the input, but multiple consecutive turns are possible. The input will end with a line with two 0s. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+There will be several test cases in the input. Each test case will begin with two integers<br/>N M<br/>Where N (1 ≤ N ≤ 1,000) is the number of segments, and M (2 ≤ M ≤ 10) is the number of lanes. <br/>On each of the next N lines will be a description of a segment, consisting of a letter and a number, with a single space between them:<br/>T K<br/>The letter T is one of S, L, or R (always capital). This indicates the type of the section: a straight section (S), a left curve (L) or a right curve (R). If the section is a straight section, then the number K (10 ≤ K ≤ 10,000) is simply its length, in feet. If the section is a right or left curve, then the number K (10 ≤ K ≤ 10,000) is the radius of the inside edge of the highway, again in feet. There will never be consecutive straight sections in the input, but multiple consecutive turns are possible. The input will end with a line with two 0s.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3 3
+R 100
+S 1000
+L 100
+9 5
+S 2500
+L 500
+S 2000
+L 500
+S 5000
+L 500
+S 2000
+L 500
+S 2500
+5 4
+L 100
+L 100
+L 100
+L 100
+L 100
+0 0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+1330.07
+17173.01
+824.67</pre>
+<p> <!-- problem end --></p>
+<p><span style="font-size:18px">动态规划题。因为题目有一个地方看错了，赛后才AC。</span></p>
+<p><span style="font-size:18px"><br/>
+</span></p>
+<p><span style="font-size:18px"></span></p>
+<pre class="brush:cpp" name="code">#include &lt;iostream&gt;
+#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+#include &lt;cmath&gt;
+
+
+using namespace std;
+
+
+const int maxn = 1111;
+const double PI = 3.14159265358979323846;
+const double oo = (1 &lt;&lt; 30) * 1.0;
+char kind[maxn];
+double len[maxn];
+double dp[maxn][12];
+int n, m;
+
+
+// 计算从第a段的第b条跑道的起点走到第c条跑道的终点所需的最短路程
+double calc(int a, int b, int c)
+{
+    if (kind[a] == 'R' || kind[a] == 'L')
+    {
+        if (b == c)
+        {
+            double r;
+            if (kind[a] == 'R') // 这里要根据不同的弯道确定半径
+                r = (b - 1) * 10.0 + 5 + len[a];
+            else r = (m - b) * 10.0 + 5 + len[a];
+            return (PI / 2.0 * r);
+        }
+        else return oo; // 不可达，返回无穷大
+    }
+    else
+    {
+        if (len[a] &lt; abs((c - b)) * 100.0) // 最初写的是len[a] &lt; 100.0,就是WA在了这里，题目没看清
+            return oo;
+        else
+            return (sqrt(len[a] * len[a] + (b - c) * 10 * (b - c) * 10));
+    }
+}
+
+
+double DP()
+{
+    for (int i = 0; i &lt;= m; ++i)
+        dp[0][i] = 0.0;
+    for (int i = 1; i &lt;= n; ++i)
+    {
+        for (int j = 1; j &lt;= m; ++j)
+        {
+            dp[i][j] = oo;
+            for (int k = 1; k &lt;= m; ++k)
+            {
+                dp[i][j] = min(dp[i][j], dp[i-1][k] + calc(i, k, j));
+            }
+        }
+    }
+    double ans = oo;
+    for (int i = 1; i &lt;= m; ++i)
+        ans = min(ans, dp[n][i]);
+    return ans;
+}
+
+
+int main()
+{
+    while (scanf("%d %d", &amp;n, &amp;m))
+    {
+        if (n == 0 &amp;&amp; m == 0)
+            break;
+        char ch;
+        for (int i = 1; i &lt;= n; ++i)
+        {
+            scanf("\n%c %lf", &amp;kind[i], &amp;len[i]);
+        }
+        printf("%.2lf\n", DP());
+    }
+    return 0;
+}
+</pre>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/ahfywff/article/details/7506187</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-99090">
+<article class="comment" id="comment-99090">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525069" rel="external nofollow">新用户372360</a></span> on <a href="http://www.acmerblog.com/hdu-4226-sunday-drive-7235.html#comment-99090" rel="nofollow"><time datetime="2017-04-20T17:02:28+00:00" pubdate="">2017年4月20日 at 下午5:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是吗？为什么我觉得你才是真真的奴才。还是很有自觉性的奴才。有没想过你为什么我会这么说？你的奴性非常明显，你每天说这种话想显得比别人更加聪明智慧。其实呢? 你说的这些陈词滥调，只会让人觉得真的是装逼也需要水平。不然就会像你一样让人作呕</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-99089">
+<article class="comment" id="comment-99089">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525069" rel="external nofollow">新用户372360</a></span> on <a href="http://www.acmerblog.com/hdu-4226-sunday-drive-7235.html#comment-99089" rel="nofollow"><time datetime="2017-04-20T17:02:28+00:00" pubdate="">2017年4月20日 at 下午5:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是吗？为什么我觉得你才是真真的奴才。还是很有自觉性的奴才。有没想过你为什么我会这么说？你的奴性非常明显，你每天说这种话想显得比别人更加聪明智慧。其实呢? 你说的这些陈词滥调，只会让人觉得真的是装逼也需要水平。不然就会像你一样让人作呕</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-99088">
+<article class="comment" id="comment-99088">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525069" rel="external nofollow">新用户372360</a></span> on <a href="http://www.acmerblog.com/hdu-4226-sunday-drive-7235.html#comment-99088" rel="nofollow"><time datetime="2017-04-20T17:02:28+00:00" pubdate="">2017年4月20日 at 下午5:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是吗？为什么我觉得你才是真真的奴才。还是很有自觉性的奴才。有没想过你为什么我会这么说？你的奴性非常明显，你每天说这种话想显得比别人更加聪明智慧。其实呢? 你说的这些陈词滥调，只会让人觉得真的是装逼也需要水平。不然就会像你一样让人作呕</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-99087">
+<article class="comment" id="comment-99087">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525069" rel="external nofollow">新用户372360</a></span> on <a href="http://www.acmerblog.com/hdu-4226-sunday-drive-7235.html#comment-99087" rel="nofollow"><time datetime="2017-04-20T17:02:28+00:00" pubdate="">2017年4月20日 at 下午5:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是吗？为什么我觉得你才是真真的奴才。还是很有自觉性的奴才。有没想过你为什么我会这么说？你的奴性非常明显，你每天说这种话想显得比别人更加聪明智慧。其实呢? 你说的这些陈词滥调，只会让人觉得真的是装逼也需要水平。不然就会像你一样让人作呕</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-99086">
+<article class="comment" id="comment-99086">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525069" rel="external nofollow">新用户372360</a></span> on <a href="http://www.acmerblog.com/hdu-4226-sunday-drive-7235.html#comment-99086" rel="nofollow"><time datetime="2017-04-20T17:02:28+00:00" pubdate="">2017年4月20日 at 下午5:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是吗？为什么我觉得你才是真真的奴才。还是很有自觉性的奴才。有没想过你为什么我会这么说？你的奴性非常明显，你每天说这种话想显得比别人更加聪明智慧。其实呢? 你说的这些陈词滥调，只会让人觉得真的是装逼也需要水平。不然就会像你一样让人作呕</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-99085">
+<article class="comment" id="comment-99085">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525069" rel="external nofollow">新用户372360</a></span> on <a href="http://www.acmerblog.com/hdu-4226-sunday-drive-7235.html#comment-99085" rel="nofollow"><time datetime="2017-04-20T17:02:28+00:00" pubdate="">2017年4月20日 at 下午5:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是吗？为什么我觉得你才是真真的奴才。还是很有自觉性的奴才。有没想过你为什么我会这么说？你的奴性非常明显，你每天说这种话想显得比别人更加聪明智慧。其实呢? 你说的这些陈词滥调，只会让人觉得真的是装逼也需要水平。不然就会像你一样让人作呕</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-99084">
+<article class="comment" id="comment-99084">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525069" rel="external nofollow">新用户372360</a></span> on <a href="http://www.acmerblog.com/hdu-4226-sunday-drive-7235.html#comment-99084" rel="nofollow"><time datetime="2017-04-20T17:02:28+00:00" pubdate="">2017年4月20日 at 下午5:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是吗？为什么我觉得你才是真真的奴才。还是很有自觉性的奴才。有没想过你为什么我会这么说？你的奴性非常明显，你每天说这种话想显得比别人更加聪明智慧。其实呢? 你说的这些陈词滥调，只会让人觉得真的是装逼也需要水平。不然就会像你一样让人作呕</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-99083">
+<article class="comment" id="comment-99083">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525069" rel="external nofollow">新用户372360</a></span> on <a href="http://www.acmerblog.com/hdu-4226-sunday-drive-7235.html#comment-99083" rel="nofollow"><time datetime="2017-04-20T17:02:28+00:00" pubdate="">2017年4月20日 at 下午5:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是吗？为什么我觉得你才是真真的奴才。还是很有自觉性的奴才。有没想过你为什么我会这么说？你的奴性非常明显，你每天说这种话想显得比别人更加聪明智慧。其实呢? 你说的这些陈词滥调，只会让人觉得真的是装逼也需要水平。不然就会像你一样让人作呕</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-99082">
+<article class="comment" id="comment-99082">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525069" rel="external nofollow">新用户372360</a></span> on <a href="http://www.acmerblog.com/hdu-4226-sunday-drive-7235.html#comment-99082" rel="nofollow"><time datetime="2017-04-20T17:02:28+00:00" pubdate="">2017年4月20日 at 下午5:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是吗？为什么我觉得你才是真真的奴才。还是很有自觉性的奴才。有没想过你为什么我会这么说？你的奴性非常明显，你每天说这种话想显得比别人更加聪明智慧。其实呢? 你说的这些陈词滥调，只会让人觉得真的是装逼也需要水平。不然就会像你一样让人作呕</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68789">
+<article class="comment" id="comment-68789">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461020" rel="external nofollow">新用户531762</a></span> on <a href="http://www.acmerblog.com/hdu-4226-sunday-drive-7235.html#comment-68789" rel="nofollow"><time datetime="2017-04-11T10:16:02+00:00" pubdate="">2017年4月11日 at 上午10:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我总会说：借你吉言。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68788">
+<article class="comment" id="comment-68788">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461020" rel="external nofollow">新用户531762</a></span> on <a href="http://www.acmerblog.com/hdu-4226-sunday-drive-7235.html#comment-68788" rel="nofollow"><time datetime="2017-04-11T10:16:02+00:00" pubdate="">2017年4月11日 at 上午10:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我总会说：借你吉言。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68787">
+<article class="comment" id="comment-68787">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461020" rel="external nofollow">新用户531762</a></span> on <a href="http://www.acmerblog.com/hdu-4226-sunday-drive-7235.html#comment-68787" rel="nofollow"><time datetime="2017-04-11T10:16:02+00:00" pubdate="">2017年4月11日 at 上午10:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我总会说：借你吉言。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68786">
+<article class="comment" id="comment-68786">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461020" rel="external nofollow">新用户531762</a></span> on <a href="http://www.acmerblog.com/hdu-4226-sunday-drive-7235.html#comment-68786" rel="nofollow"><time datetime="2017-04-11T10:16:02+00:00" pubdate="">2017年4月11日 at 上午10:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我总会说：借你吉言。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68785">
+<article class="comment" id="comment-68785">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461020" rel="external nofollow">新用户531762</a></span> on <a href="http://www.acmerblog.com/hdu-4226-sunday-drive-7235.html#comment-68785" rel="nofollow"><time datetime="2017-04-11T10:16:02+00:00" pubdate="">2017年4月11日 at 上午10:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我总会说：借你吉言。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68784">
+<article class="comment" id="comment-68784">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461020" rel="external nofollow">新用户531762</a></span> on <a href="http://www.acmerblog.com/hdu-4226-sunday-drive-7235.html#comment-68784" rel="nofollow"><time datetime="2017-04-11T10:16:02+00:00" pubdate="">2017年4月11日 at 上午10:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我总会说：借你吉言。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68783">
+<article class="comment" id="comment-68783">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461020" rel="external nofollow">新用户531762</a></span> on <a href="http://www.acmerblog.com/hdu-4226-sunday-drive-7235.html#comment-68783" rel="nofollow"><time datetime="2017-04-11T10:16:02+00:00" pubdate="">2017年4月11日 at 上午10:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我总会说：借你吉言。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68782">
+<article class="comment" id="comment-68782">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461020" rel="external nofollow">新用户531762</a></span> on <a href="http://www.acmerblog.com/hdu-4226-sunday-drive-7235.html#comment-68782" rel="nofollow"><time datetime="2017-04-11T10:16:02+00:00" pubdate="">2017年4月11日 at 上午10:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我总会说：借你吉言。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68781">
+<article class="comment" id="comment-68781">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461020" rel="external nofollow">新用户531762</a></span> on <a href="http://www.acmerblog.com/hdu-4226-sunday-drive-7235.html#comment-68781" rel="nofollow"><time datetime="2017-04-11T10:16:02+00:00" pubdate="">2017年4月11日 at 上午10:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我总会说：借你吉言。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68780">
+<article class="comment" id="comment-68780">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461020" rel="external nofollow">新用户531762</a></span> on <a href="http://www.acmerblog.com/hdu-4226-sunday-drive-7235.html#comment-68780" rel="nofollow"><time datetime="2017-04-11T10:16:02+00:00" pubdate="">2017年4月11日 at 上午10:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我总会说：借你吉言。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

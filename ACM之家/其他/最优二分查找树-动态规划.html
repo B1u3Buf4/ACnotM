@@ -1,0 +1,364 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>07-05</div>
+<div class="tit"><h1 class="entry-title">最优二分查找树-动态规划</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/gaotong2055" rel="author" title="由dragon发布">dragon</a></span><span class="i1"><a href="http://www.acmerblog.com/category/zhuanti/algorithm" rel="category tag" title="查看算法分析中的全部文章">算法分析</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a></span><span class="i4">围观1288次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5923" href="http://www.acmerblog.com/optimal-binary-search-tree-5923.html#comments" title="《最优二分查找树-动态规划》上的评论">24 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p><strong>最优二分查找树</strong></p>
+<p>给一个已排序的数组 keys[0.. n-1] 作为待搜索的关键字和 一个 freq[0.. n-1]数组表示搜索每个关键字的频率。构建一个最优二分查找树，使得搜索的总花费最小。首先，需要定义二分查找的花费，每个节点的花费为该节点的高度乘以该节点查找的频率。根节点的高度为1.</p>
+<p>Given a sorted array <em>keys[0.. n-1]</em> of search keys and an array <em>freq[0.. n-1]</em> of frequency counts, where<em>freq[i]</em> is the number of searches to <em>keys[i]</em>. Construct a binary search tree of all keys such that the total cost of all the searches is as small as possible.</p>
+<pre class="brush:other"> 例 1
+输入:  keys[] = {10, 12}, freq[] = {34, 50}
+有以下两种可能：
+        10                       12
+          \                     / 
+           12                 10
+          I                     II
+tree I 的花费为 34*1 + 50*2 = 134
+tree II 的花费为 50*1 + 34*2 = 118 
+
+例2
+输入:  keys[] = {10, 12, 20}, freq[] = {34, 8, 50}
+有以下几种可能：
+    10                12                 20         10              20
+      \             /    \              /             \            /
+      12          10     20           12               20         10  
+        \                            /                 /           \
+         20                        10                12             12  
+     I               II             III             IV             V
+其中第5棵树的花费最小： 1*50 + 2*34 + 3*8 = 142</pre>
+<p>可以发现，总花费的大小其实和keys[]数组无关的。主要是元素的查找频率有关。<br/>
+<strong>最优子结构</strong></p>
+<p>由于数组是已排序的，并且根据二分查找树的性质，给定关键字keys[i,...,j]，假设keys[r](i&lt;=r&lt;=j)是包含这些键的一棵最优子树的根，则其左子树包含关键字keys[i,...,r-1] 右子树包含关键字keys[r+1,...,j]。我们检查所有的候选根keys[r],就保证可以找到一棵最优二叉查找树。可以得出如下的递归方程：</p>
+<p><a href="http://cdn.acmerblog.com/wp-content/uploads/2014/07/quicklatex.com-88a5d8f68aec043b6aa0c5c8bc49feab_l3.png"><img alt="quicklatex.com-88a5d8f68aec043b6aa0c5c8bc49feab_l3" class="alignnone size-full wp-image-5924" height="43" src="http://cdn.acmerblog.com/wp-content/uploads/2014/07/quicklatex.com-88a5d8f68aec043b6aa0c5c8bc49feab_l3.png" width="541"/></a></p>
+<p><strong>重叠子问题</strong></p>
+<p>下面是根据上面的递归方程写出的递归程序代码：</p>
+<pre class="brush:java">public class OptimalSearchTree {
+	public static int sum(int freq[], int i, int j) {
+		int s = 0;
+		for (int k = i; k &lt;= j; k++)
+			s += freq[k];
+		return s;
+	}
+
+	public static int optCost(int freq[], int i, int j) {
+		if (i &gt; j)
+			return 0;
+		if (i == j) {
+			return freq[i];
+		}
+		//计算fsum的原因是：左右子树的高度比当前节点高度大1，因此要对所有节点重复加一次
+		int fsum = sum(freq, i, j);
+		int min = Integer.MAX_VALUE;
+		// 逐个考虑每个顶点为根的情况
+		for (int r = i; r &lt;= j; ++r) {
+			int cost = optCost(freq, i, r - 1) + optCost(freq, r + 1, j);
+			if (cost &lt; min)
+				min = cost;
+		}
+		return min + fsum;
+	}
+
+	public static void main(String[] args) {
+	    int freq[] = {34, 8, 50};
+		System.out.println("Cost of Optimal BST is "+ optCost(freq, 0 , freq.length-1));
+	}
+}</pre>
+<p>上面的复杂度为指数级的，有很多子为题被重复计算，可以看出，和<a href="http://www.acmerblog.com/dp8-matrix-chain-multiplication-5086.html" rel="bookmark" target="_blank" title="链向 动态规划(8)-矩阵连乘 的固定链接">矩阵连乘</a>问题很相似。我们可以使用动态规划的方法进行优化，DP算法如下：</p>
+<pre class="brush:java">	public static int optCostDP(int freq[]) {
+		int n = freq.length;
+		int dp[][] = new int[n][n];
+		for (int i = 0; i &lt; n; i++)
+			dp[i][i] = freq[i];
+
+		// l表示树的节点个数
+		for (int l = 2; l &lt;= n; l++) {
+			for (int i = 0; i &lt;= n - l; i++) {
+				// 从i到j，长度为l
+				int j = i + l - 1;
+				dp[i][j] = Integer.MAX_VALUE;
+				for (int r = i; r &lt;= j; r++) {
+					int c = ((r &gt; i) ? dp[i][r - 1] : 0)
+							+ ((r &lt; j) ? dp[r + 1][j] : 0) + sum(freq, i, j);
+					if (c &lt; dp[i][j])
+						dp[i][j] = c;
+				}
+			}
+		}
+		return dp[0][n-1];
+	}</pre>
+<p><strong>注意</strong><br/>
+<strong>1)</strong> 上面算法的时间复杂度为 O(n^4). 可以很容易的优化到 O(n^3) ，主要是对于sum函数，可以预处理所有的和。</p>
+<p><strong>2）</strong>上面的算法只求出了最小花费，并没有给出树的机构，稍作修改即可构建树。在最内层的循环记录下r（根节点）即可。</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75362">
+<article class="comment" id="comment-75362">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521235" rel="external nofollow">新用户142294</a></span> on <a href="http://www.acmerblog.com/optimal-binary-search-tree-5923.html#comment-75362" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>煎蛋网友比较理智</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75361">
+<article class="comment" id="comment-75361">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521235" rel="external nofollow">新用户142294</a></span> on <a href="http://www.acmerblog.com/optimal-binary-search-tree-5923.html#comment-75361" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>煎蛋网友比较理智</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75360">
+<article class="comment" id="comment-75360">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521235" rel="external nofollow">新用户142294</a></span> on <a href="http://www.acmerblog.com/optimal-binary-search-tree-5923.html#comment-75360" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>煎蛋网友比较理智</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75359">
+<article class="comment" id="comment-75359">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521235" rel="external nofollow">新用户142294</a></span> on <a href="http://www.acmerblog.com/optimal-binary-search-tree-5923.html#comment-75359" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>煎蛋网友比较理智</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75358">
+<article class="comment" id="comment-75358">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521235" rel="external nofollow">新用户142294</a></span> on <a href="http://www.acmerblog.com/optimal-binary-search-tree-5923.html#comment-75358" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>煎蛋网友比较理智</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75357">
+<article class="comment" id="comment-75357">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521235" rel="external nofollow">新用户142294</a></span> on <a href="http://www.acmerblog.com/optimal-binary-search-tree-5923.html#comment-75357" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>煎蛋网友比较理智</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75356">
+<article class="comment" id="comment-75356">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521235" rel="external nofollow">新用户142294</a></span> on <a href="http://www.acmerblog.com/optimal-binary-search-tree-5923.html#comment-75356" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>煎蛋网友比较理智</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75355">
+<article class="comment" id="comment-75355">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521235" rel="external nofollow">新用户142294</a></span> on <a href="http://www.acmerblog.com/optimal-binary-search-tree-5923.html#comment-75355" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>煎蛋网友比较理智</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75354">
+<article class="comment" id="comment-75354">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521235" rel="external nofollow">新用户142294</a></span> on <a href="http://www.acmerblog.com/optimal-binary-search-tree-5923.html#comment-75354" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>煎蛋网友比较理智</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75353">
+<article class="comment" id="comment-75353">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521235" rel="external nofollow">新用户142294</a></span> on <a href="http://www.acmerblog.com/optimal-binary-search-tree-5923.html#comment-75353" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>煎蛋网友比较理智</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75352">
+<article class="comment" id="comment-75352">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521235" rel="external nofollow">新用户142294</a></span> on <a href="http://www.acmerblog.com/optimal-binary-search-tree-5923.html#comment-75352" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>煎蛋网友比较理智</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30512">
+<article class="comment" id="comment-30512">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Emlar</a></span> on <a href="http://www.acmerblog.com/optimal-binary-search-tree-5923.html#comment-30512" rel="nofollow"><time datetime="2015-07-05T06:04:01+00:00" pubdate="">2015年7月5日 at 上午6:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>gcc环境</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30509">
+<article class="comment" id="comment-30509">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">youpushipop</a></span> on <a href="http://www.acmerblog.com/optimal-binary-search-tree-5923.html#comment-30509" rel="nofollow"><time datetime="2015-06-28T11:08:49+00:00" pubdate="">2015年6月28日 at 上午11:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>int L[m+1][n+1];这样定义出错，这个在gcc上可以编译通过 在VS上不行 应该改为new 或者vector</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30513">
+<article class="comment" id="comment-30513">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Yaunxi</a></span> on <a href="http://www.acmerblog.com/optimal-binary-search-tree-5923.html#comment-30513" rel="nofollow"><time datetime="2015-06-28T02:50:35+00:00" pubdate="">2015年6月28日 at 上午2:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30516">
+<article class="comment" id="comment-30516">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">895350909</a></span> on <a href="http://www.acmerblog.com/optimal-binary-search-tree-5923.html#comment-30516" rel="nofollow"><time datetime="2015-05-01T00:21:30+00:00" pubdate="">2015年5月1日 at 上午12:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个差别应该不会太大，或许编辑器就自动优化成内联函数了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30514">
+<article class="comment" id="comment-30514">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xy7850151</a></span> on <a href="http://www.acmerblog.com/optimal-binary-search-tree-5923.html#comment-30514" rel="nofollow"><time datetime="2015-03-08T17:56:52+00:00" pubdate="">2015年3月8日 at 下午5:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法好！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30520">
+<article class="comment" id="comment-30520">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">vintion</a></span> on <a href="http://www.acmerblog.com/optimal-binary-search-tree-5923.html#comment-30520" rel="nofollow"><time datetime="2015-02-17T14:02:03+00:00" pubdate="">2015年2月17日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>3，求得所有的为的总和sum—-&gt;所有数的总和<br/>
+printf( "Not Possible" );—-&gt;printf("impossible");<br/>
+对吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30511">
+<article class="comment" id="comment-30511">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Dick</a></span> on <a href="http://www.acmerblog.com/optimal-binary-search-tree-5923.html#comment-30511" rel="nofollow"><time datetime="2015-02-08T17:16:04+00:00" pubdate="">2015年2月8日 at 下午5:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>递归实现的代码部分<br/>
+14句和18句的 wt[n - 1]是不是应该改为 wt[ n ] ?</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30517">
+<article class="comment" id="comment-30517">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">BGPY</a></span> on <a href="http://www.acmerblog.com/optimal-binary-search-tree-5923.html#comment-30517" rel="nofollow"><time datetime="2015-01-30T10:56:58+00:00" pubdate="">2015年1月30日 at 上午10:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>输入样例作为一个整体输入，带回车</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30515">
+<article class="comment" id="comment-30515">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Aifan</a></span> on <a href="http://www.acmerblog.com/optimal-binary-search-tree-5923.html#comment-30515" rel="nofollow"><time datetime="2014-12-29T15:42:41+00:00" pubdate="">2014年12月29日 at 下午3:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>总结的很全面，学习了！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30510">
+<article class="comment" id="comment-30510">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Ding Qiangyuan</a></span> on <a href="http://www.acmerblog.com/optimal-binary-search-tree-5923.html#comment-30510" rel="nofollow"><time datetime="2014-12-05T02:12:32+00:00" pubdate="">2014年12月5日 at 上午2:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>int half(int *array,int len,int key)<br/>
+{<br/>
+    int l=0,r=len;<br/>
+    while(l&lt;r)<br/>
+    {<br/>
+        int m=(l+r)&gt;&gt;1;<br/>
+        if(key&gt;array <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/98/weibom_org.gif"/> )l=m+1;<br/>
+        else if(key&lt;array <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/98/weibom_org.gif"/> )r=m;<br/>
+        else return m;<br/>
+    }<br/>
+    return -1;<br/>
+}<br/>
+这种就能避免一些Bug<br/>
+l,m,r<br/>
+左边是l,m;右边就是m+1,r;</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30519">
+<article class="comment" id="comment-30519">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">2013283119</a></span> on <a href="http://www.acmerblog.com/optimal-binary-search-tree-5923.html#comment-30519" rel="nofollow"><time datetime="2014-11-17T21:02:52+00:00" pubdate="">2014年11月17日 at 下午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>C语言版本的代码好像有点问题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30518">
+<article class="comment" id="comment-30518">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">litao</a></span> on <a href="http://www.acmerblog.com/optimal-binary-search-tree-5923.html#comment-30518" rel="nofollow"><time datetime="2014-09-23T04:51:48+00:00" pubdate="">2014年9月23日 at 上午4:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是研发类的题还是算法类？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30521">
+<article class="comment" id="comment-30521">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">g29tony</a></span> on <a href="http://www.acmerblog.com/optimal-binary-search-tree-5923.html#comment-30521" rel="nofollow"><time datetime="2014-09-18T15:17:05+00:00" pubdate="">2014年9月18日 at 下午3:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>太变态了。我用hash居然超时了。这样break掉居然都行啊。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,455 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>11-18</div>
+<div class="tit"><h1 class="entry-title">LeetCode-Subsets II[暴力枚举]</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/leetcode" rel="category tag" title="查看LeetCode中的全部文章">LeetCode</a></span><span class="i4">围观866次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6250" href="http://www.acmerblog.com/leetcode-solution-subsets-ii-6250.html#comments" title="《LeetCode-Subsets II[暴力枚举]》上的评论">22 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<h3><strong>Subsets II</strong></h3>
+<div class="question-content">
+<p>Given a collection of integers that might contain duplicates, <i>S</i>, return all possible subsets.</p>
+<p><b>Note:</b></p>
+<ul>
+<li>Elements in a subset must be in non-descending order.</li>
+<li>The solution set must not contain duplicate subsets.</li>
+</ul>
+<p>For example,<br/>
+If <b><i>S</i></b> = <code>[1,2,2]</code>, a solution is:</p>
+<pre>[
+  [2],
+  [1],
+  [1,2,2],
+  [2,2],
+  [1,2],
+  []
+]</pre>
+</div>
+<p>标签: Array Backtracking<br/>
+<strong>分析</strong></p>
+<p>这题有重复元素，但本质上，跟上一题很类似，上一题中元素没有重复，相当于每个元素只能<br/>
+选0 或1 次，这里扩充到了每个元素可以选0 到若干次而已。</p>
+<p><strong>1. 递归</strong></p>
+<p>增量构造法</p>
+<pre class="brush:cpp">// LeetCode, Subsets II
+// 增量构造法，版本1，时间复杂度O(2^n)，空间复杂度O(n)
+class Solution {
+public:
+    vector&lt;vector&lt;int&gt; &gt; subsetsWithDup(vector&lt;int&gt; &amp;S) {
+        sort(S.begin(), S.end());  // 必须排序
+
+        vector&lt;vector&lt;int&gt; &gt; result;
+        vector&lt;int&gt; path;
+
+        dfs(S, S.begin(), path, result);
+        return result;
+    }
+
+private:
+    static void dfs(const vector&lt;int&gt; &amp;S, vector&lt;int&gt;::iterator start,
+            vector&lt;int&gt; &amp;path, vector&lt;vector&lt;int&gt; &gt; &amp;result) {
+        result.push_back(path);
+
+        for (auto i = start; i &lt; S.end(); i++) {
+            if (i != start &amp;&amp; *i == *(i-1)) continue;
+            path.push_back(*i);
+            dfs(S, i + 1, path, result);
+            path.pop_back();
+        }
+    }
+};</pre>
+<p>代码2</p>
+<pre class="brush:cpp">// LeetCode, Subsets II
+// 增量构造法，版本2，时间复杂度O(2^n)，空间复杂度O(n)
+class Solution {
+public:
+    vector&lt;vector&lt;int&gt; &gt; subsetsWithDup(vector&lt;int&gt; &amp;S) {
+        vector&lt;vector&lt;int&gt; &gt; result;
+        sort(S.begin(), S.end()); // 必须排序
+
+        unordered_map&lt;int, int&gt; count_map; // 记录每个元素的出现次数
+        for_each(S.begin(), S.end(), [&amp;count_map](int e) {
+            if (count_map.find(e) != count_map.end())
+                count_map[e]++;
+            else
+                count_map[e] = 1;
+        });
+
+        // 将map里的pair拷贝到一个vector里
+        vector&lt;pair&lt;int, int&gt; &gt; elems;
+        for_each(count_map.begin(), count_map.end(),
+                [&amp;elems](const pair&lt;int, int&gt; &amp;e) {
+                    elems.push_back(e);
+                });
+        sort(elems.begin(), elems.end());
+        vector&lt;int&gt; path; // 中间结果
+
+        subsets(elems, 0, path, result);
+        return result;
+    }
+
+private:
+    static void subsets(const vector&lt;pair&lt;int, int&gt; &gt; &amp;elems,
+            size_t step, vector&lt;int&gt; &amp;path, vector&lt;vector&lt;int&gt; &gt; &amp;result) {
+        if (step == elems.size()) {
+            result.push_back(path);
+            return;
+        }
+
+        for (int i = 0; i &lt;= elems[step].second; i++) {
+            for (int j = 0; j &lt; i; ++j) {
+                path.push_back(elems[step].first);
+            }
+            subsets(elems, step + 1, path, result);
+            for (int j = 0; j &lt; i; ++j) {
+                path.pop_back();
+            }
+        }
+    }
+};</pre>
+<p>位向量法</p>
+<pre class="brush:cpp">// LeetCode, Subsets II
+// 位向量法，时间复杂度O(2^n)，空间复杂度O(n)
+class Solution {
+public:
+    vector&lt;vector&lt;int&gt; &gt; subsetsWithDup(vector&lt;int&gt; &amp;S) {
+        vector&lt;vector&lt;int&gt; &gt; result; // 必须排序
+        sort(S.begin(), S.end());
+        vector&lt;int&gt; count(S.back() - S.front() + 1, 0);
+        // 计算所有元素的个数
+        for (auto i : S) {
+            count[i - S[0]]++;
+        }
+
+        // 每个元素选择了多少个
+        vector&lt;int&gt; selected(S.back() - S.front() + 1, -1);
+
+        subsets(S, count, selected, 0, result);
+        return result;
+    }
+
+private:
+    static void subsets(const vector&lt;int&gt; &amp;S, vector&lt;int&gt; &amp;count,
+            vector&lt;int&gt; &amp;selected, size_t step, vector&lt;vector&lt;int&gt; &gt; &amp;result) {
+        if (step == count.size()) {
+            vector&lt;int&gt; subset;
+            for(size_t i = 0; i &lt; selected.size(); i++) {
+                for (int j = 0; j &lt; selected[i]; j++) {
+                    subset.push_back(i+S[0]);
+                }
+            }
+            result.push_back(subset);
+            return;
+        }
+
+        for (int i = 0; i &lt;= count[step]; i++) {
+            selected[step] = i;
+            subsets(S, count, selected, step + 1, result);
+        }
+    }
+};</pre>
+<p><strong> 2. 迭代</strong></p>
+<pre class="brush:cpp">// LeetCode, Subsets II
+// 增量构造法
+// 时间复杂度O(2^n)，空间复杂度O(1)
+class Solution {
+public:
+    vector&lt;vector&lt;int&gt; &gt; subsetsWithDup(vector&lt;int&gt; &amp;S) {
+        sort(S.begin(), S.end()); // 必须排序
+        vector&lt;vector&lt;int&gt; &gt; result(1);
+
+        size_t previous_size = 0;
+        for (size_t i = 0; i &lt; S.size(); ++i) {
+            const size_t size = result.size();
+            for (size_t j = 0; j &lt; size; ++j) {
+                if (i == 0 || S[i] != S[i-1] || j &gt;= previous_size) {
+                    result.push_back(result[j]);
+                    result.back().push_back(S[i]);
+                }
+            }
+            previous_size = size;
+        }
+        return result;
+    }
+};</pre>
+<p><strong> 二进制法</strong></p>
+<pre class="brush:cpp">// LeetCode, Subsets II
+// 二进制法，时间复杂度O(2^n)，空间复杂度O(1)
+class Solution {
+public:
+    vector&lt;vector&lt;int&gt; &gt; subsetsWithDup(vector&lt;int&gt; &amp;S) {
+        sort(S.begin(), S.end()); // 必须排序
+        // 用 set 去重，不能用 unordered_set，因为输出要求有序
+        set&lt;vector&lt;int&gt; &gt; result;
+        const size_t n = S.size();
+        vector&lt;int&gt; v;
+
+        for (size_t i = 0; i &lt; 1U &lt;&lt; n; ++i) {
+            for (size_t j = 0; j &lt; n; ++j) {
+                if (i &amp; 1 &lt;&lt; j)
+                    v.push_back(S[j]);
+            }
+            result.insert(v);
+            v.clear();
+        }
+        vector&lt;vector&lt;int&gt; &gt; real_result;
+        copy(result.begin(), result.end(), back_inserter(real_result));
+        return real_result;
+    }
+};</pre>
+<p>Java代码:</p>
+<pre class="brush:java">public class Solution {
+    public static List&lt;List&lt;Integer&gt;&gt; subsetsWithDup(int[] S) {
+		int all = 1 &lt;&lt; S.length;
+		Arrays.sort(S);
+		List&lt;List&lt;Integer&gt;&gt; subsetsList = new ArrayList();
+		for (int i = 0; i &lt; all; i++) {
+			int b = 1;
+			List&lt;Integer&gt; tmpList = new ArrayList();
+			for (int j = 0; j &lt; S.length; j++) {
+				if ((i &amp; b) != 0) {
+					tmpList.add(S[j]);
+				}
+				b &lt;&lt;= 1;
+			}
+			if(subsetsList.contains(tmpList)) continue;
+			subsetsList.add(tmpList);
+		}
+		return subsetsList;
+	}
+}</pre>
+<p><strong>相关题目</strong></p>
+<p><a href="http://www.acmerblog.com/leetcode-solution-subsets-6227.html">Subsets</a></p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-74390">
+<article class="comment" id="comment-74390">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514870" rel="external nofollow">新用户661028</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-ii-6250.html#comment-74390" rel="nofollow"><time datetime="2017-04-12T01:59:36+00:00" pubdate="">2017年4月12日 at 上午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实改车只是自慰，别人是看不见得。而且如果是真的的话你们看看凌哥改T2宝石是什么就知道了，还有用板车改T3速度能爆到几百？不过我还是很感谢凌哥的，为一些狗提供了骗钱的渠道。话说卡商店好像得变成女的吧…你怎么没有…还是说改进了？我现在飞车已卸载，改</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-74389">
+<article class="comment" id="comment-74389">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514870" rel="external nofollow">新用户661028</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-ii-6250.html#comment-74389" rel="nofollow"><time datetime="2017-04-12T01:59:36+00:00" pubdate="">2017年4月12日 at 上午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实改车只是自慰，别人是看不见得。而且如果是真的的话你们看看凌哥改T2宝石是什么就知道了，还有用板车改T3速度能爆到几百？不过我还是很感谢凌哥的，为一些狗提供了骗钱的渠道。话说卡商店好像得变成女的吧…你怎么没有…还是说改进了？我现在飞车已卸载，改</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-74388">
+<article class="comment" id="comment-74388">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514870" rel="external nofollow">新用户661028</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-ii-6250.html#comment-74388" rel="nofollow"><time datetime="2017-04-12T01:59:36+00:00" pubdate="">2017年4月12日 at 上午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实改车只是自慰，别人是看不见得。而且如果是真的的话你们看看凌哥改T2宝石是什么就知道了，还有用板车改T3速度能爆到几百？不过我还是很感谢凌哥的，为一些狗提供了骗钱的渠道。话说卡商店好像得变成女的吧…你怎么没有…还是说改进了？我现在飞车已卸载，改</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-74387">
+<article class="comment" id="comment-74387">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514870" rel="external nofollow">新用户661028</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-ii-6250.html#comment-74387" rel="nofollow"><time datetime="2017-04-12T01:59:36+00:00" pubdate="">2017年4月12日 at 上午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实改车只是自慰，别人是看不见得。而且如果是真的的话你们看看凌哥改T2宝石是什么就知道了，还有用板车改T3速度能爆到几百？不过我还是很感谢凌哥的，为一些狗提供了骗钱的渠道。话说卡商店好像得变成女的吧…你怎么没有…还是说改进了？我现在飞车已卸载，改</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-74386">
+<article class="comment" id="comment-74386">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514870" rel="external nofollow">新用户661028</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-ii-6250.html#comment-74386" rel="nofollow"><time datetime="2017-04-12T01:59:36+00:00" pubdate="">2017年4月12日 at 上午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实改车只是自慰，别人是看不见得。而且如果是真的的话你们看看凌哥改T2宝石是什么就知道了，还有用板车改T3速度能爆到几百？不过我还是很感谢凌哥的，为一些狗提供了骗钱的渠道。话说卡商店好像得变成女的吧…你怎么没有…还是说改进了？我现在飞车已卸载，改</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-74385">
+<article class="comment" id="comment-74385">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514870" rel="external nofollow">新用户661028</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-ii-6250.html#comment-74385" rel="nofollow"><time datetime="2017-04-12T01:59:36+00:00" pubdate="">2017年4月12日 at 上午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实改车只是自慰，别人是看不见得。而且如果是真的的话你们看看凌哥改T2宝石是什么就知道了，还有用板车改T3速度能爆到几百？不过我还是很感谢凌哥的，为一些狗提供了骗钱的渠道。话说卡商店好像得变成女的吧…你怎么没有…还是说改进了？我现在飞车已卸载，改</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-74384">
+<article class="comment" id="comment-74384">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514870" rel="external nofollow">新用户661028</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-ii-6250.html#comment-74384" rel="nofollow"><time datetime="2017-04-12T01:59:36+00:00" pubdate="">2017年4月12日 at 上午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实改车只是自慰，别人是看不见得。而且如果是真的的话你们看看凌哥改T2宝石是什么就知道了，还有用板车改T3速度能爆到几百？不过我还是很感谢凌哥的，为一些狗提供了骗钱的渠道。话说卡商店好像得变成女的吧…你怎么没有…还是说改进了？我现在飞车已卸载，改</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-74383">
+<article class="comment" id="comment-74383">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514870" rel="external nofollow">新用户661028</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-ii-6250.html#comment-74383" rel="nofollow"><time datetime="2017-04-12T01:59:36+00:00" pubdate="">2017年4月12日 at 上午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实改车只是自慰，别人是看不见得。而且如果是真的的话你们看看凌哥改T2宝石是什么就知道了，还有用板车改T3速度能爆到几百？不过我还是很感谢凌哥的，为一些狗提供了骗钱的渠道。话说卡商店好像得变成女的吧…你怎么没有…还是说改进了？我现在飞车已卸载，改</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-31562">
+<article class="comment" id="comment-31562">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yueyanglou</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-ii-6250.html#comment-31562" rel="nofollow"><time datetime="2015-07-12T12:41:59+00:00" pubdate="">2015年7月12日 at 下午12:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-31564">
+<article class="comment" id="comment-31564">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xuelanghu</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-ii-6250.html#comment-31564" rel="nofollow"><time datetime="2015-07-01T02:52:46+00:00" pubdate="">2015年7月1日 at 上午2:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没错的，九度OJ也有此题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50018">
+<article class="comment" id="comment-50018">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jade1827</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-ii-6250.html#comment-50018" rel="nofollow"><time datetime="2015-06-24T14:56:43+00:00" pubdate="">2015年6月24日 at 下午2:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正有此意，欢迎更多的建议~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50017">
+<article class="comment" id="comment-50017">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yunyang088</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-ii-6250.html#comment-50017" rel="nofollow"><time datetime="2015-06-11T13:37:04+00:00" pubdate="">2015年6月11日 at 下午1:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为\n\n</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50013">
+<article class="comment" id="comment-50013">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">linyanjin</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-ii-6250.html#comment-50013" rel="nofollow"><time datetime="2015-06-10T17:53:09+00:00" pubdate="">2015年6月10日 at 下午5:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>漏了一个"不"，已修正:)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-31561">
+<article class="comment" id="comment-31561">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">645198</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-ii-6250.html#comment-31561" rel="nofollow"><time datetime="2015-05-24T09:16:21+00:00" pubdate="">2015年5月24日 at 上午9:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可以根据二叉排序树的定义进行严格的排序树创建和后序遍历操作。如果形成的排序树相同，其树的前、中、后序遍历是相同的，但在此处不能使用中序遍历，因为，中序遍历的结果就是排序的结果。经在九度测试，运行时间90ms，比楼主的要快。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50015">
+<article class="comment" id="comment-50015">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiaoliubuer</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-ii-6250.html#comment-50015" rel="nofollow"><time datetime="2015-05-13T03:18:35+00:00" pubdate="">2015年5月13日 at 上午3:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不好意思，写错了．应该是　path[0]=0,  visited[V] = true;</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-31563">
+<article class="comment" id="comment-31563">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">H.Watson</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-ii-6250.html#comment-31563" rel="nofollow"><time datetime="2015-05-01T18:38:18+00:00" pubdate="">2015年5月1日 at 下午6:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序输出是对的，呈三角型。原程序是按C++写的，已经改成了C的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-31560">
+<article class="comment" id="comment-31560">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">keyyuanxin</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-ii-6250.html#comment-31560" rel="nofollow"><time datetime="2015-04-10T20:38:44+00:00" pubdate="">2015年4月10日 at 下午8:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很给力啊，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50014">
+<article class="comment" id="comment-50014">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Sacomplex</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-ii-6250.html#comment-50014" rel="nofollow"><time datetime="2015-04-07T13:36:38+00:00" pubdate="">2015年4月7日 at 下午1:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>博主您好，这是一个内容十分优秀的博客，而且界面也非常漂亮。但是为什么博客的响应速度这么慢，虽然博客的主机在国外，但是我开启VPN还是经常响应很久，再者打开某些页面经常会出现数据库连接出错的提示</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50020">
+<article class="comment" id="comment-50020">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xuelanghu</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-ii-6250.html#comment-50020" rel="nofollow"><time datetime="2015-03-27T16:03:25+00:00" pubdate="">2015年3月27日 at 下午4:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你好，这题给出的代码好像弄错了，这个是pow那道题目的解法</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-31565">
+<article class="comment" id="comment-31565">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Ailing</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-ii-6250.html#comment-31565" rel="nofollow"><time datetime="2015-03-20T07:26:52+00:00" pubdate="">2015年3月20日 at 上午7:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的题，还是能做出几道的，嘿嘿</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50019">
+<article class="comment" id="comment-50019">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xuelanghu</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-ii-6250.html#comment-50019" rel="nofollow"><time datetime="2015-01-25T12:00:23+00:00" pubdate="">2015年1月25日 at 下午12:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈呀！这个Dijkstra模板好长OwQ！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50016">
+<article class="comment" id="comment-50016">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">we</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-ii-6250.html#comment-50016" rel="nofollow"><time datetime="2014-11-30T22:13:45+00:00" pubdate="">2014年11月30日 at 下午10:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个也是算法导论的习题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

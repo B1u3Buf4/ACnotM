@@ -1,0 +1,550 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-23</div>
+<div class="tit"><h1 class="entry-title">HDU 1868 Consecutive sum-Hash表-[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/bfs" rel="category tag" title="查看BFS搜索中的全部文章">BFS搜索</a>, <a href="http://www.acmerblog.com/category/data-struct/hash" rel="category tag" title="查看Hash表中的全部文章">Hash表</a>, <a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/search" rel="category tag" title="查看搜索中的全部文章">搜索</a></span><span class="i4">围观1025次</span><span class="i3"><a class="ds-thread-count" data-thread-key="2860" href="http://www.acmerblog.com/hdu-1868-consecutive-sum-2860.html#comments" title="《HDU 1868 Consecutive sum-Hash表-[解题报告] C++》上的评论">24 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Consecutive sum</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Every body knew that 15 = 1+2+3+4+5 = 4+5+6 = 7+8. Now give you a number N, tell me how many ways to represent N as a sum of consecutive positive integers. For example, 15 have 3 ways to be found. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+Each line will contain an signed 32-bits integer N. Process to end of file. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+For each case, output the answer in one line.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+15
+1050</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+3
+11</pre>
+<p> <!-- problem end --></p>
+<p>据说这题的数据不是很强，直接bfs+hash判重即可过。</p>
+<p>这里我打算拿它练习一下双广搜索。</p>
+<p>用了两个队列，分别从始态和终态进行bfs。</p>
+<p>队列中保存的是每一个状态，每一个状态是用一个一维数组保存的。</p>
+<p>hash时，把它转化成一个9位的整数，质数取余，拉链法判重。</p>
+<p>hash表开成两维的，分别储存两个队列的搜索结果，同时还保存搜到每一个状态所用的step。</p>
+<p>每当向hash表的一维里插入新状态时，判断在另一维的这个位置是否已经访问到，如果已经访问到，则说明相遇了，输出两个step之和即为结果。</p>
+<p>
+</p>
+<p>其实双广用一个队列也可以实现，注意把两种状态用标记区分开即可。</p>
+<p>
+</p>
+<p>另外，这题还有两点有注意的地方：</p>
+<p>1.如果初状态和末状态的逆序数的奇偶性不同，则无解，直接输出-1。证明方法网上有。</p>
+<p>2.如果初状态与末状态一样，直接输出0。不要再用双广，双广的话输出结果会是2(显然)。</p>
+<p>
+</p>
+<p>双广时，两个队列交替进行扩展，且每次要扩展一层(一圈一圈的向外扩展，直到两个圈相遇)。第一次相遇，获得的一定是最短的路径了。</p>
+<p>
+</p>
+<p>代码如下：</p>
+<pre class="brush:cpp ">#include &lt;iostream&gt;
+    #include &lt;cstdio&gt;
+    #include &lt;cstring&gt;
+    #include &lt;algorithm&gt;
+    #include &lt;queue&gt;
+
+    #define PRIME 455809
+    using namespace std;
+
+    struct node
+    {
+        node(unsigned int t)
+        {
+            s=t;
+            next=NULL;
+        }
+        unsigned int s;
+        int step;
+        node *next;
+    };
+    node *hashtable[460000][2];
+    struct State
+    {
+        int map[10];
+        int pos;
+        int step;
+    } states,statee;
+
+    void hinsert(State s,bool ty)
+    {
+        unsigned int i,st=0;
+        for(i=1; i&lt;=9; i++)
+            st=st*10+s.map[i];
+        node *f=new node(st);
+        f-&gt;step=s.step;
+        f-&gt;next=hashtable[st%PRIME][ty];
+        hashtable[st%PRIME][ty]=f;
+    }
+    bool exist(State s,bool ty,int &amp;res)
+    {
+        unsigned int i,st=0;
+        for(i=1; i&lt;=9; i++)
+            st=st*10+s.map[i];
+        node *f=hashtable[st%PRIME][ty];
+        while(f)
+        {
+            if(f-&gt;s==st)
+            {
+                res=f-&gt;step;
+                return true;
+            }
+            f=f-&gt;next;
+        }
+        return false;
+    }
+    int transfer(State t,queue &lt;State&gt;&amp;Q,bool ty)
+    {
+        State s;
+        int res;
+        s=t;
+        if((s.pos-3)&gt;0)
+        {
+            swap(s.map[s.pos],s.map[s.pos-3]);
+            s.step++;
+            s.pos-=3;
+            if(exist(s,!ty,res))
+            {
+                return (s.step+res);
+            }
+            if(!exist(s,ty,res))
+            {
+                Q.push(s);
+                hinsert(s,ty);
+            }
+        }
+        s=t;
+        if(s.pos+3&lt;10)
+        {
+            swap(s.map[s.pos],s.map[s.pos+3]);
+            s.step++;
+            s.pos+=3;
+            if(exist(s,!ty,res))
+            {
+                return (s.step+res);
+            }
+            if(!exist(s,ty,res))
+            {
+                Q.push(s);
+                hinsert(s,ty);
+            }
+        }
+        s=t;
+        if((s.pos+1)%3!=1)
+        {
+            swap(s.map[s.pos],s.map[s.pos+1]);
+            s.step++;
+            s.pos+=1;
+            if(exist(s,!ty,res))
+            {
+                return (s.step+res);
+            }
+            if(!exist(s,ty,res))
+            {
+                Q.push(s);
+                hinsert(s,ty);
+            }
+        }
+        s=t;
+        if((s.pos-1)%3!=0)
+        {
+            swap(s.map[s.pos],s.map[s.pos-1]);
+            s.step++;
+            s.pos-=1;
+            if(exist(s,!ty,res))
+            {
+                return (s.step+res);
+            }
+            if(!exist(s,ty,res))
+            {
+                Q.push(s);
+                hinsert(s,ty);
+            }
+        }
+        return 0;
+    }
+
+    queue&lt;State&gt;Qs;
+    queue&lt;State&gt;Qe;
+    int reversenum(State a)
+    {
+        int res=0;
+        for(int i=1; i&lt;=9; i++)
+        {
+            if(a.map[i]==0)continue;
+            for(int j=i-1; j&gt;=1; j--)
+            {
+                if(a.map[j]&gt;a.map[i])res++;
+            }
+        }
+        return res;
+    }
+    bool prejudge(State a,State b)
+    {
+        int t1=reversenum(states);
+        int t2=reversenum(statee);
+        if((t1+t2)%2!=0)
+        {
+            printf("-1\n");
+            return true;
+        }
+        bool tflag=0;
+        for(int i=1; i&lt;=9; i++)
+        {
+            if(a.map[i]!=b.map[i])
+            {
+                tflag=1;
+                break;
+            }
+        }
+        if(!tflag)
+        {
+            printf("0\n");
+            return true;
+        }
+        else return false;
+    }
+    int main()
+    {
+        int tcases;
+        scanf("%d",&amp;tcases);
+        while(tcases--)
+        {
+            memset(hashtable,0,sizeof(hashtable));
+            for(int i=1; i&lt;=9; i++)
+            {
+                scanf("%d",&amp;states.map[i]);
+                if(states.map[i]==0)states.pos=i;
+            }
+            statee.step=0;
+            for(int i=1; i&lt;=9; i++)
+            {
+                scanf("%d",&amp;statee.map[i]);
+                if(statee.map[i]==0)statee.pos=i;
+            }
+            states.step=0;
+
+            hinsert(states,0);
+            hinsert(statee,1);
+            if(prejudge(states,statee))continue;
+
+            bool endflag=0;
+            while(!Qs.empty())Qs.pop();
+            while(!Qe.empty())Qe.pop();
+            Qs.push(states);
+            Qe.push(statee);
+            while(!Qs.empty()||!Qe.empty())
+            {
+                int ns=Qs.size(); //这个是处于同一层的状态的数量
+                int ne=Qe.size();
+                if(ns&lt;ne||ne==0) //选择元素个数较少的队列进行扩展
+                {
+                    for(int i=0; i&lt;ns; i++)//扩展s队列。一次扩展一层，这是双广正确性(得到最优解)的重要保证
+                    {
+                        State cur;
+                        cur=Qs.front();
+                        Qs.pop();
+                        int res=transfer(cur,Qs,0);
+                        if(res)
+                        {
+                            printf("%d\n",res);
+                            endflag=1;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    for(int i=0; i&lt;ne; i++)
+                    {
+                        State cur;
+                        cur=Qe.front();
+                        Qe.pop();
+                        int res=transfer(cur,Qe,1);
+                        if(res)
+                        {
+                            printf("%d\n",res);
+                            endflag=1;
+                            break;
+                        }
+                    }
+                }
+                if(endflag)break;
+            }
+        }
+        return 0;
+    }</pre>
+<p>解题报告转自：http://blog.csdn.net/zhuang19922011/article/details/8520862</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-88793">
+<article class="comment" id="comment-88793">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522091" rel="external nofollow">新用户138194</a></span> on <a href="http://www.acmerblog.com/hdu-1868-consecutive-sum-2860.html#comment-88793" rel="nofollow"><time datetime="2017-04-13T09:02:19+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没事  没有永远的黑夜，也没有永远的黎明，你说的、</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-88792">
+<article class="comment" id="comment-88792">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522091" rel="external nofollow">新用户138194</a></span> on <a href="http://www.acmerblog.com/hdu-1868-consecutive-sum-2860.html#comment-88792" rel="nofollow"><time datetime="2017-04-13T09:02:19+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没事  没有永远的黑夜，也没有永远的黎明，你说的、</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-88791">
+<article class="comment" id="comment-88791">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522091" rel="external nofollow">新用户138194</a></span> on <a href="http://www.acmerblog.com/hdu-1868-consecutive-sum-2860.html#comment-88791" rel="nofollow"><time datetime="2017-04-13T09:02:19+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没事  没有永远的黑夜，也没有永远的黎明，你说的、</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-88790">
+<article class="comment" id="comment-88790">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522091" rel="external nofollow">新用户138194</a></span> on <a href="http://www.acmerblog.com/hdu-1868-consecutive-sum-2860.html#comment-88790" rel="nofollow"><time datetime="2017-04-13T09:02:19+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没事  没有永远的黑夜，也没有永远的黎明，你说的、</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-88789">
+<article class="comment" id="comment-88789">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522091" rel="external nofollow">新用户138194</a></span> on <a href="http://www.acmerblog.com/hdu-1868-consecutive-sum-2860.html#comment-88789" rel="nofollow"><time datetime="2017-04-13T09:02:19+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没事  没有永远的黑夜，也没有永远的黎明，你说的、</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-88788">
+<article class="comment" id="comment-88788">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522091" rel="external nofollow">新用户138194</a></span> on <a href="http://www.acmerblog.com/hdu-1868-consecutive-sum-2860.html#comment-88788" rel="nofollow"><time datetime="2017-04-13T09:02:19+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没事  没有永远的黑夜，也没有永远的黎明，你说的、</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-88787">
+<article class="comment" id="comment-88787">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522091" rel="external nofollow">新用户138194</a></span> on <a href="http://www.acmerblog.com/hdu-1868-consecutive-sum-2860.html#comment-88787" rel="nofollow"><time datetime="2017-04-13T09:02:19+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没事  没有永远的黑夜，也没有永远的黎明，你说的、</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-88786">
+<article class="comment" id="comment-88786">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522091" rel="external nofollow">新用户138194</a></span> on <a href="http://www.acmerblog.com/hdu-1868-consecutive-sum-2860.html#comment-88786" rel="nofollow"><time datetime="2017-04-13T09:02:19+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没事  没有永远的黑夜，也没有永远的黎明，你说的、</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-88785">
+<article class="comment" id="comment-88785">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522091" rel="external nofollow">新用户138194</a></span> on <a href="http://www.acmerblog.com/hdu-1868-consecutive-sum-2860.html#comment-88785" rel="nofollow"><time datetime="2017-04-13T09:02:19+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没事  没有永远的黑夜，也没有永远的黎明，你说的、</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-88784">
+<article class="comment" id="comment-88784">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522091" rel="external nofollow">新用户138194</a></span> on <a href="http://www.acmerblog.com/hdu-1868-consecutive-sum-2860.html#comment-88784" rel="nofollow"><time datetime="2017-04-13T09:02:19+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没事  没有永远的黑夜，也没有永远的黎明，你说的、</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-17515">
+<article class="comment" id="comment-17515">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">BGPY</a></span> on <a href="http://www.acmerblog.com/hdu-1868-consecutive-sum-2860.html#comment-17515" rel="nofollow"><time datetime="2015-06-13T18:44:10+00:00" pubdate="">2015年6月13日 at 下午6:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>This write-up presents the gentle in which we can notice the fact. this is extremely wonderful one and gives in depth info.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-17518">
+<article class="comment" id="comment-17518">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Aifan</a></span> on <a href="http://www.acmerblog.com/hdu-1868-consecutive-sum-2860.html#comment-17518" rel="nofollow"><time datetime="2015-05-14T03:52:46+00:00" pubdate="">2015年5月14日 at 上午3:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对于输出格式不用控制？？还是直接使用cout输出。？？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-17521">
+<article class="comment" id="comment-17521">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Mayboy</a></span> on <a href="http://www.acmerblog.com/hdu-1868-consecutive-sum-2860.html#comment-17521" rel="nofollow"><time datetime="2015-04-29T10:36:12+00:00" pubdate="">2015年4月29日 at 上午10:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好，解决了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-17520">
+<article class="comment" id="comment-17520">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Xun_Brooklyn</a></span> on <a href="http://www.acmerblog.com/hdu-1868-consecutive-sum-2860.html#comment-17520" rel="nofollow"><time datetime="2015-01-04T20:00:12+00:00" pubdate="">2015年1月4日 at 下午8:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题别太纠结了，不同的编译器结果不一样</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-17513">
+<article class="comment" id="comment-17513">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">AE</a></span> on <a href="http://www.acmerblog.com/hdu-1868-consecutive-sum-2860.html#comment-17513" rel="nofollow"><time datetime="2015-01-02T09:30:19+00:00" pubdate="">2015年1月2日 at 上午9:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好，解决了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-17512">
+<article class="comment" id="comment-17512">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Mayboy</a></span> on <a href="http://www.acmerblog.com/hdu-1868-consecutive-sum-2860.html#comment-17512" rel="nofollow"><time datetime="2014-12-30T04:35:17+00:00" pubdate="">2014年12月30日 at 上午4:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为nn</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-17519">
+<article class="comment" id="comment-17519">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">TimeFight</a></span> on <a href="http://www.acmerblog.com/hdu-1868-consecutive-sum-2860.html#comment-17519" rel="nofollow"><time datetime="2014-12-06T12:51:11+00:00" pubdate="">2014年12月6日 at 下午12:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>递归还真是一门学问，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-17514">
+<article class="comment" id="comment-17514">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">April</a></span> on <a href="http://www.acmerblog.com/hdu-1868-consecutive-sum-2860.html#comment-17514" rel="nofollow"><time datetime="2014-08-30T03:14:29+00:00" pubdate="">2014年8月30日 at 上午3:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>代码不对，仔细对比一下输入输出， 怎么会有‘‘printf("The winning moves are:");’’这种输出呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-17511">
+<article class="comment" id="comment-17511">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NextLife</a></span> on <a href="http://www.acmerblog.com/hdu-1868-consecutive-sum-2860.html#comment-17511" rel="nofollow"><time datetime="2014-07-21T14:38:40+00:00" pubdate="">2014年7月21日 at 下午2:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>wt[n - 1]没错，因为下标是[0...n-1]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-17510">
+<article class="comment" id="comment-17510">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">warriorbrant</a></span> on <a href="http://www.acmerblog.com/hdu-1868-consecutive-sum-2860.html#comment-17510" rel="nofollow"><time datetime="2014-07-17T14:37:34+00:00" pubdate="">2014年7月17日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>能不能说下这个是用的什么算法策略？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-17509">
+<article class="comment" id="comment-17509">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jdliyao</a></span> on <a href="http://www.acmerblog.com/hdu-1868-consecutive-sum-2860.html#comment-17509" rel="nofollow"><time datetime="2014-06-20T12:31:25+00:00" pubdate="">2014年6月20日 at 下午12:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的模板</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-17508">
+<article class="comment" id="comment-17508">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jupiterhyun</a></span> on <a href="http://www.acmerblog.com/hdu-1868-consecutive-sum-2860.html#comment-17508" rel="nofollow"><time datetime="2014-02-25T21:42:54+00:00" pubdate="">2014年2月25日 at 下午9:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>非常不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-17517">
+<article class="comment" id="comment-17517">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">magichu</a></span> on <a href="http://www.acmerblog.com/hdu-1868-consecutive-sum-2860.html#comment-17517" rel="nofollow"><time datetime="2014-01-11T17:14:39+00:00" pubdate="">2014年1月11日 at 下午5:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正解，应该是200！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-17516">
+<article class="comment" id="comment-17516">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">kate19930802</a></span> on <a href="http://www.acmerblog.com/hdu-1868-consecutive-sum-2860.html#comment-17516" rel="nofollow"><time datetime="2013-12-26T10:21:07+00:00" pubdate="">2013年12月26日 at 上午10:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实国内大部分公司对算法都不够重视。特别是中小型公司老板根本都不懂技术，也不懂什么是算法，从而也不要求程序员懂什么算法，做程序从来不考虑性能问题，只要页面能显示出来就是好程序，这是国内的现状，很无奈。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

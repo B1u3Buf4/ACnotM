@@ -1,0 +1,388 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>04-15</div>
+<div class="tit"><h1 class="entry-title">HDU 4023-Game-博弈论-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/game" rel="category tag" title="查看博弈论中的全部文章">博弈论</a>, <a href="http://www.acmerblog.com/category/basis/tanxin" rel="category tag" title="查看贪心中的全部文章">贪心</a></span><span class="i4">围观345次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7026" href="http://www.acmerblog.com/hdu-4023-game-7026.html#comments" title="《HDU 4023-Game-博弈论-[解题报告]HOJ》上的评论">23 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Game</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Alice and Bob are playing game with each other. They play the game on a 2D board. Alice has many vertical 1*2 tiles while Bob has many horizontal 2*1 tiles. They take turn to place their own tiles on the board. Considering about that the tiles cannot overlap each other, the player cannot do the placement any more loses. Since this is such a complex game that they could not find optimal method to play that, Alice decide to simplify this game by replace the large 2D board by some small ones. Alice set up a lot of Tetris tiles instead of the original 2D board. In the other words, the player can only place their own vertical or horizontal tiles on the Tetris-like board. Each player can choose one possible place on any Tetris tiles to place its own tiles. In fact, there are following 15 types of Tetris playground.<br/><center><img alt="Bombing" src="http://www.acmerblog.com/img/1436253253939.jpg"/></center><br/>The playground cannot be transformed in any ways, including reflection and rotation.<br/>Given the number of each type of tiles, you are asked to determine who will win the game if Alice plays first and both players are playing optimal. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+There are multiple test cases; the first line of input contains a single integer denoting the number of test cases.<br/>For each test case, there are only one line contains 15 integers denoting the number of Tetris tiles of the above 15 types. All the numbers are no greater than 100. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+There are multiple test cases; the first line of input contains a single integer denoting the number of test cases.<br/>For each test case, there are only one line contains 15 integers denoting the number of Tetris tiles of the above 15 types. All the numbers are no greater than 100.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3
+5 4 0 0 0 0 0 0 0 0 0 0 0 0 0
+5 5 0 0 0 0 0 0 0 0 0 0 0 0 0
+100 100 0 0 0 0 0 0 0 0 0 2 1 0 0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case #1: Alice
+Case #2: Bob
+Case #3: Alice</pre>
+<p> <!-- problem end --></p>
+<p>著名的博弈玩家Alice and Bob， A有1*2的方块，B有2*1的方块，给出15种大方块，每样最多100个（约去平衡态后这个数据并不是很重要的东西）， 没人轮流选在任意方块上放上一个自己专有的方块，不能为者负。</p>
+<p>根据每个方块的能被放的情况对方块分类，共5类</p>
+<p><span style="color:#666666">1– 2A  2–2B                                              ///1</span></p>
+<p><span style="color:#666666">3 4– 1A OR 2B       5 6 –1B OR 2A        ///2</span></p>
+<p><span style="color:#666666">7 8 1A1B OR 1A    9 10–1A1B OR 1B  ///3</span></p>
+<p><span style="color:#666666">11 12 13 14 1A OR 1B                            ///4</span></p>
+<p><span style="color:#666666">15 2A OR 2B                                             ///5</span></p>
+<p>总游戏 其实就是5类游戏的组合游戏，但是SG函数很难找状态，还是找规律约去不影响结果的平衡局势即可。</p>
+<p>根据贪心策略 有 5&gt;2&gt;4&gt;3&gt;1 </p>
+<pre class="brush:cpp" name="code">#include &lt;cstdio&gt;
+#define min(a,b) (a&gt;b?b:a)
+int num[16];
+int game[10];
+int p[5];
+int main ()
+{
+    int cas;
+    scanf("%d",&amp;cas);
+    for (int I=1 ; I&lt;=cas ; ++I)
+    {
+        int tmpmin;
+        int turn=0;//表示当前子游戏的先手
+        p[0]=0;p[1]=0;//记录约去平衡状态后的每个人的可放个数
+        for (int i=0 ; i&lt;15 ; ++i)
+        {
+            scanf("%d",num+i);
+        }
+        game[0]=num[0];     game[1]=num[1];             ///1
+        game[2]=num[2]+num[3];  game[3]=num[4]+num[5];  ///2
+        game[4]=num[6]+num[7];    game[5]=num[8]+num[9];///3
+        game[6]=num[10]+num[11]+num[12]+num[13];        ///4
+        game[7]=num[14];                                ///5
+        
+        /**约去平衡态**/
+        /// 1
+        game[0]&gt;game[1]?p[0]+=2*(game[0]-game[1]):p[1]+=2*(game[1]-game[0]);
+        /// 2
+        tmpmin=min(game[2],game[3]);
+        game[2]-=tmpmin;
+        game[3]-=tmpmin;
+        /// 3
+        tmpmin=min(game[4],game[5]);
+        game[4]-=tmpmin;    game[5]-=tmpmin;
+        /// 4
+        game[6]=game[6]&amp;1;
+        /// 5
+        game[7]=game[7]&amp;1;
+
+        /// 5&gt;2&gt;4&gt;3&gt;1
+        ///**按优先级进行游戏 1情况不影响结果可先处理**///
+        ///5
+        if(game[7])p[turn]+=2,turn^=1;
+        ///2
+        if(game[2])
+        {
+            if(game[2]&amp;1){if(turn == 1)p[1]+=2;  else p[0]+=1; turn^=1 ; }
+            p[1]+=game[2]/2*2;
+            p[0]+=game[2]/2;
+        }
+        if(game[3])
+        {
+            if(game[3]&amp;1){if(turn == 0)p[0]+=2;  else p[1]+=1; turn^=1 ; }
+            p[0]+=game[3]/2*2;
+            p[1]+=game[3]/2;
+        }
+        ///4
+        if(game[6])
+        {
+            p[turn]+=1;turn^=1;
+        }
+        ///3
+        if(game[4])
+        {
+            p[0]+=game[4];
+            if(game[4]&amp;1)
+            {
+                if(turn == 1)p[1]+=1;
+                turn^=1;
+            }
+            p[1]+=game[4]/2;
+        }
+        if(game[5])
+        {
+            p[1]+=game[5];
+            if(game[5]&amp;1)
+            {
+                if(turn == 0)p[0]+=1;
+                turn^=1;
+            }
+            p[0]+=game[5]/2;
+        }
+        ///
+        //printf("%d----%d\n",p[0],p[1]);
+        printf("Case #%d: %s\n",I,p[0]&gt;p[1]?"Alice":"Bob");
+    }
+    return 0;
+}
+</pre>
+<p></p>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/jxy859/article/details/6766427</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-99998">
+<article class="comment" id="comment-99998">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919523117" rel="external nofollow">新用户986869</a></span> on <a href="http://www.acmerblog.com/hdu-4023-game-7026.html#comment-99998" rel="nofollow"><time datetime="2017-04-20T21:02:03+00:00" pubdate="">2017年4月20日 at 下午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我的头像~是我自己~~哈哈哈。。娇羞了。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70691">
+<article class="comment" id="comment-70691">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519321" rel="external nofollow">新用户941164</a></span> on <a href="http://www.acmerblog.com/hdu-4023-game-7026.html#comment-70691" rel="nofollow"><time datetime="2017-04-11T15:16:33+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>和16世纪北半球 全球版  一样 不过感觉比这MOD会好点吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70690">
+<article class="comment" id="comment-70690">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519321" rel="external nofollow">新用户941164</a></span> on <a href="http://www.acmerblog.com/hdu-4023-game-7026.html#comment-70690" rel="nofollow"><time datetime="2017-04-11T15:16:33+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>和16世纪北半球 全球版  一样 不过感觉比这MOD会好点吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70689">
+<article class="comment" id="comment-70689">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519321" rel="external nofollow">新用户941164</a></span> on <a href="http://www.acmerblog.com/hdu-4023-game-7026.html#comment-70689" rel="nofollow"><time datetime="2017-04-11T15:16:33+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>和16世纪北半球 全球版  一样 不过感觉比这MOD会好点吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70688">
+<article class="comment" id="comment-70688">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519321" rel="external nofollow">新用户941164</a></span> on <a href="http://www.acmerblog.com/hdu-4023-game-7026.html#comment-70688" rel="nofollow"><time datetime="2017-04-11T15:16:33+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>和16世纪北半球 全球版  一样 不过感觉比这MOD会好点吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70687">
+<article class="comment" id="comment-70687">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519321" rel="external nofollow">新用户941164</a></span> on <a href="http://www.acmerblog.com/hdu-4023-game-7026.html#comment-70687" rel="nofollow"><time datetime="2017-04-11T15:16:33+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>和16世纪北半球 全球版  一样 不过感觉比这MOD会好点吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70686">
+<article class="comment" id="comment-70686">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519321" rel="external nofollow">新用户941164</a></span> on <a href="http://www.acmerblog.com/hdu-4023-game-7026.html#comment-70686" rel="nofollow"><time datetime="2017-04-11T15:16:33+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>和16世纪北半球 全球版  一样 不过感觉比这MOD会好点吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70685">
+<article class="comment" id="comment-70685">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519321" rel="external nofollow">新用户941164</a></span> on <a href="http://www.acmerblog.com/hdu-4023-game-7026.html#comment-70685" rel="nofollow"><time datetime="2017-04-11T15:16:33+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>和16世纪北半球 全球版  一样 不过感觉比这MOD会好点吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70684">
+<article class="comment" id="comment-70684">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519321" rel="external nofollow">新用户941164</a></span> on <a href="http://www.acmerblog.com/hdu-4023-game-7026.html#comment-70684" rel="nofollow"><time datetime="2017-04-11T15:16:33+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>和16世纪北半球 全球版  一样 不过感觉比这MOD会好点吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35380">
+<article class="comment" id="comment-35380">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">BGPY</a></span> on <a href="http://www.acmerblog.com/hdu-4023-game-7026.html#comment-35380" rel="nofollow"><time datetime="2015-07-12T03:36:06+00:00" pubdate="">2015年7月12日 at 上午3:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>厉害，支持</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51904">
+<article class="comment" id="comment-51904">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jandk</a></span> on <a href="http://www.acmerblog.com/hdu-4023-game-7026.html#comment-51904" rel="nofollow"><time datetime="2015-07-07T13:42:53+00:00" pubdate="">2015年7月7日 at 下午1:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第63行是不是漏了 return 1 + dis_right; ?</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35386">
+<article class="comment" id="comment-35386">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">lintong</a></span> on <a href="http://www.acmerblog.com/hdu-4023-game-7026.html#comment-35386" rel="nofollow"><time datetime="2015-07-02T04:54:07+00:00" pubdate="">2015年7月2日 at 上午4:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有谁知道直接遍历的方法中第8行是什么意思嘛？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35383">
+<article class="comment" id="comment-35383">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jintianya</a></span> on <a href="http://www.acmerblog.com/hdu-4023-game-7026.html#comment-35383" rel="nofollow"><time datetime="2015-06-29T19:15:03+00:00" pubdate="">2015年6月29日 at 下午7:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正解，已改正。应该都是protected</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35379">
+<article class="comment" id="comment-35379">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">woweizhineng</a></span> on <a href="http://www.acmerblog.com/hdu-4023-game-7026.html#comment-35379" rel="nofollow"><time datetime="2015-06-24T18:11:43+00:00" pubdate="">2015年6月24日 at 下午6:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为是要把从字符串s的start位到当前位在hash中重置，修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35382">
+<article class="comment" id="comment-35382">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">blogpick</a></span> on <a href="http://www.acmerblog.com/hdu-4023-game-7026.html#comment-35382" rel="nofollow"><time datetime="2015-06-14T00:25:11+00:00" pubdate="">2015年6月14日 at 上午12:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/d8/good_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35385">
+<article class="comment" id="comment-35385">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">actlea</a></span> on <a href="http://www.acmerblog.com/hdu-4023-game-7026.html#comment-35385" rel="nofollow"><time datetime="2015-06-09T05:27:46+00:00" pubdate="">2015年6月9日 at 上午5:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/d8/good_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35381">
+<article class="comment" id="comment-35381">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">usx13123</a></span> on <a href="http://www.acmerblog.com/hdu-4023-game-7026.html#comment-35381" rel="nofollow"><time datetime="2015-06-03T07:47:20+00:00" pubdate="">2015年6月3日 at 上午7:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>分析的很详细！赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64234">
+<article class="comment" id="comment-64234">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">slowlight</a></span> on <a href="http://www.acmerblog.com/hdu-4023-game-7026.html#comment-64234" rel="nofollow"><time datetime="2015-05-27T17:41:49+00:00" pubdate="">2015年5月27日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>编辑的时候有些不小心了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35384">
+<article class="comment" id="comment-35384">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fiftyonejiao</a></span> on <a href="http://www.acmerblog.com/hdu-4023-game-7026.html#comment-35384" rel="nofollow"><time datetime="2015-05-17T20:35:30+00:00" pubdate="">2015年5月17日 at 下午8:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正有此意，欢迎更多的建议~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51903">
+<article class="comment" id="comment-51903">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Rosamondwu</a></span> on <a href="http://www.acmerblog.com/hdu-4023-game-7026.html#comment-51903" rel="nofollow"><time datetime="2015-05-13T10:39:56+00:00" pubdate="">2015年5月13日 at 上午10:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一句可以忽略不计了吧。从第二句开始分析，说明这个花色下的所有牌都会在其它里面出现，那么还剩下♠️和♦️。第三句，可以排除2和7，因为在两种花色里有。现在是第四句，因为♠️还剩下多个，只有是♦️B才能知道答案。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35378">
+<article class="comment" id="comment-35378">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">H.Watson</a></span> on <a href="http://www.acmerblog.com/hdu-4023-game-7026.html#comment-35378" rel="nofollow"><time datetime="2015-05-11T16:32:21+00:00" pubdate="">2015年5月11日 at 下午4:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算法是程序的灵魂，算法分简单和复杂，如果不搞大数据类，程序员了解一下简单点的算法也是可以的，但是会算法的一定要会编程才行，程序员不一定要会算法，利于自己项目需要的可以简单了解。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51902">
+<article class="comment" id="comment-51902">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wynk0804</a></span> on <a href="http://www.acmerblog.com/hdu-4023-game-7026.html#comment-51902" rel="nofollow"><time datetime="2015-05-10T07:09:05+00:00" pubdate="">2015年5月10日 at 上午7:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，就是把这32位当成一个长度为32的数组</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-60090">
+<article class="comment" id="comment-60090">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">siaswj</a></span> on <a href="http://www.acmerblog.com/hdu-4023-game-7026.html#comment-60090" rel="nofollow"><time datetime="2015-04-25T14:17:28+00:00" pubdate="">2015年4月25日 at 下午2:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是穷举，但是代码有优化（v数组），并不是2^n。测试数据应该没问题，之前有超时的代码。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

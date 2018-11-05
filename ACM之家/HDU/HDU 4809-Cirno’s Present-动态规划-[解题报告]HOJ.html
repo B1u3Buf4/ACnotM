@@ -1,0 +1,876 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>09-18</div>
+<div class="tit"><h1 class="entry-title">HDU 4809-Cirno’s Present-动态规划-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/basis/enumeration" rel="category tag" title="查看枚举中的全部文章">枚举</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a></span><span class="i4">围观74次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7854" href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comments" title="《HDU 4809-Cirno’s Present-动态规划-[解题报告]HOJ》上的评论">71 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Cirno’s Present</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+One day, three fairies, Sunny, Luna and Star visited Cirno’s house. Cirno was very happy, so she decided to give a present to them.<br/>Cirno’s present was a tree with N nodes. Each node of the tree has an equal possibility to be owned by one of Sunny, Luna or Star. After having decided every node’s owner, Cirno cut the edges that connect different owner’s nodes, after which each of the three fairies got some connected component of nodes (possibly none).<br/>Then each of the three fairies had to spend some magical energy repairing the components she got. Suppose she had X components containing odd number of nodes and Y components containing even number of nodes, the magical energy she would spend equals max(0, X – Y ).<br/>Cirno would compensate for the energy they spent with some food, so she asked you the expectation of the total energy the three fairies would spend, and your task is to find out the answer.<br/>To make it simpler, as it’s easy to prove the multiplication of the expectation and the Nth power of three makes an integer, your task is to find the remainder of the multiplication divided by 10<sup>9</sup> + 7. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+There are several test cases, please process till EOF.<br/>Each test case starts with a line containing one integer N (1 &lt;= N &lt;= 300). Then follows N – 1 lines, each contains two integers u and v (1 &lt;= u, v &lt;= N), representing an edge between node u and node v. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+There are several test cases, please process till EOF.<br/>Each test case starts with a line containing one integer N (1 &lt;= N &lt;= 300). Then follows N – 1 lines, each contains two integers u and v (1 &lt;= u, v &lt;= N), representing an edge between node u and node v.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+2
+1 2
+3
+2 1
+1 3</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+3
+12
+51</pre>
+<p> <!-- problem end --></p>
+<pre><span style="font-size:18px">非常值得一做的树形dp.
+题意:给定一棵树(n&lt;=300),你可以给每个节点等概率地染成A,B,C三种颜色之一,对于树上的一条边,若其两个端点的颜色不一样,则断开这条边.最后对于一个特定的颜色,X为点数为奇数的联通块个数,Y是点数为偶数的联通块个数,其得分为max(0,X-Y).问最后得分的期望乘上3^n mod 1e9+7的值.
+解法:注意到颜色的对称性,我们只需要求出每个颜色的期望再乘上3就可以,而期望就是所有的情况除以3^n(情况种数),所以dp出所有可能的状态的方法数即可.
+dp状态:dp[i][j][k],i代表对应的点,j有3个取值,0代表不取当前的点,1代表取当前的点并且当前点所在联通块的个数为奇数个,2代表为偶数个,k代表x-y的值.(注意dp表示的个数并不包括当前根节点的状态,因为当前根节点的状态还要需要其父亲)
+状态转移:
+dp[u][0][x+y]=dp[u][0][x]*dp[v][0][y]+dp[u][0][x]*dp[v][1][y-1]+dp[u][0][x]*dp[v][2][y+1]
+dp[u][1][x+y]=dp[u][1][x]*dp[v][0][y]+dp[u][1][x]*dp[v][2][y]+dp[u][2][x]*dp[v][1][y]
+dp[u][2][x+y]=dp[u][2][x]*dp[v][0][y]+dp[u][1][x]*dp[v][1][y]+dp[u][2][x]*dp[v][2][y]
+注意dp枚举的过程以及其优化.</span></pre>
+<pre><span style="font-size:18px"></span></pre>
+<pre class="brush:cpp" code_snippet_id="505754" name="code" snippet_file_name="blog_20141103_1_1504641">#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+#include &lt;algorithm&gt;
+#include &lt;vector&gt;
+using namespace std;
+
+const int MOD = 1000000007;
+const int base = 160;
+vector&lt;int&gt; g[305];
+int dp[305][3][505];
+int  t[3][505];
+int low[305], high[305];
+int n;
+
+void add(int &amp;x, int y)
+{
+    x += y;
+    while (x &lt; MOD) {
+        x += MOD;
+    }
+    while (x &gt;= MOD) {
+        x -= MOD;
+    }
+}
+
+int make_mul(int a, int b, int c, int d, int e, int f)
+{
+    int v = 0;
+    add(v, 1ll * a * b % MOD);
+    add(v, 1ll * c * d % MOD);
+    add(v, 1ll * e * f % MOD);
+    return v;
+}
+
+void dfs(int u, int fu)
+{
+    dp[u][0][base] = 2;
+    dp[u][1][base] = 1;
+    low[u] = 0, high [u] = 0;
+    int size = (int)g[u].size();
+    for (int i = 0; i &lt; size; ++ i) {
+        int v = g[u][i];
+        if (v == fu)    continue;
+        dfs(v, u);
+        memset(t, 0, sizeof(t));
+        for (int x = low[u]; x &lt;= high[u]; ++ x) {
+            for (int y = low[v] - 1; y &lt;= high[v] + 1; ++ y) {
+                if (x + y &gt; n || x + y &lt; -n)  continue;
+                add(t[0][x + y + base], make_mul(dp[u][0][x + base], dp[v][0][y + base], dp[u][0][x + base], dp[v][1][y - 1 + base], dp[u][0][x + base], dp[v][2][y + 1 + base]));
+                add(t[1][x + y + base], make_mul(dp[u][1][x + base], dp[v][0][y + base], dp[u][1][x + base], dp[v][2][y + base], dp[u][2][x + base], dp[v][1][y + base]));
+                add(t[2][x + y + base], make_mul(dp[u][2][x + base], dp[v][0][y + base], dp[u][1][x + base], dp[v][1][y + base], dp[u][2][x + base], dp[v][2][y + base]));
+                if (t[0][x + y + base] != 0) {
+                    if (x + y &lt; low[u]) low[u] = x + y;
+                    if (x + y &gt; high[u])    high[u] = x + y;
+                }
+                if (t[1][x + y + base] != 0) {
+                    if (x + y &lt; low[u]) low[u] = x + y;
+                    if (x + y &gt; high[u])    high[u] = x + y;
+                }
+                if (t[2][x + y + base] != 0) {
+                    if (x + y &lt; low[u]) low[u] = x + y;
+                    if (x + y &gt; high[u])    high[u] = x + y;
+                }
+            }
+        }
+        for (int j = low[u]; j &lt;= high[u]; ++ j) {
+            dp[u][0][j + base] = t[0][j + base];
+            dp[u][1][j + base] = t[1][j + base];
+            dp[u][2][j + base] = t[2][j + base];
+        }
+    }
+}
+
+int main()
+{
+    while (scanf("%d", &amp;n) == 1) {
+        for (int i = 1; i &lt;= n; ++ i) {
+            g[i].clear();
+        }
+        memset(dp, 0, sizeof(dp));
+        int a, b;
+        for (int i = 1; i &lt; n; ++ i) {
+            scanf("%d%d", &amp;a, &amp;b);
+            g[a].push_back(b);
+            g[b].push_back(a);
+        }
+        dfs(1, 0);
+        int ans = 0;
+        for (int i = -1; i &lt;= high[1]; ++ i) {
+            add(ans, 1ll * max(i, 0) * dp[1][0][i + base] % MOD);
+            add(ans, 1ll * max(i + 1, 0) * dp[1][1][i + base] % MOD);
+            add(ans, 1ll * max(i - 1, 0) * dp[1][2][i + base] % MOD);
+        }
+        ans = (int)(3ll * ans % MOD);
+        printf("%d\n", ans);
+    }
+    return 0;
+}</pre>
+<p>参考：http://blog.csdn.net/u011277193/article/details/40735349</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-102110">
+<article class="comment" id="comment-102110">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919464326" rel="external nofollow">新用户031296</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-102110" rel="nofollow"><time datetime="2017-04-24T13:59:00+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我觉得10个人有9个能在看到我上面那句回复后会仔细再看一遍左一</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-102109">
+<article class="comment" id="comment-102109">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919464326" rel="external nofollow">新用户031296</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-102109" rel="nofollow"><time datetime="2017-04-24T13:59:00+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我觉得10个人有9个能在看到我上面那句回复后会仔细再看一遍左一</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-102108">
+<article class="comment" id="comment-102108">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919464326" rel="external nofollow">新用户031296</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-102108" rel="nofollow"><time datetime="2017-04-24T13:59:00+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我觉得10个人有9个能在看到我上面那句回复后会仔细再看一遍左一</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-102107">
+<article class="comment" id="comment-102107">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919464326" rel="external nofollow">新用户031296</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-102107" rel="nofollow"><time datetime="2017-04-24T13:59:00+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我觉得10个人有9个能在看到我上面那句回复后会仔细再看一遍左一</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-102106">
+<article class="comment" id="comment-102106">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919464326" rel="external nofollow">新用户031296</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-102106" rel="nofollow"><time datetime="2017-04-24T13:59:00+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我觉得10个人有9个能在看到我上面那句回复后会仔细再看一遍左一</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-102105">
+<article class="comment" id="comment-102105">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919464326" rel="external nofollow">新用户031296</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-102105" rel="nofollow"><time datetime="2017-04-24T13:59:00+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我觉得10个人有9个能在看到我上面那句回复后会仔细再看一遍左一</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-102104">
+<article class="comment" id="comment-102104">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919464326" rel="external nofollow">新用户031296</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-102104" rel="nofollow"><time datetime="2017-04-24T13:59:00+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我觉得10个人有9个能在看到我上面那句回复后会仔细再看一遍左一</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-102103">
+<article class="comment" id="comment-102103">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919464326" rel="external nofollow">新用户031296</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-102103" rel="nofollow"><time datetime="2017-04-24T13:59:00+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我觉得10个人有9个能在看到我上面那句回复后会仔细再看一遍左一</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-102102">
+<article class="comment" id="comment-102102">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919464326" rel="external nofollow">新用户031296</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-102102" rel="nofollow"><time datetime="2017-04-24T13:59:00+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我觉得10个人有9个能在看到我上面那句回复后会仔细再看一遍左一</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-102101">
+<article class="comment" id="comment-102101">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919464326" rel="external nofollow">新用户031296</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-102101" rel="nofollow"><time datetime="2017-04-24T13:59:00+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我觉得10个人有9个能在看到我上面那句回复后会仔细再看一遍左一</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101650">
+<article class="comment" id="comment-101650">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511945" rel="external nofollow">新用户824779</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-101650" rel="nofollow"><time datetime="2017-04-23T14:02:15+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>【北京出发】＜意大利希腊13日阳光之旅＞圣托尼里岛的爱琴海逍遥游 ……出境旅游 -&gt; 【北京出发】＜意大利希腊13日阳光之旅＞圣托尼里岛 … 卡布里岛是意大利享誉国际的观光胜地，这里有极迷人的阳光与海滩、有优美的 ……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101649">
+<article class="comment" id="comment-101649">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511945" rel="external nofollow">新用户824779</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-101649" rel="nofollow"><time datetime="2017-04-23T14:02:15+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>【北京出发】＜意大利希腊13日阳光之旅＞圣托尼里岛的爱琴海逍遥游 ……出境旅游 -&gt; 【北京出发】＜意大利希腊13日阳光之旅＞圣托尼里岛 … 卡布里岛是意大利享誉国际的观光胜地，这里有极迷人的阳光与海滩、有优美的 ……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101648">
+<article class="comment" id="comment-101648">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511945" rel="external nofollow">新用户824779</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-101648" rel="nofollow"><time datetime="2017-04-23T14:02:15+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>【北京出发】＜意大利希腊13日阳光之旅＞圣托尼里岛的爱琴海逍遥游 ……出境旅游 -&gt; 【北京出发】＜意大利希腊13日阳光之旅＞圣托尼里岛 … 卡布里岛是意大利享誉国际的观光胜地，这里有极迷人的阳光与海滩、有优美的 ……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101647">
+<article class="comment" id="comment-101647">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511945" rel="external nofollow">新用户824779</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-101647" rel="nofollow"><time datetime="2017-04-23T14:02:15+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>【北京出发】＜意大利希腊13日阳光之旅＞圣托尼里岛的爱琴海逍遥游 ……出境旅游 -&gt; 【北京出发】＜意大利希腊13日阳光之旅＞圣托尼里岛 … 卡布里岛是意大利享誉国际的观光胜地，这里有极迷人的阳光与海滩、有优美的 ……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101646">
+<article class="comment" id="comment-101646">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511945" rel="external nofollow">新用户824779</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-101646" rel="nofollow"><time datetime="2017-04-23T14:02:15+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>【北京出发】＜意大利希腊13日阳光之旅＞圣托尼里岛的爱琴海逍遥游 ……出境旅游 -&gt; 【北京出发】＜意大利希腊13日阳光之旅＞圣托尼里岛 … 卡布里岛是意大利享誉国际的观光胜地，这里有极迷人的阳光与海滩、有优美的 ……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101645">
+<article class="comment" id="comment-101645">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511945" rel="external nofollow">新用户824779</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-101645" rel="nofollow"><time datetime="2017-04-23T14:02:15+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>【北京出发】＜意大利希腊13日阳光之旅＞圣托尼里岛的爱琴海逍遥游 ……出境旅游 -&gt; 【北京出发】＜意大利希腊13日阳光之旅＞圣托尼里岛 … 卡布里岛是意大利享誉国际的观光胜地，这里有极迷人的阳光与海滩、有优美的 ……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101644">
+<article class="comment" id="comment-101644">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511945" rel="external nofollow">新用户824779</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-101644" rel="nofollow"><time datetime="2017-04-23T14:02:15+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>【北京出发】＜意大利希腊13日阳光之旅＞圣托尼里岛的爱琴海逍遥游 ……出境旅游 -&gt; 【北京出发】＜意大利希腊13日阳光之旅＞圣托尼里岛 … 卡布里岛是意大利享誉国际的观光胜地，这里有极迷人的阳光与海滩、有优美的 ……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101643">
+<article class="comment" id="comment-101643">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511945" rel="external nofollow">新用户824779</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-101643" rel="nofollow"><time datetime="2017-04-23T14:02:15+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>【北京出发】＜意大利希腊13日阳光之旅＞圣托尼里岛的爱琴海逍遥游 ……出境旅游 -&gt; 【北京出发】＜意大利希腊13日阳光之旅＞圣托尼里岛 … 卡布里岛是意大利享誉国际的观光胜地，这里有极迷人的阳光与海滩、有优美的 ……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101642">
+<article class="comment" id="comment-101642">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511945" rel="external nofollow">新用户824779</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-101642" rel="nofollow"><time datetime="2017-04-23T14:02:15+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>【北京出发】＜意大利希腊13日阳光之旅＞圣托尼里岛的爱琴海逍遥游 ……出境旅游 -&gt; 【北京出发】＜意大利希腊13日阳光之旅＞圣托尼里岛 … 卡布里岛是意大利享誉国际的观光胜地，这里有极迷人的阳光与海滩、有优美的 ……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100931">
+<article class="comment" id="comment-100931">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525596" rel="external nofollow">新用户858742</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-100931" rel="nofollow"><time datetime="2017-04-22T13:59:09+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>男的都变女的了，为什么女的还是女的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100930">
+<article class="comment" id="comment-100930">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525596" rel="external nofollow">新用户858742</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-100930" rel="nofollow"><time datetime="2017-04-22T13:59:09+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>男的都变女的了，为什么女的还是女的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100929">
+<article class="comment" id="comment-100929">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525596" rel="external nofollow">新用户858742</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-100929" rel="nofollow"><time datetime="2017-04-22T13:59:09+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>男的都变女的了，为什么女的还是女的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100928">
+<article class="comment" id="comment-100928">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525596" rel="external nofollow">新用户858742</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-100928" rel="nofollow"><time datetime="2017-04-22T13:59:09+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>男的都变女的了，为什么女的还是女的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100927">
+<article class="comment" id="comment-100927">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525596" rel="external nofollow">新用户858742</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-100927" rel="nofollow"><time datetime="2017-04-22T13:59:09+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>男的都变女的了，为什么女的还是女的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100926">
+<article class="comment" id="comment-100926">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525596" rel="external nofollow">新用户858742</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-100926" rel="nofollow"><time datetime="2017-04-22T13:59:09+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>男的都变女的了，为什么女的还是女的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100925">
+<article class="comment" id="comment-100925">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525596" rel="external nofollow">新用户858742</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-100925" rel="nofollow"><time datetime="2017-04-22T13:59:09+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>男的都变女的了，为什么女的还是女的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100924">
+<article class="comment" id="comment-100924">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525596" rel="external nofollow">新用户858742</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-100924" rel="nofollow"><time datetime="2017-04-22T13:59:09+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>男的都变女的了，为什么女的还是女的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100923">
+<article class="comment" id="comment-100923">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525596" rel="external nofollow">新用户858742</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-100923" rel="nofollow"><time datetime="2017-04-22T13:59:09+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>男的都变女的了，为什么女的还是女的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100922">
+<article class="comment" id="comment-100922">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525596" rel="external nofollow">新用户858742</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-100922" rel="nofollow"><time datetime="2017-04-22T13:59:09+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>男的都变女的了，为什么女的还是女的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100921">
+<article class="comment" id="comment-100921">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525596" rel="external nofollow">新用户858742</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-100921" rel="nofollow"><time datetime="2017-04-22T13:59:09+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>男的都变女的了，为什么女的还是女的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100920">
+<article class="comment" id="comment-100920">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525596" rel="external nofollow">新用户858742</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-100920" rel="nofollow"><time datetime="2017-04-22T13:59:09+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>男的都变女的了，为什么女的还是女的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100919">
+<article class="comment" id="comment-100919">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525596" rel="external nofollow">新用户858742</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-100919" rel="nofollow"><time datetime="2017-04-22T13:59:09+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>男的都变女的了，为什么女的还是女的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100918">
+<article class="comment" id="comment-100918">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525596" rel="external nofollow">新用户858742</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-100918" rel="nofollow"><time datetime="2017-04-22T13:59:09+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>男的都变女的了，为什么女的还是女的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100917">
+<article class="comment" id="comment-100917">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525596" rel="external nofollow">新用户858742</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-100917" rel="nofollow"><time datetime="2017-04-22T13:59:09+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>男的都变女的了，为什么女的还是女的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100916">
+<article class="comment" id="comment-100916">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525596" rel="external nofollow">新用户858742</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-100916" rel="nofollow"><time datetime="2017-04-22T13:59:09+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>男的都变女的了，为什么女的还是女的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100915">
+<article class="comment" id="comment-100915">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525596" rel="external nofollow">新用户858742</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-100915" rel="nofollow"><time datetime="2017-04-22T13:59:09+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>男的都变女的了，为什么女的还是女的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100296">
+<article class="comment" id="comment-100296">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513709" rel="external nofollow">新用户772067</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-100296" rel="nofollow"><time datetime="2017-04-21T14:04:09+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>法律很难处理无照商贩，罚款没钱，坐牢不能，只能拘留。拘留结束也无法处理商贩的生计问题。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100295">
+<article class="comment" id="comment-100295">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513709" rel="external nofollow">新用户772067</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-100295" rel="nofollow"><time datetime="2017-04-21T14:04:09+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>法律很难处理无照商贩，罚款没钱，坐牢不能，只能拘留。拘留结束也无法处理商贩的生计问题。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100294">
+<article class="comment" id="comment-100294">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513709" rel="external nofollow">新用户772067</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-100294" rel="nofollow"><time datetime="2017-04-21T14:04:09+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>法律很难处理无照商贩，罚款没钱，坐牢不能，只能拘留。拘留结束也无法处理商贩的生计问题。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100293">
+<article class="comment" id="comment-100293">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513709" rel="external nofollow">新用户772067</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-100293" rel="nofollow"><time datetime="2017-04-21T14:04:09+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>法律很难处理无照商贩，罚款没钱，坐牢不能，只能拘留。拘留结束也无法处理商贩的生计问题。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100292">
+<article class="comment" id="comment-100292">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513709" rel="external nofollow">新用户772067</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-100292" rel="nofollow"><time datetime="2017-04-21T14:04:09+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>法律很难处理无照商贩，罚款没钱，坐牢不能，只能拘留。拘留结束也无法处理商贩的生计问题。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100291">
+<article class="comment" id="comment-100291">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513709" rel="external nofollow">新用户772067</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-100291" rel="nofollow"><time datetime="2017-04-21T14:04:09+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>法律很难处理无照商贩，罚款没钱，坐牢不能，只能拘留。拘留结束也无法处理商贩的生计问题。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100290">
+<article class="comment" id="comment-100290">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513709" rel="external nofollow">新用户772067</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-100290" rel="nofollow"><time datetime="2017-04-21T14:04:09+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>法律很难处理无照商贩，罚款没钱，坐牢不能，只能拘留。拘留结束也无法处理商贩的生计问题。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100289">
+<article class="comment" id="comment-100289">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513709" rel="external nofollow">新用户772067</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-100289" rel="nofollow"><time datetime="2017-04-21T14:04:09+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>法律很难处理无照商贩，罚款没钱，坐牢不能，只能拘留。拘留结束也无法处理商贩的生计问题。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100288">
+<article class="comment" id="comment-100288">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513709" rel="external nofollow">新用户772067</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-100288" rel="nofollow"><time datetime="2017-04-21T14:04:09+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>法律很难处理无照商贩，罚款没钱，坐牢不能，只能拘留。拘留结束也无法处理商贩的生计问题。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100287">
+<article class="comment" id="comment-100287">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513709" rel="external nofollow">新用户772067</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-100287" rel="nofollow"><time datetime="2017-04-21T14:04:09+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>法律很难处理无照商贩，罚款没钱，坐牢不能，只能拘留。拘留结束也无法处理商贩的生计问题。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100286">
+<article class="comment" id="comment-100286">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513709" rel="external nofollow">新用户772067</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-100286" rel="nofollow"><time datetime="2017-04-21T14:04:09+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>法律很难处理无照商贩，罚款没钱，坐牢不能，只能拘留。拘留结束也无法处理商贩的生计问题。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96436">
+<article class="comment" id="comment-96436">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512395" rel="external nofollow">新用户756154</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-96436" rel="nofollow"><time datetime="2017-04-19T19:07:50+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还以为是回放了3遍！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96435">
+<article class="comment" id="comment-96435">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512395" rel="external nofollow">新用户756154</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-96435" rel="nofollow"><time datetime="2017-04-19T19:07:50+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还以为是回放了3遍！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96434">
+<article class="comment" id="comment-96434">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512395" rel="external nofollow">新用户756154</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-96434" rel="nofollow"><time datetime="2017-04-19T19:07:50+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还以为是回放了3遍！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96433">
+<article class="comment" id="comment-96433">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512395" rel="external nofollow">新用户756154</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-96433" rel="nofollow"><time datetime="2017-04-19T19:07:50+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还以为是回放了3遍！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96432">
+<article class="comment" id="comment-96432">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512395" rel="external nofollow">新用户756154</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-96432" rel="nofollow"><time datetime="2017-04-19T19:07:50+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还以为是回放了3遍！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96431">
+<article class="comment" id="comment-96431">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512395" rel="external nofollow">新用户756154</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-96431" rel="nofollow"><time datetime="2017-04-19T19:07:50+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还以为是回放了3遍！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96430">
+<article class="comment" id="comment-96430">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512395" rel="external nofollow">新用户756154</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-96430" rel="nofollow"><time datetime="2017-04-19T19:07:50+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还以为是回放了3遍！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96429">
+<article class="comment" id="comment-96429">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512395" rel="external nofollow">新用户756154</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-96429" rel="nofollow"><time datetime="2017-04-19T19:07:50+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还以为是回放了3遍！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96428">
+<article class="comment" id="comment-96428">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512395" rel="external nofollow">新用户756154</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-96428" rel="nofollow"><time datetime="2017-04-19T19:07:50+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还以为是回放了3遍！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96427">
+<article class="comment" id="comment-96427">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512395" rel="external nofollow">新用户756154</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-96427" rel="nofollow"><time datetime="2017-04-19T19:07:50+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还以为是回放了3遍！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96426">
+<article class="comment" id="comment-96426">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512395" rel="external nofollow">新用户756154</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-96426" rel="nofollow"><time datetime="2017-04-19T19:07:50+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还以为是回放了3遍！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96425">
+<article class="comment" id="comment-96425">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512395" rel="external nofollow">新用户756154</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-96425" rel="nofollow"><time datetime="2017-04-19T19:07:50+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还以为是回放了3遍！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96424">
+<article class="comment" id="comment-96424">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512395" rel="external nofollow">新用户756154</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-96424" rel="nofollow"><time datetime="2017-04-19T19:07:50+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还以为是回放了3遍！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96423">
+<article class="comment" id="comment-96423">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512395" rel="external nofollow">新用户756154</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-96423" rel="nofollow"><time datetime="2017-04-19T19:07:50+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还以为是回放了3遍！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96175">
+<article class="comment" id="comment-96175">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">新用户</span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-96175" rel="nofollow"><time datetime="2017-04-14T16:09:49+00:00" pubdate="">2017年4月14日 at 下午4:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>标签能不能做好点？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65522">
+<article class="comment" id="comment-65522">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527738" rel="external nofollow">新用户734018</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-65522" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>作者，求更新！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65521">
+<article class="comment" id="comment-65521">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527738" rel="external nofollow">新用户734018</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-65521" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>作者，求更新！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65520">
+<article class="comment" id="comment-65520">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527738" rel="external nofollow">新用户734018</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-65520" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>作者，求更新！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65519">
+<article class="comment" id="comment-65519">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527738" rel="external nofollow">新用户734018</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-65519" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>作者，求更新！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65518">
+<article class="comment" id="comment-65518">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527738" rel="external nofollow">新用户734018</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-65518" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>作者，求更新！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65517">
+<article class="comment" id="comment-65517">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527738" rel="external nofollow">新用户734018</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-65517" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>作者，求更新！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65516">
+<article class="comment" id="comment-65516">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527738" rel="external nofollow">新用户734018</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-65516" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>作者，求更新！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65515">
+<article class="comment" id="comment-65515">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527738" rel="external nofollow">新用户734018</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-65515" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>作者，求更新！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65514">
+<article class="comment" id="comment-65514">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527738" rel="external nofollow">新用户734018</a></span> on <a href="http://www.acmerblog.com/hdu-4809-cirnos-present-7854.html#comment-65514" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>作者，求更新！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

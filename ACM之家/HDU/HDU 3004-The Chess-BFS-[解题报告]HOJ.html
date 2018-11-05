@@ -1,0 +1,616 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>02-27</div>
+<div class="tit"><h1 class="entry-title">HDU 3004-The Chess-BFS-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/search" rel="category tag" title="查看搜索中的全部文章">搜索</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a></span><span class="i4">围观356次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4776" href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comments" title="《HDU 3004-The Chess-BFS-[解题报告]HOJ》上的评论">31 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">The Chess</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Mr Li likes playing chess very much. One day he made a simplified version of the game. The chess board is relatively smaller. He will first place only three kinds of chesses on his own behalf, namely the Chariot("ju"), the Horse("ma") and the Cannon("pao"). Then he placed some chesses on the opposite’s behalf. There will be one and only one chess of the opposite marked as the General("shuai"). Mr Li wants to kill the General as soon as possible without killing other chesses.<br/>    All chesses will move in the same way as in real chess games(The chinese chess).<br/>    To make the game easier, the opposite’s chesses will stand still. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+For each test case,the first line contains two integers n and m(2&lt;=n,m&lt;=10) indicating the size of the borad. The next n lines, containing m characters each, describe the board. ‘C’, ‘M’ and ‘P’ stand for the Chariot, the Horse and the Cannon on Mr Li’s behalf. ‘S’ stands for the General of the opposite while ‘D’ stands for other chesses. Cells marked as ‘.’ are empty.<br/>Process to the end of file. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+For each test case,the first line contains two integers n and m(2&lt;=n,m&lt;=10) indicating the size of the borad. The next n lines, containing m characters each, describe the board. ‘C’, ‘M’ and ‘P’ stand for the Chariot, the Horse and the Cannon on Mr Li’s behalf. ‘S’ stands for the General of the opposite while ‘D’ stands for other chesses. Cells marked as ‘.’ are empty.<br/>Process to the end of file.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+5 5
+..DSD
+...D.
+C....
+P.D..
+...M.
+7 7
+.DDSDD.
+..DDD..
+...D...
+.....P.
+.C.....
+...M...
+.......</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Scenario #1
+2
+
+Scenario #2
+OH!That's impossible!</pre>
+<p> <!-- problem end --></p>
+<p>一道广搜题。。用六维hash判重即可，要注意一下马的别脚和炮的隔山打牛。。。稍微细心点敲就应该不会错。。。随后附上部分有针对性的生成数据，仅供参考（答案自己去算）</p>
+<p>附代码如下</p>
+<pre class="brush:cpp "># include &lt;iostream&gt;
+# include &lt;queue&gt;
+using namespace std;
+const int size = 11;
+struct node
+{
+       int mx, my;
+       int px, py;
+       int cx, cy;
+       int step; 
+};
+int n, m;
+int sx, sy;
+bool hash[size][size][size][size][size][size];
+node start, next, pre;
+const int GoM[8][2] = {{1, 2}, {1, -2}, {-1, 2}, {-1, -2}, {2, 1}, {2, -1}, {-2, 1}, {-2, -1}};
+const int GoM1[8][2] = {{0, 1}, {0, -1}, {0, 1}, {0, -1}, {1, 0}, {1, 0}, {-1, 0}, {-1, 0}};
+const int GoC[4][2] = {{0, 1}, {0, -1}, {1, 0}, {-1, 0}};
+char mapp[size][size];
+int ans;
+bool check(int x, int y)
+{
+     return (x &gt;= 0 &amp;&amp; x &lt; n &amp;&amp; y &gt;= 0 &amp;&amp; y &lt; m);     
+}
+/*void pri(node a)
+{
+     for (int i = 0; i &lt; n; i ++){
+         for (int j = 0; j &lt; m; j ++){
+             if (i == a.mx &amp;&amp; j == a.my)cout&lt;&lt;"M";
+             else
+             if (i == a.cx &amp;&amp; j == a.cy)cout&lt;&lt;"C";
+             else
+             if (i == a.px &amp;&amp; j == a.py)cout&lt;&lt;"P";
+             else if (mapp[i][j] == 'D')cout&lt;&lt;"D";
+             else if (mapp[i][j] == 'S')cout&lt;&lt;"S";
+             else cout&lt;&lt;'.';
+         }    
+         cout&lt;&lt;endl;
+     }     
+}*/
+void bfs()
+{
+     memset(hash, false, sizeof(hash));
+     start.step = 0;
+     queue &lt;node&gt; Que;
+     Que.push(start);
+     hash[start.mx][start.my][start.px][start.py][start.cx][start.cy] = true;
+     while (!Que.empty()){
+           node pre = Que.front();
+           Que.pop();
+           //pri(pre);
+           //cout&lt;&lt;pre.px&lt;&lt;' '&lt;&lt;pre.py&lt;&lt;endl;
+           for (int i = 0; i &lt; 8; i ++){//m
+               int xx = pre.mx + GoM[i][0];
+               int yy = pre.my + GoM[i][1];
+               int judx = pre.mx + GoM1[i][0];
+               int judy = pre.my + GoM1[i][1];// 
+               if (!check(xx, yy) )continue;
+               
+               if ((judx == pre.px &amp;&amp; judy == pre.py) || (judx == pre.cx &amp;&amp; judy == pre.cy)||mapp[judx][judy] == 'D' || mapp[judx][judy] == 'S')continue;
+               if ((xx == pre.px &amp;&amp; yy == pre.py) || (xx == pre.cx &amp;&amp; yy == pre.cy) || mapp[xx][yy] == 'D')continue;
+               //cout&lt;&lt;"xx:"&lt;&lt;xx&lt;&lt;' '&lt;&lt;"yy:"&lt;&lt;yy&lt;&lt;' '&lt;&lt;"judx:"&lt;&lt;judx&lt;&lt;' '&lt;&lt;"judy:"&lt;&lt;judy&lt;&lt;' '&lt;&lt;mapp[xx][yy]&lt;&lt;endl;
+               if (!hash[xx][yy][pre.px][pre.py][pre.cx][pre.cy]){
+                  if (mapp[xx][yy] == 'S'){
+                     //if (ans &lt; pre.step)
+                     ans = pre.step+1;
+                     //pri(pre);                    
+                     return ;                 
+                  }
+                  hash[xx][yy][pre.px][pre.py][pre.cx][pre.cy] = true;
+                  next = pre;
+                  next.mx = xx, next.my = yy;
+                  next.step ++;
+                  Que.push(next);
+               }
+               
+           } 
+           for (int i = 0; i &lt; 4; i ++){//c
+               for (int k = 1; k &lt;= 10; k ++){ //cout&lt;&lt;"adsasd"&lt;&lt;endl;
+                   int xx = pre.cx + k*GoC[i][0];
+                   int yy = pre.cy + k*GoC[i][1];
+                   if (!check(xx, yy) || (pre.mx == xx &amp;&amp; pre.my == yy) || (pre.px == xx &amp;&amp; pre.py == yy) || mapp[xx][yy] == 'D')break;
+                   if (!hash[pre.mx][pre.my][pre.px][pre.py][xx][yy]){
+                      
+                      if (mapp[xx][yy] == 'S'){
+                         ans = pre.step+1;
+                         return ;                 
+                      }
+                      hash[pre.mx][pre.my][pre.px][pre.py][xx][yy] = true;
+                      next = pre;
+                      next.cx = xx, next.cy = yy;
+                      next.step ++;
+                      Que.push(next);
+                   }
+               }
+               
+           }
+           for (int i = 0; i &lt; 4; i ++){//p
+               int flag = 0;
+               for (int k = 1; k &lt;= 10; k ++){
+                   int xx = pre.px + k*GoC[i][0];
+                   int yy = pre.py + k*GoC[i][1];//
+                   
+                   if (!check(xx, yy))break;
+                   if ((pre.mx == xx &amp;&amp; pre.my == yy) || (pre.cx == xx &amp;&amp; pre.cy == yy) || mapp[xx][yy] == 'D' || mapp[xx][yy] == 'S')flag ++;
+                    if (flag == 1 &amp;&amp; mapp[xx][yy] == 'S')break;
+                    if (flag == 1 )continue; 
+                    
+                   if (flag &gt; 2 )break;//
+                  
+                  //cout&lt;&lt;"flag:"&lt;&lt;flag&lt;&lt;endl;
+                   if (flag == 2 &amp;&amp; mapp[xx][yy] != 'S')break;//cout&lt;&lt;"xx:"&lt;&lt;xx&lt;&lt;' '&lt;&lt;"yy:"&lt;&lt;yy&lt;&lt;' '&lt;&lt;flag&lt;&lt;' '&lt;&lt;mapp[xx][yy]&lt;&lt;endl;
+                   //if (mapp[xx][yy] == 'S')
+                   if (!hash[pre.mx][pre.my][xx][yy][pre.cx][pre.cy]){
+                                                                      
+                      if (mapp[xx][yy] == 'S'){
+                         ans = pre.step+1;
+                         //pri(pre);
+                         return ;                 
+                      }
+                      hash[pre.mx][pre.my][xx][yy][pre.cx][pre.cy] = true;
+                      next = pre;
+                      next.px = xx, next.py = yy;
+                      next.step ++;
+                      Que.push(next);          
+                   }   
+               }
+               
+               
+           }    
+     }
+     //pri(pre);
+}
+int main()
+{
+    //freopen("IN.txt", "r", stdin);
+    //freopen("OUT.txt", "w", stdout);
+    int nc = 0;
+    while (scanf("%d%d", &amp;n, &amp;m) != EOF){
+          for (int i = 0; i &lt; n; i ++){
+              scanf("%s", mapp[i]);   
+              for (int j = 0; j &lt; m; j ++){
+                  if (mapp[i][j] == 'M'){
+                     start.mx = i, start.my = j; 
+                     mapp[i][j] = '.';              
+                  }
+                  if (mapp[i][j] == 'C'){
+                     start.cx = i, start.cy = j;
+                     mapp[i][j] = '.';               
+                  }
+                  if (mapp[i][j] == 'P'){
+                     start.px = i, start.py = j;
+                     mapp[i][j] = '.';               
+                  }            
+              } 
+          }      
+          ans = -1;
+          printf("Scenario #%d\n", ++nc);
+          bfs();
+          if (ans == -1)printf("OH!That's impossible!\n\n");
+          else
+          printf("%d\n\n", ans);
+    }
+    return 0 ;
+}
+/*
+5 5
+P.DDS
+...DD      
+...CD
+..M..
+.....
+
+5 5
+....S
+...MD
+...DC
+.....
+.P...
+
+5 5
+C.DDS
+P..D.      
+...D.
+..DM.
+.....
+7 9
+PCD....S.
+DD.......     
+......D..
+.....DMD.
+......D..
+.........
+.........
+
+5 5
+P.DDS
+.....      
+.....
+..DMD
+....C
+
+8 10
+D.......CD
+MDDD......
+...D......
+D..D...D..
+.DD.DD.DD.
+D.D...DD.D
+DDD......D
+..DDP..DDS
+
+4 10
+...DD.....
+.P.......D
+D..DDC...D
+.MDDSD....
+
+4 6
+...D..
+....D.
+CM...S
+..DP.D
+*/</pre>
+<p>
+ </p>
+<p> </p>
+<p>参考：http://blog.csdn.net/zhang360896270/article/details/6705693</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-80171">
+<article class="comment" id="comment-80171">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519247" rel="external nofollow">新用户098101</a></span> on <a href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comment-80171" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不知道为什么，我的站点默认已经开启了Gzip,按你在本文的方法做了一遍，压缩率和以前一样，我再学习一下你的其他文章，谢谢了~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80170">
+<article class="comment" id="comment-80170">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519247" rel="external nofollow">新用户098101</a></span> on <a href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comment-80170" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不知道为什么，我的站点默认已经开启了Gzip,按你在本文的方法做了一遍，压缩率和以前一样，我再学习一下你的其他文章，谢谢了~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80169">
+<article class="comment" id="comment-80169">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519247" rel="external nofollow">新用户098101</a></span> on <a href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comment-80169" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不知道为什么，我的站点默认已经开启了Gzip,按你在本文的方法做了一遍，压缩率和以前一样，我再学习一下你的其他文章，谢谢了~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80168">
+<article class="comment" id="comment-80168">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519247" rel="external nofollow">新用户098101</a></span> on <a href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comment-80168" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不知道为什么，我的站点默认已经开启了Gzip,按你在本文的方法做了一遍，压缩率和以前一样，我再学习一下你的其他文章，谢谢了~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80167">
+<article class="comment" id="comment-80167">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519247" rel="external nofollow">新用户098101</a></span> on <a href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comment-80167" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不知道为什么，我的站点默认已经开启了Gzip,按你在本文的方法做了一遍，压缩率和以前一样，我再学习一下你的其他文章，谢谢了~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80166">
+<article class="comment" id="comment-80166">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519247" rel="external nofollow">新用户098101</a></span> on <a href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comment-80166" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不知道为什么，我的站点默认已经开启了Gzip,按你在本文的方法做了一遍，压缩率和以前一样，我再学习一下你的其他文章，谢谢了~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80165">
+<article class="comment" id="comment-80165">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519247" rel="external nofollow">新用户098101</a></span> on <a href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comment-80165" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不知道为什么，我的站点默认已经开启了Gzip,按你在本文的方法做了一遍，压缩率和以前一样，我再学习一下你的其他文章，谢谢了~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80164">
+<article class="comment" id="comment-80164">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519247" rel="external nofollow">新用户098101</a></span> on <a href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comment-80164" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不知道为什么，我的站点默认已经开启了Gzip,按你在本文的方法做了一遍，压缩率和以前一样，我再学习一下你的其他文章，谢谢了~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80163">
+<article class="comment" id="comment-80163">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519247" rel="external nofollow">新用户098101</a></span> on <a href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comment-80163" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不知道为什么，我的站点默认已经开启了Gzip,按你在本文的方法做了一遍，压缩率和以前一样，我再学习一下你的其他文章，谢谢了~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80162">
+<article class="comment" id="comment-80162">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519247" rel="external nofollow">新用户098101</a></span> on <a href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comment-80162" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不知道为什么，我的站点默认已经开启了Gzip,按你在本文的方法做了一遍，压缩率和以前一样，我再学习一下你的其他文章，谢谢了~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80161">
+<article class="comment" id="comment-80161">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519247" rel="external nofollow">新用户098101</a></span> on <a href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comment-80161" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不知道为什么，我的站点默认已经开启了Gzip,按你在本文的方法做了一遍，压缩率和以前一样，我再学习一下你的其他文章，谢谢了~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80160">
+<article class="comment" id="comment-80160">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519247" rel="external nofollow">新用户098101</a></span> on <a href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comment-80160" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不知道为什么，我的站点默认已经开启了Gzip,按你在本文的方法做了一遍，压缩率和以前一样，我再学习一下你的其他文章，谢谢了~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80159">
+<article class="comment" id="comment-80159">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519247" rel="external nofollow">新用户098101</a></span> on <a href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comment-80159" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不知道为什么，我的站点默认已经开启了Gzip,按你在本文的方法做了一遍，压缩率和以前一样，我再学习一下你的其他文章，谢谢了~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80158">
+<article class="comment" id="comment-80158">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519247" rel="external nofollow">新用户098101</a></span> on <a href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comment-80158" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不知道为什么，我的站点默认已经开启了Gzip,按你在本文的方法做了一遍，压缩率和以前一样，我再学习一下你的其他文章，谢谢了~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80157">
+<article class="comment" id="comment-80157">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519247" rel="external nofollow">新用户098101</a></span> on <a href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comment-80157" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不知道为什么，我的站点默认已经开启了Gzip,按你在本文的方法做了一遍，压缩率和以前一样，我再学习一下你的其他文章，谢谢了~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80156">
+<article class="comment" id="comment-80156">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519247" rel="external nofollow">新用户098101</a></span> on <a href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comment-80156" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不知道为什么，我的站点默认已经开启了Gzip,按你在本文的方法做了一遍，压缩率和以前一样，我再学习一下你的其他文章，谢谢了~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80155">
+<article class="comment" id="comment-80155">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519247" rel="external nofollow">新用户098101</a></span> on <a href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comment-80155" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不知道为什么，我的站点默认已经开启了Gzip,按你在本文的方法做了一遍，压缩率和以前一样，我再学习一下你的其他文章，谢谢了~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26407">
+<article class="comment" id="comment-26407">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">michaelwen</a></span> on <a href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comment-26407" rel="nofollow"><time datetime="2015-03-31T08:22:12+00:00" pubdate="">2015年3月31日 at 上午8:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>int L[m+1][n+1];这样定义出错，这个在gcc上可以编译通过 在VS上不行 应该改为new 或者vector</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47356">
+<article class="comment" id="comment-47356">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wangzhenvs123</a></span> on <a href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comment-47356" rel="nofollow"><time datetime="2015-02-08T21:12:11+00:00" pubdate="">2015年2月8日 at 下午9:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的题，还是能做出几道的，嘿嘿</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26406">
+<article class="comment" id="comment-26406">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yupeng.bai</a></span> on <a href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comment-26406" rel="nofollow"><time datetime="2015-02-03T05:56:50+00:00" pubdate="">2015年2月3日 at 上午5:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为避免精度问题，PI值请使用arccos(-1)。应该是acos</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47350">
+<article class="comment" id="comment-47350">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">changjf</a></span> on <a href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comment-47350" rel="nofollow"><time datetime="2015-01-15T06:55:25+00:00" pubdate="">2015年1月15日 at 上午6:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-47354">
+<article class="comment" id="comment-47354">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">645198</a></span> on <a href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comment-47354" rel="nofollow"><time datetime="2014-11-16T16:35:29+00:00" pubdate="">2014年11月16日 at 下午4:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我没看懂题目<br/>
+2<br/>
+5 6 -1 5 4 -7<br/>
+7 0 6 -1 1 -6 7 -5<br/>
+我觉得第一个应该是5 6 -1 5 4 输出是19 5 4<br/>
+第二个是7 0 6 -1 1 -6 7输出是14 7 7<br/>
+不知道题目例子是怎么得出来的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-26402">
+<article class="comment" id="comment-26402">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">oneal</a></span> on <a href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comment-26402" rel="nofollow"><time datetime="2014-11-07T08:12:30+00:00" pubdate="">2014年11月7日 at 上午8:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第23行：<br/>
+hash <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = -1是否应该改成hash[s <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> ] = -1</p>
+<p>因为是要把从字符串s的start位到当前位在hash中重置</p>
+<p>修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26405">
+<article class="comment" id="comment-26405">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">reking</a></span> on <a href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comment-26405" rel="nofollow"><time datetime="2014-08-06T08:53:01+00:00" pubdate="">2014年8月6日 at 上午8:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>[…] 如果此题没有要求 相对位置不变，可以参考文章：http://www.acmerblog.com/interview-9-2427/ […]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47355">
+<article class="comment" id="comment-47355">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">water160</a></span> on <a href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comment-47355" rel="nofollow"><time datetime="2014-07-18T04:16:07+00:00" pubdate="">2014年7月18日 at 上午4:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>We do not harbor that I couldn’t remove other individuals’ problems whenever this arrived at.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-47352">
+<article class="comment" id="comment-47352">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">20134055016</a></span> on <a href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comment-47352" rel="nofollow"><time datetime="2014-06-13T21:32:11+00:00" pubdate="">2014年6月13日 at 下午9:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p><a href="http://beeder.me" rel="nofollow">http://beeder.me</a> 这个网站上有很多poj和hihoCoder的题解，质量不错，欢迎转载。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47357">
+<article class="comment" id="comment-47357">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">CHEATBEATER</a></span> on <a href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comment-47357" rel="nofollow"><time datetime="2014-05-29T18:56:37+00:00" pubdate="">2014年5月29日 at 下午6:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>写的很好~~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-47353">
+<article class="comment" id="comment-47353">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">magichu</a></span> on <a href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comment-47353" rel="nofollow"><time datetime="2014-05-20T22:11:24+00:00" pubdate="">2014年5月20日 at 下午10:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已修正</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47351">
+<article class="comment" id="comment-47351">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wawa</a></span> on <a href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comment-47351" rel="nofollow"><time datetime="2014-04-21T20:09:36+00:00" pubdate="">2014年4月21日 at 下午8:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>终于AC了！next数组还是不好理解啊，mark</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26403">
+<article class="comment" id="comment-26403">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ruoshui</a></span> on <a href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comment-26403" rel="nofollow"><time datetime="2014-04-15T00:13:06+00:00" pubdate="">2014年4月15日 at 上午12:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>顺利测试通过了，多谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-26404">
+<article class="comment" id="comment-26404">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">123zxc</a></span> on <a href="http://www.acmerblog.com/hdu-3004-the-chess-4776.html#comment-26404" rel="nofollow"><time datetime="2014-04-03T06:25:45+00:00" pubdate="">2014年4月3日 at 上午6:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>顶一个 赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

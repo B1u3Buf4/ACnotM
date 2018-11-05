@@ -1,0 +1,470 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>01-05</div>
+<div class="tit"><h1 class="entry-title">hdu 2295 Radar -DFS-[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/search" rel="category tag" title="查看搜索中的全部文章">搜索</a>, <a href="http://www.acmerblog.com/category/basis/recursion" rel="category tag" title="查看递归和分治中的全部文章">递归和分治</a></span><span class="i4">围观1402次</span><span class="i3"><a class="ds-thread-count" data-thread-key="3525" href="http://www.acmerblog.com/hdu-2295-radar-3525.html#comments" title="《hdu 2295 Radar -DFS-[解题报告]C++》上的评论">20 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Radar </h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+N cities of the Java Kingdom need to be covered by radars for being in a state of war. Since the kingdom has M radar stations but only K operators, we can at most operate K radars. All radars have the same circular coverage with a radius of R. Our goal is to minimize R while covering the entire city with no more than K radars. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input consists of several test cases. The first line of the input consists of an integer T, indicating the number of test cases. The first line of each test case consists of 3 integers: N, M, K, representing the number of cities, the number of radar stations and the number of operators. Each of the following N lines consists of the coordinate of a city.<br/>Each of the last M lines consists of the coordinate of a radar station.
+<p>All coordinates are separated by one space.<br/>Technical Specification</p>
+<p>1. 1 ≤ T ≤ 20<br/>2. 1 ≤ N, M ≤ 50<br/>3. 1 ≤ K ≤ M<br/>4. 0 ≤ X, Y ≤ 1000 </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input consists of several test cases. The first line of the input consists of an integer T, indicating the number of test cases. The first line of each test case consists of 3 integers: N, M, K, representing the number of cities, the number of radar stations and the number of operators. Each of the following N lines consists of the coordinate of a city.<br/>Each of the last M lines consists of the coordinate of a radar station.
+<p>All coordinates are separated by one space.<br/>Technical Specification</p>
+<p>1. 1 ≤ T ≤ 20<br/>2. 1 ≤ N, M ≤ 50<br/>3. 1 ≤ K ≤ M<br/>4. 0 ≤ X, Y ≤ 1000</p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+3 3 2
+3 4
+3 1
+5 4
+1 1
+2 2
+3 3</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+2.236068</pre>
+<p> <!-- problem end --></p>
+<p><a href="http://acm.hdu.edu.cn/showproblem.php?pid=2295">Radar</a></p>
+<p>题意：有N个城市，M个雷达站，K个操作员，从M个雷达站中选择K个，来覆盖所有的N城市，每个雷达有相同的覆盖半径，问：最小的覆盖半径是多少</p>
+<p>一看题意，就知道是个最小支配集问题，最小支配集属于NP难题，找不到多项式解法，所有只能搜索，但是普通的搜索是过不了的，鉴于这种类型的题，可以用一种的特殊的结构–双向链表，于是就可以用DLX来优化这个搜索，而且这题还需要剪枝，据说是A*，表示不懂，找到模板过了。。</p>
+<p>可以先二分距离，然后用DLX判断就行了。</p>
+<p> </p>
+<pre class="brush:cpp ">/*最小支配集*/
+ #include&lt;stdio.h&gt;
+ #include&lt;string.h&gt;
+ #include&lt;math.h&gt;
+ #include&lt;stdlib.h&gt;
+  #define INF 0x3fffffff
+  #define EPS 1e-8
+  #define EP 1e-10
+  #define NN 55
+ struct POINT{
+        double x, y;
+ }f[NN], g[NN];
+ double dis[NN][NN];
+ 
+ int adj[NN][NN];
+ int N, M, K, head;
+ 
+ int R[NN * NN], L[NN * NN], U[NN * NN], D[NN * NN];
+ int C[NN * NN];//记录每个节点所在列 
+ int cntc[NN]; //记录每列包含的节点数 
+ 
+ /*删除第c列*/ 
+ void remove(int c){
+     int i;
+     for (i = D[c]; i != c; i = D[i]){
+         R[L[i]] = R[i];
+         L[R[i]] = L[i];        
+     }
+ }
+ /*恢复第c列*/ 
+ void resume(int c){
+     int i;
+     for (i = D[c]; i != c; i = D[i]){
+         R[L[i]] = i;
+         L[R[i]] = i;        
+     }
+ }
+ 
+ int h(){
+     bool hash[NN];
+     memset(hash, 0, sizeof(hash));
+     
+     int i, j, c;
+     int ans = 0;
+     for (c = R[head]; c != head; c = R[c]){
+         if (!hash[c]){
+            ans ++;
+            for (i = D[c]; i != c; i = D[i]){
+                for (j = R[i]; j != i; j = R[j]){
+                    hash[C[j]] = true;
+                }
+            }
+         }
+     }
+     return ans;    
+ }
+ 
+ /*DLX主要部分*/ 
+ int dfs(int k){
+     if (R[head] == head) return 1;
+     if (k + h() &gt; K) return 0;// A*剪枝 
+     
+     
+     int i, j, c;
+     int Min = INF;
+     for (i = R[head]; i != head; i = R[i]){
+         if (cntc[i] &lt; Min){
+            Min = cntc[i];
+            c = i;
+         }
+     }
+     for (i = D[c]; i != c; i = D[i]){
+         remove(i);
+         for (j = R[i]; j != i; j = R[j]){
+             remove(j);
+             cntc[C[j]]--;
+         }
+         if (dfs(k + 1)) return 1;
+         for (j = L[i]; j != i; j = L[j]){
+             resume(j);
+             cntc[j]++;
+         }
+         resume(i);
+     }
+     return 0;
+ }
+ /*建图*/ 
+ int Build(){
+      int i, j, now, pre, first;
+      head = 0;
+      for (j = head; j &lt; N; j++){
+          R[j] = j + 1;
+          L[j + 1] = j;    
+      }
+      L[head] = j;
+      R[j] = head;
+      
+      /*列双向链表*/
+      for (j = 1; j &lt;= N; j++){
+          pre = j;
+          cntc[j] = 0;
+          for (i = 1; i &lt;= M; i++){
+              if (adj[i][j]){
+                 now = i * N + j;
+                 C[now] = j;
+                 cntc[j]++;
+                 D[pre] = now;
+                 U[now] = pre;
+                 pre = now;
+              }
+          }
+          now = j;
+          D[pre] = now;
+          U[now] = pre;
+          if (cntc[j] == 0) return 0;
+      }
+      /*行双向链表*/
+      for (i = 1; i &lt;= M; i++){
+          pre = first = -1;
+          for (j = 1; j &lt;= N; j++){
+              if (adj[i][j]){
+                 now = i * N + j;
+                 if (pre != -1){
+                         R[pre] = now;
+                         L[now] = pre;
+                 }else{
+                       first = now;
+                 }
+                 pre = now;
+              }
+          }
+          if (first != -1){
+             now = first;
+             R[pre] = now;
+             L[now] = pre;
+          }
+      }
+      return 1;
+ }
+ 
+ /*判断*/ 
+ int OK(double mid){
+     int i, j;
+     for (i = 1; i &lt;= M; i++){
+         for (j = 1; j &lt;= N; j++){
+             if (dis[i][j] - mid &lt; EP){
+                adj[i][j] = 1;
+             }else adj[i][j] = 0;
+         }
+     }
+     if (Build())
+     return dfs(0);
+     else return 0;
+ }
+ 
+ /*二分距离*/
+ double Binary(){
+        double low = 0;
+        double hig = 1500;
+        double mid, ans = -1;
+        while(hig - low &gt; EPS){
+            mid = (low + hig) / 2;
+            if (OK(mid)){
+               ans = mid;
+               hig = mid;
+            }else low = mid;
+        }
+        return ans;
+ }
+ /*计算雷达i到城市j的距离*/
+ double Distance(int i, int j){
+        return sqrt((g[i].x - f[j].x) * (g[i].x - f[j].x) 
+        + (g[i].y - f[j].y) * (g[i].y - f[j].y));
+ }
+ /*初始化距离矩阵dis[M][N]*/ 
+ void Init(){
+      int i, j;
+      for (i = 1; i &lt;= M; i++){
+          for (j = 1; j &lt;= N; j++){
+              dis[i][j] = Distance(i, j);
+          }
+      }
+ }
+ int main()
+ {
+     int T, i;
+     scanf("%d", &amp;T);
+     while(T--){
+        scanf("%d%d%d", &amp;N, &amp;M, &amp;K);
+        for (i = 1; i &lt;= N; i++){
+            scanf("%lf%lf", &amp;f[i].x, &amp;f[i].y);
+        }
+        for (i = 1; i &lt;= M; i++){
+            scanf("%lf%lf", &amp;g[i].x, &amp;g[i].y);
+        }
+        Init();
+        printf("%.6lf\n", Binary());
+     }
+     return 0;
+ }</pre>
+<p> </p>
+<p> </p>
+<p> </p>
+<p>解题转自：http://www.cnblogs.com/ylfdrib/archive/2010/10/03/1841724.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-85974">
+<article class="comment" id="comment-85974">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516937" rel="external nofollow">新用户656708</a></span> on <a href="http://www.acmerblog.com/hdu-2295-radar-3525.html#comment-85974" rel="nofollow"><time datetime="2017-04-13T04:24:32+00:00" pubdate="">2017年4月13日 at 上午4:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也是这个意思</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-85973">
+<article class="comment" id="comment-85973">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516937" rel="external nofollow">新用户656708</a></span> on <a href="http://www.acmerblog.com/hdu-2295-radar-3525.html#comment-85973" rel="nofollow"><time datetime="2017-04-13T04:24:32+00:00" pubdate="">2017年4月13日 at 上午4:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也是这个意思</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-85972">
+<article class="comment" id="comment-85972">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516937" rel="external nofollow">新用户656708</a></span> on <a href="http://www.acmerblog.com/hdu-2295-radar-3525.html#comment-85972" rel="nofollow"><time datetime="2017-04-13T04:24:32+00:00" pubdate="">2017年4月13日 at 上午4:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也是这个意思</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-85971">
+<article class="comment" id="comment-85971">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516937" rel="external nofollow">新用户656708</a></span> on <a href="http://www.acmerblog.com/hdu-2295-radar-3525.html#comment-85971" rel="nofollow"><time datetime="2017-04-13T04:24:32+00:00" pubdate="">2017年4月13日 at 上午4:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也是这个意思</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-85970">
+<article class="comment" id="comment-85970">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516937" rel="external nofollow">新用户656708</a></span> on <a href="http://www.acmerblog.com/hdu-2295-radar-3525.html#comment-85970" rel="nofollow"><time datetime="2017-04-13T04:24:32+00:00" pubdate="">2017年4月13日 at 上午4:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也是这个意思</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-85969">
+<article class="comment" id="comment-85969">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516937" rel="external nofollow">新用户656708</a></span> on <a href="http://www.acmerblog.com/hdu-2295-radar-3525.html#comment-85969" rel="nofollow"><time datetime="2017-04-13T04:24:32+00:00" pubdate="">2017年4月13日 at 上午4:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也是这个意思</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-85968">
+<article class="comment" id="comment-85968">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516937" rel="external nofollow">新用户656708</a></span> on <a href="http://www.acmerblog.com/hdu-2295-radar-3525.html#comment-85968" rel="nofollow"><time datetime="2017-04-13T04:24:32+00:00" pubdate="">2017年4月13日 at 上午4:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也是这个意思</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-85967">
+<article class="comment" id="comment-85967">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516937" rel="external nofollow">新用户656708</a></span> on <a href="http://www.acmerblog.com/hdu-2295-radar-3525.html#comment-85967" rel="nofollow"><time datetime="2017-04-13T04:24:32+00:00" pubdate="">2017年4月13日 at 上午4:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也是这个意思</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-44652">
+<article class="comment" id="comment-44652">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wizcabbit</a></span> on <a href="http://www.acmerblog.com/hdu-2295-radar-3525.html#comment-44652" rel="nofollow"><time datetime="2015-06-15T06:50:33+00:00" pubdate="">2015年6月15日 at 上午6:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>加了星号 (*) 表示跳过此数据不读入. 因为scanf是不读取本行回车的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-20730">
+<article class="comment" id="comment-20730">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">303589828</a></span> on <a href="http://www.acmerblog.com/hdu-2295-radar-3525.html#comment-20730" rel="nofollow"><time datetime="2015-04-18T10:13:48+00:00" pubdate="">2015年4月18日 at 上午10:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么for循环找到的i一定是素数叻，而且约数定理说的是n=p1^a1*p2^a2*p3^a3*…*pk^ak，而你每次取余都用的是原来的m，也就是n</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-20736">
+<article class="comment" id="comment-20736">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">actlea</a></span> on <a href="http://www.acmerblog.com/hdu-2295-radar-3525.html#comment-20736" rel="nofollow"><time datetime="2015-03-23T15:05:47+00:00" pubdate="">2015年3月23日 at 下午3:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>分析的很专业！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-44651">
+<article class="comment" id="comment-44651">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sharp</a></span> on <a href="http://www.acmerblog.com/hdu-2295-radar-3525.html#comment-44651" rel="nofollow"><time datetime="2015-03-21T04:14:20+00:00" pubdate="">2015年3月21日 at 上午4:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给力，赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-20731">
+<article class="comment" id="comment-20731">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Ding Qiangyuan</a></span> on <a href="http://www.acmerblog.com/hdu-2295-radar-3525.html#comment-20731" rel="nofollow"><time datetime="2015-02-26T00:26:58+00:00" pubdate="">2015年2月26日 at 上午12:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为是要把从字符串s的start位到当前位在hash中重置，修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-20733">
+<article class="comment" id="comment-20733">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">JcZ</a></span> on <a href="http://www.acmerblog.com/hdu-2295-radar-3525.html#comment-20733" rel="nofollow"><time datetime="2014-11-15T14:53:04+00:00" pubdate="">2014年11月15日 at 下午2:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-20735">
+<article class="comment" id="comment-20735">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rewrite</a></span> on <a href="http://www.acmerblog.com/hdu-2295-radar-3525.html#comment-20735" rel="nofollow"><time datetime="2014-08-30T02:42:48+00:00" pubdate="">2014年8月30日 at 上午2:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不太明白DFS的方法</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-44650">
+<article class="comment" id="comment-44650">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">verycourage</a></span> on <a href="http://www.acmerblog.com/hdu-2295-radar-3525.html#comment-44650" rel="nofollow"><time datetime="2014-06-28T17:45:06+00:00" pubdate="">2014年6月28日 at 下午5:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>代码可真够长的！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-20737">
+<article class="comment" id="comment-20737">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hong0220</a></span> on <a href="http://www.acmerblog.com/hdu-2295-radar-3525.html#comment-20737" rel="nofollow"><time datetime="2014-05-18T00:56:03+00:00" pubdate="">2014年5月18日 at 上午12:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题应该是有一般性的解决方法</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-20734">
+<article class="comment" id="comment-20734">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yunyang088</a></span> on <a href="http://www.acmerblog.com/hdu-2295-radar-3525.html#comment-20734" rel="nofollow"><time datetime="2014-04-18T15:59:34+00:00" pubdate="">2014年4月18日 at 下午3:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为要修改链表头(指针)，所以要用指针的指针</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-20732">
+<article class="comment" id="comment-20732">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">daisyleedq</a></span> on <a href="http://www.acmerblog.com/hdu-2295-radar-3525.html#comment-20732" rel="nofollow"><time datetime="2014-03-18T05:27:16+00:00" pubdate="">2014年3月18日 at 上午5:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好。代码比书上的简练！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-44649">
+<article class="comment" id="comment-44649">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Trenson</a></span> on <a href="http://www.acmerblog.com/hdu-2295-radar-3525.html#comment-44649" rel="nofollow"><time datetime="2014-02-15T13:06:59+00:00" pubdate="">2014年2月15日 at 下午1:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p><a href="https://coding.net/moon/miracle" rel="nofollow">https://coding.net/moon/miracle</a></p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

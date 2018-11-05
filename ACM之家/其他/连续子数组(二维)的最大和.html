@@ -1,0 +1,675 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>10-10</div>
+<div class="tit"><h1 class="entry-title">连续子数组(二维)的最大和</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/offer" rel="category tag" title="查看剑指offer中的全部文章">剑指offer</a>, <a href="http://www.acmerblog.com/category/zhuanti/classic" rel="category tag" title="查看经典问题中的全部文章">经典问题</a></span><span class="i4">围观2638次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5955" href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comments" title="《连续子数组(二维)的最大和》上的评论">52 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p><strong>一维数组的连续子数组的最大和</strong></p>
+<p>题目：输入一个整型数组，数组里有正数也有负数。数组中一个或连续的多个整数组成一个子数组。求所有子数组的和的最大值。要求时间负责度为O(n)。</p>
+<p>假如输入数组为{1,-2,3,10,-4,7,2,-5}，我们尝试从头到尾累加其中的正数，初始化和为0，第一步加上1，此时和为1，第二步加上-2，此时和为-1，第三步加上3，此时我们发现-1+3=2，最大和2反而比3一个单独的整数小，这是因为3加上了一个负数，发现这个规律以后我们就重新作出累加条件：<strong>如果当前和为负数，那么就放弃前面的累加和，从数组中的下一个数再开始计数。</strong></p>
+<p>剑指offer和编程之美都有此题。参考这里：<a href="http://www.acmerblog.com/interview-14-3421.html">剑指offer(14)-最大子向量和 九度1372</a>。算法可以优化为下面的几行代码:</p>
+<pre class="brush:java">	static int MaxSum(int arr[], int n){
+		int currentSum = arr[0];
+		int ans = currentSum;
+		for(int i=1; i&lt;n; i++){
+			currentSum = Math.max(currentSum+arr[i], arr[i]);
+			ans = Math.max(ans, currentSum);
+		}
+		return ans;
+	}</pre>
+<p><strong>二维数组的连续子数组的最大和</strong></p>
+<p>二维数组的连续子数组即为一个矩阵，如下图所示</p>
+<p><a href="http://cdn.acmerblog.com/wp-content/uploads/2014/07/rectangle-11.png"><img alt="rectangle-11" class="alignnone size-full wp-image-5959" height="247" src="http://cdn.acmerblog.com/wp-content/uploads/2014/07/rectangle-11.png" width="293"/></a></p>
+<p>设矩阵的坐上顶点为A(i,j), 右下顶点为 B(endi, endj). 在图中即为 A(1,1), B(3,3)。我们可以用Rect（A,B）即 (1,1,3,3,)来表示矩形区域。</p>
+<p><strong>1. 方法1：直接计算</strong></p>
+<p>我们可以遍历所有的矩形区域，找出其中的最大值，其中遍历的话复杂度为O(M^2 * N^2)，假设二维数组为M行N列。</p>
+<p>其中怎么计算子矩阵的和呢？通过预处理，我们可以再O(1)的时间内算出。具体看下面的代码：</p>
+<p>arrSum函数即做预处理，得到数组p，p[i][j]表示已Rect(0, 0, i-1, j-1)矩形区域的总和。有了p数组就可以直接计算出任意矩形的总和。</p>
+<pre class="brush:java">	public static int[][] arrSum(int arr[][]){
+		int m = arr.length;
+		int n = arr[0].length;
+		int p[][] = new int[m+1][n+1];
+		p[0][0] = arr[0][0];
+		for(int i=0; i&lt;=m; i++) p[i][0] = 0;
+		for(int i=0; i&lt;=n; i++) p[0][i] = 0;
+		for(int i=1; i&lt;=m; i++){
+			for(int j=1; j&lt;=n; j++){
+				p[i][j] = p[i-1][j] + p[i][j-1] + arr[i-1][j-1] - p[i-1][j-1];
+			}
+		}
+		return p;
+	}
+	//遍历所有二维数组的矩形区域
+	static int  maxArrSum(int arr[][]){
+		int m = arr.length;
+		int n = arr[0].length;
+		int p[][] = arrSum(arr);
+		int ans = Integer.MIN_VALUE;
+		for(int i=1; i&lt;=m; i++){
+			for(int j=1; j&lt;=n; j++){
+				for(int endi=i; endi &lt;=m; endi++){
+					for(int endj=j; endj&lt;=n; endj++){
+						int sum = p[endi][endj] - p[i-1][endj] - p[endi][j-1] + p[i-1][j-1];
+						if(ans &lt; sum) ans = sum;
+					}
+				}
+			}
+		}
+		return ans;
+	}</pre>
+<p>2. <strong>方法二 转化为一维数组计算</strong></p>
+<p>这里并不是把整个二维数组转化为一维的，而是说把部分连续的行合并，看成是一行计算。这样枚举所有连续的行，把这些连续的行看成是一个整体，把一列看成是一个数字，问题就转化为上面的一维数组的算法了。还可以采用上面的预处理方法，在O（1）的时间内计算出任意一列的和。代码如下，colSum函数即为预处理函数，我们还可以根据M，N的大小做些优化。算法的复杂度为 O(N * M * min(M,N) ).</p>
+<pre class="brush:java">	//求一维数组的最大连续和
+	static int maxSum(int p[][], int startLine,int endLine,int n){
+		int ans = p[endLine][1] - p[startLine-1][1]; //即第一个列(startLine行到endLine行)的和
+		int cmax = ans;
+		for(int i=2; i&lt;=n; i++){
+			int ci = p[endLine][i] - p[startLine-1][i];
+			cmax = Math.max(cmax+ci, ci);
+			ans = Math.max(cmax, ans);
+		}
+		//System.out.println(startLine + " " + endLine + " " +ans);
+		return ans;
+	}
+
+	static int[][] colSum(int arr[][]){
+		int m = arr.length;
+		int n = arr[0].length;
+		int  p[][] = new int[m+1][n+1];
+		for(int i=1; i&lt;=m; i++)
+			for(int j=1; j&lt;=n; j++)
+				p[i][j] = p[i-1][j] + arr[i-1][j-1];
+		return p;
+	}
+
+	static int maxArrSum2(int arr[][]){
+		int m = arr.length;
+		int n = arr[0].length;
+		if(m &gt; n){
+			//对数组进行逆置
+			arr = reverseArr(arr);
+			int tmp = m;
+			m = n;
+			n = tmp;
+		}
+		int p[][] = colSum(arr);
+		int tempMax = Integer.MIN_VALUE;
+
+		//h表示当前矩阵的高度. 即把多少行合并为一行看
+		for(int h=1; h&lt;=m; h++){
+			for(int i=1; i+h-1 &lt;= m; i++){
+				int endLine = i+h-1;
+				//转化为长度为n一维数组，复杂度为O(n)
+				tempMax = Math.max(tempMax, maxSum(p, i, endLine, n));
+			}
+		}
+		return tempMax;
+	}
+
+	static int[][] reverseArr(int arr[][]){
+		int m = arr.length;
+		int n = arr[0].length;
+		int newArr[][] = new int[n][m];
+		for(int i=0; i&lt;m; i++)
+			for(int j=0; j&lt;n; j++)
+				 newArr[j][i] = arr[i][j];
+		return newArr;
+	}
+
+	public static void main(String[] args) {
+		int arr[][] = {{1, 2, -1, -4, -20},
+                {-8, -3, 4, 2, 1},
+                {3, 8, 10, 1, 3},
+                {-4, -1, 1, 7, -6}
+               };
+
+		int ans = maxArrSum(arr);
+		System.out.println("method 1: " + ans);
+		ans = maxArrSum2(arr);
+		System.out.println("method 2: " + ans);
+	}</pre>
+<p><strong> 扩展问题</strong></p>
+<p>如果二维数组首尾相连，如何计算？</p>
+<p>可以先考虑一维数组首位相连的问题。一个方法是把原来的数组进行扩充，例如对于 arr[0 ... n-1 ] 可以看成是  arr[0 ... n-1, 0, 1, ....n-2]。即原数组的长度由原来的n，变为了 2*n-1。实际中计算中没有必要扩充，求余即可。需要注意的是，如果全部都是非负的，我们需要加一个判断，防止计算结果超出数组的总和。当然还有其他的计算方法，大家可以参考编程之美一书。</p>
+<pre class="brush:java">static int MaxSumLinked(int arr[], int n){
+		int currentSum = arr[0];
+		int ans = currentSum;
+		boolean hasNegative = false;//有可能全部都是非负，这时就没必要往后计算
+		for(int i=1; i&lt;n*2-1; i++){
+			if(i &lt; n &amp;&amp; arr[i] &lt; 0) hasNegative = true;
+			currentSum = Math.max(currentSum+arr[i%n], arr[i%n]);
+			ans = Math.max(ans, currentSum);
+			if(i == n-1 &amp;&amp; !hasNegative) return ans;
+		}
+		return ans;
+	}</pre>
+<p>二维数组的计算方法和这个类似。</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-101481">
+<article class="comment" id="comment-101481">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521379" rel="external nofollow">新用户325343</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-101481" rel="nofollow"><time datetime="2017-04-23T14:02:14+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>夜刀神 十香 有谁 认识吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101480">
+<article class="comment" id="comment-101480">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521379" rel="external nofollow">新用户325343</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-101480" rel="nofollow"><time datetime="2017-04-23T14:02:14+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>夜刀神 十香 有谁 认识吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101479">
+<article class="comment" id="comment-101479">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521379" rel="external nofollow">新用户325343</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-101479" rel="nofollow"><time datetime="2017-04-23T14:02:14+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>夜刀神 十香 有谁 认识吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101478">
+<article class="comment" id="comment-101478">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521379" rel="external nofollow">新用户325343</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-101478" rel="nofollow"><time datetime="2017-04-23T14:02:14+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>夜刀神 十香 有谁 认识吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101477">
+<article class="comment" id="comment-101477">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521379" rel="external nofollow">新用户325343</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-101477" rel="nofollow"><time datetime="2017-04-23T14:02:14+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>夜刀神 十香 有谁 认识吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101476">
+<article class="comment" id="comment-101476">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521379" rel="external nofollow">新用户325343</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-101476" rel="nofollow"><time datetime="2017-04-23T14:02:14+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>夜刀神 十香 有谁 认识吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100692">
+<article class="comment" id="comment-100692">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466712" rel="external nofollow">新用户920344</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-100692" rel="nofollow"><time datetime="2017-04-22T13:59:08+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100691">
+<article class="comment" id="comment-100691">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466712" rel="external nofollow">新用户920344</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-100691" rel="nofollow"><time datetime="2017-04-22T13:59:08+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100690">
+<article class="comment" id="comment-100690">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466712" rel="external nofollow">新用户920344</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-100690" rel="nofollow"><time datetime="2017-04-22T13:59:08+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100689">
+<article class="comment" id="comment-100689">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466712" rel="external nofollow">新用户920344</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-100689" rel="nofollow"><time datetime="2017-04-22T13:59:08+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100688">
+<article class="comment" id="comment-100688">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466712" rel="external nofollow">新用户920344</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-100688" rel="nofollow"><time datetime="2017-04-22T13:59:08+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100687">
+<article class="comment" id="comment-100687">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466712" rel="external nofollow">新用户920344</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-100687" rel="nofollow"><time datetime="2017-04-22T13:59:08+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100110">
+<article class="comment" id="comment-100110">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919523591" rel="external nofollow">新用户444128</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-100110" rel="nofollow"><time datetime="2017-04-21T14:04:07+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>[emote]huh[/emote]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100109">
+<article class="comment" id="comment-100109">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919523591" rel="external nofollow">新用户444128</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-100109" rel="nofollow"><time datetime="2017-04-21T14:04:07+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>[emote]huh[/emote]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100108">
+<article class="comment" id="comment-100108">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919523591" rel="external nofollow">新用户444128</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-100108" rel="nofollow"><time datetime="2017-04-21T14:04:07+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>[emote]huh[/emote]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100107">
+<article class="comment" id="comment-100107">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919523591" rel="external nofollow">新用户444128</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-100107" rel="nofollow"><time datetime="2017-04-21T14:04:07+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>[emote]huh[/emote]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100106">
+<article class="comment" id="comment-100106">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919523591" rel="external nofollow">新用户444128</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-100106" rel="nofollow"><time datetime="2017-04-21T14:04:07+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>[emote]huh[/emote]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100105">
+<article class="comment" id="comment-100105">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919523591" rel="external nofollow">新用户444128</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-100105" rel="nofollow"><time datetime="2017-04-21T14:04:07+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>[emote]huh[/emote]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100104">
+<article class="comment" id="comment-100104">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919523591" rel="external nofollow">新用户444128</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-100104" rel="nofollow"><time datetime="2017-04-21T14:04:07+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>[emote]huh[/emote]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100103">
+<article class="comment" id="comment-100103">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919523591" rel="external nofollow">新用户444128</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-100103" rel="nofollow"><time datetime="2017-04-21T14:04:07+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>[emote]huh[/emote]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96225">
+<article class="comment" id="comment-96225">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527069" rel="external nofollow">新用户404453</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-96225" rel="nofollow"><time datetime="2017-04-19T19:07:49+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>开国会公民直接竞选产生议员官员…有问题不用等马上解决问题…不满意在国会直接质凝 质问 弹劾 …  /憨笑…比你们的孔子:三人行，必有我师焉；择其善者而从之，其不善者而改之…GDP考核…人大…民主集中制透明有效多了… /左哼哼 /右哼哼</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96224">
+<article class="comment" id="comment-96224">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527069" rel="external nofollow">新用户404453</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-96224" rel="nofollow"><time datetime="2017-04-19T19:07:49+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>开国会公民直接竞选产生议员官员…有问题不用等马上解决问题…不满意在国会直接质凝 质问 弹劾 …  /憨笑…比你们的孔子:三人行，必有我师焉；择其善者而从之，其不善者而改之…GDP考核…人大…民主集中制透明有效多了… /左哼哼 /右哼哼</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96223">
+<article class="comment" id="comment-96223">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527069" rel="external nofollow">新用户404453</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-96223" rel="nofollow"><time datetime="2017-04-19T19:07:49+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>开国会公民直接竞选产生议员官员…有问题不用等马上解决问题…不满意在国会直接质凝 质问 弹劾 …  /憨笑…比你们的孔子:三人行，必有我师焉；择其善者而从之，其不善者而改之…GDP考核…人大…民主集中制透明有效多了… /左哼哼 /右哼哼</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96222">
+<article class="comment" id="comment-96222">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527069" rel="external nofollow">新用户404453</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-96222" rel="nofollow"><time datetime="2017-04-19T19:07:49+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>开国会公民直接竞选产生议员官员…有问题不用等马上解决问题…不满意在国会直接质凝 质问 弹劾 …  /憨笑…比你们的孔子:三人行，必有我师焉；择其善者而从之，其不善者而改之…GDP考核…人大…民主集中制透明有效多了… /左哼哼 /右哼哼</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96221">
+<article class="comment" id="comment-96221">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527069" rel="external nofollow">新用户404453</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-96221" rel="nofollow"><time datetime="2017-04-19T19:07:49+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>开国会公民直接竞选产生议员官员…有问题不用等马上解决问题…不满意在国会直接质凝 质问 弹劾 …  /憨笑…比你们的孔子:三人行，必有我师焉；择其善者而从之，其不善者而改之…GDP考核…人大…民主集中制透明有效多了… /左哼哼 /右哼哼</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96220">
+<article class="comment" id="comment-96220">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527069" rel="external nofollow">新用户404453</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-96220" rel="nofollow"><time datetime="2017-04-19T19:07:49+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>开国会公民直接竞选产生议员官员…有问题不用等马上解决问题…不满意在国会直接质凝 质问 弹劾 …  /憨笑…比你们的孔子:三人行，必有我师焉；择其善者而从之，其不善者而改之…GDP考核…人大…民主集中制透明有效多了… /左哼哼 /右哼哼</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96219">
+<article class="comment" id="comment-96219">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527069" rel="external nofollow">新用户404453</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-96219" rel="nofollow"><time datetime="2017-04-19T19:07:49+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>开国会公民直接竞选产生议员官员…有问题不用等马上解决问题…不满意在国会直接质凝 质问 弹劾 …  /憨笑…比你们的孔子:三人行，必有我师焉；择其善者而从之，其不善者而改之…GDP考核…人大…民主集中制透明有效多了… /左哼哼 /右哼哼</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96218">
+<article class="comment" id="comment-96218">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527069" rel="external nofollow">新用户404453</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-96218" rel="nofollow"><time datetime="2017-04-19T19:07:49+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>开国会公民直接竞选产生议员官员…有问题不用等马上解决问题…不满意在国会直接质凝 质问 弹劾 …  /憨笑…比你们的孔子:三人行，必有我师焉；择其善者而从之，其不善者而改之…GDP考核…人大…民主集中制透明有效多了… /左哼哼 /右哼哼</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65394">
+<article class="comment" id="comment-65394">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529251" rel="external nofollow">新用户730982</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-65394" rel="nofollow"><time datetime="2017-04-10T14:37:44+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>也不打把伞，现在的年轻人，真是的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65393">
+<article class="comment" id="comment-65393">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529251" rel="external nofollow">新用户730982</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-65393" rel="nofollow"><time datetime="2017-04-10T14:37:44+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>也不打把伞，现在的年轻人，真是的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65392">
+<article class="comment" id="comment-65392">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529251" rel="external nofollow">新用户730982</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-65392" rel="nofollow"><time datetime="2017-04-10T14:37:44+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>也不打把伞，现在的年轻人，真是的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65391">
+<article class="comment" id="comment-65391">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529251" rel="external nofollow">新用户730982</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-65391" rel="nofollow"><time datetime="2017-04-10T14:37:44+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>也不打把伞，现在的年轻人，真是的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65390">
+<article class="comment" id="comment-65390">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529251" rel="external nofollow">新用户730982</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-65390" rel="nofollow"><time datetime="2017-04-10T14:37:44+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>也不打把伞，现在的年轻人，真是的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65389">
+<article class="comment" id="comment-65389">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529251" rel="external nofollow">新用户730982</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-65389" rel="nofollow"><time datetime="2017-04-10T14:37:44+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>也不打把伞，现在的年轻人，真是的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65388">
+<article class="comment" id="comment-65388">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529251" rel="external nofollow">新用户730982</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-65388" rel="nofollow"><time datetime="2017-04-10T14:37:44+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>也不打把伞，现在的年轻人，真是的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65387">
+<article class="comment" id="comment-65387">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529251" rel="external nofollow">新用户730982</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-65387" rel="nofollow"><time datetime="2017-04-10T14:37:44+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>也不打把伞，现在的年轻人，真是的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65129">
+<article class="comment" id="comment-65129">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">美腿图</span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-65129" rel="nofollow"><time datetime="2017-03-19T17:20:38+00:00" pubdate="">2017年3月19日 at 下午5:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>ᣌᣌᣌᣌᣌᣌᣌ干破丝袜ᣌᣌᣌᣌᣌᣌᣌᣌᣌᣌᣌᣌᣌᣌ校园丝袜ᣌᣌᣌᣌᣌᣌᣌᣌᣌᣌᣌᣌᣌᣌ高跟踩脖子ᣌᣌᣌᣌᣌᣌᣌᣌᣌᣌᣌᣌᣌᣌ透明黑丝袜ᣌᣌᣌᣌᣌᣌᣌ0.518mei.com</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65112">
+<article class="comment" id="comment-65112">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://QX.caijin.cf/" rel="external nofollow">送88元现金</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-65112" rel="nofollow"><time datetime="2017-03-19T04:26:45+00:00" pubdate="">2017年3月19日 at 上午4:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/20/bofubaozao_org.gif"/> 新春红包 <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/20/bofubaozao_org.gif"/> 速博易发旋乐吧118T。NET</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65102">
+<article class="comment" id="comment-65102">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://BPOCQ.rmb88.ga/" rel="external nofollow">送88元现金</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-65102" rel="nofollow"><time datetime="2017-03-19T04:24:16+00:00" pubdate="">2017年3月19日 at 上午4:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>领88元꒚欧星娱乐名仕娱乐城世外桃源美高梅大卫国际银河国际申博企鹅3447473623</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65091">
+<article class="comment" id="comment-65091">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://360meimei.com/" rel="external nofollow">妩媚图片</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-65091" rel="nofollow"><time datetime="2017-03-18T21:53:51+00:00" pubdate="">2017年3月18日 at 下午9:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>⦇AV女忧套图⦇张筱雨写真集护士妹妹mm88.gq</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65083">
+<article class="comment" id="comment-65083">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://360meimei.com/" rel="external nofollow">美女走光</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-65083" rel="nofollow"><time datetime="2017-03-18T21:46:01+00:00" pubdate="">2017年3月18日 at 下午9:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>激情图片∶女人人体艺术我的美女老师窒命写真性乐趣人体艺术影音先锋av看片资源库郁可唯写真第一美胸www.mm520.ga</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65038">
+<article class="comment" id="comment-65038">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://t.qq.com/suweitao5769" rel="external nofollow">苏伟涛</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-65038" rel="nofollow"><time datetime="2017-02-22T01:24:29+00:00" pubdate="">2017年2月22日 at 上午1:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>int[] arr = new int[]{1,-2,3,10,-4,7,2,-5};				int currentSum = arr[0];		for (int i = 1; i &lt; arr.length – 1; i++) {			currentSum = Math.max(currentSum + arr <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> , arr <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> );		}		System.out.println(“结果为=” + currentSum);             ans完全没用吧 , 老铁 , 第一个代码</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49508">
+<article class="comment" id="comment-49508">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">20134055016</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-49508" rel="nofollow"><time datetime="2015-04-29T20:52:42+00:00" pubdate="">2015年4月29日 at 下午8:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58861">
+<article class="comment" id="comment-58861">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">cherry_odd</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-58861" rel="nofollow"><time datetime="2015-03-10T20:47:03+00:00" pubdate="">2015年3月10日 at 下午8:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是往年的笔试题，非在线，主要考察基础，Java会在面试时问到</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49507">
+<article class="comment" id="comment-49507">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">lsdtc1225</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-49507" rel="nofollow"><time datetime="2014-11-26T13:41:06+00:00" pubdate="">2014年11月26日 at 下午1:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>总数为2n，遍历到第n个，就是中间的位置</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58862">
+<article class="comment" id="comment-58862">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">raymanshf</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-58862" rel="nofollow"><time datetime="2014-10-19T04:15:55+00:00" pubdate="">2014年10月19日 at 上午4:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，就是把这32位当成一个长度为32的数</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49506">
+<article class="comment" id="comment-49506">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1193658339</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-49506" rel="nofollow"><time datetime="2014-10-06T08:02:13+00:00" pubdate="">2014年10月6日 at 上午8:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>示例程序中的代码不够稳健，没有考虑到输入了非法字符或者不合理输入的情况。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58860">
+<article class="comment" id="comment-58860">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fiftyonejiao</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-58860" rel="nofollow"><time datetime="2014-09-26T17:23:08+00:00" pubdate="">2014年9月26日 at 下午5:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>88行是多余的，可以删除</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58858">
+<article class="comment" id="comment-58858">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zwj0571</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-58858" rel="nofollow"><time datetime="2014-09-01T07:10:40+00:00" pubdate="">2014年9月1日 at 上午7:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很全很强大！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58863">
+<article class="comment" id="comment-58863">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bcys</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-58863" rel="nofollow"><time datetime="2014-08-23T04:32:17+00:00" pubdate="">2014年8月23日 at 上午4:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>文章写得挺好，就是最后的斐波那契那个没有看明白</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49509">
+<article class="comment" id="comment-49509">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">985836927</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-49509" rel="nofollow"><time datetime="2014-08-18T14:49:49+00:00" pubdate="">2014年8月18日 at 下午2:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>文章写得挺好，就是最后的斐波那契那个没有看明白</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58859">
+<article class="comment" id="comment-58859">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wizcabbit</a></span> on <a href="http://www.acmerblog.com/max-sum-rectangle-in-a-matrix-5955.html#comment-58859" rel="nofollow"><time datetime="2014-08-13T16:32:11+00:00" pubdate="">2014年8月13日 at 下午4:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我表示楼主不要乱抄题，你写的另一个题吧，直接扒了代码没跑吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,426 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>02-15</div>
+<div class="tit"><h1 class="entry-title">贪心算法求解-图的m着色问题</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/zhuanti/classic" rel="category tag" title="查看经典问题中的全部文章">经典问题</a>, <a href="http://www.acmerblog.com/category/basis/tanxin" rel="category tag" title="查看贪心中的全部文章">贪心</a></span><span class="i4">围观2209次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4292" href="http://www.acmerblog.com/article-greed-4292.html#comments" title="《贪心算法求解-图的m着色问题》上的评论">29 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p align="left"><span style="font-size: 12px;"><strong>图的m色判定问题: </strong></span><span style="font-size: 12px;"><strong>给定无向连通图</strong></span><span style="font-size: 12px;"><strong>G</strong></span><span style="font-size: 12px;"><strong>和</strong></span><span style="font-size: 12px;"><strong>m</strong></span><span style="font-size: 12px;"><strong>种颜色。用这些颜色为图</strong></span><span style="font-size: 12px;"><strong>G</strong></span><span style="font-size: 12px;"><strong>的各顶点着色</strong></span><span style="font-size: 12px;"><strong>.</strong></span><span style="font-size: 12px;"><strong>问是否存在着色方法</strong></span><span style="font-size: 12px;"><strong>,</strong></span><span style="font-size: 12px;"><strong>使得</strong></span><span style="font-size: 12px;"><strong>G</strong></span><span style="font-size: 12px;"><strong>中任</strong></span><span style="font-size: 12px;"><strong>2</strong></span><span style="font-size: 12px;"><strong>邻接点有不同颜色。</strong></span></p>
+<p>图的m色优化问题:给定无向连通图G,为图G的各顶点着色, 使图中任2邻接点着不同颜色,问最少需要几种颜色。所需的最少颜色的数目m称为该图的色数。</p>
+<p>若图G是可平面图,则它的色数不超过4色(4色定理).</p>
+<p>4色定理的应用:在一个平面或球面上的任何地图能够只用4种</p>
+<p>颜色来着色使得相邻的国家在地图上着有不同颜色</p>
+<p style="line-height: 110%; margin-top: 0pt; margin-bottom: 0pt; direction: ltr; unicode-bidi: embed; vertical-align: baseline;"><span style="font-size: 14px;"><span style="font-family: 黑体;"><strong>任意图的着色</strong></span></span></p>
+<p> </p>
+<p style="line-height: 115%; margin-top: 0pt; margin-bottom: 0pt; direction: ltr; unicode-bidi: embed; vertical-align: baseline;"><span style="font-size: 14px;"><span style="font-family: 'Century Schoolbook';"><strong>Welch Powell</strong></span><span style="font-family: 宋体;"><strong>法</strong></span></span></p>
+<p> </p>
+<p><span style="color: #3333ff;">a).将G的结点按照度数递减的次序排列.</span></p>
+<p><span style="color: #3333ff;">b).用第一种颜色对第一个结点着色,并按照结点排列的次序  </span></p>
+<p><span style="color: #3333ff;">   对与前面着色点不邻接的每一点着以相同颜色.</span></p>
+<p><span style="color: #3333ff;">c).用第二种颜色对尚未着色的点重复步骤b).用第三种颜色</span></p>
+<p><span style="color: #3333ff;">   继续这种作法, 直到所有点着色完为止.</span></p>
+<p> </p>
+<pre class="brush:cpp ">#include &lt;fstream&gt;
+#include &lt;iostream&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;algorithm&gt;
+using namespacestd;
+
+int map[10][10];//邻接矩阵
+
+typedef struct Node{ //定义节点结构体
+   int index; //编号
+   int degree; //度
+   int color; //改节点的颜色
+} Node;
+
+Node nodes[10];
+
+bool com(Node node1,Node node2) { //按度从高到低排序
+   return node1.degree &gt; node2.degree;
+}
+
+bool com2(Node node1,Node node2) { //按度从高到低排序
+   return node1.index &lt; node2.index;
+}
+
+int main() {
+   ifstream read;
+   read.open("map.data");//map.data是存放数据的文件名
+   int m, n;
+   while (read &gt;&gt; m&gt;&gt; n) {
+      for (int i = 0; i &lt; m; i++) {//读入数据
+         int degree = 0;
+         for (int j = 0; j &lt; n; j++) {
+            read&gt;&gt; map[i][j];
+            if (map[i][j])
+                degree++;
+         }
+         nodes[i].index = i;
+         nodes[i].degree = degree;
+         nodes[i].color = 0;
+      }
+
+      //排序
+      sort(nodes,nodes + m, com);
+      int k = 0;//K 代表第几种颜色
+      while (true) {
+         k++;
+         int i;
+         for (i = 0; i &lt; m; i++){//先找到第一个未着色的节点
+            if (nodes[i].color == 0) {
+                nodes[i].color = k;
+                break;
+            }
+         }
+         if (i == m)//循环退出的条件,所有节点都已着色
+            break;
+         //再把所有不和该节点相邻的节点着相同的颜色
+         for(int j=0; j&lt;m; j++){
+            if(nodes[j].color ==0 &amp;&amp;map[nodes[i].index][nodes[j].index] == 0
+                   &amp;&amp;i!=j)
+                nodes[j].color = k;
+         }
+      }
+
+      //输出结果：
+      sort(nodes,nodes + m, com2);
+	cout &lt;&lt; "共需要" &lt;&lt; k-1 &lt;&lt; "种颜色" &lt;&lt; endl;
+      for (int i = 0; i &lt; m; i++)
+         cout&lt;&lt; "节点："&lt;&lt;nodes[i].index &lt;&lt;":着色" &lt;&lt; nodes[i].color &lt;&lt;endl;
+      return 0;
+   }
+}</pre>
+<p> </p>
+<p align="left">测试数据(map.data):</p>
+<p align="left"><span style="background: #D9D9D9;">8 8</span></p>
+<p align="left"><span style="background: #D9D9D9;">0 1 1 1 0 0 1 0</span></p>
+<p align="left"><span style="background: #D9D9D9;">1 0 1 1 1 0 0 0</span></p>
+<p align="left"><span style="background: #D9D9D9;">1 1 0 0 1 1 0 0</span></p>
+<p align="left"><span style="background: #D9D9D9;">1 1 0 0 1 0 1 0</span></p>
+<p align="left"><span style="background: #D9D9D9;">0 1 1 1 0 1 1 1</span></p>
+<p align="left"><span style="background: #D9D9D9;">0 0 1 0 1 0 0 1</span></p>
+<p align="left"><span style="background: #D9D9D9;">1 0 1 1 1 0 0 1</span></p>
+<p align="left"><span style="background: #D9D9D9;">0 0 0 0 1 1 10</span></p>
+<p align="left">即：</p>
+<p align="left"> <img alt="" src="http://cdn.acmerblog.com/img/1392458273987.jpg"/></p>
+<p> </p>
+<p> </p>
+<p><span style="font-size: 14px;">运行结果;</span></p>
+<p><span style="font-size: 12px; color: #33cc00;">共需要3种颜色</span></p>
+<p> </p>
+<p align="left"><span style="font-size: 12px; color: #33cc00;">节点：1:着色1</span></p>
+<p align="left"><span style="font-size: 12px; color: #33cc00;">节点：2:着色2</span></p>
+<p align="left"><span style="font-size: 12px; color: #33cc00;">节点：3:着色3</span></p>
+<p align="left"><span style="font-size: 12px; color: #33cc00;">节点：4:着色3</span></p>
+<p align="left"><span style="font-size: 12px; color: #33cc00;">节点：5:着色1</span></p>
+<p align="left"><span style="font-size: 12px; color: #33cc00;">节点：6:着色2</span></p>
+<p align="left"><span style="font-size: 12px; color: #33cc00;">节点：7:着色2</span></p>
+<p align="left"><span style="font-size: 12px; color: #33cc00;">节点：8:着色3</span></p>
+<p align="left">ACM之家原创，转载请注明出处：http://www.acmerblog.com/article-greed-4292.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-82046">
+<article class="comment" id="comment-82046">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519273" rel="external nofollow">新用户845173</a></span> on <a href="http://www.acmerblog.com/article-greed-4292.html#comment-82046" rel="nofollow"><time datetime="2017-04-12T19:45:07+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>啊啊啊啊啊啊啊啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-82045">
+<article class="comment" id="comment-82045">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519273" rel="external nofollow">新用户845173</a></span> on <a href="http://www.acmerblog.com/article-greed-4292.html#comment-82045" rel="nofollow"><time datetime="2017-04-12T19:45:07+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>啊啊啊啊啊啊啊啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-82044">
+<article class="comment" id="comment-82044">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519273" rel="external nofollow">新用户845173</a></span> on <a href="http://www.acmerblog.com/article-greed-4292.html#comment-82044" rel="nofollow"><time datetime="2017-04-12T19:45:07+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>啊啊啊啊啊啊啊啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-82043">
+<article class="comment" id="comment-82043">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519273" rel="external nofollow">新用户845173</a></span> on <a href="http://www.acmerblog.com/article-greed-4292.html#comment-82043" rel="nofollow"><time datetime="2017-04-12T19:45:07+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>啊啊啊啊啊啊啊啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-82042">
+<article class="comment" id="comment-82042">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519273" rel="external nofollow">新用户845173</a></span> on <a href="http://www.acmerblog.com/article-greed-4292.html#comment-82042" rel="nofollow"><time datetime="2017-04-12T19:45:07+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>啊啊啊啊啊啊啊啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-82041">
+<article class="comment" id="comment-82041">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519273" rel="external nofollow">新用户845173</a></span> on <a href="http://www.acmerblog.com/article-greed-4292.html#comment-82041" rel="nofollow"><time datetime="2017-04-12T19:45:07+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>啊啊啊啊啊啊啊啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-82040">
+<article class="comment" id="comment-82040">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519273" rel="external nofollow">新用户845173</a></span> on <a href="http://www.acmerblog.com/article-greed-4292.html#comment-82040" rel="nofollow"><time datetime="2017-04-12T19:45:07+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>啊啊啊啊啊啊啊啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-82039">
+<article class="comment" id="comment-82039">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519273" rel="external nofollow">新用户845173</a></span> on <a href="http://www.acmerblog.com/article-greed-4292.html#comment-82039" rel="nofollow"><time datetime="2017-04-12T19:45:07+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>啊啊啊啊啊啊啊啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-82038">
+<article class="comment" id="comment-82038">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519273" rel="external nofollow">新用户845173</a></span> on <a href="http://www.acmerblog.com/article-greed-4292.html#comment-82038" rel="nofollow"><time datetime="2017-04-12T19:45:07+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>啊啊啊啊啊啊啊啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-82037">
+<article class="comment" id="comment-82037">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519273" rel="external nofollow">新用户845173</a></span> on <a href="http://www.acmerblog.com/article-greed-4292.html#comment-82037" rel="nofollow"><time datetime="2017-04-12T19:45:07+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>啊啊啊啊啊啊啊啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65035">
+<article class="comment" id="comment-65035">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://t.qq.com/sq6363216" rel="external nofollow">shao</a></span> on <a href="http://www.acmerblog.com/article-greed-4292.html#comment-65035" rel="nofollow"><time datetime="2017-02-17T14:35:38+00:00" pubdate="">2017年2月17日 at 下午2:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>编号写错了，是从小到大排序的，而且不用判断在if 出</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64919">
+<article class="comment" id="comment-64919">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">王开端</span> on <a href="http://www.acmerblog.com/article-greed-4292.html#comment-64919" rel="nofollow"><time datetime="2016-12-04T19:09:22+00:00" pubdate="">2016年12月4日 at 下午7:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也发现程序有问题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64849">
+<article class="comment" id="comment-64849">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">agnks</span> on <a href="http://www.acmerblog.com/article-greed-4292.html#comment-64849" rel="nofollow"><time datetime="2016-11-12T03:34:48+00:00" pubdate="">2016年11月12日 at 上午3:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是男L人L就L上的L网C战，A 片：htTP://uVU.Cc/ijW6 <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64775">
+<article class="comment" id="comment-64775">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">vTymz</span> on <a href="http://www.acmerblog.com/article-greed-4292.html#comment-64775" rel="nofollow"><time datetime="2016-10-21T05:47:19+00:00" pubdate="">2016年10月21日 at 上午5:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>打开 ｕｖｕ.ｃｃ/ir7p都是 浪美眉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64716">
+<article class="comment" id="comment-64716">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">vTdMw</span> on <a href="http://www.acmerblog.com/article-greed-4292.html#comment-64716" rel="nofollow"><time datetime="2016-10-10T07:11:55+00:00" pubdate="">2016年10月10日 at 上午7:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>打开 ｕｖｕ.ｃｃ/ir7p都是 浪美眉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64624">
+<article class="comment" id="comment-64624">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://t.qq.com/chenzwdweibo" rel="external nofollow">周文</a></span> on <a href="http://www.acmerblog.com/article-greed-4292.html#comment-64624" rel="nofollow"><time datetime="2016-07-20T13:04:50+00:00" pubdate="">2016年7月20日 at 下午1:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>8 80 1 1 0 0 0 0 01 0 1 0 0 0 0 01 1 0 1 0 0 0 00 0 1 0 1 0 0 00 0 0 1 0 1 1 10 0 0 0 1 0 0 00 0 0 0 1 0 0 00 0 0 0 1 0 0 0該圖應該有三種顏色才對</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-57440">
+<article class="comment" id="comment-57440">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">_Tree</a></span> on <a href="http://www.acmerblog.com/article-greed-4292.html#comment-57440" rel="nofollow"><time datetime="2015-07-08T09:05:36+00:00" pubdate="">2015年7月8日 at 上午9:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>swap写成内联函数会不会好一些</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-2062">
+<article class="comment" id="comment-2062">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">林小平</span> on <a href="http://www.acmerblog.com/article-greed-4292.html#comment-2062" rel="nofollow"><time datetime="2015-01-23T17:01:19+00:00" pubdate="">2015年1月23日 at 下午5:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序是错的吧，明显没有判断不和该节点相邻的其他节点是否相互相邻</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-2054">
+<article class="comment" id="comment-2054">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">Cwq</span> on <a href="http://www.acmerblog.com/article-greed-4292.html#comment-2054" rel="nofollow"><time datetime="2015-01-21T23:11:46+00:00" pubdate="">2015年1月21日 at 下午11:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>一开始就规定不相邻节点颜色相同，可能得不到最优解。我想个类似的算法，也不确定是否总能得到最优解：先着一个点，随机挑一个相邻点，着第二色，继续随机选一个点，但必须至少有一个边和已着点相邻，着上不同色，当然尽量不增加新色，直到完成。我还找不到反例验证他的错误。。希望LZ也帮想想, 有想法欢迎来邮件。谢谢</p>
+</div>
+</article><!-- #comment-## -->
+<ul class="children">
+<li class="comment odd alt depth-2" id="li-comment-2055">
+<article class="comment" id="comment-2055">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">Cwq</span> on <a href="http://www.acmerblog.com/article-greed-4292.html#comment-2055" rel="nofollow"><time datetime="2015-01-21T23:14:26+00:00" pubdate="">2015年1月21日 at 下午11:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我得邮箱cwqbupt@qq.com</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ul><!-- .children -->
+</li><!-- #comment-## -->
+<li class="comment even thread-odd thread-alt depth-1" id="li-comment-24788">
+<article class="comment" id="comment-24788">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">room306</a></span> on <a href="http://www.acmerblog.com/article-greed-4292.html#comment-24788" rel="nofollow"><time datetime="2014-12-19T20:26:31+00:00" pubdate="">2014年12月19日 at 下午8:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>终于找到一篇能看懂的，mark</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-even depth-1" id="li-comment-24787">
+<article class="comment" id="comment-24787">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">leowww</a></span> on <a href="http://www.acmerblog.com/article-greed-4292.html#comment-24787" rel="nofollow"><time datetime="2014-12-06T14:31:28+00:00" pubdate="">2014年12月6日 at 下午2:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序员会算法，等于一个古惑仔带了zhi抢啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment byuser comment-author-admin bypostauthor even thread-odd thread-alt depth-1" id="li-comment-1459">
+<article class="comment" id="comment-1459">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.acmerblog.com/" rel="external nofollow">管理员</a></span> on <a href="http://www.acmerblog.com/article-greed-4292.html#comment-1459" rel="nofollow"><time datetime="2014-11-29T19:05:21+00:00" pubdate="">2014年11月29日 at 下午7:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>补充：此算法求出的不一定是最优解，之前理解错了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-even depth-1" id="li-comment-46564">
+<article class="comment" id="comment-46564">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">didiaozuoren</a></span> on <a href="http://www.acmerblog.com/article-greed-4292.html#comment-46564" rel="nofollow"><time datetime="2014-11-28T05:10:05+00:00" pubdate="">2014年11月28日 at 上午5:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为\n\n</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-odd thread-alt depth-1" id="li-comment-57441">
+<article class="comment" id="comment-57441">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lin</a></span> on <a href="http://www.acmerblog.com/article-greed-4292.html#comment-57441" rel="nofollow"><time datetime="2014-07-19T11:55:59+00:00" pubdate="">2014年7月19日 at 上午11:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>分析的很专业！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-even depth-1" id="li-comment-24786">
+<article class="comment" id="comment-24786">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">edward2414</a></span> on <a href="http://www.acmerblog.com/article-greed-4292.html#comment-24786" rel="nofollow"><time datetime="2014-03-18T16:15:33+00:00" pubdate="">2014年3月18日 at 下午4:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>5.1处，反了；“上一个操作符的优先级比操作符ch的优先级大，或栈是空的就入栈。”如代码所述，应为“上一个操作符的优先级比操作符ch的优先级小，或栈是空的就入栈。”</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-odd thread-alt depth-1" id="li-comment-62907">
+<article class="comment" id="comment-62907">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">nwling</a></span> on <a href="http://www.acmerblog.com/article-greed-4292.html#comment-62907" rel="nofollow"><time datetime="2014-02-17T23:39:27+00:00" pubdate="">2014年2月17日 at 下午11:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，就是把这32位当成一个长度为32的数</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment byuser comment-author-admin bypostauthor odd alt thread-even depth-1" id="li-comment-123">
+<article class="comment" id="comment-123">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.acmerblog.com/" rel="external nofollow">从此醉</a></span> on <a href="http://www.acmerblog.com/article-greed-4292.html#comment-123" rel="nofollow"><time datetime="2014-02-16T22:19:18+00:00" pubdate="">2014年2月16日 at 下午10:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>map[nodes <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .index][nodes <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> .index] == 0 就是判断不相邻的。这个是可以证明的。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-odd thread-alt depth-1" id="li-comment-170">
+<article class="comment" id="comment-170">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">u无悔</span> on <a href="http://www.acmerblog.com/article-greed-4292.html#comment-170" rel="nofollow"><time datetime="2014-02-16T13:10:15+00:00" pubdate="">2014年2月16日 at 下午1:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>“再把所有不和该节点相邻的节点着相同的颜色”，程序中没有进行不和该节点相邻的其他节点是否相邻进行判断。再说求出来的也不一样是颜色数最少的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

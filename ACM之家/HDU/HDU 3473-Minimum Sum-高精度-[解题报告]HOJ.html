@@ -1,0 +1,407 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>04-04</div>
+<div class="tit"><h1 class="entry-title">HDU 3473-Minimum Sum-高精度-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/basis/recursion" rel="category tag" title="查看递归和分治中的全部文章">递归和分治</a>, <a href="http://www.acmerblog.com/category/math/bignumber" rel="category tag" title="查看高精度计算中的全部文章">高精度计算</a></span><span class="i4">围观488次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5613" href="http://www.acmerblog.com/hdu-3473-minimum-sum-5613.html#comments" title="《HDU 3473-Minimum Sum-高精度-[解题报告]HOJ》上的评论">23 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Minimum Sum</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+You are given N positive integers, denoted as x0, x1 … xN-1. Then give you some intervals [l, r]. For each interval, you need to find a number x to make  <img src="http://www.acmerblog.com/img/1397009739807.jpg"/>   as small as possible! </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line is an integer T (T &lt;= 10), indicating the number of test cases. For each test case, an integer N (1 &lt;= N &lt;= 100,000) comes first. Then comes N positive integers x (1 &lt;= x &lt;= 1,000, 000,000) in the next line. Finally, comes an integer Q (1 &lt;= Q &lt;= 100,000), indicting there are Q queries. Each query consists of two integers l, r (0 &lt;= l &lt;= r &lt; N), meaning the interval you should deal with.</div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The first line is an integer T (T &lt;= 10), indicating the number of test cases. For each test case, an integer N (1 &lt;= N &lt;= 100,000) comes first. Then comes N positive integers x (1 &lt;= x &lt;= 1,000, 000,000) in the next line. Finally, comes an integer Q (1 &lt;= Q &lt;= 100,000), indicting there are Q queries. Each query consists of two integers l, r (0 &lt;= l &lt;= r &lt; N), meaning the interval you should deal with.
+</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+
+5
+3 6 2 2 4
+2
+1 4
+0 2
+
+2
+7 7
+2
+0 1
+1 1</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case #1:
+6
+4
+
+Case #2:
+0
+0</pre>
+<p> <!-- problem end --></p>
+<p><span style="font-family:Arial; font-size:14px; line-height:26px; text-align:left">转载请注明出处，谢谢</span><a style="color:rgb(202,0,0); text-decoration:none; font-family:Arial; font-size:14px; line-height:26px; text-align:left"> </a><a style="color:rgb(202,0,0); text-decoration:none; font-family:Arial; font-size:14px; line-height:26px; text-align:left">http://blog.csdn.net/ACM_cxlove?viewmode=contents</a><span style="font-family:Arial; font-size:14px; line-height:26px; text-align:left">          <br/>
+ by—cxlove</span></p>
+<p><span style="font-family:Arial; font-size:14px; line-height:26px; text-align:left">对于xl,xl+1……xr，使得[xi-x]和最小，显然x应当为其中的中位数。中位数可以通过求K大数解决，划分树可搞。</span></p>
+<p><span style="font-family:Arial; font-size:14px; line-height:26px; text-align:left">对于求和，分为两部分，小于x的部分，大于y的部分，在建树的时候也保存下来分到左子树中的数的和。</span></p>
+<p style="text-align:left"><span style="font-family:Arial"><span style="font-size:14px; line-height:26px">最终的和为ave*(lnum-rnum)+rsum-lsum</span></span></p>
+<p style="text-align:left"><span style="font-family:Arial"><span style="font-size:14px; line-height:26px">ave为中位数，lnum为左子数的数量，也就是小于中位数的数量，rnum为右子数，lsum表示小于中位数部分的和</span></span></p>
+<p><span style="font-family:Arial; font-size:14px; line-height:26px; text-align:left"></span></p>
+<pre class="brush:cpp" name="code">#include&lt;iostream&gt;
+#include&lt;cstring&gt;
+#include&lt;cstdio&gt;
+#include&lt;algorithm&gt;
+#define N 100005
+#define LL __int64
+using namespace std;
+struct Node{
+	int left,right,mid;
+}tree[N*4];
+int sa[N],num[20][N],cnt[20][N]; //sa中是排序后的，num记录每一层的排序结果，cnt[deep][i]表示第deep层，前i个数中有多少个进入左子树
+LL Lsum[20][N],sum[N];
+int n,q;
+void debug(int d){
+	for(int i=1;i&lt;=n;i++)
+		printf("%d ",num[d][i]);
+	printf("\n");
+}
+void bulid(int step,int l,int r,int deep){
+	tree[step].left=l;
+	tree[step].right=r;
+	tree[step].mid=(l+r)&gt;&gt;1;
+	if(l==r)
+		return;
+	int mid=(l+r)&gt;&gt;1;
+	int mid_val=sa[mid],lsum=mid-l+1;;
+	for(int i=l;i&lt;=r;i++)
+		if(num[deep][i]&lt;mid_val)
+			lsum--;    //lsum表示左子树中还需要多少个中值
+	int L=l,R=mid+1;
+	Lsum[deep][0]=0;
+	for(int i=l;i&lt;=r;i++){
+		if(i==l)
+			cnt[deep][i]=0;
+		else
+			cnt[deep][i]=cnt[deep][i-1];
+		Lsum[deep][i]=Lsum[deep][i-1];
+		if(num[deep][i]&lt;mid_val||(num[deep][i]==mid_val&amp;&amp;lsum&gt;0)){  //左子树
+			num[deep+1][L++]=num[deep][i];
+			cnt[deep][i]++;
+			Lsum[deep][i]+=(LL)num[deep][i];
+			if(num[deep][i]==mid_val)
+				lsum--;
+		}
+		else
+			num[deep+1][R++]=num[deep][i];
+	}
+//	debug(deep);
+	bulid(2*step,l,mid,deep+1);
+	bulid(2*step+1,mid+1,r,deep+1);
+}
+int lnum;
+LL lsum;
+int query(int step,int l,int r,int k,int deep){
+	if(l==r)
+		return num[deep][l];
+	int s1,s2;   //s1为[tree[step].left,l-1]中分到左子树的个数
+	if(tree[step].left==l)
+		s1=0;
+	else
+		s1=cnt[deep][l-1];
+	s2=cnt[deep][r]-s1;   //s2为[l,r]中分到左子树的个数
+	if(k&lt;=s2)   //左子树的数量大于k,递归左子树
+		return query(2*step,tree[step].left+s1,tree[step].left+s1+s2-1,k,deep+1);
+	int b1=l-1-tree[step].left+1-s1;  //b1为[tree[step].left,l-1]中分到右子树的个数
+	int b2=r-l+1-s2;   //b2为[l,r]中分到右子树的个数
+	lnum+=s2;
+	lsum=(LL)lsum+Lsum[deep][r]-Lsum[deep][l-1];
+	return query(2*step+1,tree[step].mid+1+b1,tree[step].mid+1+b1+b2-1,k-s2,deep+1);
+}
+int main(){
+	int cas=0;
+	int t;
+	scanf("%d",&amp;t);
+	while(t--){
+		scanf("%d",&amp;n)	;
+		sum[0]=0;
+		for(int i=1;i&lt;=n;i++){
+			scanf("%d",&amp;num[1][i]);
+			sa[i]=num[1][i];
+			sum[i]=(LL)sum[i-1]+sa[i];
+		}
+		sort(sa+1,sa+n+1);
+		bulid(1,1,n,1);
+		scanf("%d",&amp;q);
+		printf("Case #%d:\n",++cas);
+		while(q--){
+			int l,r,k;
+			scanf("%d%d",&amp;l,&amp;r);
+			l++;r++;
+			k=(r-l+2)&gt;&gt;1;
+			lnum=0;
+			lsum=0;
+			int ave=query(1,l,r,k,1);
+			printf("%I64d\n",(LL)ave*(lnum-(r-l+1-lnum))+sum[r]-sum[l-1]-lsum-lsum);
+		}
+		puts("");
+	}
+	return 0;
+}</pre>
+<p>参考：<a href="#respond">http://blog.csdn.net/acm_cxlove/article/details/7788305</a></p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-76165">
+<article class="comment" id="comment-76165">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526906" rel="external nofollow">新用户717171</a></span> on <a href="http://www.acmerblog.com/hdu-3473-minimum-sum-5613.html#comment-76165" rel="nofollow"><time datetime="2017-04-12T07:34:15+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>文件都下了    除了那个南明的  贴到MODS里说缺少什么东西    咋回事……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76164">
+<article class="comment" id="comment-76164">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526906" rel="external nofollow">新用户717171</a></span> on <a href="http://www.acmerblog.com/hdu-3473-minimum-sum-5613.html#comment-76164" rel="nofollow"><time datetime="2017-04-12T07:34:15+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>文件都下了    除了那个南明的  贴到MODS里说缺少什么东西    咋回事……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76163">
+<article class="comment" id="comment-76163">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526906" rel="external nofollow">新用户717171</a></span> on <a href="http://www.acmerblog.com/hdu-3473-minimum-sum-5613.html#comment-76163" rel="nofollow"><time datetime="2017-04-12T07:34:15+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>文件都下了    除了那个南明的  贴到MODS里说缺少什么东西    咋回事……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76162">
+<article class="comment" id="comment-76162">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526906" rel="external nofollow">新用户717171</a></span> on <a href="http://www.acmerblog.com/hdu-3473-minimum-sum-5613.html#comment-76162" rel="nofollow"><time datetime="2017-04-12T07:34:15+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>文件都下了    除了那个南明的  贴到MODS里说缺少什么东西    咋回事……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76161">
+<article class="comment" id="comment-76161">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526906" rel="external nofollow">新用户717171</a></span> on <a href="http://www.acmerblog.com/hdu-3473-minimum-sum-5613.html#comment-76161" rel="nofollow"><time datetime="2017-04-12T07:34:15+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>文件都下了    除了那个南明的  贴到MODS里说缺少什么东西    咋回事……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76160">
+<article class="comment" id="comment-76160">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526906" rel="external nofollow">新用户717171</a></span> on <a href="http://www.acmerblog.com/hdu-3473-minimum-sum-5613.html#comment-76160" rel="nofollow"><time datetime="2017-04-12T07:34:15+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>文件都下了    除了那个南明的  贴到MODS里说缺少什么东西    咋回事……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76159">
+<article class="comment" id="comment-76159">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526906" rel="external nofollow">新用户717171</a></span> on <a href="http://www.acmerblog.com/hdu-3473-minimum-sum-5613.html#comment-76159" rel="nofollow"><time datetime="2017-04-12T07:34:15+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>文件都下了    除了那个南明的  贴到MODS里说缺少什么东西    咋回事……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76158">
+<article class="comment" id="comment-76158">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526906" rel="external nofollow">新用户717171</a></span> on <a href="http://www.acmerblog.com/hdu-3473-minimum-sum-5613.html#comment-76158" rel="nofollow"><time datetime="2017-04-12T07:34:15+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>文件都下了    除了那个南明的  贴到MODS里说缺少什么东西    咋回事……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76157">
+<article class="comment" id="comment-76157">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526906" rel="external nofollow">新用户717171</a></span> on <a href="http://www.acmerblog.com/hdu-3473-minimum-sum-5613.html#comment-76157" rel="nofollow"><time datetime="2017-04-12T07:34:15+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>文件都下了    除了那个南明的  贴到MODS里说缺少什么东西    咋回事……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49154">
+<article class="comment" id="comment-49154">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Amber</a></span> on <a href="http://www.acmerblog.com/hdu-3473-minimum-sum-5613.html#comment-49154" rel="nofollow"><time datetime="2015-06-17T10:36:05+00:00" pubdate="">2015年6月17日 at 上午10:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>&amp;amp;这是C语言？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63520">
+<article class="comment" id="comment-63520">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">3136869079</a></span> on <a href="http://www.acmerblog.com/hdu-3473-minimum-sum-5613.html#comment-63520" rel="nofollow"><time datetime="2015-04-14T08:32:20+00:00" pubdate="">2015年4月14日 at 上午8:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错的代码！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58667">
+<article class="comment" id="comment-58667">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rtaxa</a></span> on <a href="http://www.acmerblog.com/hdu-3473-minimum-sum-5613.html#comment-58667" rel="nofollow"><time datetime="2015-04-10T03:30:28+00:00" pubdate="">2015年4月10日 at 上午3:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给力！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58665">
+<article class="comment" id="comment-58665">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tkdzyl2013</a></span> on <a href="http://www.acmerblog.com/hdu-3473-minimum-sum-5613.html#comment-58665" rel="nofollow"><time datetime="2015-01-21T21:53:47+00:00" pubdate="">2015年1月21日 at 下午9:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有两个重复的话结果是正确的，但解法不够严谨，后面重复的覆盖掉前面的，由于题目数据限制也比较严，所以能提交通过。已更新算法</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58666">
+<article class="comment" id="comment-58666">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wangzhenvs123</a></span> on <a href="http://www.acmerblog.com/hdu-3473-minimum-sum-5613.html#comment-58666" rel="nofollow"><time datetime="2014-12-19T16:09:56+00:00" pubdate="">2014年12月19日 at 下午4:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>map[nodes <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .index][nodes <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> .index] == 0 就是判断不相邻的。这个是可以证明的。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29954">
+<article class="comment" id="comment-29954">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hsp_77_abc</a></span> on <a href="http://www.acmerblog.com/hdu-3473-minimum-sum-5613.html#comment-29954" rel="nofollow"><time datetime="2014-11-26T05:25:54+00:00" pubdate="">2014年11月26日 at 上午5:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我还有个问题想请教一下，就是感觉对于新手来说，递归理解起来有些困难，不知有没有什么好的方法或者什么好的建议？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58668">
+<article class="comment" id="comment-58668">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hong0220</a></span> on <a href="http://www.acmerblog.com/hdu-3473-minimum-sum-5613.html#comment-58668" rel="nofollow"><time datetime="2014-11-15T23:33:31+00:00" pubdate="">2014年11月15日 at 下午11:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>map[nodes <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .index][nodes <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> .index] == 0 就是判断不相邻的。这个是可以证明的。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63519">
+<article class="comment" id="comment-63519">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">pascal</a></span> on <a href="http://www.acmerblog.com/hdu-3473-minimum-sum-5613.html#comment-63519" rel="nofollow"><time datetime="2014-08-14T13:43:13+00:00" pubdate="">2014年8月14日 at 下午1:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>加了星号 (*) 表示跳过此数据不读入. 因为scanf是不读取本行回车的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63518">
+<article class="comment" id="comment-63518">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bai</a></span> on <a href="http://www.acmerblog.com/hdu-3473-minimum-sum-5613.html#comment-63518" rel="nofollow"><time datetime="2014-07-27T22:56:52+00:00" pubdate="">2014年7月27日 at 下午10:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>代码过于复杂了吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63522">
+<article class="comment" id="comment-63522">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hong0220</a></span> on <a href="http://www.acmerblog.com/hdu-3473-minimum-sum-5613.html#comment-63522" rel="nofollow"><time datetime="2014-07-20T15:47:02+00:00" pubdate="">2014年7月20日 at 下午3:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>else if也是要比较两次</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29955">
+<article class="comment" id="comment-29955">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Bob</a></span> on <a href="http://www.acmerblog.com/hdu-3473-minimum-sum-5613.html#comment-29955" rel="nofollow"><time datetime="2014-06-27T15:51:33+00:00" pubdate="">2014年6月27日 at 下午3:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63521">
+<article class="comment" id="comment-63521">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">g29tony</a></span> on <a href="http://www.acmerblog.com/hdu-3473-minimum-sum-5613.html#comment-63521" rel="nofollow"><time datetime="2014-06-21T00:17:19+00:00" pubdate="">2014年6月21日 at 上午12:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实国内大部分公司对算法都不够重视。特别是中小型公司老板根本都不懂技术，也不懂什么是算法，从而也不要求程序员懂什么算法，做程序从来不考虑性能问题，只要页面能显示出来就是好程序，这是国内的现状，很无奈。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58664">
+<article class="comment" id="comment-58664">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lin</a></span> on <a href="http://www.acmerblog.com/hdu-3473-minimum-sum-5613.html#comment-58664" rel="nofollow"><time datetime="2014-05-19T21:57:42+00:00" pubdate="">2014年5月19日 at 下午9:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#pragma pack(2) 这个用法太坑爹</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63517">
+<article class="comment" id="comment-63517">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">qingcongke</a></span> on <a href="http://www.acmerblog.com/hdu-3473-minimum-sum-5613.html#comment-63517" rel="nofollow"><time datetime="2014-05-07T11:26:28+00:00" pubdate="">2014年5月7日 at 上午11:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>great work！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,593 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-16</div>
+<div class="tit"><h1 class="entry-title">HDU 3372-Build Fences-计算几何-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/geometry/convex" rel="category tag" title="查看凸包问题中的全部文章">凸包问题</a>, <a href="http://www.acmerblog.com/category/geometry/analytic-geometry" rel="category tag" title="查看解析几何中的全部文章">解析几何</a></span><span class="i4">围观755次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5304" href="http://www.acmerblog.com/hdu-3372-build-fences-5304.html#comments" title="《HDU 3372-Build Fences-计算几何-[解题报告]HOJ》上的评论">26 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Build Fences</h1>
+</div>
+<div>
+<p class="mytitle">问题描述 :</p>
+</div>
+<div class="mypanel">Winter is coming , chicks are preparing building fences to protect from cold wind.<br/>
+They are going to use the limited fences to surround some trees , they will either make some trees out of the fences or leave them inside[the first image, OK].<br/>
+<center><img alt="Connect the Cities" src="/img/1395300441779.jpg"/></center><br/>
+They won’t make the fences touch trees outside and the fences should always be tighten.[the second image, forbidden]<br/>
+<center><img alt="Connect the Cities" src="/img/1395300441943.jpg"/></center><br/>
+(touch: two things have one or more points in common.)<br/>
+Also , they want their living space as large as possible ,only the light blue districts are their living space.<br/>
+The trees’ coordinates and their radius are given. No trees will touch each other.<br/>
+You can use a fence whose length is L , what’s the largest area the chicks can live?</div>
+<div>
+<p class="mytitle">输入:</p>
+</div>
+<div class="mypanel">T(&lt;=20) in the first line indicating case number.<br/>
+For each case, n(1&lt;=n&lt;=16) , d(0&lt;d&lt;=1000) , L(0&lt;=L&lt;=1000000).<br/>
+d : diameter of the trees , float number.<br/>
+L : length of the fence , float number.<br/>
+The next n lines each has two float numbers, x(|x|&lt;=1000) , y(|y|&lt;=1000) , which are the coodinates of the trees’ center.</div>
+<div>
+<p class="mytitle">输出:</p>
+</div>
+<div class="mypanel">T(&lt;=20) in the first line indicating case number.<br/>
+For each case, n(1&lt;=n&lt;=16) , d(0&lt;d&lt;=1000) , L(0&lt;=L&lt;=1000000).<br/>
+d : diameter of the trees , float number.<br/>
+L : length of the fence , float number.<br/>
+The next n lines each has two float numbers, x(|x|&lt;=1000) , y(|y|&lt;=1000) , which are the coodinates of the trees’ center.</div>
+<div>
+<p class="mytitle">样例输入:</p>
+</div>
+<pre class="mypanel iopanel">2
+
+1 1 1
+1 1
+
+4 1 30
+1 1
+4 4
+1 4
+4 1</pre>
+<div>
+<p class="mytitle">样例输出:</p>
+</div>
+<pre class="mypanel iopanel">0.000
+12.644</pre>
+<p><!-- problem end --></p>
+<p>http://acm.hdu.edu.cn/showproblem.php?pid=3372</p>
+<p>写的很乱 改了又改 最后重写的过程中 发现错在哪里了<br/>
+l1=(a-b).len();<br/>
+12=(a-o).len();<br/>
+l3=(b-o).len();<br/>
+应该是 l2=(a-inter).len(),l3=(b-inter).len(); 害死爹了<br/>
+本来想重新写一偏工整的 但是实在是写不下去了<br/>
+题意 给一堆圆形 在限定的长度（L）内将其圈起来 问可以圈的最大面积 最后要去掉圆形的面积<br/>
+因为n==16 所以我直接 位运算枚举每种情况<br/>
+有一个要注意的地方是 有写圆虽然没被选中 但是最后被包围在凸包里面了 也要算进去<br/>
+至于长读和面积的求法：len=圆心的凸包围起来的长度+圆的周长，s=凸包的面积+len*r-(n-1)*carea (其中<br/>
+n为凸包所包含的圆的个数，包括未被选中的，carea为圆的面积)<br/>
+1 为被选中的圆在不在凸包内 直接用圆心去判断在不在点的凸包内就可以了<br/>
+2 判断 凸包符不符合要求 判断未选中的且不在凸包内的点 和凸包边的距离会不会&lt;周长</p>
+<pre class="brush:cpp">#include&lt;stdio.h&gt;
+#include&lt;string.h&gt;
+#include&lt;cmath&gt;
+#include&lt;vector&gt;
+#include&lt;algorithm&gt;
+#define eps 1e-8
+#define inf 1e100
+#define N 20
+#define pi acos(-1.0)
+using namespace std;
+int Sig(double a)
+{
+    return a&lt;-eps?-1:a&gt;eps;
+}
+struct Point
+{
+    double x,y;
+    Point(){}
+    Point(double x0,double y0):x(x0),y(y0){}
+    void in()
+    {
+        scanf("%lf%lf",&amp;x,&amp;y);
+    }
+    void out()
+    {
+        printf("%.3f %.3f\n",x,y);
+    }
+    Point operator * (double t)
+    {
+        return Point(t*x,t*y);
+    }
+    double len()
+    {
+        return sqrt(x*x+y*y);
+    }
+    double operator *(Point pt)
+    {
+        return x*pt.y-y*pt.x;
+    }
+    double operator ^(Point pt)
+    {
+        return pt.x*x+pt.y*y;
+    }
+    Point operator -(Point pt)
+    {
+        return Point(x-pt.x,y-pt.y);
+    }
+    Point operator +(Point pt)
+    {
+        return Point(x+pt.x,y+pt.y);
+    }
+};
+double Dis(Point a,Point b)
+{
+    return sqrt( (a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y));
+}
+double Xmult(Point o,Point a,Point b)
+{
+    return (a-o)*(b-o);
+}
+Point Intersection(Point u1,Point u2,Point v1,Point v2)//ÇóÁœÖ±ÏßµÄœ»µã
+{
+    Point ret=u1;
+    double t=((u1.x-v1.x)*(v1.y-v2.y)-(u1.y-v1.y)*(v1.x-v2.x))/
+             ((u1.x-u2.x)*(v1.y-v2.y)-(u1.y-u2.y)*(v1.x-v2.x));
+    ret.x+=(u2.x-u1.x)*t;
+    ret.y+=(u2.y-u1.y)*t;
+    return ret;
+}
+int con[100];
+int cn;
+Point po;
+int cmp(Point a,Point b)
+{
+    double d=Xmult(po,a,b);
+    if(d&gt;0)
+        return 1;
+    if(d==0 &amp;&amp; Dis(a,po)&lt;Dis(b,po))
+        return 1;
+    return 0;
+}
+int Graham(Point p[],int n)
+{
+    int i,ind=0;
+    for(i=1;i&lt;n;i++)
+        if(p[ind].y&gt;p[i].y || (p[ind].y==p[i].y &amp;&amp; p[ind].x&gt;p[i].x))
+            ind=i;
+    swap(p[ind],p[0]);
+    po=p[0];
+    sort(p+1,p+n,cmp);
+    con[0]=0;
+    con[1]=1;
+    cn=1;
+    for(i=2;i&lt;n;i++)
+    {
+        while(cn&gt;0 &amp;&amp; Sig(Xmult(p[con[cn-1]],p[con[cn]],p[i]))&lt;=0)
+            cn--;
+        con[++cn]=i;
+    }
+
+    int tmp=cn;
+    for(i=n-2;i&gt;=0;i--)
+    {
+        while(cn&gt;tmp &amp;&amp; Sig(Xmult(p[con[cn-1]],p[con[cn]],p[i]))&lt;=0)
+            cn--;
+        con[++cn]=i;//p[cn]==p[0];
+    }
+    Point tp[N];
+    for(int i=0;i&lt;cn;i++)
+        tp[i]=p[con[i]];
+    for(int i=0;i&lt;cn;i++)
+        p[i]=tp[i];
+    n=cn;
+    return cn;
+}
+int w[20];
+void Init()
+{
+    for(int i=0;i&lt;20;i++)
+        w[i]=1&lt;&lt;i;
+}
+double Len(Point p[],int n,double d)
+{
+    double s=0;
+    for(int i=0;i&lt;n;i++)
+        s+=(p[i]-p[(i+1)%n]).len();
+    return s+d*pi;
+}
+double Area(Point p[],int n,double d)
+{
+    double s=0;
+    for(int i=0;i&lt;n;i++)
+        s+=p[i]*p[(i+1)%n];
+    s=fabs(s)*0.5;
+    for(int i=0;i&lt;n;i++)
+        s+=d*0.5*(p[(i+1)%n]-p[i]).len();
+    return s;
+}
+bool Point_line(Point o,Point a,Point b,double d)
+{
+    Point tmp=Point(b.y-a.y+o.x,a.x-b.x+o.y);
+    Point inter=Intersection(o,tmp,a,b);
+    double l1,l2,l3;
+    l1=(a-b).len();
+    l2=(a-o).len();
+    l3=(b-o).len();
+    double tt;
+    if(!Sig(l1-l2-l3))
+        tt= Dis(inter,o);
+    else
+        tt= min(Dis(o,a),Dis(o,b));
+    return Sig(tt-d)&lt;=0;
+}
+bool Point_line(Point a,Point p[],int n,double d)
+{
+    for(int i=0;i&lt;n;i++)
+    {
+        if(Point_line(a,p[i],p[(i+1)%n],d))
+            return 1;
+    }
+    return 0;
+}
+bool In_polygon(Point a,Point p[],int n)//判断点是不是在凸包内
+{
+    for(int i=0;i&lt;n;i++)
+        if(Sig(Xmult(p[i],p[(i+1)%n],a))&lt;0)//在凸包的边上也不行！！！！！
+            return 0;
+    return 1;
+}
+bool Judge(Point p[],int n,bool hash[],int tn,Point tp[],double d)
+{
+    for(int i=0;i&lt;tn;i++)
+    {
+        if(hash[i])
+            continue;
+        if(!In_polygon(tp[i],p,n) &amp;&amp; Point_line(tp[i],p,n,d) )
+            return 0;
+    }
+    return 1;
+}
+int main()
+{
+    int n,tn;
+    double d,l;
+    Point tp[N];
+    Point p[N];
+    bool hash[N];
+    int t;
+    Init();
+    scanf("%d",&amp;t);
+    while(t--)
+    {
+        scanf("%d%lf%lf",&amp;tn,&amp;d,&amp;l);
+        for(int i=0;i&lt;tn;i++)
+            tp[i].in();
+        double ans=0;
+        int all=w[tn];
+        for(int i=1;i&lt;all;i++)
+        {
+            n=0;
+            memset(hash,0,sizeof(hash));
+            for(int j=0;j&lt;tn;j++)
+            {
+                if(i&amp;w[j])
+                {
+                    hash[j]=1;
+                    p[n++]=tp[j];
+                }
+            }
+            int nn=n;
+            if(n==1)
+                continue;
+            if(n&gt;2)
+                n=Graham(p,n);
+            if(Sig( Len(p,n,d)-l)&gt;0)
+                continue;
+            if(n==2)//n==2 里面不能在放不被选中的圆
+            {
+                int flag=1;
+                for(int j=0;j&lt;tn;j++)
+                    if(!hash[j] &amp;&amp; Point_line(tp[j],p,n,d))
+                    {
+                        flag=0;
+                        break;
+                    }
+                if(flag)
+                    ans=max(ans,Area(p,n,d)-(nn-1)*pi*d*d/4);
+            }
+            else
+            {
+                if(Judge(p,n,hash,tn,tp,d))//判断凸包是否符合要求
+                {
+
+                    double area=Area(p,n,d);
+                    for(int j=0;j&lt;tn;j++)//判断有没有在凸包内的 没有被选中的圆
+                    {
+                        if(!hash[j] &amp;&amp; In_polygon(tp[j],p,n))//适用n&gt;=3
+                                nn++;
+                    }
+                    ans=max(ans,area-(nn-1)*pi*d*d/4);
+                }
+            }
+        }
+        printf("%.3f\n",ans);
+    }
+    return 0;
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-77440">
+<article class="comment" id="comment-77440">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530904" rel="external nofollow">新用户176988</a></span> on <a href="http://www.acmerblog.com/hdu-3372-build-fences-5304.html#comment-77440" rel="nofollow"><time datetime="2017-04-12T09:15:01+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>让我们好好想想：城管就必定是坏人，小贩就必定是无辜者？难道我们聘城管的第一条就是必须爱打仗，小贩的人生原则第一条就是建设和谐城市？!城管和小贩都是这个社会的一员，都和我们一样有着人性中的恶与善。一个是执法阶层的最底人员，一个是社会阶层的最底人员，退无可退</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77439">
+<article class="comment" id="comment-77439">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530904" rel="external nofollow">新用户176988</a></span> on <a href="http://www.acmerblog.com/hdu-3372-build-fences-5304.html#comment-77439" rel="nofollow"><time datetime="2017-04-12T09:15:01+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>让我们好好想想：城管就必定是坏人，小贩就必定是无辜者？难道我们聘城管的第一条就是必须爱打仗，小贩的人生原则第一条就是建设和谐城市？!城管和小贩都是这个社会的一员，都和我们一样有着人性中的恶与善。一个是执法阶层的最底人员，一个是社会阶层的最底人员，退无可退</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77438">
+<article class="comment" id="comment-77438">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530904" rel="external nofollow">新用户176988</a></span> on <a href="http://www.acmerblog.com/hdu-3372-build-fences-5304.html#comment-77438" rel="nofollow"><time datetime="2017-04-12T09:15:01+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>让我们好好想想：城管就必定是坏人，小贩就必定是无辜者？难道我们聘城管的第一条就是必须爱打仗，小贩的人生原则第一条就是建设和谐城市？!城管和小贩都是这个社会的一员，都和我们一样有着人性中的恶与善。一个是执法阶层的最底人员，一个是社会阶层的最底人员，退无可退</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77437">
+<article class="comment" id="comment-77437">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530904" rel="external nofollow">新用户176988</a></span> on <a href="http://www.acmerblog.com/hdu-3372-build-fences-5304.html#comment-77437" rel="nofollow"><time datetime="2017-04-12T09:15:01+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>让我们好好想想：城管就必定是坏人，小贩就必定是无辜者？难道我们聘城管的第一条就是必须爱打仗，小贩的人生原则第一条就是建设和谐城市？!城管和小贩都是这个社会的一员，都和我们一样有着人性中的恶与善。一个是执法阶层的最底人员，一个是社会阶层的最底人员，退无可退</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77436">
+<article class="comment" id="comment-77436">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530904" rel="external nofollow">新用户176988</a></span> on <a href="http://www.acmerblog.com/hdu-3372-build-fences-5304.html#comment-77436" rel="nofollow"><time datetime="2017-04-12T09:15:01+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>让我们好好想想：城管就必定是坏人，小贩就必定是无辜者？难道我们聘城管的第一条就是必须爱打仗，小贩的人生原则第一条就是建设和谐城市？!城管和小贩都是这个社会的一员，都和我们一样有着人性中的恶与善。一个是执法阶层的最底人员，一个是社会阶层的最底人员，退无可退</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77435">
+<article class="comment" id="comment-77435">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530904" rel="external nofollow">新用户176988</a></span> on <a href="http://www.acmerblog.com/hdu-3372-build-fences-5304.html#comment-77435" rel="nofollow"><time datetime="2017-04-12T09:15:01+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>让我们好好想想：城管就必定是坏人，小贩就必定是无辜者？难道我们聘城管的第一条就是必须爱打仗，小贩的人生原则第一条就是建设和谐城市？!城管和小贩都是这个社会的一员，都和我们一样有着人性中的恶与善。一个是执法阶层的最底人员，一个是社会阶层的最底人员，退无可退</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77434">
+<article class="comment" id="comment-77434">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530904" rel="external nofollow">新用户176988</a></span> on <a href="http://www.acmerblog.com/hdu-3372-build-fences-5304.html#comment-77434" rel="nofollow"><time datetime="2017-04-12T09:15:01+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>让我们好好想想：城管就必定是坏人，小贩就必定是无辜者？难道我们聘城管的第一条就是必须爱打仗，小贩的人生原则第一条就是建设和谐城市？!城管和小贩都是这个社会的一员，都和我们一样有着人性中的恶与善。一个是执法阶层的最底人员，一个是社会阶层的最底人员，退无可退</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77433">
+<article class="comment" id="comment-77433">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530904" rel="external nofollow">新用户176988</a></span> on <a href="http://www.acmerblog.com/hdu-3372-build-fences-5304.html#comment-77433" rel="nofollow"><time datetime="2017-04-12T09:15:01+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>让我们好好想想：城管就必定是坏人，小贩就必定是无辜者？难道我们聘城管的第一条就是必须爱打仗，小贩的人生原则第一条就是建设和谐城市？!城管和小贩都是这个社会的一员，都和我们一样有着人性中的恶与善。一个是执法阶层的最底人员，一个是社会阶层的最底人员，退无可退</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77432">
+<article class="comment" id="comment-77432">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530904" rel="external nofollow">新用户176988</a></span> on <a href="http://www.acmerblog.com/hdu-3372-build-fences-5304.html#comment-77432" rel="nofollow"><time datetime="2017-04-12T09:15:01+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>让我们好好想想：城管就必定是坏人，小贩就必定是无辜者？难道我们聘城管的第一条就是必须爱打仗，小贩的人生原则第一条就是建设和谐城市？!城管和小贩都是这个社会的一员，都和我们一样有着人性中的恶与善。一个是执法阶层的最底人员，一个是社会阶层的最底人员，退无可退</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77431">
+<article class="comment" id="comment-77431">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530904" rel="external nofollow">新用户176988</a></span> on <a href="http://www.acmerblog.com/hdu-3372-build-fences-5304.html#comment-77431" rel="nofollow"><time datetime="2017-04-12T09:15:01+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>让我们好好想想：城管就必定是坏人，小贩就必定是无辜者？难道我们聘城管的第一条就是必须爱打仗，小贩的人生原则第一条就是建设和谐城市？!城管和小贩都是这个社会的一员，都和我们一样有着人性中的恶与善。一个是执法阶层的最底人员，一个是社会阶层的最底人员，退无可退</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77430">
+<article class="comment" id="comment-77430">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530904" rel="external nofollow">新用户176988</a></span> on <a href="http://www.acmerblog.com/hdu-3372-build-fences-5304.html#comment-77430" rel="nofollow"><time datetime="2017-04-12T09:15:01+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>让我们好好想想：城管就必定是坏人，小贩就必定是无辜者？难道我们聘城管的第一条就是必须爱打仗，小贩的人生原则第一条就是建设和谐城市？!城管和小贩都是这个社会的一员，都和我们一样有着人性中的恶与善。一个是执法阶层的最底人员，一个是社会阶层的最底人员，退无可退</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77429">
+<article class="comment" id="comment-77429">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530904" rel="external nofollow">新用户176988</a></span> on <a href="http://www.acmerblog.com/hdu-3372-build-fences-5304.html#comment-77429" rel="nofollow"><time datetime="2017-04-12T09:15:01+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>让我们好好想想：城管就必定是坏人，小贩就必定是无辜者？难道我们聘城管的第一条就是必须爱打仗，小贩的人生原则第一条就是建设和谐城市？!城管和小贩都是这个社会的一员，都和我们一样有着人性中的恶与善。一个是执法阶层的最底人员，一个是社会阶层的最底人员，退无可退</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77428">
+<article class="comment" id="comment-77428">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530904" rel="external nofollow">新用户176988</a></span> on <a href="http://www.acmerblog.com/hdu-3372-build-fences-5304.html#comment-77428" rel="nofollow"><time datetime="2017-04-12T09:15:01+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>让我们好好想想：城管就必定是坏人，小贩就必定是无辜者？难道我们聘城管的第一条就是必须爱打仗，小贩的人生原则第一条就是建设和谐城市？!城管和小贩都是这个社会的一员，都和我们一样有着人性中的恶与善。一个是执法阶层的最底人员，一个是社会阶层的最底人员，退无可退</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58413">
+<article class="comment" id="comment-58413">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">czw8528</a></span> on <a href="http://www.acmerblog.com/hdu-3372-build-fences-5304.html#comment-58413" rel="nofollow"><time datetime="2015-06-12T02:32:44+00:00" pubdate="">2015年6月12日 at 上午2:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>分析的很详细！赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58412">
+<article class="comment" id="comment-58412">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sheyty</a></span> on <a href="http://www.acmerblog.com/hdu-3372-build-fences-5304.html#comment-58412" rel="nofollow"><time datetime="2015-06-07T23:29:13+00:00" pubdate="">2015年6月7日 at 下午11:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的模板</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29131">
+<article class="comment" id="comment-29131">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mazilian</a></span> on <a href="http://www.acmerblog.com/hdu-3372-build-fences-5304.html#comment-29131" rel="nofollow"><time datetime="2015-05-11T13:38:49+00:00" pubdate="">2015年5月11日 at 下午1:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一种方法怎么会是O(log(m+n))呢？没有二分的话直接遍历应该就是O(m+n)吧？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58411">
+<article class="comment" id="comment-58411">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Mayboy</a></span> on <a href="http://www.acmerblog.com/hdu-3372-build-fences-5304.html#comment-58411" rel="nofollow"><time datetime="2015-03-17T09:47:14+00:00" pubdate="">2015年3月17日 at 上午9:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>…. 配图居然是没方向的。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29129">
+<article class="comment" id="comment-29129">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Ailing</a></span> on <a href="http://www.acmerblog.com/hdu-3372-build-fences-5304.html#comment-29129" rel="nofollow"><time datetime="2015-03-03T23:58:54+00:00" pubdate="">2015年3月3日 at 下午11:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>能不能说一下tmp数组和solve都是干嘛的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48644">
+<article class="comment" id="comment-48644">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">woweizhineng</a></span> on <a href="http://www.acmerblog.com/hdu-3372-build-fences-5304.html#comment-48644" rel="nofollow"><time datetime="2015-01-20T22:06:28+00:00" pubdate="">2015年1月20日 at 下午10:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>换句话说，A[k/2-1]不可能大于两数组合并之后的第k小值，所以我们可以将其抛弃。<br/>
+应该是，不可能小于合并后的第K小值吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58414">
+<article class="comment" id="comment-58414">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Rocky</a></span> on <a href="http://www.acmerblog.com/hdu-3372-build-fences-5304.html#comment-58414" rel="nofollow"><time datetime="2014-09-05T18:22:11+00:00" pubdate="">2014年9月5日 at 下午6:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>方法4中使用hash表，只要用出现次数作为Value，就可以解决重复元素的问题了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29127">
+<article class="comment" id="comment-29127">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dongxi</a></span> on <a href="http://www.acmerblog.com/hdu-3372-build-fences-5304.html#comment-29127" rel="nofollow"><time datetime="2014-08-31T12:03:53+00:00" pubdate="">2014年8月31日 at 下午12:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有点意思</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29130">
+<article class="comment" id="comment-29130">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">cherry_odd</a></span> on <a href="http://www.acmerblog.com/hdu-3372-build-fences-5304.html#comment-29130" rel="nofollow"><time datetime="2014-08-30T14:47:23+00:00" pubdate="">2014年8月30日 at 下午2:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>居然看懂了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58408">
+<article class="comment" id="comment-58408">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">WalkCoder</a></span> on <a href="http://www.acmerblog.com/hdu-3372-build-fences-5304.html#comment-58408" rel="nofollow"><time datetime="2014-08-23T23:45:21+00:00" pubdate="">2014年8月23日 at 下午11:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是穷举，但是代码有优化（v数组），并不是2^n。测试数据应该没问题，之前有超时的代码。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58409">
+<article class="comment" id="comment-58409">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Yaunxi</a></span> on <a href="http://www.acmerblog.com/hdu-3372-build-fences-5304.html#comment-58409" rel="nofollow"><time datetime="2014-08-01T02:47:00+00:00" pubdate="">2014年8月1日 at 上午2:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正是我要找的，适合新手</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29128">
+<article class="comment" id="comment-29128">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lint</a></span> on <a href="http://www.acmerblog.com/hdu-3372-build-fences-5304.html#comment-29128" rel="nofollow"><time datetime="2014-07-27T14:22:19+00:00" pubdate="">2014年7月27日 at 下午2:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这怎么用Catalan数啊？求解答！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58410">
+<article class="comment" id="comment-58410">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hongfieyu</a></span> on <a href="http://www.acmerblog.com/hdu-3372-build-fences-5304.html#comment-58410" rel="nofollow"><time datetime="2014-04-05T05:48:13+00:00" pubdate="">2014年4月5日 at 上午5:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>88行是多余的，可以删除</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

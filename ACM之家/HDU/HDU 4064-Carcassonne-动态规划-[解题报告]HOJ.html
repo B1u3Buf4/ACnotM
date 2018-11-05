@@ -1,0 +1,446 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>04-16</div>
+<div class="tit"><h1 class="entry-title">HDU 4064-Carcassonne-动态规划-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/basis/enumeration" rel="category tag" title="查看枚举中的全部文章">枚举</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a></span><span class="i4">围观464次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7067" href="http://www.acmerblog.com/hdu-4064-carcassonne-7067.html#comments" title="《HDU 4064-Carcassonne-动态规划-[解题报告]HOJ》上的评论">28 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Carcassonne</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+<a href="http://en.wikipedia.org/wiki/Carcassonne_%28board_game%29">Carcassonne</a> is a tile-based board game for two to five players.<br/>Square tiles are printed by city segments,road segments and field segments. <br/><center><img alt="Aircraft" src="http://www.acmerblog.com/img/1436363913695.jpg"/></center> <br/>The rule of the game is to put the tiles alternately. Two tiles share one edge should exactly connect to each other, that is, city segments should be linked to city segments, road to road, and field to field.   <br/><center><img alt="Aircraft" src="http://www.acmerblog.com/img/1436363913843.jpg"/></center> <br/>To simplify the problem, we only consider putting tiles:<br/>Given n*m tiles. You can rotate each tile, but not flip top to bottom, and not change their order. <br/>How many ways could you rotate them to make them follow the rules mentioned above? </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line is a number T(1&lt;=T&lt;=50), represents the number of case. The next T blocks follow each indicates a case.<br/>Each case starts with two number N,M(0&lt;N,M&lt;=12)<br/>Then N*M lines follow,each line contains M four-character clockwise.<br/>‘C’ indicate City.<br/>‘R’ indicate Road.<br/>‘F’ indicate Field. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The first line is a number T(1&lt;=T&lt;=50), represents the number of case. The next T blocks follow each indicates a case.<br/>Each case starts with two number N,M(0&lt;N,M&lt;=12)<br/>Then N*M lines follow,each line contains M four-character clockwise.<br/>‘C’ indicate City.<br/>‘R’ indicate Road.<br/>‘F’ indicate Field.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3
+1 1
+RRRR
+1 2
+RRRF FCCC
+8 8
+FCFF RRFC FRCR FRFR RCCR FFCC RRFF CRFR
+FRRC FRFR CCCR FCFC CRRC CRRR FRCR FRFR
+RRCR FRRR CCCR FFFC RRFF RFCR CCFF FCCC
+CFCF RRFF CRFR FFRR FRRF CCRR FFFC CRRF
+CFRR FFFF FFFF RRFF RRRR RCRR FFCC RFRF
+RRCF FRFR FRRR FRFR RCCR RCCC CFFC RFRF
+CFCF FRFF RRFF FFFF CFFF CFFF FRFF RFRR
+CCRR FCFC FCCC FCCC FFCC FCCF FFCC RFRF</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case 1: 4
+Case 2: 1
+Case 3: 1048576</pre>
+<p> <!-- problem end --></p>
+<h1 style="color:#1A5CC8"><a>hdu 4064 Carcassonne</a></h1>
+<p>
+</p>
+<p>网上说是插头dp，若菜表示不知道什么叫插头dp，T_T</p>
+<p>
+</p>
+<p>题意：<span style="color:#FF0000"> 给你一个12*12 个瓷砖，每个瓷砖正方形，每个边用C，F，R唯一标示，用这些瓷砖相邻的两条边要相同，每个瓷砖可以旋转，问可能构成满足条件的瓷砖的个数</span></p>
+<p>
+</p>
+<p>思路：<span style="color:#FF0000"> dp[row ] [  states ]   states 是三进制表示的，表示该层的放置情况，用dfs枚举，我只是用了一点优化，500ms+</span></p>
+<p>
+</p>
+<pre class="brush:cpp" name="code">#include &lt;iostream&gt;
+#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+
+using namespace std;
+
+typedef long long ll;
+#define MOD  1000000007
+#define MAX 531443
+int dp[13][MAX];
+char st[13][13][6];
+bool same[13][13];
+int n,m,Max,cur,row;
+
+int change(char x)
+{
+    if (x=='R') return 1;
+    if (x=='F') return 2;
+    return 0;
+}
+
+void dfs(int col,ll sum,char prechar,int pre,int now)
+{
+    if(col==m)
+    {
+        if(row==0) dp[row][now]=(dp[row][now]+sum)%MOD;
+        else dp[row][now]=(dp[row][now]+sum*dp[row-1][pre])%MOD;
+        return;
+    }
+    if(same[row][col]) // 判断该处是四个边否相同，如果相同直接dfs 一次即可 
+    {
+        if(prechar=='#'||prechar==st[row][col][0])
+           dfs(col+1,sum*4%MOD,st[row][col][0],pre*3+change(st[row][col][0]),now*3+change(st[row][col][0]));
+        return;
+    }
+    for(int i=0; i&lt;4; i++)
+        if(prechar=='#'||prechar==st[row][col][i])
+            dfs(col+1,sum,st[row][col][(i+2)%4],pre*3+change(st[row][col][(i+1)%4]),now*3+change(st[row][col][(i+3)%4]));
+}
+
+int main()
+{
+    int T,i,j;
+    scanf("%d",&amp;T);
+    for(int ca=1; ca&lt;=T; ca++)
+    {
+        scanf("%d%d",&amp;n,&amp;m);
+        for (i=0; i&lt;n; i++)
+        for (j=0; j&lt;m; j++)
+            scanf("%s",st[i][j]);
+        memset(same,0,sizeof(same));
+        Max=1;
+        for (i=0; i&lt;m; i++) Max*=3;
+        for(int i=0;i&lt;n;i++)
+        for(int j=0;j&lt;m;j++)
+        {
+            bool ok=1;
+            for(int r=1;r&lt;4;r++)
+              if(st[i][j][r]!=st[i][j][r-1]) ok=0;
+            same[i][j]=ok;
+        }
+        memset(dp,0,sizeof(dp));
+        for(row=0;row&lt;n;row++) dfs(0,1,'#',0,0);
+
+        int ans=0;
+        for(i=0;i&lt;Max;i++) ans=(ans+dp[n-1][i])%MOD;
+        printf("Case %d: %d\n",ca,ans);
+    }
+    return 0;
+}
+</pre>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/struggle_mind/article/details/8003221</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-99783">
+<article class="comment" id="comment-99783">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512608" rel="external nofollow">新用户352317</a></span> on <a href="http://www.acmerblog.com/hdu-4064-carcassonne-7067.html#comment-99783" rel="nofollow"><time datetime="2017-04-20T19:26:57+00:00" pubdate="">2017年4月20日 at 下午7:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>恩，没有什么不对，只是比较强势，所以本地的辣椒经销商不太高兴，而且贵州辣椒其实挺贵的。大家不太满意的其实是，本地人吃了老干妈很多年，能够明显的感觉到质量的下降</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-99782">
+<article class="comment" id="comment-99782">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512608" rel="external nofollow">新用户352317</a></span> on <a href="http://www.acmerblog.com/hdu-4064-carcassonne-7067.html#comment-99782" rel="nofollow"><time datetime="2017-04-20T19:26:57+00:00" pubdate="">2017年4月20日 at 下午7:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>恩，没有什么不对，只是比较强势，所以本地的辣椒经销商不太高兴，而且贵州辣椒其实挺贵的。大家不太满意的其实是，本地人吃了老干妈很多年，能够明显的感觉到质量的下降</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-99781">
+<article class="comment" id="comment-99781">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512608" rel="external nofollow">新用户352317</a></span> on <a href="http://www.acmerblog.com/hdu-4064-carcassonne-7067.html#comment-99781" rel="nofollow"><time datetime="2017-04-20T19:26:57+00:00" pubdate="">2017年4月20日 at 下午7:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>恩，没有什么不对，只是比较强势，所以本地的辣椒经销商不太高兴，而且贵州辣椒其实挺贵的。大家不太满意的其实是，本地人吃了老干妈很多年，能够明显的感觉到质量的下降</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-99780">
+<article class="comment" id="comment-99780">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512608" rel="external nofollow">新用户352317</a></span> on <a href="http://www.acmerblog.com/hdu-4064-carcassonne-7067.html#comment-99780" rel="nofollow"><time datetime="2017-04-20T19:26:57+00:00" pubdate="">2017年4月20日 at 下午7:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>恩，没有什么不对，只是比较强势，所以本地的辣椒经销商不太高兴，而且贵州辣椒其实挺贵的。大家不太满意的其实是，本地人吃了老干妈很多年，能够明显的感觉到质量的下降</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-99779">
+<article class="comment" id="comment-99779">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512608" rel="external nofollow">新用户352317</a></span> on <a href="http://www.acmerblog.com/hdu-4064-carcassonne-7067.html#comment-99779" rel="nofollow"><time datetime="2017-04-20T19:26:57+00:00" pubdate="">2017年4月20日 at 下午7:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>恩，没有什么不对，只是比较强势，所以本地的辣椒经销商不太高兴，而且贵州辣椒其实挺贵的。大家不太满意的其实是，本地人吃了老干妈很多年，能够明显的感觉到质量的下降</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-99778">
+<article class="comment" id="comment-99778">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512608" rel="external nofollow">新用户352317</a></span> on <a href="http://www.acmerblog.com/hdu-4064-carcassonne-7067.html#comment-99778" rel="nofollow"><time datetime="2017-04-20T19:26:57+00:00" pubdate="">2017年4月20日 at 下午7:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>恩，没有什么不对，只是比较强势，所以本地的辣椒经销商不太高兴，而且贵州辣椒其实挺贵的。大家不太满意的其实是，本地人吃了老干妈很多年，能够明显的感觉到质量的下降</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-99777">
+<article class="comment" id="comment-99777">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512608" rel="external nofollow">新用户352317</a></span> on <a href="http://www.acmerblog.com/hdu-4064-carcassonne-7067.html#comment-99777" rel="nofollow"><time datetime="2017-04-20T19:26:57+00:00" pubdate="">2017年4月20日 at 下午7:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>恩，没有什么不对，只是比较强势，所以本地的辣椒经销商不太高兴，而且贵州辣椒其实挺贵的。大家不太满意的其实是，本地人吃了老干妈很多年，能够明显的感觉到质量的下降</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70449">
+<article class="comment" id="comment-70449">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524944" rel="external nofollow">新用户362002</a></span> on <a href="http://www.acmerblog.com/hdu-4064-carcassonne-7067.html#comment-70449" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70448">
+<article class="comment" id="comment-70448">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524944" rel="external nofollow">新用户362002</a></span> on <a href="http://www.acmerblog.com/hdu-4064-carcassonne-7067.html#comment-70448" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70447">
+<article class="comment" id="comment-70447">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524944" rel="external nofollow">新用户362002</a></span> on <a href="http://www.acmerblog.com/hdu-4064-carcassonne-7067.html#comment-70447" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70446">
+<article class="comment" id="comment-70446">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524944" rel="external nofollow">新用户362002</a></span> on <a href="http://www.acmerblog.com/hdu-4064-carcassonne-7067.html#comment-70446" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70445">
+<article class="comment" id="comment-70445">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524944" rel="external nofollow">新用户362002</a></span> on <a href="http://www.acmerblog.com/hdu-4064-carcassonne-7067.html#comment-70445" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70444">
+<article class="comment" id="comment-70444">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524944" rel="external nofollow">新用户362002</a></span> on <a href="http://www.acmerblog.com/hdu-4064-carcassonne-7067.html#comment-70444" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70443">
+<article class="comment" id="comment-70443">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524944" rel="external nofollow">新用户362002</a></span> on <a href="http://www.acmerblog.com/hdu-4064-carcassonne-7067.html#comment-70443" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70442">
+<article class="comment" id="comment-70442">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524944" rel="external nofollow">新用户362002</a></span> on <a href="http://www.acmerblog.com/hdu-4064-carcassonne-7067.html#comment-70442" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70441">
+<article class="comment" id="comment-70441">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524944" rel="external nofollow">新用户362002</a></span> on <a href="http://www.acmerblog.com/hdu-4064-carcassonne-7067.html#comment-70441" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70440">
+<article class="comment" id="comment-70440">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524944" rel="external nofollow">新用户362002</a></span> on <a href="http://www.acmerblog.com/hdu-4064-carcassonne-7067.html#comment-70440" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70439">
+<article class="comment" id="comment-70439">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524944" rel="external nofollow">新用户362002</a></span> on <a href="http://www.acmerblog.com/hdu-4064-carcassonne-7067.html#comment-70439" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70438">
+<article class="comment" id="comment-70438">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524944" rel="external nofollow">新用户362002</a></span> on <a href="http://www.acmerblog.com/hdu-4064-carcassonne-7067.html#comment-70438" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35683">
+<article class="comment" id="comment-35683">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fwhappy</a></span> on <a href="http://www.acmerblog.com/hdu-4064-carcassonne-7067.html#comment-35683" rel="nofollow"><time datetime="2015-07-15T12:54:56+00:00" pubdate="">2015年7月15日 at 下午12:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>漂亮。佩服。<br/>
+P.S.  unsigned 应该去掉。换行符是n 不是/n<br/>
+还可以稍微优化一下，<br/>
+int main() {<br/>
+	int m,n,ai,aj,bi,bj,ak,bk;<br/>
+	while (scanf("%d%d",&amp;m,&amp;n)!=EOF) {<br/>
+		ai = sqrt(m-1);<br/>
+		bi = sqrt(n-1);<br/>
+		aj = (m-ai*ai-1)&gt;&gt;1;<br/>
+		bj = (n-bi*bi-1)&gt;&gt;1;<br/>
+		ak = ((ai+1)*(ai+1)-m)&gt;&gt;1;<br/>
+		bk = ((bi+1)*(bi+1)-n)&gt;&gt;1;<br/>
+		printf("%dn",abs(ai-bi)+abs(aj-bj)+abs(ak-bk));<br/>
+	}<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35686">
+<article class="comment" id="comment-35686">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Rosamondwu</a></span> on <a href="http://www.acmerblog.com/hdu-4064-carcassonne-7067.html#comment-35686" rel="nofollow"><time datetime="2015-07-15T00:49:46+00:00" pubdate="">2015年7月15日 at 上午12:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>哇，算法有这么多呢！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-60167">
+<article class="comment" id="comment-60167">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Riddick</a></span> on <a href="http://www.acmerblog.com/hdu-4064-carcassonne-7067.html#comment-60167" rel="nofollow"><time datetime="2015-07-10T14:02:18+00:00" pubdate="">2015年7月10日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，就是把这32位当成一个长度为32的数</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-52033">
+<article class="comment" id="comment-52033">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bobo</a></span> on <a href="http://www.acmerblog.com/hdu-4064-carcassonne-7067.html#comment-52033" rel="nofollow"><time datetime="2015-07-06T03:16:38+00:00" pubdate="">2015年7月6日 at 上午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-60166">
+<article class="comment" id="comment-60166">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">we</a></span> on <a href="http://www.acmerblog.com/hdu-4064-carcassonne-7067.html#comment-60166" rel="nofollow"><time datetime="2015-06-30T09:01:51+00:00" pubdate="">2015年6月30日 at 上午9:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这张页面太松散拉，重新编辑一下，弄紧凑一点。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35684">
+<article class="comment" id="comment-35684">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">youpushipop</a></span> on <a href="http://www.acmerblog.com/hdu-4064-carcassonne-7067.html#comment-35684" rel="nofollow"><time datetime="2015-05-24T07:46:49+00:00" pubdate="">2015年5月24日 at 上午7:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>使用ListNodeWrapper很蹩脚的感觉，没有更好的解决办法？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35682">
+<article class="comment" id="comment-35682">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">spiderMan</a></span> on <a href="http://www.acmerblog.com/hdu-4064-carcassonne-7067.html#comment-35682" rel="nofollow"><time datetime="2015-04-27T13:22:17+00:00" pubdate="">2015年4月27日 at 下午1:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>在方法1里面：</p>
+<p>    //遍历所有的边，计算入度<br/>
+    for(int i=0; i&lt;V; i++)<br/>
+  {<br/>
+        degree <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/>  = 0;<br/>
+        for (j = adj <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .begin(); j != adj <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .end(); ++j)<br/>
+       {<br/>
+            degree[*j]++;<br/>
+        }<br/>
+    }</p>
+<p>为什么每遍历一条链表，要首先将每个链表头的顶点的入度置为0呢？<br/>
+比如顶点5，若在顶点1、2、3、4的链表中出现过顶点5，那么要增加顶点5的入度，但是在遍历顶点5的链表时，又将顶点5的入度置为0了，那之前的从顶点1234到顶点5的边不是都没了吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35685">
+<article class="comment" id="comment-35685">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">skyand</a></span> on <a href="http://www.acmerblog.com/hdu-4064-carcassonne-7067.html#comment-35685" rel="nofollow"><time datetime="2015-04-20T15:40:18+00:00" pubdate="">2015年4月20日 at 下午3:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p><strong>bottes vernies blanches</strong></p>
+<p>I appreciate the efforts you men and women place in to share blogs on such sort of matters, it was certainly useful. Keep Posting!</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35681">
+<article class="comment" id="comment-35681">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wuzirui</a></span> on <a href="http://www.acmerblog.com/hdu-4064-carcassonne-7067.html#comment-35681" rel="nofollow"><time datetime="2015-04-18T22:25:22+00:00" pubdate="">2015年4月18日 at 下午10:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>沙发呢，我抢到了沙发</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,358 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>04-09</div>
+<div class="tit"><h1 class="entry-title">HDU 3498-whosyourdaddy-回溯和剪枝-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/search/backtracking" rel="category tag" title="查看回溯和剪枝中的全部文章">回溯和剪枝</a></span><span class="i4">围观913次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5698" href="http://www.acmerblog.com/hdu-3498-whosyourdaddy-5698.html#comments" title="《HDU 3498-whosyourdaddy-回溯和剪枝-[解题报告]HOJ》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">whosyourdaddy</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+sevenzero liked Warcraft very much, but he haven’t practiced it for several years after being addicted to algorithms. Now, though he is playing with computer, he nearly losed and only his hero Pit Lord left. sevenzero is angry, he decided to cheat to turn defeat into victory. So he entered "whosyourdaddy", that let Pit Lord kill any hostile unit he damages immediately. As all Warcrafters know, Pit Lord masters a skill called Cleaving Attack and he can damage neighbour units of the unit he attacks. Pit Lord can choice a position to attack to avoid killing partial neighbour units sevenzero don’t want to kill. Because sevenzero wants to win as soon as possible, he needs to know the minimum attack times to eliminate all the enemys. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+There are several cases. For each case, first line contains two integer N (2 ≤ N ≤ 55) and M (0 ≤ M ≤ N*N),and N is the number of hostile units. Hostile units are numbered from 1 to N. For the subsequent M lines, each line contains two integers A and B, that means A and B are neighbor. Each unit has no more than 4 neighbor units. The input is terminated by EOF. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+There are several cases. For each case, first line contains two integer N (2 ≤ N ≤ 55) and M (0 ≤ M ≤ N*N),and N is the number of hostile units. Hostile units are numbered from 1 to N. For the subsequent M lines, each line contains two integers A and B, that means A and B are neighbor. Each unit has no more than 4 neighbor units. The input is terminated by EOF.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+5 4
+1 2
+1 3
+2 4
+4 5
+6 4
+1 2
+1 3
+1 4
+4 5</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+3</pre>
+<p> <!-- problem end --></p>
+<p><span style="font-size:18px">有n个单位的敌人，对某个敌人进行攻击时该敌人以及与其直接相邻的敌人都会被消灭。问消灭所有敌人所需的最少攻击次数。</span></p>
+<p><span style="font-size:18px">重复覆盖问题。我把此题贴出来是想说剪枝优化很有必要，一个小细节就能决定是TLE还是AC。</span></p>
+<p><span style="font-size:18px"></span></p>
+<pre class="brush:cpp" name="code">#include &lt;iostream&gt;
+#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+#include &lt;algorithm&gt;
+#include &lt;cmath&gt; 
+
+using namespace std;
+
+const int maxn = 60*60 + 10;
+const int oo = 1 &lt;&lt; 30;
+const int maxrow = 60;
+const int maxcol = 60;
+int mtx[maxrow][maxcol];
+int n, m, ans;
+
+int totRow, totCol, head, idx;
+int L[maxn], R[maxn], U[maxn], D[maxn];
+int RH[maxn], CH[maxn], S[maxn];
+
+void initMtx()
+{
+    memset(mtx, 0, sizeof(mtx));
+    for (int i = 0; i &lt; n; ++i) {
+        mtx[i][i] = 1;
+    }
+    int a, b;
+    for (int i = 0; i &lt; m; ++i) {
+        scanf("%d%d", &amp;a, &amp;b);
+        a--; b--;
+        mtx[a][b] = mtx[b][a] = 1;
+    }
+}
+
+int newNode(int up, int down, int left, int right)
+{
+    U[idx] = up;    D[idx] = down;
+    L[idx] = left;  R[idx] = right;
+    U[down] = D[up] = L[right] = R[left] = idx;
+    return idx++;
+}
+
+void build()
+{
+    idx = maxn - 1;
+    head = newNode(idx, idx, idx, idx);
+    idx = 0;
+    for (int j = 0; j &lt; totCol; ++j) {
+        newNode(idx, idx, L[head], head);
+        CH[j] = j;  S[j] = 0;
+    }
+    for (int i = 0; i &lt; totRow; ++i) {
+        int k = -1;
+        for (int j = 0; j &lt; totCol; ++j) {
+            if (!mtx[i][j]) continue;
+            if (-1 == k) {
+                k = newNode(U[CH[j]], CH[j], idx, idx);
+                RH[k] = i;  CH[k] = j;  S[j]++;
+            } else {
+                k = newNode(U[CH[j]], CH[j], k, R[k]);
+                RH[k] = i;  CH[k] = j;  S[j]++;
+            }
+        }
+    }
+}
+
+void remove(int c)
+{
+    for (int i = D[c]; i != c; i = D[i]) {
+        L[R[i]] = L[i]; R[L[i]] = R[i]; /*S[CH[i]]--;*/
+    }
+}
+
+void resume(int c)
+{
+    for (int i = U[c]; i != c; i = U[i]) {
+        L[R[i]] = R[L[i]] = i; /*S[CH[i]]++;*/ 
+    }
+}
+
+/*估价函数*/
+int h()
+{
+    bool vis[maxcol];
+    memset(vis, false, sizeof(vis));
+    int ret = 0;
+    for (int i = R[head]; i != head; i = R[i]) {
+        if (!vis[i]) {
+            ret++;
+            vis[i] = true;
+            for (int j = D[i]; j != i; j = D[j]) {
+                for (int k = R[j]; k != j; k = R[k]) {
+                    vis[CH[k]] = true;
+                }
+            }
+        }
+    }
+    return ret;
+}
+
+void dance(int cnt)
+{
+    if (cnt + h() &gt;= ans) { //此处写成"&gt;"会TLE
+        return ;
+    }
+    if (R[head] == head) {
+        ans = cnt;
+        return ;
+    }
+    int c, Min = oo;
+    for (int i = R[head]; i != head; i = R[i]) {
+        if (S[i] &lt; Min) {
+            Min = S[i]; c = i;
+        }
+    }
+    for (int i = D[c]; i != c; i = D[i]) {
+        remove(i);
+        for (int j = R[i]; j != i; j = R[j]) {
+            remove(j);
+        } 
+        
+        dance(cnt + 1);
+        
+        for (int j = L[i]; j != i; j = L[j]) {
+            resume(j);
+        }
+        resume(i);
+    }
+    return ; 
+}
+
+int main()
+{
+    while (scanf("%d%d", &amp;n, &amp;m) != EOF) {
+        totRow = n; totCol = n; 
+        initMtx();
+        build();
+        ans = oo;
+        dance(0);
+        printf("%d\n", ans);
+    } 
+    return 0;
+}
+</pre>
+<p>参考：<a href="#respond">http://blog.csdn.net/ahfywff/article/details/7940737</a></p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75984">
+<article class="comment" id="comment-75984">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919532413" rel="external nofollow">新用户446456</a></span> on <a href="http://www.acmerblog.com/hdu-3498-whosyourdaddy-5698.html#comment-75984" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你应该庆幸没有装这垃圾软件</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30150">
+<article class="comment" id="comment-30150">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">silianbo</a></span> on <a href="http://www.acmerblog.com/hdu-3498-whosyourdaddy-5698.html#comment-30150" rel="nofollow"><time datetime="2015-04-14T06:56:07+00:00" pubdate="">2015年4月14日 at 上午6:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>0000</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30151">
+<article class="comment" id="comment-30151">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Anne</a></span> on <a href="http://www.acmerblog.com/hdu-3498-whosyourdaddy-5698.html#comment-30151" rel="nofollow"><time datetime="2015-02-07T18:58:20+00:00" pubdate="">2015年2月7日 at 下午6:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给力</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30146">
+<article class="comment" id="comment-30146">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">anshansh</a></span> on <a href="http://www.acmerblog.com/hdu-3498-whosyourdaddy-5698.html#comment-30146" rel="nofollow"><time datetime="2015-01-12T08:45:22+00:00" pubdate="">2015年1月12日 at 上午8:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嗯，尽量吧。题目太多了，很多解题报告是用程序自动发布的，所以就只有代码了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30148">
+<article class="comment" id="comment-30148">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">130920099</a></span> on <a href="http://www.acmerblog.com/hdu-3498-whosyourdaddy-5698.html#comment-30148" rel="nofollow"><time datetime="2015-01-09T07:24:58+00:00" pubdate="">2015年1月9日 at 上午7:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>a是根先忽略掉，递归子树。剩下前缀bejkcfghid和后缀jkebfghicd，分拆的原则的是每个子树前缀和后缀的节点个数是一样的，根节点出现在前缀的第一个，后缀的最后一个。根节点b出现后缀的第四个位置，则第一部分为四个节点，前缀bejk，后缀jkeb，剩下的c出现在后缀的倒数第2个，就划分为cfghi和 fghic，第3部分就为c、c</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30153">
+<article class="comment" id="comment-30153">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">nsoi_onion</a></span> on <a href="http://www.acmerblog.com/hdu-3498-whosyourdaddy-5698.html#comment-30153" rel="nofollow"><time datetime="2014-12-04T10:18:48+00:00" pubdate="">2014年12月4日 at 上午10:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>递归还真是一门学问，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49246">
+<article class="comment" id="comment-49246">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">vincent_ynh</a></span> on <a href="http://www.acmerblog.com/hdu-3498-whosyourdaddy-5698.html#comment-49246" rel="nofollow"><time datetime="2014-11-30T04:38:41+00:00" pubdate="">2014年11月30日 at 上午4:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>博主您好，这是一个内容十分优秀的博客，而且界面也非常漂亮。但是为什么博客的响应速度这么慢，虽然博客的主机在国外，但是我开启VPN还是经常响应很久，再者打开某些页面经常会出现数据库连接出错的提示</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49248">
+<article class="comment" id="comment-49248">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">0xc0de</a></span> on <a href="http://www.acmerblog.com/hdu-3498-whosyourdaddy-5698.html#comment-49248" rel="nofollow"><time datetime="2014-11-11T10:27:49+00:00" pubdate="">2014年11月11日 at 上午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序只能输出一个子序列</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49249">
+<article class="comment" id="comment-49249">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">09291010</a></span> on <a href="http://www.acmerblog.com/hdu-3498-whosyourdaddy-5698.html#comment-49249" rel="nofollow"><time datetime="2014-09-08T02:50:46+00:00" pubdate="">2014年9月8日 at 上午2:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有的，已更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49247">
+<article class="comment" id="comment-49247">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Christmas</a></span> on <a href="http://www.acmerblog.com/hdu-3498-whosyourdaddy-5698.html#comment-49247" rel="nofollow"><time datetime="2014-06-29T02:40:15+00:00" pubdate="">2014年6月29日 at 上午2:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个也是算法导论的习题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30152">
+<article class="comment" id="comment-30152">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zoe_music</a></span> on <a href="http://www.acmerblog.com/hdu-3498-whosyourdaddy-5698.html#comment-30152" rel="nofollow"><time datetime="2014-06-23T09:09:51+00:00" pubdate="">2014年6月23日 at 上午9:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对于第一题，我的直觉告诉我换不换都一样，求指教</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30154">
+<article class="comment" id="comment-30154">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Ailing</a></span> on <a href="http://www.acmerblog.com/hdu-3498-whosyourdaddy-5698.html#comment-30154" rel="nofollow"><time datetime="2014-06-21T20:20:59+00:00" pubdate="">2014年6月21日 at 下午8:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>最长回文子串可以使用manacher算法，将时间复杂度降到O(n)。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30149">
+<article class="comment" id="comment-30149">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">testnew</a></span> on <a href="http://www.acmerblog.com/hdu-3498-whosyourdaddy-5698.html#comment-30149" rel="nofollow"><time datetime="2014-05-12T08:10:32+00:00" pubdate="">2014年5月12日 at 上午8:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不是有公式吗？何不直接计算</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30145">
+<article class="comment" id="comment-30145">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">magichu</a></span> on <a href="http://www.acmerblog.com/hdu-3498-whosyourdaddy-5698.html#comment-30145" rel="nofollow"><time datetime="2014-05-02T06:03:30+00:00" pubdate="">2014年5月2日 at 上午6:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>思路二可以用一个长度为k的队列来实现，入队后判断下队尾元素的next指针是否为空，若为空，则出队指针即为所求。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30147">
+<article class="comment" id="comment-30147">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wawa_zmt</a></span> on <a href="http://www.acmerblog.com/hdu-3498-whosyourdaddy-5698.html#comment-30147" rel="nofollow"><time datetime="2014-04-25T17:37:39+00:00" pubdate="">2014年4月25日 at 下午5:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>题本身没错，但是HDOJ放题目的时候，前面有个题目解释了什么是XXX定律。<br/>
+这里直接放了这个题目，肯定没几个人明白是干啥</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

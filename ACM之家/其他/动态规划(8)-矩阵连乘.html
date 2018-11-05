@@ -1,0 +1,404 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-13</div>
+<div class="tit"><h1 class="entry-title">动态规划(8)-矩阵连乘</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/zhuanti/algorithm" rel="category tag" title="查看算法分析中的全部文章">算法分析</a></span><span class="i4">围观2325次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5086" href="http://www.acmerblog.com/dp8-matrix-chain-multiplication-5086.html#comments" title="《动态规划(8)-矩阵连乘》上的评论">25 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p><span style="font-family: 宋体;">给定</span>n<span style="font-family: 宋体;">个矩阵</span>{A<sub>1</sub>,A<sub>2</sub>,…,A<sub>n</sub>}<span style="font-family: 宋体;">，其中</span>A<sub>i</sub><span style="font-family: 宋体;">与</span>A<sub>i+1</sub><span style="font-family: 宋体;">是可乘的，</span>i=1,2,…,n-1<span style="font-family: 宋体;">。考察这</span>n<span style="font-family: 宋体;">个矩阵的连乘积</span>A<sub>1</sub>A<sub>2</sub>…A<sub>n</sub><span style="font-family: 宋体;">。由于矩阵乘法满足结合律，故计算矩阵的连乘积可以有许多不同的计算次序，这种计算次序可以用加括号的方式来确定。若一个矩阵连乘积的计算次序完全确定，则可以依此次序反复调用</span>2<span style="font-family: 宋体;">个矩阵相乘的标准算法（有改进的方法，这里不考虑）计算出矩阵连乘积。若</span>A<span style="font-family: 宋体;">是一个</span>p×q<span style="font-family: 宋体;">矩阵，</span>B<span style="font-family: 宋体;">是一个</span>q×r<span style="font-family: 宋体;">矩阵，则计算其乘积</span>C=AB<span style="font-family: 宋体;">的标准算法中，需要进行</span>pqr<span style="font-family: 宋体;">次数乘。</span></p>
+<p>例如，如果我们有四个矩阵A，B，C和D，我们将有：</p>
+<pre class="brush:other">    （ABC）D =（AB）（CD）= A（BCD）= ....</pre>
+<p>不同组合得到的运算次数是不同的，例如A为  10 × 30 , B为 30 × 5 , C 为 5 × 60 那么</p>
+<pre class="brush:other">    (AB)C = (10×30×5) + (10×5×60) = 1500 + 3000 = 4500 次运算
+    A(BC) = (30×5×60) + (10×30×60) = 9000 + 18000 = 27000 次运算</pre>
+<p>很明显第一种运算更为高效。</p>
+<p>问题：给定一个数组P[]表示矩阵的链，使得第i个矩阵Ai  的维数为 p[i-1] x p[i].。我们需要写一个函数MatrixChainOrder（）返回这个矩阵连相乘最小的运算次数。</p>
+<p>示例：</p>
+<pre class="brush:other">输入：P [] = {40，20，30，10，30}   
+输出：26000  
+有4个矩阵维数为 40X20，20X30，30×10和10X30。
+运算次数最少的计算方式为：
+（A（BC））D  - &gt; 20 * 30 * 10 +40 * 20 * 10 +40 * 10 * 30
+
+输入：P[] = {10，20，30，40，30} 
+输出：30000
+有4个矩阵维数为 10×20，20X30，30X40和40X30。 
+运算次数最少的计算方式为：
+  （（AB）C）D  - &gt; 10 * 20 * 30 +10 * 30 * 40 +10 * 40 * 30</pre>
+<p><strong>1）最优子结构：</strong></p>
+<p>一个简单的解决办法是把括号放在所有可能的地方，计算每个位置的成本，并返回最小值。对于一个长度为n的链，我们有n-1种方法放置第一组括号。</p>
+<p><span>例如，如果给定的链是4个矩阵。</span><span>让矩阵连为ABCD，则有3种方式放第一组括号：A（BCD），（AB）CD和（ABC）D。</span></p>
+<p><span>所以，当我们把一组括号，我们把问题分解成更小的尺寸的子问题。</span><span>因此，这个问题具有最优子结构性质，可以使用递归容易解决。</span></p>
+<p><strong><span>2）重叠子问题</span></strong><br/>
+<span><span>以下是递归的实现，只需用到上面的最优子结构性质。</span></span></p>
+<pre class="brush:cpp">//直接的递归解决
+#include&lt;stdio.h&gt;
+#include&lt;limits.h&gt;
+//矩阵 Ai 的维数为 p[i-1] x p[i] ( i = 1..n )
+int MatrixChainOrder(int p[], int i, int j)
+{
+    if(i == j)
+        return 0;
+    int k;
+    int min = INT_MAX;
+    int count;
+
+    // 在第一个和最后一个矩阵直接放置括号
+    //递归计算每个括号，并返回最小的值
+    for (k = i; k &lt;j; k++)
+    {
+        count = MatrixChainOrder(p, i, k) +
+                MatrixChainOrder(p, k+1, j) +
+                p[i-1]*p[k]*p[j];
+
+        if (count &lt; min)
+            min = count;
+    }
+
+    return min;
+}
+
+// 测试
+int main()
+{
+    int arr[] = {1, 2, 3, 4, 3};
+    int n = sizeof(arr)/sizeof(arr[0]);
+    printf("Minimum number of multiplications is %d ", 
+                          MatrixChainOrder(arr, 1, n-1));
+
+    getchar();
+    return 0;
+}</pre>
+<p>上面直接的递归方法的复杂性是指数级。当然可以用记忆化存储优化。<span>应当指出的是，上述函数反复计算相同的子问题。</span><span>请参阅下面的递归树的大小4的矩阵链。</span><span>函数MatrixChainOrder（3，4）被调用两次。</span><span>我们可以看到，有许多子问题被多次调用。</span></p>
+<div class="wp-caption alignnone" id="attachment_5090" style="width: 310px"><a href="http://cdn.acmerblog.com/wp-content/uploads/2014/03/MatrixChain1.jpg"><img alt="MatrixChain" class="size-medium wp-image-5090" height="121" src="http://cdn.acmerblog.com/wp-content/uploads/2014/03/MatrixChain1-300x121.jpg" title="MatrixChain" width="300"/></a><p class="wp-caption-text">MatrixChain</p></div>
+<p> </p>
+<p><strong><span>动态规划解决方案</span></strong><br/>
+<span><span>以下是C / C + +实现，使用动态规划矩阵链乘法问题。</span></span></p>
+<pre class="brush:cpp">#include&lt;stdio.h&gt;
+#include&lt;limits.h&gt;
+
+int MatrixChainOrder(int p[], int n)
+{
+
+    /* 第0行第0列其实没用到 */
+    int m[n][n];
+
+    int i, j, k, L, q;
+
+    //单个矩阵相乘，所需数乘次数为0
+    for (i = 1; i &lt; n; i++)
+        m[i][i] = 0;
+
+     //以下两个循环是关键之一，以6个矩阵为例(为描述方便，m[i][j]用ij代替)
+     //需按照如下次序计算
+     //01 12 23 34 45
+     //02 13 24 35
+     //03 14 25
+     //04 15
+     //05
+     //下面行的计算结果将会直接用到上面的结果。例如要计算14，就会用到12，24；或者13，34等等
+    for (L=2; L&lt;n; L++)   
+    {
+        for (i=1; i&lt;=n-L+1; i++)
+        {
+            j = i+L-1;
+            m[i][j] = INT_MAX;
+            for (k=i; k&lt;=j-1; k++)
+            {
+                q = m[i][k] + m[k+1][j] + p[i-1]*p[k]*p[j];
+                if (q &lt; m[i][j])
+                    m[i][j] = q;
+            }
+        }
+    }
+
+    return m[1][n-1];
+}
+
+int main()
+{
+    int arr[] = {1, 2, 3, 4};
+    int size = sizeof(arr)/sizeof(arr[0]);
+
+    printf("Minimum number of multiplications is %d ",
+                       MatrixChainOrder(arr, size));
+
+    getchar();
+    return 0;
+}</pre>
+<p>时间复杂度: O(n^3)<br/>
+空间复杂度: O(n^2)</p>
+<p>参考：http://www.geeksforgeeks.org/dynamic-programming-set-8-matrix-chain-multiplication/</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-77934">
+<article class="comment" id="comment-77934">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516638" rel="external nofollow">新用户435561</a></span> on <a href="http://www.acmerblog.com/dp8-matrix-chain-multiplication-5086.html#comment-77934" rel="nofollow"><time datetime="2017-04-12T10:53:28+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>下面的表演时————一秒钟上炕</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77933">
+<article class="comment" id="comment-77933">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516638" rel="external nofollow">新用户435561</a></span> on <a href="http://www.acmerblog.com/dp8-matrix-chain-multiplication-5086.html#comment-77933" rel="nofollow"><time datetime="2017-04-12T10:53:28+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>下面的表演时————一秒钟上炕</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77932">
+<article class="comment" id="comment-77932">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516638" rel="external nofollow">新用户435561</a></span> on <a href="http://www.acmerblog.com/dp8-matrix-chain-multiplication-5086.html#comment-77932" rel="nofollow"><time datetime="2017-04-12T10:53:28+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>下面的表演时————一秒钟上炕</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77931">
+<article class="comment" id="comment-77931">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516638" rel="external nofollow">新用户435561</a></span> on <a href="http://www.acmerblog.com/dp8-matrix-chain-multiplication-5086.html#comment-77931" rel="nofollow"><time datetime="2017-04-12T10:53:28+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>下面的表演时————一秒钟上炕</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77930">
+<article class="comment" id="comment-77930">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516638" rel="external nofollow">新用户435561</a></span> on <a href="http://www.acmerblog.com/dp8-matrix-chain-multiplication-5086.html#comment-77930" rel="nofollow"><time datetime="2017-04-12T10:53:28+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>下面的表演时————一秒钟上炕</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77929">
+<article class="comment" id="comment-77929">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516638" rel="external nofollow">新用户435561</a></span> on <a href="http://www.acmerblog.com/dp8-matrix-chain-multiplication-5086.html#comment-77929" rel="nofollow"><time datetime="2017-04-12T10:53:28+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>下面的表演时————一秒钟上炕</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77928">
+<article class="comment" id="comment-77928">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516638" rel="external nofollow">新用户435561</a></span> on <a href="http://www.acmerblog.com/dp8-matrix-chain-multiplication-5086.html#comment-77928" rel="nofollow"><time datetime="2017-04-12T10:53:28+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>下面的表演时————一秒钟上炕</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77927">
+<article class="comment" id="comment-77927">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516638" rel="external nofollow">新用户435561</a></span> on <a href="http://www.acmerblog.com/dp8-matrix-chain-multiplication-5086.html#comment-77927" rel="nofollow"><time datetime="2017-04-12T10:53:28+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>下面的表演时————一秒钟上炕</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77926">
+<article class="comment" id="comment-77926">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516638" rel="external nofollow">新用户435561</a></span> on <a href="http://www.acmerblog.com/dp8-matrix-chain-multiplication-5086.html#comment-77926" rel="nofollow"><time datetime="2017-04-12T10:53:28+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>下面的表演时————一秒钟上炕</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77925">
+<article class="comment" id="comment-77925">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516638" rel="external nofollow">新用户435561</a></span> on <a href="http://www.acmerblog.com/dp8-matrix-chain-multiplication-5086.html#comment-77925" rel="nofollow"><time datetime="2017-04-12T10:53:28+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>下面的表演时————一秒钟上炕</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77924">
+<article class="comment" id="comment-77924">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516638" rel="external nofollow">新用户435561</a></span> on <a href="http://www.acmerblog.com/dp8-matrix-chain-multiplication-5086.html#comment-77924" rel="nofollow"><time datetime="2017-04-12T10:53:28+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>下面的表演时————一秒钟上炕</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28619">
+<article class="comment" id="comment-28619">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fermi</a></span> on <a href="http://www.acmerblog.com/dp8-matrix-chain-multiplication-5086.html#comment-28619" rel="nofollow"><time datetime="2015-06-23T17:45:14+00:00" pubdate="">2015年6月23日 at 下午5:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28618">
+<article class="comment" id="comment-28618">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">489365227</a></span> on <a href="http://www.acmerblog.com/dp8-matrix-chain-multiplication-5086.html#comment-28618" rel="nofollow"><time datetime="2015-06-21T20:32:16+00:00" pubdate="">2015年6月21日 at 下午8:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>题目需要求解的是最小值，而且没有考虑可能存在环</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28614">
+<article class="comment" id="comment-28614">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">liuyuedeyu</a></span> on <a href="http://www.acmerblog.com/dp8-matrix-chain-multiplication-5086.html#comment-28614" rel="nofollow"><time datetime="2015-06-14T00:50:37+00:00" pubdate="">2015年6月14日 at 上午12:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个系列很不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28611">
+<article class="comment" id="comment-28611">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xuelanghu</a></span> on <a href="http://www.acmerblog.com/dp8-matrix-chain-multiplication-5086.html#comment-28611" rel="nofollow"><time datetime="2015-03-20T19:07:38+00:00" pubdate="">2015年3月20日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>红绯鱼：<br/>
+这模板神了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28612">
+<article class="comment" id="comment-28612">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">litao</a></span> on <a href="http://www.acmerblog.com/dp8-matrix-chain-multiplication-5086.html#comment-28612" rel="nofollow"><time datetime="2015-02-05T05:57:18+00:00" pubdate="">2015年2月5日 at 上午5:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>5.1处，反了；“上一个操作符的优先级比操作符ch的优先级大，或栈是空的就入栈。”如代码所述，应为“上一个操作符的优先级比操作符ch的优先级小，或栈是空的就入栈。”</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28617">
+<article class="comment" id="comment-28617">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fanxianxian</a></span> on <a href="http://www.acmerblog.com/dp8-matrix-chain-multiplication-5086.html#comment-28617" rel="nofollow"><time datetime="2015-01-20T22:22:42+00:00" pubdate="">2015年1月20日 at 下午10:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序员会算法，等于一个古惑仔带了zhi抢啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28615">
+<article class="comment" id="comment-28615">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Happiness</a></span> on <a href="http://www.acmerblog.com/dp8-matrix-chain-multiplication-5086.html#comment-28615" rel="nofollow"><time datetime="2015-01-09T12:04:15+00:00" pubdate="">2015年1月9日 at 下午12:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/d8/good_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28610">
+<article class="comment" id="comment-28610">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wawa</a></span> on <a href="http://www.acmerblog.com/dp8-matrix-chain-multiplication-5086.html#comment-28610" rel="nofollow"><time datetime="2015-01-04T07:49:12+00:00" pubdate="">2015年1月4日 at 上午7:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>int L[m+1][n+1];这样定义出错，这个在gcc上可以编译通过 在VS上不行 应该改为new 或者vector</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48363">
+<article class="comment" id="comment-48363">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">pascal</a></span> on <a href="http://www.acmerblog.com/dp8-matrix-chain-multiplication-5086.html#comment-48363" rel="nofollow"><time datetime="2014-12-31T20:46:38+00:00" pubdate="">2014年12月31日 at 下午8:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>27行 minStack.push(minValue); 去掉就对了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28613">
+<article class="comment" id="comment-28613">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaotongtest</a></span> on <a href="http://www.acmerblog.com/dp8-matrix-chain-multiplication-5086.html#comment-28613" rel="nofollow"><time datetime="2014-10-26T23:48:44+00:00" pubdate="">2014年10月26日 at 下午11:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>if(j){<br/>
+                    int ans=a <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> ;<br/>
+                    for(int x=j-1;x&gt;=0;x–){<br/>
+                        if(!a <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/d7/newx_org.gif"/> ) break;<br/>
+                        ans=min(ans,a <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/d7/newx_org.gif"/> );<br/>
+                        sum+=ans;<br/>
+                    }<br/>
+                }<br/>
+求解释，，dp的思路是什么呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58292">
+<article class="comment" id="comment-58292">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">room306</a></span> on <a href="http://www.acmerblog.com/dp8-matrix-chain-multiplication-5086.html#comment-58292" rel="nofollow"><time datetime="2014-10-09T06:23:14+00:00" pubdate="">2014年10月9日 at 上午6:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>递归还真是一门学问，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58291">
+<article class="comment" id="comment-58291">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ygxqqx</a></span> on <a href="http://www.acmerblog.com/dp8-matrix-chain-multiplication-5086.html#comment-58291" rel="nofollow"><time datetime="2014-10-08T19:19:28+00:00" pubdate="">2014年10月8日 at 下午7:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个系列很不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28616">
+<article class="comment" id="comment-28616">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Klaus</a></span> on <a href="http://www.acmerblog.com/dp8-matrix-chain-multiplication-5086.html#comment-28616" rel="nofollow"><time datetime="2014-06-24T10:03:57+00:00" pubdate="">2014年6月24日 at 上午10:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你指的哪个问题？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28620">
+<article class="comment" id="comment-28620">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gyouxu</a></span> on <a href="http://www.acmerblog.com/dp8-matrix-chain-multiplication-5086.html#comment-28620" rel="nofollow"><time datetime="2014-06-21T05:55:17+00:00" pubdate="">2014年6月21日 at 上午5:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>.net中char类型不是两个字节么</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

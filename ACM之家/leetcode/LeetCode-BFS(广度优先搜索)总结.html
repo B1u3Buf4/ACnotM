@@ -1,0 +1,456 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>11-30</div>
+<div class="tit"><h1 class="entry-title">LeetCode-BFS(广度优先搜索)总结</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/bfs" rel="category tag" title="查看BFS搜索中的全部文章">BFS搜索</a>, <a href="http://www.acmerblog.com/category/problemset/leetcode" rel="category tag" title="查看LeetCode中的全部文章">LeetCode</a></span><span class="i4">围观1632次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6431" href="http://www.acmerblog.com/leetcode-bfs-6431.html#comments" title="《LeetCode-BFS(广度优先搜索)总结》上的评论">21 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p><strong>适用场景</strong><br/>
+输入数据：没什么特征，不像深搜，需要有“递归”的性质。如果是树或者图，概率更大。<br/>
+状态转换图：树或者图。<br/>
+求解目标：求最短。<br/>
+<strong>思考的步骤</strong><br/>
+1. 是求路径长度，还是路径本身（或动作序列）？<br/>
+(a) 如果是求路径长度，则状态里面要存路径长度（或双队列+ 一个全局变量）<br/>
+(b) 如果是求路径本身或动作序列<br/>
+i. 要用一棵树存储宽搜过程中的路径<br/>
+ii. 是否可以预估状态个数的上限？能够预估状态总数，则开一个大数组，用树的双亲<br/>
+表示法；如果不能预估状态总数，则要使用一棵通用的树。这一步也是第4 步的必<br/>
+要不充分条件。<br/>
+2. 如何表示状态？即一个状态需要存储哪些些必要的数据，才能够完整提供如何扩展到下一步<br/>
+状态的所有信息。一般记录当前位置或整体局面。<br/>
+3. 如何扩展状态？这一步跟第2 步相关。状态里记录的数据不同，扩展方法就不同。对于固定<br/>
+不变的数据结构（一般题目直接给出，作为输入数据），如二叉树，图等，扩展方法很简单，直接往下一层走，对于隐式图，要先在第1 步里想清楚状态所带的数据，想清楚了这点，那如何扩展就很简单了。</p>
+<p>4. 关于判重，状态是否存在完美哈希方案？即将状态一一映射到整数，互相之间不会冲突。<br/>
+(a) 如果不存在，则需要使用通用的哈希表（自己实现或用标准库，例如unordered_set）<br/>
+来判重；自己实现哈希表的话，如果能够预估状态个数的上限，则可以开两个数组，head<br/>
+和next，表示哈希表，参考第§??节方案2。<br/>
+(b) 如果存在，则可以开一个大布尔数组，作为哈希表来判重，且此时可以精确计算出状态<br/>
+总数，而不仅仅是预估上限。<br/>
+5. 目标状态是否已知？如果题目已经给出了目标状态，可以带来很大便利，这时候可以从起始<br/>
+状态出发，正向广搜；也可以从目标状态出发，逆向广搜；也可以同时出发，双向广搜。</p>
+<h3><strong>代码模板</strong></h3>
+<p>广搜需要一个队列，用于一层一层扩展，一个hashset，用于判重，一棵树（只求长度时不需<br/>
+要），用于存储整棵树。<br/>
+对于队列，可以用queue，也可以把vector 当做队列使用。当求长度时，有两种做法：<br/>
+1. 只用一个队列，但在状态结构体state_t 里增加一个整数字段step，表示走到当前状态用<br/>
+了多少步，当碰到目标状态，直接输出step 即可。这个方案，可以很方便的变成A* 算法，<br/>
+把队列换成优先队列即可。<br/>
+2. 用两个队列，current, next，分别表示当前层次和下一层，另设一个全局整数level，表<br/>
+示层数（也即路径长度），当碰到目标状态，输出level 即可。这个方案，状态可以少一个字<br/>
+段，节省内存。<br/>
+对于hashset，如果有完美哈希方案，用布尔数组(bool visited[STATE_MAX] 或vector&lt;bool&gt; visited(STATE_MAX, false)) 来表示；如果没有，可以用STL 里的set 或unordered_set。<br/>
+对于树，如果用STL，可以用unordered_map&lt;state_t, state_t &gt; father 表示一颗树，代码非<br/>
+常简洁。如果能够预估状态总数的上限（设为STATE_MAX），可以用数组(state_t nodes[STATE_-MAX])，即树的双亲表示法来表示树，效率更高，当然，需要写更多代码。<br/>
+<strong>双队列的写法</strong></p>
+<pre class="brush:cpp">/** 状态 */
+struct state_t {
+    int data1;  /** 状态的数据，可以有多个字段. */
+    int data2;  /** 状态的数据，可以有多个字段. */
+    // dataN;   /** 其他字段 */
+    int action; /** 由父状态移动到本状态的动作，求动作序列时需要. */
+    int count;  /** 所花费的步骤数（也即路径长度-1），求路径长度时需要；
+                    不过，采用双队列时不需要本字段，只需全局设一个整数 */
+    bool operator==(const state_t &amp;other) const {
+        return true;  // 根据具体问题实现
+    }
+};
+
+// 定义hash函数
+
+// 方法1：模板特化，当hash函数只需要状态本身，不需要其他数据时，用这个方法比较简洁
+namespace std {
+template&lt;&gt; struct hash&lt;state_t&gt; {
+    size_t operator()(const state_t &amp; x) const {
+        return 0; // 根据具体问题实现
+    }
+};
+}
+
+// 方法2：函数对象，如果hash函数需要运行时数据，则用这种方法
+class Hasher {
+public:
+    Hasher(int _m) : m(_m) {};
+    size_t operator()(const state_t &amp;s) const {
+        return 0; // 根据具体问题实现
+    }
+private:
+    int m; // 存放外面传入的数据
+};
+
+/**
+ * @brief 反向生成路径.
+ * @param[in] father 树
+ * @param[in] target 目标节点
+ * @return 从起点到target的路径
+ */
+template&lt;typename state_t&gt;
+vector&lt;state_t&gt; gen_path(const unordered_map&lt;state_t, state_t&gt; &amp;father,
+        const state_t &amp;target) {
+    vector&lt;state_t&gt; path;
+    path.push_back(target);
+
+    for (state_t cur = target; father.find(cur) != father.end(); 
+            cur = father.at(cur))
+        path.push_back(cur);
+
+    reverse(path.begin(), path.end());
+
+    return path;
+}
+
+/**
+ * @brief 广搜.
+ * @param[in] state_t 状态，如整数，字符串，一维数组等
+ * @param[in] start 起点
+ * @param[in] grid 输入数据
+ * @return 从起点到目标状态的一条最短路径
+ */
+template&lt;typename state_t&gt;
+vector&lt;state_t&gt; bfs(const state_t &amp;start, const vector&lt;vector&lt;int&gt;&gt; &amp;grid) {
+    queue&lt;state_t&gt; next, current; // 当前层，下一层
+    unordered_set&lt;state_t&gt; visited; // 判重
+    unordered_map&lt;state_t, state_t&gt; father; // 树
+
+    int level = 0;  // 层次
+    bool found = false; // 是否找到目标
+    state_t target; // 符合条件的目标状态
+
+    // 判断当前状态是否为所求目标
+    auto state_is_target = [&amp;](const state_t &amp;s) {return true; };
+    // 扩展当前状态
+    auto state_extend = [&amp;](const state_t &amp;s) {
+        vector&lt;state_t&gt; result;
+        // ...
+        return result;
+    };
+
+    current.push(start);
+    visited.insert(start);
+    while (!current.empty() &amp;&amp; !found) {
+        ++level;
+        while (!current.empty() &amp;&amp; !found) {
+            const state_t state = current.front();
+            current.pop();
+            vector&lt;state_t&gt; new_states = state_extend(state);
+            for (auto iter = new_states.cbegin();
+                    iter != new_states.cend() &amp;&amp; ! found; ++iter) {
+                const state_t new_state(*iter);
+
+                if (state_is_target(new_state)) {
+                    found = true; //找到了
+                    target = new_state;
+                    father[new_state] = state;
+                    break;
+                }
+
+                next.push(new_state);
+                // visited.insert(new_state); 必须放到 state_extend()里
+                father[new_state] = state;
+            }
+        }
+        swap(next, current); //!!! 交换两个队列
+    }
+
+    if (found) {
+        return gen_path(father, target);
+        //return level + 1;
+    } else {
+        return vector&lt;state_t&gt;();
+        //return 0;
+    }
+}</pre>
+<p><strong>只用一个队列的写法</strong><br/>
+双队列的写法，当求路径长度时，不需要在状态里设置一个count 字段记录路径长度，只需全<br/>
+局设置一个整数level，比较节省内存；只用一个队列的写法，当求路径长度时，需要在状态里设<br/>
+置一个count 字段，不过，这种写法有一个好处——可以很容易的变为A* 算法，把queue 替换为<br/>
+priority_queue 即可。</p>
+<pre class="brush:cpp">// 与模板1相同的部分，不再重复
+// ...
+
+/**
+ * @brief 广搜.
+ * @param[in] state_t 状态，如整数，字符串，一维数组等
+ * @param[in] start 起点
+ * @param[in] grid 输入数据
+ * @return 从起点到目标状态的一条最短路径
+ */
+template&lt;typename state_t&gt;
+vector&lt;state_t&gt; bfs(state_t &amp;start, const vector&lt;vector&lt;int&gt;&gt; &amp;grid) {
+    queue&lt;state_t&gt; q; // 队列
+    unordered_set&lt;state_t&gt; visited; // 判重
+    unordered_map&lt;state_t, state_t&gt; father; // 树
+
+    int level = 0;  // 层次
+    bool found = false; // 是否找到目标
+    state_t target; // 符合条件的目标状态
+
+    // 判断当前状态是否为所求目标
+    auto state_is_target = [&amp;](const state_t &amp;s) {return true; };
+    // 扩展当前状态
+    auto state_extend = [&amp;](const state_t &amp;s) {
+        vector&lt;state_t&gt; result;
+        // ...
+        return result;
+    };
+
+    start.count = 0;
+    q.push(start);
+    visited.insert(start);
+    while (!q.empty() &amp;&amp; !found) {
+        const state_t state = q.front();
+        q.pop();
+        vector&lt;state_t&gt; new_states = state_extend(state);
+        for (auto iter = new_states.cbegin();
+                iter != new_states.cend() &amp;&amp; ! found; ++iter) {
+            const state_t new_state(*iter);
+
+            if (state_is_target(new_state)) {
+                found = true; //找到了
+                target = new_state;
+                father[new_state] = state;
+                break;
+            }
+
+            q.push(new_state);
+            // visited.insert(new_state); 必须放到 state_extend()里
+            father[new_state] = state;
+        }
+    }
+
+    if (found) {
+        return gen_path(father, target);
+        //return level + 1;
+    } else {
+        return vector&lt;state_t&gt;();
+        //return 0;
+    }
+}</pre>
+<p>转自：<a href="https://github.com/soulmachine/leetcode">https://github.com/soulmachine/leetcode</a>  作者：戴方勤(soulmachine@gmail.com)</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-73289">
+<article class="comment" id="comment-73289">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524880" rel="external nofollow">新用户124099</a></span> on <a href="http://www.acmerblog.com/leetcode-bfs-6431.html#comment-73289" rel="nofollow"><time datetime="2017-04-11T22:05:33+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那青年用一副死乞白赖的语调，甜甜的说。 </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-73288">
+<article class="comment" id="comment-73288">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524880" rel="external nofollow">新用户124099</a></span> on <a href="http://www.acmerblog.com/leetcode-bfs-6431.html#comment-73288" rel="nofollow"><time datetime="2017-04-11T22:05:33+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那青年用一副死乞白赖的语调，甜甜的说。 </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-73287">
+<article class="comment" id="comment-73287">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524880" rel="external nofollow">新用户124099</a></span> on <a href="http://www.acmerblog.com/leetcode-bfs-6431.html#comment-73287" rel="nofollow"><time datetime="2017-04-11T22:05:33+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那青年用一副死乞白赖的语调，甜甜的说。 </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-73286">
+<article class="comment" id="comment-73286">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524880" rel="external nofollow">新用户124099</a></span> on <a href="http://www.acmerblog.com/leetcode-bfs-6431.html#comment-73286" rel="nofollow"><time datetime="2017-04-11T22:05:33+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那青年用一副死乞白赖的语调，甜甜的说。 </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-73285">
+<article class="comment" id="comment-73285">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524880" rel="external nofollow">新用户124099</a></span> on <a href="http://www.acmerblog.com/leetcode-bfs-6431.html#comment-73285" rel="nofollow"><time datetime="2017-04-11T22:05:33+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那青年用一副死乞白赖的语调，甜甜的说。 </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-73284">
+<article class="comment" id="comment-73284">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524880" rel="external nofollow">新用户124099</a></span> on <a href="http://www.acmerblog.com/leetcode-bfs-6431.html#comment-73284" rel="nofollow"><time datetime="2017-04-11T22:05:33+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那青年用一副死乞白赖的语调，甜甜的说。 </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-73283">
+<article class="comment" id="comment-73283">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524880" rel="external nofollow">新用户124099</a></span> on <a href="http://www.acmerblog.com/leetcode-bfs-6431.html#comment-73283" rel="nofollow"><time datetime="2017-04-11T22:05:33+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那青年用一副死乞白赖的语调，甜甜的说。 </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50853">
+<article class="comment" id="comment-50853">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">753951</a></span> on <a href="http://www.acmerblog.com/leetcode-bfs-6431.html#comment-50853" rel="nofollow"><time datetime="2015-07-14T07:48:29+00:00" pubdate="">2015年7月14日 at 上午7:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有意思，有难度</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59507">
+<article class="comment" id="comment-59507">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tangzhihua</a></span> on <a href="http://www.acmerblog.com/leetcode-bfs-6431.html#comment-59507" rel="nofollow"><time datetime="2015-07-13T13:47:40+00:00" pubdate="">2015年7月13日 at 下午1:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>I like your publish. It is great to see you verbalize from the coronary heart and clarity on this essential subject matter can be easily noticed.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50854">
+<article class="comment" id="comment-50854">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">20122256</a></span> on <a href="http://www.acmerblog.com/leetcode-bfs-6431.html#comment-50854" rel="nofollow"><time datetime="2015-07-11T15:37:20+00:00" pubdate="">2015年7月11日 at 下午3:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>红绯鱼：<br/>
+牛逼牛逼</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33125">
+<article class="comment" id="comment-33125">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">edward2414</a></span> on <a href="http://www.acmerblog.com/leetcode-bfs-6431.html#comment-33125" rel="nofollow"><time datetime="2015-06-17T21:31:57+00:00" pubdate="">2015年6月17日 at 下午9:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算法是程序的灵魂，算法分简单和复杂，如果不搞大数据类，程序员了解一下简单点的算法也是可以的，但是会算法的一定要会编程才行，程序员不一定要会算法，利于自己项目需要的可以简单了解。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-59502">
+<article class="comment" id="comment-59502">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hong0220</a></span> on <a href="http://www.acmerblog.com/leetcode-bfs-6431.html#comment-59502" rel="nofollow"><time datetime="2015-05-23T09:39:05+00:00" pubdate="">2015年5月23日 at 上午9:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法挺不错。NewHead代表新的头节点，通过递归找到最后一个节点之后，就把这个节点赋给NewHead，然后一直返回返回，中途这个值是没有变化的，一边返回一边把相应的指针方向颠倒，最后结束时返回新的头节点到主函数。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59505">
+<article class="comment" id="comment-59505">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mechine</a></span> on <a href="http://www.acmerblog.com/leetcode-bfs-6431.html#comment-59505" rel="nofollow"><time datetime="2015-05-23T04:10:17+00:00" pubdate="">2015年5月23日 at 上午4:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>涨姿势了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-59506">
+<article class="comment" id="comment-59506">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangdilj</a></span> on <a href="http://www.acmerblog.com/leetcode-bfs-6431.html#comment-59506" rel="nofollow"><time datetime="2015-05-09T02:00:55+00:00" pubdate="">2015年5月9日 at 上午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>原来的主机不行，目前更换到了国内主机</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63973">
+<article class="comment" id="comment-63973">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">PriceKiller</a></span> on <a href="http://www.acmerblog.com/leetcode-bfs-6431.html#comment-63973" rel="nofollow"><time datetime="2015-04-29T20:25:33+00:00" pubdate="">2015年4月29日 at 下午8:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50856">
+<article class="comment" id="comment-50856">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">we</a></span> on <a href="http://www.acmerblog.com/leetcode-bfs-6431.html#comment-50856" rel="nofollow"><time datetime="2015-03-18T03:05:08+00:00" pubdate="">2015年3月18日 at 上午3:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>问题3中，GetRightPosition()和GetLeftPosition()与STL中的upper_bound()和lower_boune()的代码实现一样吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59504">
+<article class="comment" id="comment-59504">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaoriqiang2</a></span> on <a href="http://www.acmerblog.com/leetcode-bfs-6431.html#comment-59504" rel="nofollow"><time datetime="2015-03-10T18:14:09+00:00" pubdate="">2015年3月10日 at 下午6:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>helpful！！ mark</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33124">
+<article class="comment" id="comment-33124">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bluesky</a></span> on <a href="http://www.acmerblog.com/leetcode-bfs-6431.html#comment-33124" rel="nofollow"><time datetime="2015-03-05T11:55:46+00:00" pubdate="">2015年3月5日 at 上午11:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>remove没有实现</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50855">
+<article class="comment" id="comment-50855">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xrjervis</a></span> on <a href="http://www.acmerblog.com/leetcode-bfs-6431.html#comment-50855" rel="nofollow"><time datetime="2015-03-04T01:06:46+00:00" pubdate="">2015年3月4日 at 上午1:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>如果两个序列的最后字符不匹配（即X [M-1]！= Y [N-1]）<br/>
+L（X [0 .. M-1]，Y [0 .. N-1]）= MAX（L（X [0 .. M-2]，Y [0 .. N-1]），L（X [0 .. M-1]，Y [0 .. N-1]）<br/>
+这里写错了吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50852">
+<article class="comment" id="comment-50852">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Aliens</a></span> on <a href="http://www.acmerblog.com/leetcode-bfs-6431.html#comment-50852" rel="nofollow"><time datetime="2015-02-01T00:45:00+00:00" pubdate="">2015年2月1日 at 上午12:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>后面的是python代码啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59503">
+<article class="comment" id="comment-59503">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">cyyuen</a></span> on <a href="http://www.acmerblog.com/leetcode-bfs-6431.html#comment-59503" rel="nofollow"><time datetime="2014-12-21T19:55:04+00:00" pubdate="">2014年12月21日 at 下午7:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>楼主 为什么输入的形式都不对  题目是不是弄错了？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

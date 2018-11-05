@@ -1,0 +1,339 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-06</div>
+<div class="tit"><h1 class="entry-title">HDU 3208-Integer’s Power-组合数学-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/math/combination" rel="category tag" title="查看组合数学中的全部文章">组合数学</a></span><span class="i4">围观456次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5041" href="http://www.acmerblog.com/hdu-3208-integers-power-5041.html#comments" title="《HDU 3208-Integer’s Power-组合数学-[解题报告]HOJ》上的评论">19 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Integer’s Power</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+LMY and YY are number theory lovers. They like to find and solve some interesting number theory problems together. One day, they become interested in some special numbers, which can be expressed as powers of smaller numbers.
+<p>For example, 9=3^2, 64=2^6, 1000=10^3 …</p>
+<p>For a given positive integer y, if we can find a largest integer k and a smallest positive integer x, such that x^k=y, then the power of y is regarded as k.<br/>It is very easy to find the power of an integer. For example:</p>
+<p>The power of 9 is 2.<br/>The power of 64 is 6.<br/>The power of 1000 is 3.<br/>The power of 99 is 1.<br/>The power of 1 does not exist.</p>
+<p>But YY wants to calculate the sum of the power of the integers from a to b. It seems not easy. Can you help him? </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input consists of multiple test cases.<br/>For each test case, there is one line containing two integers a and b. (2&lt;=a&lt;=b&lt;=10^18)
+<p>End of input is indicated by a line containing two zeros. </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input consists of multiple test cases.<br/>For each test case, there is one line containing two integers a and b. (2&lt;=a&lt;=b&lt;=10^18)
+<p>End of input is indicated by a line containing two zeros.</p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2 10
+248832 248832
+0 0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+13
+5</pre>
+<p> <!-- problem end --></p>
+<p>容斥原理</p>
+<p>引入：已知x=y^k,(x,y,k正整数)，要使k最大，即y最小。<br/>输入a,b;计算[a,b]中的数的k的和，(2&lt;=a&lt;=b&lt;=10^18)，可统计[1,b]和[1,a-1]中数k的和，再相减可得出答案。<br/>因为2^62&gt;10^18;即k&lt;62;可以计算区间上1次方，2次方，3次方..的数的个数；其间会重复计算，j%i==0则会重复计算，需要减去<br/>num[i]-=num[j];(注意：要从后往前减)..最后乘加起来就好了。。<br/>这题坑爹的是计算次方个数时卡精度，因为pow(x,1.0/k)精度丢失了，最明显的是就是[2,1e18]时的9次方的个数为99，就是怎么发现的，<br/>然后就考虑处理精度的问题，其实pow(x,1.0/k)算出的值上下波动不会超过1的。<br/>只要计算{r-1,r,r+1}^k，哪个最靠近x就可以了。计算r+1时会爆64位的，需要在相乘上做判断。</p>
+<p>AC代码：</p>
+<pre class="brush:cpp ">#include&lt;stdio.h&gt;
+ #include&lt;string.h&gt;
+ #include&lt;math.h&gt;
+ #include&lt;iostream&gt;
+ #define ll __int64
+ #define inf (ll) 1e18+300
+ #define eps 1e-9
+ using namespace std;
+ ll why=(ll)1&lt;&lt;31;
+ ll num[100];
+ ll quickpow(ll m,int n)
+ {
+     ll b=1;int k=n;
+     while (n&gt;0)
+     {
+         if (n&amp;1)
+         {
+             double judge=1.0*(inf)/b;
+             if (judge&lt;m) return -1;//避免b*m爆64
+             b*=m;
+         }
+         n=n&gt;&gt;1;
+         if (m&gt;why&amp;&amp;n&gt;0) return -1;//避免m*m爆64
+         m=m*m;
+     }
+     return b;
+ }
+ ll find(ll x,int k)
+ {
+     ll l=1,r=(ll)pow(x,1.0/k);
+     ll tt,pp,qq;
+     pp=quickpow(r,k);
+     if (pp==x) return r;
+     if (pp&gt;x||pp==-1) --r;
+     else
+     {
+         tt=quickpow(r+1,k);
+         if (tt!=-1&amp;&amp;tt&lt;=x) ++r;
+     }
+     return r;
+ }
+ ll f(ll x)
+ {
+     int i,j,k;
+     ll ans=0;
+     if (x&lt;=3) return x;
+     memset(num,0,sizeof(num));
+     num[1]=x;
+     for (i=2;i&lt;63;++i)
+     {
+         num[i]=find(x,i)-1;
+         if (!num[i]) break;
+     }
+     k=i;
+     for (i=k-1;i&gt;0;--i)
+     {
+         for (j=1;j&lt;i;++j)
+             if (i%j==0) num[j]-=num[i];
+     }
+     ans=num[1];
+     for (i=2;i&lt;k;++i)
+     {
+         ans+=(i*num[i]);
+     }
+     return ans;
+ }
+ int main ()
+ {
+     ll a,b;
+     while (scanf("%I64d%I64d",&amp;a,&amp;b)&amp;&amp;(a+b))
+     {
+         printf("%I64d\n",f(b)-f(a-1));
+     }
+     return 0;
+ }
+ /*
+ 2 1000000000000000000
+ 123 4564651321324813
+ 12 132465786543132132
+ 
+ 1000000001002087980
+ 4564651389245135
+ 132465786908165783
+ */</pre>
+<p> </p>
+<p> </p>
+<p>参考：http://www.cnblogs.com/summer-hikaru/archive/2012/11/24/2786078.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-78449">
+<article class="comment" id="comment-78449">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520705" rel="external nofollow">新用户545620</a></span> on <a href="http://www.acmerblog.com/hdu-3208-integers-power-5041.html#comment-78449" rel="nofollow"><time datetime="2017-04-12T12:30:18+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好吧，为闹钟而来</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78448">
+<article class="comment" id="comment-78448">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520705" rel="external nofollow">新用户545620</a></span> on <a href="http://www.acmerblog.com/hdu-3208-integers-power-5041.html#comment-78448" rel="nofollow"><time datetime="2017-04-12T12:30:18+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好吧，为闹钟而来</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-78447">
+<article class="comment" id="comment-78447">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520705" rel="external nofollow">新用户545620</a></span> on <a href="http://www.acmerblog.com/hdu-3208-integers-power-5041.html#comment-78447" rel="nofollow"><time datetime="2017-04-12T12:30:18+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好吧，为闹钟而来</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78446">
+<article class="comment" id="comment-78446">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520705" rel="external nofollow">新用户545620</a></span> on <a href="http://www.acmerblog.com/hdu-3208-integers-power-5041.html#comment-78446" rel="nofollow"><time datetime="2017-04-12T12:30:18+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好吧，为闹钟而来</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-78445">
+<article class="comment" id="comment-78445">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520705" rel="external nofollow">新用户545620</a></span> on <a href="http://www.acmerblog.com/hdu-3208-integers-power-5041.html#comment-78445" rel="nofollow"><time datetime="2017-04-12T12:30:18+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好吧，为闹钟而来</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78444">
+<article class="comment" id="comment-78444">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520705" rel="external nofollow">新用户545620</a></span> on <a href="http://www.acmerblog.com/hdu-3208-integers-power-5041.html#comment-78444" rel="nofollow"><time datetime="2017-04-12T12:30:18+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好吧，为闹钟而来</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-27978">
+<article class="comment" id="comment-27978">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">123456789_xd</a></span> on <a href="http://www.acmerblog.com/hdu-3208-integers-power-5041.html#comment-27978" rel="nofollow"><time datetime="2015-03-24T06:31:47+00:00" pubdate="">2015年3月24日 at 上午6:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27976">
+<article class="comment" id="comment-27976">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hehe_snail</a></span> on <a href="http://www.acmerblog.com/hdu-3208-integers-power-5041.html#comment-27976" rel="nofollow"><time datetime="2015-03-13T00:09:41+00:00" pubdate="">2015年3月13日 at 上午12:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>博主的C++功底真是好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48036">
+<article class="comment" id="comment-48036">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">130920099</a></span> on <a href="http://www.acmerblog.com/hdu-3208-integers-power-5041.html#comment-48036" rel="nofollow"><time datetime="2015-01-16T19:32:09+00:00" pubdate="">2015年1月16日 at 下午7:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实不需要用LCA，用DFS+vector更简单</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48037">
+<article class="comment" id="comment-48037">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">digiworm</a></span> on <a href="http://www.acmerblog.com/hdu-3208-integers-power-5041.html#comment-48037" rel="nofollow"><time datetime="2014-10-20T04:28:13+00:00" pubdate="">2014年10月20日 at 上午4:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>0000</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63236">
+<article class="comment" id="comment-63236">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rick</a></span> on <a href="http://www.acmerblog.com/hdu-3208-integers-power-5041.html#comment-63236" rel="nofollow"><time datetime="2014-09-14T20:05:46+00:00" pubdate="">2014年9月14日 at 下午8:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>老实说，这种方法就是穷举，复杂度是2^n，之所以能够AC是应为题目的测试数据有问题，要么数据量很小，要么能够得到k == t，否则即使n = 30，也要很久才能得出结果，本人亲测</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27980">
+<article class="comment" id="comment-27980">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Xun_Brooklyn</a></span> on <a href="http://www.acmerblog.com/hdu-3208-integers-power-5041.html#comment-27980" rel="nofollow"><time datetime="2014-08-09T00:06:59+00:00" pubdate="">2014年8月9日 at 上午12:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>简洁的代码</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48035">
+<article class="comment" id="comment-48035">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hao555sky</a></span> on <a href="http://www.acmerblog.com/hdu-3208-integers-power-5041.html#comment-48035" rel="nofollow"><time datetime="2014-07-17T03:14:12+00:00" pubdate="">2014年7月17日 at 上午3:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27979">
+<article class="comment" id="comment-27979">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mr_zhang2011</a></span> on <a href="http://www.acmerblog.com/hdu-3208-integers-power-5041.html#comment-27979" rel="nofollow"><time datetime="2014-07-03T14:33:38+00:00" pubdate="">2014年7月3日 at 下午2:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48033">
+<article class="comment" id="comment-48033">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">windy</a></span> on <a href="http://www.acmerblog.com/hdu-3208-integers-power-5041.html#comment-48033" rel="nofollow"><time datetime="2014-06-09T01:15:13+00:00" pubdate="">2014年6月9日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Thanks i enjoy your write-up about Why We Keep track of | J Squared Consulting</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58100">
+<article class="comment" id="comment-58100">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">silianbo</a></span> on <a href="http://www.acmerblog.com/hdu-3208-integers-power-5041.html#comment-58100" rel="nofollow"><time datetime="2014-06-03T23:34:26+00:00" pubdate="">2014年6月3日 at 下午11:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58101">
+<article class="comment" id="comment-58101">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">litaotao</a></span> on <a href="http://www.acmerblog.com/hdu-3208-integers-power-5041.html#comment-58101" rel="nofollow"><time datetime="2014-05-03T01:23:16+00:00" pubdate="">2014年5月3日 at 上午1:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>老实说，这种方法就是穷举，复杂度是2^n，之所以能够AC是应为题目的测试数据有问题，要么数据量很小，要么能够得到k == t，否则即使n = 30，也要很久才能得出结果，本人亲测</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27977">
+<article class="comment" id="comment-27977">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hwp</a></span> on <a href="http://www.acmerblog.com/hdu-3208-integers-power-5041.html#comment-27977" rel="nofollow"><time datetime="2014-04-17T06:29:26+00:00" pubdate="">2014年4月17日 at 上午6:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实不需要用LCA，用DFS+vector更简单</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48034">
+<article class="comment" id="comment-48034">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">radish</a></span> on <a href="http://www.acmerblog.com/hdu-3208-integers-power-5041.html#comment-48034" rel="nofollow"><time datetime="2014-03-28T04:54:47+00:00" pubdate="">2014年3月28日 at 上午4:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的题，还是能做出几道的，嘿嘿</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

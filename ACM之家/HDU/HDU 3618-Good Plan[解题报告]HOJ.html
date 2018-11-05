@@ -1,0 +1,342 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>11-29</div>
+<div class="tit"><h1 class="entry-title">HDU 3618-Good Plan[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观408次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6583" href="http://www.acmerblog.com/hdu-3618-good-plan-6583.html#comments" title="《HDU 3618-Good Plan[解题报告]HOJ》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Good Plan</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+FJ has two same house for rant. Now he has n (1 ≤ n ≤ 1000) piece of order, the orders are given in the form: 
+<p>s t v</p>
+<p>means that someone want to rant a hours from the day s to t paying v yuan totally (including the day s and t, 0 ≤ s ≤ t ≤ 400, 0 ≤ v ≤ 100,0000). </p>
+<p>A hours can be only rant to one person, and FJ should either accept an order totally or reject it.  </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line of input file is a single integer T – The number of test cases. For each test case, the first line is a single integer n then there n lines, each line gives an order.  </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The first line of input file is a single integer T – The number of test cases. For each test case, the first line is a single integer n then there n lines, each line gives an order. </div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3
+4
+1 2 10
+2 3 10
+3 3 10
+1 3 10
+6
+1 20 1000
+3 25 10000
+5 15 5000
+22 300 5500
+10 295 9000
+7 7 6000
+8
+32 251 2261
+123 281 1339
+211 235 5641
+162 217 7273
+22 139 7851
+194 198 9190
+119 274 878
+122 173 8640</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+30
+25500
+38595</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include &lt;string.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;iostream&gt;
+#include &lt;algorithm&gt;
+using namespace std;
+#define maxn 409
+int S,T;
+struct edge
+{
+	int v,flow,cost;
+	edge *next,*opp;
+}A[500009],*adj[maxn];
+#define NEW() &amp;A[++ANS]
+int ANS;
+inline void addedge(int u,int v,int flow,int cost)
+{
+	edge *ptr=NEW();
+	ptr-&gt;v=v;
+	ptr-&gt;flow=flow;
+	ptr-&gt;cost=cost;
+	ptr-&gt;next=adj[u]-&gt;next;
+	ptr-&gt;opp=&amp;A[ANS^1];
+	adj[u]-&gt;next=ptr;
+}
+#define Inf 1000000000
+int q[1000009],d[maxn];
+bool vis[maxn];
+edge *pre[maxn];
+bool spfa()
+{
+	memset(vis,0,sizeof(vis));
+	for(int i=S;i&lt;=T;i++)
+		d[i]=Inf;
+	int head=0,tail=1,u,v;
+	q[0]=S;
+	d[S]=0;
+	while(head!=tail)
+	{
+		u=q[head++];
+		vis[u]=false;
+		for(edge *ptr=adj[u]-&gt;next;ptr!=NULL;ptr=ptr-&gt;next)
+		{
+			v=ptr-&gt;v;
+			if(ptr-&gt;flow&amp;&amp;d[v]&gt;d[u]+ptr-&gt;cost)
+			{
+				d[v]=d[u]+ptr-&gt;cost;
+				pre[v]=ptr;
+				if(!vis[v])
+				{
+					vis[v]=true;
+					q[tail++]=v;
+				}
+			}
+		}
+	}
+	return d[T]!=Inf;
+}
+int solve()
+{
+	int mincost=0;
+	while(spfa())
+	{
+		edge *ptr;
+		int low=Inf;
+		for(int i=T;i!=S;)
+		{
+			ptr=pre[i];
+			low=min(low,ptr-&gt;flow);
+			i=ptr-&gt;opp-&gt;v;
+		}
+		for(int i=T;i!=S;)
+		{
+			ptr=pre[i];
+			ptr-&gt;flow-=low;
+			ptr-&gt;opp-&gt;flow+=low;
+			i=ptr-&gt;opp-&gt;v;
+		}
+		if(d[T]&gt;=0)
+			break;
+		mincost+=low*d[T];
+	}
+	return mincost;
+}
+int main()
+{
+	int Q;
+	scanf("%d",&amp;Q);
+	while(Q--)
+	{
+		int s,t,v,n;
+		S=0;	
+		scanf("%d",&amp;n);
+		
+		ANS=-1;
+		for(int i=0;i&lt;406;i++)
+		{
+			adj[i]=new edge();
+			adj[i]-&gt;next=NULL;
+		}
+		for(int k=1;k&lt;=n;k++)
+		{
+			scanf("%d%d%d",&amp;s,&amp;t,&amp;v);
+			s++;
+			t++;
+			addedge(s,t+1,1,-v);
+			addedge(t+1,s,0,v);
+			T=max(T,t+1);
+		}
+		for(int i=S;i&lt;T;i++)
+		{
+			addedge(i,i+1,2,0);
+			addedge(i+1,i,0,0);
+		}
+		printf("%d\n",-solve());
+	}
+	return 0;
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-73583">
+<article class="comment" id="comment-73583">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526300" rel="external nofollow">新用户623398</a></span> on <a href="http://www.acmerblog.com/hdu-3618-good-plan-6583.html#comment-73583" rel="nofollow"><time datetime="2017-04-12T00:07:34+00:00" pubdate="">2017年4月12日 at 上午12:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50554">
+<article class="comment" id="comment-50554">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Anne</a></span> on <a href="http://www.acmerblog.com/hdu-3618-good-plan-6583.html#comment-50554" rel="nofollow"><time datetime="2015-07-12T18:24:57+00:00" pubdate="">2015年7月12日 at 下午6:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很棒的网站，加油！⛽️</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59361">
+<article class="comment" id="comment-59361">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Watson</a></span> on <a href="http://www.acmerblog.com/hdu-3618-good-plan-6583.html#comment-59361" rel="nofollow"><time datetime="2015-07-07T11:21:27+00:00" pubdate="">2015年7月7日 at 上午11:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>88行是多余的，可以删除</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50556">
+<article class="comment" id="comment-50556">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">melody12ab</a></span> on <a href="http://www.acmerblog.com/hdu-3618-good-plan-6583.html#comment-50556" rel="nofollow"><time datetime="2015-06-26T17:15:35+00:00" pubdate="">2015年6月26日 at 下午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法挺不错。NewHead代表新的头节点，通过递归找到最后一个节点之后，就把这个节点赋给NewHead，然后一直返回返回，中途这个值是没有变化的，一边返回一边把相应的指针方向颠倒，最后结束时返回新的头节点到主函数。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50555">
+<article class="comment" id="comment-50555">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NextLife</a></span> on <a href="http://www.acmerblog.com/hdu-3618-good-plan-6583.html#comment-50555" rel="nofollow"><time datetime="2015-06-26T05:55:37+00:00" pubdate="">2015年6月26日 at 上午5:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序只能输出一个子序列</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50561">
+<article class="comment" id="comment-50561">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ForgetVay</a></span> on <a href="http://www.acmerblog.com/hdu-3618-good-plan-6583.html#comment-50561" rel="nofollow"><time datetime="2015-05-29T05:52:49+00:00" pubdate="">2015年5月29日 at 上午5:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>顺利测试通过了，多谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59359">
+<article class="comment" id="comment-59359">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yipwinghong</a></span> on <a href="http://www.acmerblog.com/hdu-3618-good-plan-6583.html#comment-59359" rel="nofollow"><time datetime="2015-05-25T20:38:05+00:00" pubdate="">2015年5月25日 at 下午8:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嗯，是写错了，文中以更改。MAX ( L(X[0..m-2], Y[0..n-1]), L(X[0..m-1], Y[0..n-2])</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-59360">
+<article class="comment" id="comment-59360">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Snarl_jsb</a></span> on <a href="http://www.acmerblog.com/hdu-3618-good-plan-6583.html#comment-59360" rel="nofollow"><time datetime="2015-05-11T02:50:16+00:00" pubdate="">2015年5月11日 at 上午2:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实国内大部分公司对算法都不够重视。特别是中小型公司老板根本都不懂技术，也不懂什么是算法，从而也不要求程序员懂什么算法，做程序从来不考虑性能问题，只要页面能显示出来就是好程序，这是国内的现状，很无奈。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50557">
+<article class="comment" id="comment-50557">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">skyand</a></span> on <a href="http://www.acmerblog.com/hdu-3618-good-plan-6583.html#comment-50557" rel="nofollow"><time datetime="2015-05-10T13:17:44+00:00" pubdate="">2015年5月10日 at 下午1:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>都是一些基础题啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50560">
+<article class="comment" id="comment-50560">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Sacomplex</a></span> on <a href="http://www.acmerblog.com/hdu-3618-good-plan-6583.html#comment-50560" rel="nofollow"><time datetime="2015-03-17T03:32:01+00:00" pubdate="">2015年3月17日 at 上午3:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>总结的很全面，学习了！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50558">
+<article class="comment" id="comment-50558">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">cyyuen</a></span> on <a href="http://www.acmerblog.com/hdu-3618-good-plan-6583.html#comment-50558" rel="nofollow"><time datetime="2015-03-14T16:53:10+00:00" pubdate="">2015年3月14日 at 下午4:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，现在就缺少新的资料</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-59362">
+<article class="comment" id="comment-59362">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">congve1</a></span> on <a href="http://www.acmerblog.com/hdu-3618-good-plan-6583.html#comment-59362" rel="nofollow"><time datetime="2015-02-26T06:43:17+00:00" pubdate="">2015年2月26日 at 上午6:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，这里说的最长回文子序列，非子串</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-32609">
+<article class="comment" id="comment-32609">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">April</a></span> on <a href="http://www.acmerblog.com/hdu-3618-good-plan-6583.html#comment-32609" rel="nofollow"><time datetime="2015-02-01T11:52:03+00:00" pubdate="">2015年2月1日 at 上午11:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正确性是关键，冲突是都会有的，主要是那种算法冲突的概率低</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50553">
+<article class="comment" id="comment-50553">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ygxqqx</a></span> on <a href="http://www.acmerblog.com/hdu-3618-good-plan-6583.html#comment-50553" rel="nofollow"><time datetime="2015-01-23T04:38:47+00:00" pubdate="">2015年1月23日 at 上午4:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>大哥，你复制也看看是不是这题的答案才复制吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50559">
+<article class="comment" id="comment-50559">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hehe_snail</a></span> on <a href="http://www.acmerblog.com/hdu-3618-good-plan-6583.html#comment-50559" rel="nofollow"><time datetime="2015-01-09T14:00:02+00:00" pubdate="">2015年1月9日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚开始学习，为啥会报错了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

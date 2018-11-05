@@ -1,0 +1,345 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>05-23</div>
+<div class="tit"><h1 class="entry-title">HDU 4343-Interval query-排序-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/basis/sort" rel="category tag" title="查看排序中的全部文章">排序</a>, <a href="http://www.acmerblog.com/category/math/bignumber" rel="category tag" title="查看高精度计算中的全部文章">高精度计算</a></span><span class="i4">围观143次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7354" href="http://www.acmerblog.com/hdu-4343-interval-query-7354.html#comments" title="《HDU 4343-Interval query-排序-[解题报告]HOJ》上的评论">20 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Interval query</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+This is a very simple question. There are N intervals in number axis, and M queries just like “QUERY(a,b)” indicate asking the maximum number of the disjoint intervals between (a,b) . </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+There are several test cases. For each test case, the first line contains two integers N, M (0&lt;N, M&lt;=100000) as described above. In each following N lines, there are two integers indicate two endpoints of the i-th interval. Then come M lines and each line contains two integers indicating the endpoints of the i-th query.<br/>You can assume the left-endpoint is strictly less than the right-endpoint in each given interval and query and all these endpoints are between 0 and 1,000,000,000. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+There are several test cases. For each test case, the first line contains two integers N, M (0&lt;N, M&lt;=100000) as described above. In each following N lines, there are two integers indicate two endpoints of the i-th interval. Then come M lines and each line contains two integers indicating the endpoints of the i-th query.<br/>You can assume the left-endpoint is strictly less than the right-endpoint in each given interval and query and all these endpoints are between 0 and 1,000,000,000.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3 2
+1 2
+2 3
+1 3
+1 2
+1 3</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+2</pre>
+<p> <!-- problem end --></p>
+<p><span style="font-size:14px">题目链接：<a>http://acm.hdu.edu.cn/showproblem.php?pid=4343</a></span></p>
+<p><span style="font-size:14px">题目大意：给定N(N&lt;=100000)个区间（左闭右开）和M(M&lt;=100000)个询问[l, r]，问所有满足[s,t)包含于于[l, r]的区间中最多能选出多少个，使得他们两两不相交。</span></p>
+<p><span style="font-size:14px">解题思路：首先将坐标离散化，将区间排序后删掉可以覆盖其他区间的大区间。<br/>
+这时若将剩余区间的左端点坐标排序，左端点坐标必然严格上升且对应的右端点坐标也是严格上升的。<br/>
+此题的贪心思想较为普及，即按y的升序进行贪心固定区间询问的最大数量，不再赘述。<br/>
+设g[1][x]为从坐标x开始向右遇到的第一个有效区间的右端点坐标，另g[i][x] = g[1][g[i-1][x]]，若不存在则为正无穷。<br/>
+则g[k][x]表示从坐标x开始，在经过不相交的k个区间后，第k个区间的右端点的坐标。<br/>
+对g进行倍增，即设f[k][x] = g[2^k][x]。则对于一次询问(l,r)，可利用f枚举答案各个二进制数位得到答案。<br/>
+f[k][x] = f[k-1][f[k-1][x]]，f[0][x] = g[1][x]。g只存在于思维过程中。<br/>
+</span></p>
+<pre class="brush:cpp" name="code">#include&lt;iostream&gt;
+#include&lt;stdio.h&gt;
+#include&lt;algorithm&gt;
+using namespace std;
+const int N=100050;
+int n,m,opt[20][N*2],x[N*2],cnt;
+struct node
+{
+    int l,r;
+    void read(){ scanf("%d%d",&amp;l,&amp;r); x[cnt++]=l; x[cnt++]=r; }
+    void print(){ printf("%d %d\n",l,r); }
+    bool operator &lt;(const node tmp) const{ return l&lt;tmp.l||(l==tmp.l&amp;&amp;r&lt;tmp.r); }
+}no[N];
+inline int getid(int val,bool f)
+{
+    if(!f) return lower_bound(x,x+cnt,val)-x;
+    return upper_bound(x,x+cnt,val)-x-1;
+}
+int calc(int l,int r)
+{
+    if(l&gt;r) return 0;
+    if(l==cnt||r==-1) return 0;
+    int ret=0;
+    for(int i=19;i&gt;=0;i--){
+        if(opt[i][l]&lt;=r) {
+            ret+=(1&lt;&lt;i);
+            l=opt[i][l];
+        }
+    }
+    return ret;
+}
+int main()
+{
+//    freopen("1.in","r",stdin);
+//    freopen("2.out","w",stdout);
+    while(scanf("%d%d",&amp;n,&amp;m)!=-1)
+    {
+        cnt=0;
+        for(int i=0;i&lt;n;i++){
+            no[i].read();
+        }
+        sort(no,no+n);
+        sort(x,x+cnt);
+        cnt=unique(x,x+cnt)-x;
+        for(int i=0;i&lt;n;i++){
+            no[i].l=getid(no[i].l,0);
+            no[i].r=getid(no[i].r,1);
+        }
+        x[cnt]=cnt;
+        int mn=cnt,r=n;
+        for(int i=cnt-1;i&gt;=0;i--)
+        {
+            while(r&gt;0&amp;&amp;no[r-1].l&gt;=i){
+                r--;
+                mn=min(mn,no[r].r);
+            }
+            opt[0][i]=mn;
+        }
+        for(int i=0;i&lt;20;i++) opt[i][cnt]=cnt;
+        for(int i=1;i&lt;20;i++){
+            for(int j=0;j&lt;cnt;j++){
+                opt[i][j]=opt[i-1][opt[i-1][j]];
+            }
+        }
+        while(m--)
+        {
+            int l,r;
+            scanf("%d%d",&amp;l,&amp;r);
+            l=getid(l,0); r=getid(r,1);
+            printf("%d\n",calc(l,r));
+        }
+    }
+    return 0;
+}
+</pre>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/longshuai0821/article/details/7845112</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-98460">
+<article class="comment" id="comment-98460">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526533" rel="external nofollow">新用户850407</a></span> on <a href="http://www.acmerblog.com/hdu-4343-interval-query-7354.html#comment-98460" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Title…[...]Sites of interest we have a link to[...]…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98459">
+<article class="comment" id="comment-98459">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526533" rel="external nofollow">新用户850407</a></span> on <a href="http://www.acmerblog.com/hdu-4343-interval-query-7354.html#comment-98459" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Title…[...]Sites of interest we have a link to[...]…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98458">
+<article class="comment" id="comment-98458">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526533" rel="external nofollow">新用户850407</a></span> on <a href="http://www.acmerblog.com/hdu-4343-interval-query-7354.html#comment-98458" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Title…[...]Sites of interest we have a link to[...]…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98457">
+<article class="comment" id="comment-98457">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526533" rel="external nofollow">新用户850407</a></span> on <a href="http://www.acmerblog.com/hdu-4343-interval-query-7354.html#comment-98457" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Title…[...]Sites of interest we have a link to[...]…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98456">
+<article class="comment" id="comment-98456">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526533" rel="external nofollow">新用户850407</a></span> on <a href="http://www.acmerblog.com/hdu-4343-interval-query-7354.html#comment-98456" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Title…[...]Sites of interest we have a link to[...]…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98455">
+<article class="comment" id="comment-98455">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526533" rel="external nofollow">新用户850407</a></span> on <a href="http://www.acmerblog.com/hdu-4343-interval-query-7354.html#comment-98455" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Title…[...]Sites of interest we have a link to[...]…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98454">
+<article class="comment" id="comment-98454">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526533" rel="external nofollow">新用户850407</a></span> on <a href="http://www.acmerblog.com/hdu-4343-interval-query-7354.html#comment-98454" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Title…[...]Sites of interest we have a link to[...]…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98453">
+<article class="comment" id="comment-98453">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526533" rel="external nofollow">新用户850407</a></span> on <a href="http://www.acmerblog.com/hdu-4343-interval-query-7354.html#comment-98453" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Title…[...]Sites of interest we have a link to[...]…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98452">
+<article class="comment" id="comment-98452">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526533" rel="external nofollow">新用户850407</a></span> on <a href="http://www.acmerblog.com/hdu-4343-interval-query-7354.html#comment-98452" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Title…[...]Sites of interest we have a link to[...]…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98451">
+<article class="comment" id="comment-98451">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526533" rel="external nofollow">新用户850407</a></span> on <a href="http://www.acmerblog.com/hdu-4343-interval-query-7354.html#comment-98451" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Title…[...]Sites of interest we have a link to[...]…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98450">
+<article class="comment" id="comment-98450">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526533" rel="external nofollow">新用户850407</a></span> on <a href="http://www.acmerblog.com/hdu-4343-interval-query-7354.html#comment-98450" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Title…[...]Sites of interest we have a link to[...]…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98449">
+<article class="comment" id="comment-98449">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526533" rel="external nofollow">新用户850407</a></span> on <a href="http://www.acmerblog.com/hdu-4343-interval-query-7354.html#comment-98449" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Title…[...]Sites of interest we have a link to[...]…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98448">
+<article class="comment" id="comment-98448">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526533" rel="external nofollow">新用户850407</a></span> on <a href="http://www.acmerblog.com/hdu-4343-interval-query-7354.html#comment-98448" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Title…[...]Sites of interest we have a link to[...]…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98447">
+<article class="comment" id="comment-98447">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526533" rel="external nofollow">新用户850407</a></span> on <a href="http://www.acmerblog.com/hdu-4343-interval-query-7354.html#comment-98447" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Title…[...]Sites of interest we have a link to[...]…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68516">
+<article class="comment" id="comment-68516">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514581" rel="external nofollow">新用户557039</a></span> on <a href="http://www.acmerblog.com/hdu-4343-interval-query-7354.html#comment-68516" rel="nofollow"><time datetime="2017-04-11T07:10:15+00:00" pubdate="">2017年4月11日 at 上午7:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你凭什么说是我们空戬党，骂蓝漓就一定是我们空戬党啊，有时候不得不说你们是智障，你不知到有个反飒漫画的***落啊，有可能是他们的人，现在狸猫大大和他们正闹不开呢！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68515">
+<article class="comment" id="comment-68515">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514581" rel="external nofollow">新用户557039</a></span> on <a href="http://www.acmerblog.com/hdu-4343-interval-query-7354.html#comment-68515" rel="nofollow"><time datetime="2017-04-11T07:10:15+00:00" pubdate="">2017年4月11日 at 上午7:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你凭什么说是我们空戬党，骂蓝漓就一定是我们空戬党啊，有时候不得不说你们是智障，你不知到有个反飒漫画的***落啊，有可能是他们的人，现在狸猫大大和他们正闹不开呢！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68514">
+<article class="comment" id="comment-68514">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514581" rel="external nofollow">新用户557039</a></span> on <a href="http://www.acmerblog.com/hdu-4343-interval-query-7354.html#comment-68514" rel="nofollow"><time datetime="2017-04-11T07:10:15+00:00" pubdate="">2017年4月11日 at 上午7:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你凭什么说是我们空戬党，骂蓝漓就一定是我们空戬党啊，有时候不得不说你们是智障，你不知到有个反飒漫画的***落啊，有可能是他们的人，现在狸猫大大和他们正闹不开呢！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68513">
+<article class="comment" id="comment-68513">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514581" rel="external nofollow">新用户557039</a></span> on <a href="http://www.acmerblog.com/hdu-4343-interval-query-7354.html#comment-68513" rel="nofollow"><time datetime="2017-04-11T07:10:15+00:00" pubdate="">2017年4月11日 at 上午7:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你凭什么说是我们空戬党，骂蓝漓就一定是我们空戬党啊，有时候不得不说你们是智障，你不知到有个反飒漫画的***落啊，有可能是他们的人，现在狸猫大大和他们正闹不开呢！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68512">
+<article class="comment" id="comment-68512">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514581" rel="external nofollow">新用户557039</a></span> on <a href="http://www.acmerblog.com/hdu-4343-interval-query-7354.html#comment-68512" rel="nofollow"><time datetime="2017-04-11T07:10:15+00:00" pubdate="">2017年4月11日 at 上午7:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你凭什么说是我们空戬党，骂蓝漓就一定是我们空戬党啊，有时候不得不说你们是智障，你不知到有个反飒漫画的***落啊，有可能是他们的人，现在狸猫大大和他们正闹不开呢！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68511">
+<article class="comment" id="comment-68511">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514581" rel="external nofollow">新用户557039</a></span> on <a href="http://www.acmerblog.com/hdu-4343-interval-query-7354.html#comment-68511" rel="nofollow"><time datetime="2017-04-11T07:10:15+00:00" pubdate="">2017年4月11日 at 上午7:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你凭什么说是我们空戬党，骂蓝漓就一定是我们空戬党啊，有时候不得不说你们是智障，你不知到有个反飒漫画的***落啊，有可能是他们的人，现在狸猫大大和他们正闹不开呢！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

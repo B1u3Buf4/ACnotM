@@ -1,0 +1,326 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>09-17</div>
+<div class="tit"><h1 class="entry-title">HDU 4640-Island and study-sister-动态规划-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/bfs" rel="category tag" title="查看BFS搜索中的全部文章">BFS搜索</a>, <a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a></span><span class="i4">围观55次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7685" href="http://www.acmerblog.com/hdu-4640-island-and-study-sister-7685.html#comments" title="《HDU 4640-Island and study-sister-动态规划-[解题报告]HOJ》上的评论">16 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Island and study-sister</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Members of ACM/ICPC teams of Fuzhou University always stay in the laboratory in their free time. One day the team members of OOXX are doing their daily training and suddenly received k calls from study-sisters asking for their help. You can regard the campus of Fuzhou University is consist of n beautiful islands and connected by m undirection bridges and the study-sisters are in some of these islands waiting for them. As the members of OOXX are all warm-hearted, they don’t want these study-sisters waiting too long and just want the time the girl whom waiting for the longest be as short as possible. You can assume that they begin to move immediately after they received the calls. They start from the laboratory and they can go anywhere freely by the bridges.<br/>But due to some mysterious reason, each island can be visited only by one member except the laboratory. This means that even if two guys come to an island in two different times is forbidden. Now your task is calculating how long these study-sisters will wait. Note that there are three students in team OOXX. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line contains only one integer T (T&lt;=150), which is the number of test cases. Each test case contains two integer n (1&lt;= n &lt;=17), m (m &lt;= n*n), means that Fuzhou university is consist of n islands and there are m undirection bridges connect them. Then comes m lines, each line contains three integer x, y, s, means that there is a bridge connect island x and island y and it takes s unit of time to go through this bridge. The numbers start from 1 to n and the number of the laboratory is always 1. Then comes a number k (k&gt;=1) indicate that there are k study-sisters waiting for help. The next line are k integers xi (2&lt;=xi&lt;=n) describe where these study-sisters are. You can assume that all the study-sisters are in different islands. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The first line contains only one integer T (T&lt;=150), which is the number of test cases. Each test case contains two integer n (1&lt;= n &lt;=17), m (m &lt;= n*n), means that Fuzhou university is consist of n islands and there are m undirection bridges connect them. Then comes m lines, each line contains three integer x, y, s, means that there is a bridge connect island x and island y and it takes s unit of time to go through this bridge. The numbers start from 1 to n and the number of the laboratory is always 1. Then comes a number k (k&gt;=1) indicate that there are k study-sisters waiting for help. The next line are k integers xi (2&lt;=xi&lt;=n) describe where these study-sisters are. You can assume that all the study-sisters are in different islands.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+4
+2 0
+1
+2
+2 1
+1 2 1
+1
+2
+4 3
+1 2 1
+2 3 2
+2 4 2
+2
+3 4
+4 3
+1 2 2
+1 3 3
+1 4 4
+3
+2 3 4</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case 1: -1
+Case 2: 1
+Case 3: 7
+Case 4: 4</pre>
+<p> <!-- problem end --></p>
+<p><span style="color:rgb(83,83,83); font-family:Helvetica,Arial,sans-serif,simsun; line-height:20px; white-space:nowrap">bfs+状态压缩求出所有的状态，然后由于第一个节点需要特殊处理，可以右移一位剔除掉，也可以特判。然后采用集合的操作，</span></p>
+<p><span style="color:rgb(83,83,83); font-family:Helvetica,Arial,sans-serif,simsun; line-height:20px; white-space:nowrap"></span></p>
+<pre class="brush:cpp" name="code">#pragma comment(linker,"/STACK:1024000000,1024000000")
+#include &lt;cstdio&gt;
+#include &lt;queue&gt;
+using namespace std;
+#define inf 0x3f3f3f3f
+
+int n, m, cnt;
+int head[17], next[17 * 17 * 2 + 3][3], dp[1 &lt;&lt; 17][17], dis[1 &lt;&lt; 17], num[1 &lt;&lt; 17];
+
+void add (int u, int v, int w)
+{
+	next[cnt][1] = v;
+	next[cnt][2] = w;
+	next[cnt][0] = head[u];
+	head[u] = cnt++;
+}
+
+void bfs ()
+{
+	queue&lt;pair&lt;int, int&gt; &gt; q;
+	q.push(make_pair(0, 1));
+	dp[1][0] = 0;
+	while (!q.empty()){
+		pair&lt;int, int&gt; p = q.front();
+		q.pop();
+		int su = p.second;
+		int u = p.first;
+		for (int i = head[u]; i != -1; i = next[i][0]){
+			int v = next[i][1];
+			int w = next[i][2];
+			int sv = su|(1 &lt;&lt; v);
+			if(dp[sv][v] &gt; dp[su][u] + w){
+				dp[sv][v] = dp[su][u] + w;
+				q.push(make_pair(v, sv));
+			}
+		}
+	}
+}
+
+int main ()
+{
+	//freopen ("in.txt", "r", stdin);
+	int t, count = 0;
+	scanf ("%d", &amp;t);
+	while (t--)
+	{
+		scanf ("%d %d", &amp;n, &amp;m);
+		int u, v, w;
+		for (int i = 0; i &lt; n; ++i) head[i] = -1;
+		for (int i = (1 &lt;&lt; n) - 1; i &gt;= 0; --i){
+			dis[i] = inf;
+			num[i] = inf;
+			for (int j = 0; j &lt; n; ++j) dp[i][j] = inf;
+		}
+		cnt = 0;
+		for (int i = 0; i &lt; m; ++i){
+			scanf ("%d %d %d", &amp;u, &amp;v, &amp;w);
+			add (u - 1, v - 1, w);
+			add (v - 1, u - 1, w);
+		}
+		scanf ("%d", &amp;m);
+		v = 0;
+		for (int i = 0; i &lt; m; ++i){
+			scanf ("%d", &amp;u);
+			v |= (1 &lt;&lt; (u - 1));
+		}
+		v &gt;&gt;= 1;
+		if (!m || (m == 1 &amp;&amp; u == 1)){
+			printf("Case %d: 0\n", ++count);
+			continue;
+		}
+		bfs ();
+		u = inf;
+		w = (1 &lt;&lt; (n-1)) - 1;
+		for(int i = 1; i &lt; (1 &lt;&lt; n); ++i)
+			for(int j = 0; j &lt; n; ++j) 
+				dis[i &gt;&gt; 1] = min(dis[i &gt;&gt; 1], dp[i][j]);		
+		for (int i = 1; i &lt;= w; ++i)
+			for (int j = i; j; j = (j - 1) &amp; i)
+				num[i] = min(num[i], max(dis[j], dis[i ^ j]));
+		for (int i = 1; i &lt;= w; ++i)
+			for(int j = i; j; j = (j - 1) &amp; i)
+			if((i &amp; v) == v) u = min(u, max(num[j], dis[i ^ j]));
+		if (u == inf) u = -1;
+		printf("Case %d: %d\n", ++count, u);
+	}
+	return 0;
+}</pre>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/moyan_min/article/details/12032391</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-97226">
+<article class="comment" id="comment-97226">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516478" rel="external nofollow">新用户815164</a></span> on <a href="http://www.acmerblog.com/hdu-4640-island-and-study-sister-7685.html#comment-97226" rel="nofollow"><time datetime="2017-04-20T05:15:13+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>违法与违规的冲突……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-97225">
+<article class="comment" id="comment-97225">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516478" rel="external nofollow">新用户815164</a></span> on <a href="http://www.acmerblog.com/hdu-4640-island-and-study-sister-7685.html#comment-97225" rel="nofollow"><time datetime="2017-04-20T05:15:13+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>违法与违规的冲突……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-97224">
+<article class="comment" id="comment-97224">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516478" rel="external nofollow">新用户815164</a></span> on <a href="http://www.acmerblog.com/hdu-4640-island-and-study-sister-7685.html#comment-97224" rel="nofollow"><time datetime="2017-04-20T05:15:13+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>违法与违规的冲突……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-97223">
+<article class="comment" id="comment-97223">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516478" rel="external nofollow">新用户815164</a></span> on <a href="http://www.acmerblog.com/hdu-4640-island-and-study-sister-7685.html#comment-97223" rel="nofollow"><time datetime="2017-04-20T05:15:13+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>违法与违规的冲突……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-97222">
+<article class="comment" id="comment-97222">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516478" rel="external nofollow">新用户815164</a></span> on <a href="http://www.acmerblog.com/hdu-4640-island-and-study-sister-7685.html#comment-97222" rel="nofollow"><time datetime="2017-04-20T05:15:13+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>违法与违规的冲突……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-97221">
+<article class="comment" id="comment-97221">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516478" rel="external nofollow">新用户815164</a></span> on <a href="http://www.acmerblog.com/hdu-4640-island-and-study-sister-7685.html#comment-97221" rel="nofollow"><time datetime="2017-04-20T05:15:13+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>违法与违规的冲突……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-97220">
+<article class="comment" id="comment-97220">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516478" rel="external nofollow">新用户815164</a></span> on <a href="http://www.acmerblog.com/hdu-4640-island-and-study-sister-7685.html#comment-97220" rel="nofollow"><time datetime="2017-04-20T05:15:13+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>违法与违规的冲突……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-97219">
+<article class="comment" id="comment-97219">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516478" rel="external nofollow">新用户815164</a></span> on <a href="http://www.acmerblog.com/hdu-4640-island-and-study-sister-7685.html#comment-97219" rel="nofollow"><time datetime="2017-04-20T05:15:13+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>违法与违规的冲突……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-66596">
+<article class="comment" id="comment-66596">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522172" rel="external nofollow">新用户059047</a></span> on <a href="http://www.acmerblog.com/hdu-4640-island-and-study-sister-7685.html#comment-66596" rel="nofollow"><time datetime="2017-04-10T22:27:49+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>(๑◕︵◕๑)心疼塔礼赫</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-66595">
+<article class="comment" id="comment-66595">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522172" rel="external nofollow">新用户059047</a></span> on <a href="http://www.acmerblog.com/hdu-4640-island-and-study-sister-7685.html#comment-66595" rel="nofollow"><time datetime="2017-04-10T22:27:49+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>(๑◕︵◕๑)心疼塔礼赫</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-66594">
+<article class="comment" id="comment-66594">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522172" rel="external nofollow">新用户059047</a></span> on <a href="http://www.acmerblog.com/hdu-4640-island-and-study-sister-7685.html#comment-66594" rel="nofollow"><time datetime="2017-04-10T22:27:49+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>(๑◕︵◕๑)心疼塔礼赫</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-66593">
+<article class="comment" id="comment-66593">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522172" rel="external nofollow">新用户059047</a></span> on <a href="http://www.acmerblog.com/hdu-4640-island-and-study-sister-7685.html#comment-66593" rel="nofollow"><time datetime="2017-04-10T22:27:49+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>(๑◕︵◕๑)心疼塔礼赫</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-66592">
+<article class="comment" id="comment-66592">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522172" rel="external nofollow">新用户059047</a></span> on <a href="http://www.acmerblog.com/hdu-4640-island-and-study-sister-7685.html#comment-66592" rel="nofollow"><time datetime="2017-04-10T22:27:49+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>(๑◕︵◕๑)心疼塔礼赫</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-66591">
+<article class="comment" id="comment-66591">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522172" rel="external nofollow">新用户059047</a></span> on <a href="http://www.acmerblog.com/hdu-4640-island-and-study-sister-7685.html#comment-66591" rel="nofollow"><time datetime="2017-04-10T22:27:49+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>(๑◕︵◕๑)心疼塔礼赫</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-66590">
+<article class="comment" id="comment-66590">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522172" rel="external nofollow">新用户059047</a></span> on <a href="http://www.acmerblog.com/hdu-4640-island-and-study-sister-7685.html#comment-66590" rel="nofollow"><time datetime="2017-04-10T22:27:49+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>(๑◕︵◕๑)心疼塔礼赫</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-66589">
+<article class="comment" id="comment-66589">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522172" rel="external nofollow">新用户059047</a></span> on <a href="http://www.acmerblog.com/hdu-4640-island-and-study-sister-7685.html#comment-66589" rel="nofollow"><time datetime="2017-04-10T22:27:49+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>(๑◕︵◕๑)心疼塔礼赫</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,490 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>04-13</div>
+<div class="tit"><h1 class="entry-title">HDU 3887-Counting Offspring-DFS-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/data-struct" rel="category tag" title="查看数据结构中的全部文章">数据结构</a>, <a href="http://www.acmerblog.com/category/basis/simulate" rel="category tag" title="查看模拟法中的全部文章">模拟法</a></span><span class="i4">围观208次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6889" href="http://www.acmerblog.com/hdu-3887-counting-offspring-6889.html#comments" title="《HDU 3887-Counting Offspring-DFS-[解题报告]HOJ》上的评论">30 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Counting Offspring</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+You are given a tree, it’s root is p, and the node is numbered from 1 to n. Now define f(i) as the number of nodes whose number is less than i in all the succeeding nodes of node i. Now we need to calculate f(i) for any possible i. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+Multiple cases (no more than 10), for each case:<br/>The first line contains two integers n (0&lt;n&lt;=10^5) and p, representing this tree has n nodes, its root is p.<br/>Following n-1 lines, each line has two integers, representing an edge in this tree.<br/>The input terminates with two zeros. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+Multiple cases (no more than 10), for each case:<br/>The first line contains two integers n (0&lt;n&lt;=10^5) and p, representing this tree has n nodes, its root is p.<br/>Following n-1 lines, each line has two integers, representing an edge in this tree.<br/>The input terminates with two zeros.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+15 7
+7 10
+7 1
+7 9
+7 3
+7 4
+10 14
+14 2
+14 13
+9 11
+9 6
+6 5
+6 8
+3 15
+3 12
+0 0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+0 0 0 0 0 1 6 0 3 1 0 0 0 2 0</pre>
+<p> <!-- problem end --></p>
+<p>/*<br/>
+分析：<br/>
+    ╮(╯▽╰)╭，昨天晚上见到了这个题，今天上午两节<br/>
+课，一下课就到实验室刷这个题，愣是WA+OLT了俩小时。最<br/>
+后无比郁闷的去上下午的两节课了，有一节还是体育、中午<br/>
+还牟吃饭T^T，晚上的课直接翘掉，终于搞定这个题了。<br/>
+    树状数组很早就会了，你说我得有多菜，囧~~~<br/>
+    还意外的上了第一版，囧~，虽然倒数第二吧，囧~</p>
+<p>
+    思路：<br/>
+        10W的数据，杭电OJ用DFS的话必须会爆，所以就自<br/>
+    己手动模拟栈吧(人才培养方案关于程序的只有一门C的、<br/>
+    数据结构都要自己学的人儿，桑不起呀囧~)。<br/>
+        然后DFS的过程中，每个节点都会有两次作为当前节<br/>
+    点的时候，仔细想想，这两次之间的过程所扫描到的点，<br/>
+    必定都是其子孙节点。那么，记录第一、二次扫描到这<br/>
+    个节点的时候，树状数组C中，在其前面并且比它小的点<br/>
+    的数量，则：ans[i]=num2[i]-num1[i]。<br/>
+        而树状数组，在每一个节点要退出栈的时候，以这<br/>
+    个元素更新一次(注意，如果让树状数组C[i]表示“&lt;=”i<br/>
+    的元素个数的话，那么要先得到num2[i]，然后再更新，<br/>
+    否则会计算自己的)。</p>
+<p>
+    PS：暂时不会神马Cplusplus的容器，所以用的静态临街<br/>
+    表。我做了一个小优化，用eage_now[节点[i]]来记录当<br/>
+    前该扫描节点[i]的哪一条边了，省的重复调用前面已经<br/>
+    搜索过的边。弱菜很囧~~~</p>
+<p>
+                                          2012-10-16<br/>
+*/</p>
+<p></p>
+<pre class="brush:cpp" name="code">#include"stdio.h"
+#include"string.h"
+#include"stdlib.h"
+int n,root;
+int C[100011];
+int ans[100011];
+int hash[100011];
+int queue[100011];
+int eage_now[100011];
+struct Eage
+{
+	int from,to,next;
+}eage[200011];
+int tot,head[100011];
+void add(int a,int b)
+{
+	eage[tot].from=a;
+	eage[tot].to=b;
+	eage[tot].next=head[a];
+	head[a]=tot++;
+}
+int query(int k)
+{
+	int t=0;
+	while(k&gt;0)
+	{
+		t+=C[k];
+		k-=k&amp;(-k);
+	}
+	return t;
+}
+void update(int k,int dir)
+{
+	while(k&lt;=n &amp;&amp; k&gt;0)
+	{
+		C[k]+=dir;
+		k+=k&amp;(-k);
+	}
+}
+void DFS()
+{
+	int z,i,j;
+	int k=0;
+	int flag;
+
+	memset(hash,0,sizeof(hash));
+	hash[root]=1;
+	queue[++k]=root;
+	ans[root]=0;
+	for(i=0;i&lt;=n;i++)	eage_now[i]=head[i];
+	while(k)
+	{
+		flag=0;
+		for(j=eage_now[queue[k]];j!=-1;j=eage[j].next)
+		{
+			z=eage[j].to;
+			if(hash[z])	continue;
+			eage_now[queue[k]]=eage[j].next;
+			queue[++k]=z;
+			hash[z]=1;
+			ans[z]=query(z);
+			flag=1;
+			break;
+		}
+		if(flag==0)
+		{
+			ans[queue[k]]=query(queue[k])-ans[queue[k]];
+			update(queue[k],1);
+			k--;
+		}
+	}
+}
+int main()
+{
+	int i;
+	int a,b;
+	while(scanf("%d%d",&amp;n,&amp;root),n||root)
+	{
+		tot=0;
+		memset(head,-1,sizeof(head));
+		for(i=1;i&lt;n;i++)	{scanf("%d%d",&amp;a,&amp;b);add(a,b);add(b,a);}
+
+		memset(C,0,sizeof(C));
+		DFS();
+
+		for(i=1;i&lt;n;i++)	printf("%d ",ans[i]);
+		printf("%d\n",ans[n]);
+	}
+	return 0;
+}</pre>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/ice_crazy/article/details/8078711</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-71867">
+<article class="comment" id="comment-71867">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530889" rel="external nofollow">新用户020314</a></span> on <a href="http://www.acmerblog.com/hdu-3887-counting-offspring-6889.html#comment-71867" rel="nofollow"><time datetime="2017-04-11T17:41:13+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>中华民族大团结万岁！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-71863">
+<article class="comment" id="comment-71863">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530889" rel="external nofollow">新用户020314</a></span> on <a href="http://www.acmerblog.com/hdu-3887-counting-offspring-6889.html#comment-71863" rel="nofollow"><time datetime="2017-04-11T17:41:13+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>中华民族大团结万岁！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-71862">
+<article class="comment" id="comment-71862">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530889" rel="external nofollow">新用户020314</a></span> on <a href="http://www.acmerblog.com/hdu-3887-counting-offspring-6889.html#comment-71862" rel="nofollow"><time datetime="2017-04-11T17:41:13+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>中华民族大团结万岁！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-71861">
+<article class="comment" id="comment-71861">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530889" rel="external nofollow">新用户020314</a></span> on <a href="http://www.acmerblog.com/hdu-3887-counting-offspring-6889.html#comment-71861" rel="nofollow"><time datetime="2017-04-11T17:41:13+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>中华民族大团结万岁！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-71860">
+<article class="comment" id="comment-71860">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530889" rel="external nofollow">新用户020314</a></span> on <a href="http://www.acmerblog.com/hdu-3887-counting-offspring-6889.html#comment-71860" rel="nofollow"><time datetime="2017-04-11T17:41:13+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>中华民族大团结万岁！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-71859">
+<article class="comment" id="comment-71859">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530889" rel="external nofollow">新用户020314</a></span> on <a href="http://www.acmerblog.com/hdu-3887-counting-offspring-6889.html#comment-71859" rel="nofollow"><time datetime="2017-04-11T17:41:13+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>中华民族大团结万岁！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-71858">
+<article class="comment" id="comment-71858">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530889" rel="external nofollow">新用户020314</a></span> on <a href="http://www.acmerblog.com/hdu-3887-counting-offspring-6889.html#comment-71858" rel="nofollow"><time datetime="2017-04-11T17:41:13+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>中华民族大团结万岁！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-71857">
+<article class="comment" id="comment-71857">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530889" rel="external nofollow">新用户020314</a></span> on <a href="http://www.acmerblog.com/hdu-3887-counting-offspring-6889.html#comment-71857" rel="nofollow"><time datetime="2017-04-11T17:41:13+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>中华民族大团结万岁！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-71856">
+<article class="comment" id="comment-71856">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530889" rel="external nofollow">新用户020314</a></span> on <a href="http://www.acmerblog.com/hdu-3887-counting-offspring-6889.html#comment-71856" rel="nofollow"><time datetime="2017-04-11T17:41:13+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>中华民族大团结万岁！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-71855">
+<article class="comment" id="comment-71855">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530889" rel="external nofollow">新用户020314</a></span> on <a href="http://www.acmerblog.com/hdu-3887-counting-offspring-6889.html#comment-71855" rel="nofollow"><time datetime="2017-04-11T17:41:13+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>中华民族大团结万岁！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-71854">
+<article class="comment" id="comment-71854">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530889" rel="external nofollow">新用户020314</a></span> on <a href="http://www.acmerblog.com/hdu-3887-counting-offspring-6889.html#comment-71854" rel="nofollow"><time datetime="2017-04-11T17:41:13+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>中华民族大团结万岁！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-71853">
+<article class="comment" id="comment-71853">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530889" rel="external nofollow">新用户020314</a></span> on <a href="http://www.acmerblog.com/hdu-3887-counting-offspring-6889.html#comment-71853" rel="nofollow"><time datetime="2017-04-11T17:41:13+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>中华民族大团结万岁！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-71852">
+<article class="comment" id="comment-71852">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530889" rel="external nofollow">新用户020314</a></span> on <a href="http://www.acmerblog.com/hdu-3887-counting-offspring-6889.html#comment-71852" rel="nofollow"><time datetime="2017-04-11T17:41:13+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>中华民族大团结万岁！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-71851">
+<article class="comment" id="comment-71851">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530889" rel="external nofollow">新用户020314</a></span> on <a href="http://www.acmerblog.com/hdu-3887-counting-offspring-6889.html#comment-71851" rel="nofollow"><time datetime="2017-04-11T17:41:13+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>中华民族大团结万岁！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-71850">
+<article class="comment" id="comment-71850">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530889" rel="external nofollow">新用户020314</a></span> on <a href="http://www.acmerblog.com/hdu-3887-counting-offspring-6889.html#comment-71850" rel="nofollow"><time datetime="2017-04-11T17:41:13+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>中华民族大团结万岁！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-71849">
+<article class="comment" id="comment-71849">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530889" rel="external nofollow">新用户020314</a></span> on <a href="http://www.acmerblog.com/hdu-3887-counting-offspring-6889.html#comment-71849" rel="nofollow"><time datetime="2017-04-11T17:41:13+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>中华民族大团结万岁！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64088">
+<article class="comment" id="comment-64088">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">AE</a></span> on <a href="http://www.acmerblog.com/hdu-3887-counting-offspring-6889.html#comment-64088" rel="nofollow"><time datetime="2015-07-17T23:42:28+00:00" pubdate="">2015年7月17日 at 下午11:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>看似简单，还是不少坑的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64087">
+<article class="comment" id="comment-64087">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">geoksz</a></span> on <a href="http://www.acmerblog.com/hdu-3887-counting-offspring-6889.html#comment-64087" rel="nofollow"><time datetime="2015-07-11T04:17:37+00:00" pubdate="">2015年7月11日 at 上午4:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个系列很不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51477">
+<article class="comment" id="comment-51477">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">linyanjin</a></span> on <a href="http://www.acmerblog.com/hdu-3887-counting-offspring-6889.html#comment-51477" rel="nofollow"><time datetime="2015-06-28T01:28:37+00:00" pubdate="">2015年6月28日 at 上午1:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>思考人生吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51479">
+<article class="comment" id="comment-51479">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">radish</a></span> on <a href="http://www.acmerblog.com/hdu-3887-counting-offspring-6889.html#comment-51479" rel="nofollow"><time datetime="2015-05-29T08:12:19+00:00" pubdate="">2015年5月29日 at 上午8:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为\n\n</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59803">
+<article class="comment" id="comment-59803">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bcys</a></span> on <a href="http://www.acmerblog.com/hdu-3887-counting-offspring-6889.html#comment-59803" rel="nofollow"><time datetime="2015-05-28T20:01:53+00:00" pubdate="">2015年5月28日 at 下午8:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题别太纠结了，不同的编译器结果不一</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51478">
+<article class="comment" id="comment-51478">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">water160</a></span> on <a href="http://www.acmerblog.com/hdu-3887-counting-offspring-6889.html#comment-51478" rel="nofollow"><time datetime="2015-05-26T06:46:01+00:00" pubdate="">2015年5月26日 at 上午6:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51473">
+<article class="comment" id="comment-51473">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sheyty</a></span> on <a href="http://www.acmerblog.com/hdu-3887-counting-offspring-6889.html#comment-51473" rel="nofollow"><time datetime="2015-05-25T05:20:55+00:00" pubdate="">2015年5月25日 at 上午5:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学算法中的数据结构学到一定程度会乐此不疲的，比如其中的2－3树，类似的红黑树，我甚至可以自己写个逻辑文件系统结构来。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51474">
+<article class="comment" id="comment-51474">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tufei</a></span> on <a href="http://www.acmerblog.com/hdu-3887-counting-offspring-6889.html#comment-51474" rel="nofollow"><time datetime="2015-05-04T05:23:14+00:00" pubdate="">2015年5月4日 at 上午5:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可以参考算法导论中的时间戳。就是结束访问时间，最后结束的顶点肯定是入度为0的顶点，因为DFS要回溯</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51480">
+<article class="comment" id="comment-51480">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jdliyao</a></span> on <a href="http://www.acmerblog.com/hdu-3887-counting-offspring-6889.html#comment-51480" rel="nofollow"><time datetime="2015-05-01T14:05:39+00:00" pubdate="">2015年5月1日 at 下午2:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我还有个问题想请教一下，就是感觉对于新手来说，递归理解起来有些困难，不知有没有什么好的方法或者什么好的建议？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51475">
+<article class="comment" id="comment-51475">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">woweizhineng</a></span> on <a href="http://www.acmerblog.com/hdu-3887-counting-offspring-6889.html#comment-51475" rel="nofollow"><time datetime="2015-04-26T12:40:45+00:00" pubdate="">2015年4月26日 at 下午12:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>a是根先忽略掉，递归子树。剩下前缀bejkcfghid和后缀jkebfghicd，分拆的原则的是每个子树前缀和后缀的节点个数是一样的，根节点出现在前缀的第一个，后缀的最后一个。根节点b出现后缀的第四个位置，则第一部分为四个节点，前缀bejk，后缀jkeb，剩下的c出现在后缀的倒数第2个，就划分为cfghi和 fghic，第3部分就为c、c</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51476">
+<article class="comment" id="comment-51476">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bobo</a></span> on <a href="http://www.acmerblog.com/hdu-3887-counting-offspring-6889.html#comment-51476" rel="nofollow"><time datetime="2015-04-20T11:57:21+00:00" pubdate="">2015年4月20日 at 上午11:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，算是枚举吧，已修正</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64089">
+<article class="comment" id="comment-64089">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">CCat</a></span> on <a href="http://www.acmerblog.com/hdu-3887-counting-offspring-6889.html#comment-64089" rel="nofollow"><time datetime="2015-04-20T10:42:33+00:00" pubdate="">2015年4月20日 at 上午10:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p><a href="http://beeder.me" rel="nofollow">http://beeder.me</a> 这个网站上有很多poj和hihoCoder的题解，质量不错，欢迎转载。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64086">
+<article class="comment" id="comment-64086">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">everos</a></span> on <a href="http://www.acmerblog.com/hdu-3887-counting-offspring-6889.html#comment-64086" rel="nofollow"><time datetime="2015-04-18T10:50:54+00:00" pubdate="">2015年4月18日 at 上午10:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>We do not harbor that I couldn’t remove other individuals’ problems whenever this arrived at.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51472">
+<article class="comment" id="comment-51472">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Amber</a></span> on <a href="http://www.acmerblog.com/hdu-3887-counting-offspring-6889.html#comment-51472" rel="nofollow"><time datetime="2015-04-14T09:22:05+00:00" pubdate="">2015年4月14日 at 上午9:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>printf这个函数在计算的时候是从右到左，打印是从左到右。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

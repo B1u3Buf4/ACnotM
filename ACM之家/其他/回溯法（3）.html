@@ -1,0 +1,501 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-27</div>
+<div class="tit"><h1 class="entry-title">回溯法（3）</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/backtracking" rel="category tag" title="查看回溯和剪枝中的全部文章">回溯和剪枝</a>, <a href="http://www.acmerblog.com/category/zhuanti/algorithm" rel="category tag" title="查看算法分析中的全部文章">算法分析</a></span><span class="i4">围观1089次</span><span class="i3"><a class="ds-thread-count" data-thread-key="2938" href="http://www.acmerblog.com/backtracking-2938.html#comments" title="《回溯法（3）》上的评论">19 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<h3>四、0-1背包问题</h3>
+<pre><strong>问题表述</strong>：给定n种物品和一背包。物品i的重量是wi，其价值为pi，背包的容量为C。问应如何选择装入背包的物品，使得装入背包中物品的总价值最大?</pre>
+<pre><span style="color: #0000ff;">0-1背包问题是一个特殊的整数规划问题</span>。</pre>
+<pre><img alt="" height="181" src="http://cdn.acmerblog.com/img/1388063800343.jpg" width="442"/></pre>
+<pre><strong>解空间：</strong></pre>
+<pre><img alt="" src="http://cdn.acmerblog.com/img/1388063800473.jpg"/></pre>
+<pre><strong>可行性约束函数：</strong></pre>
+<pre><img alt="" height="59" src="http://cdn.acmerblog.com/img/1388063800572.jpg" width="129"/></pre>
+<pre><strong>上界函数：</strong></pre>
+<pre>考虑一个右子树的时候，设</pre>
+<pre>r：是当前未考虑的剩余物品的总价值(remainder)</pre>
+<pre>cp：是当前的价值(current price)</pre>
+<pre>bestp：是当前得到的最优价值(best price)</pre>
+<pre>那么，满足：<img alt="" height="43" src="http://cdn.acmerblog.com/img/1388063800638.jpg" width="149"/></pre>
+<pre>但是，上界r太松。</pre>
+<pre><span style="color: #ff0000;">一个更加紧的上界：</span></pre>
+<pre><span style="color: #ff0000;">将剩余物品按照单位重量价值排序，然后依次装入物品，直到装不下，再将剩余物品的一部分放入背包。(r_n  &lt;=  r)</span></pre>
+<pre><strong>实现</strong></pre>
+<pre><div class="cnblogs_Highlighter"><pre class="brush:cpp;gutter:false;">/* 主题：0-1背包问题
+* 作者：chinazhangjie
+* 邮箱：chinajiezhang@gmail.com
+* 开发语言：C++
+* 开发环境：Mircosoft Virsual Studio 2008
+* 时间: 2010.10.25
+*/
+#include &lt;iostream&gt;
+#include &lt;vector&gt;
+#include &lt;algorithm&gt;
+#include &lt;functional&gt;
+using namespace std;
+
+class goods {
+public:
+	int weight; // 重量
+	int price;	// 价格
+	goods() : weight(0),price(0) 
+	{}
+};
+
+bool goods_greater(const goods&amp; lhs,const goods&amp; rhs)
+{
+	return (lhs.price / lhs.weight) &gt; (rhs.price / rhs.weight);
+}
+
+class knapsack 
+{
+public:
+	knapsack (int c,const vector&lt;goods&gt;&amp; gl) 
+		: capacity (c), curr_price(0), best_price (0), curr_weight(0){
+		goods_list = gl;
+		total_layers = gl.size();
+		curr_path.resize (total_layers);
+		best_path.resize (total_layers);
+	}
+	void backtrack () {
+		__backtrack (0);
+		cout &lt;&lt; "path: " ;
+		copy (best_path.begin(),best_path.end(),ostream_iterator&lt;int&gt; (cout, " "));
+		cout &lt;&lt; endl;
+		cout &lt;&lt; "best_price: " &lt;&lt; best_price &lt;&lt; endl;
+	}
+
+private:
+	// 计算上界
+	int __bound (int layers) {
+		int cleft = capacity - curr_weight;
+		int result = curr_price;
+		// 将layer之后的物品进行按单位价格降序排序
+		vector&lt;goods&gt; tmp = goods_list;
+		sort (tmp.begin() + layers, tmp.end(),goods_greater);
+		// 以物品单位重量价值递减序装入物品
+		while (layers &lt; total_layers &amp;&amp; tmp[layers].weight &lt;= cleft) {
+			cleft -= tmp[layers].weight;
+			result += tmp[layers].price;
+			++ layers;
+		}
+		// 装满背包
+		if (layers &lt; total_layers) {
+			result += (tmp[layers].price / tmp[layers].weight) * cleft;
+		}
+		return result;
+	}
+
+	void __backtrack (int layers) {
+		// 到达叶子结点，更新最优价值
+		if (layers &gt;= total_layers) {
+			if (curr_price &gt; best_price || best_price == 0) {
+				best_price = curr_price;
+				copy (curr_path.begin(), curr_path.end(), best_path.begin());
+			}
+			return ;
+		}
+		// 左剪枝（能放的下）
+		if (curr_weight + goods_list[layers].weight &lt;= capacity) {
+			curr_path[layers] = 1;
+			curr_weight += goods_list[layers].weight;
+			curr_price += goods_list[layers].price;
+			__backtrack (layers + 1);
+			curr_weight -= goods_list[layers].weight;
+			curr_price -= goods_list[layers].price;
+		}
+		// 右剪枝
+		if (__bound (layers + 1) &gt; best_price || best_price == 0 ) {
+			curr_path[layers] = 0;
+			__backtrack (layers + 1);
+		}
+		/*curr_path[layers] = 0;
+		__backtrack (layers + 1);*/
+	}
+
+private:
+	vector&lt;goods&gt; goods_list;	// 货物信息列表
+	int capacity;				// 背包承载量
+	int curr_price;				// 当前价格
+	int curr_weight;			　　　　// 当前重量
+	int best_price;				// 当前得到的最优价值
+	int total_layers;			// 总层数
+	vector&lt;int&gt; curr_path;		// 当前路径
+	vector&lt;int&gt; best_path;		// 最优价值下的路径
+};
+
+int main() 
+{
+	const int size = 3;
+	vector&lt;goods&gt; gl(size);
+	gl[0].weight = 10;
+	gl[0].price = 1;
+	gl[1].weight = 8;
+	gl[1].price = 4;
+	gl[2].weight = 5;
+	gl[2].price = 5;
+
+	knapsack ks(16, gl);
+	ks.backtrack ();
+	return 0;
+}
+</pre>
+</div>
+<h3>五、旅行售货员问题</h3>
+<p><strong>问题表述</strong>：在图中找到一个权最小的周游路线</p>
+<h3><img alt="" height="236" src="http://cdn.acmerblog.com/img/1388063800766.jpg" width="246"/><img alt="" height="231" src="http://cdn.acmerblog.com/img/1388063800875.jpg" width="256"/></h3>
+<p><strong>解空间：</strong>排列树</p>
+<p><strong>剪枝策略：</strong></p>
+<p>当前路径的权重＋下一个路径的权重 &lt; 当前的最小权重，则搜索该路径</p>
+<p><strong>实现：</strong></p>
+<pre class="brush:cpp ">/* 主题：旅行售货员问题
+* 作者：chinazhangjie
+* 邮箱：chinajiezhang@gmail.com
+* 开发语言：C++
+* 开发环境：Mircosoft Virsual Studio 2008
+* 时间: 2010.10.26
+*/
+
+#include &lt;iostream&gt;
+#include &lt;vector&gt;
+#include &lt;iterator&gt;
+#include &lt;algorithm&gt;
+using namespace std;
+
+class traveling 
+{
+public:
+	static const int NOEDGE  = -1 ; 
+public:
+	traveling (const vector&lt;vector&lt;int&gt; &gt;&amp; ug)
+		: curr_cost (0), best_cost (-1) {
+		node_count = ug.size ();
+		undigraph = ug;
+		curr_solution.resize (node_count);
+		for (int i = 0; i &lt; node_count; ++ i) {
+			curr_solution[i] = i;
+		}
+		best_solution.resize (node_count);
+	}
+	void backtrack () {
+		__backtrack (1);
+		cout &lt;&lt; best_cost &lt;&lt; endl;
+	}
+
+private:
+	void __backtrack (int layers) {
+		if (layers &gt;= node_count) {
+			if (undigraph[curr_solution[node_count - 1]][curr_solution[0]] == NOEDGE){
+				return ;
+			}
+			int total_cost = curr_cost +
+				undigraph[curr_solution[node_count - 1]][curr_solution[0]] ;
+			if (total_cost &lt; best_cost || best_cost == -1) {
+				// 更新最优费用和最优路径
+				best_cost = total_cost;
+				copy (curr_solution.begin(), 
+					curr_solution.end(), 
+					best_solution.begin());
+			}
+			return ;
+		}
+		for (int i = layers; i &lt; node_count; ++ i) {
+			// 剪枝
+			if (undigraph[curr_solution[layers - 1]][curr_solution[i]] != NOEDGE &amp;&amp; 
+				( curr_cost + undigraph[curr_solution[layers - 1]][curr_solution[i]]
+				&lt; best_cost || best_cost == -1 )) {
+				// 搜索子树
+				swap (curr_solution[layers],curr_solution[i]);
+				curr_cost += 
+					undigraph[curr_solution[layers - 1]][curr_solution[layers]];
+				__backtrack (layers + 1);
+				curr_cost -= 
+					undigraph[curr_solution[layers - 1]][curr_solution[layers]];
+				swap (curr_solution[layers],curr_solution[i]);	
+
+			}
+			
+		}
+	}
+	int				node_count;		// 结点个数
+	int				curr_cost;		// 当前费用
+	int				best_cost;		// 当前
+	vector&lt;int&gt;		curr_solution;	// 当前解决方案
+	vector&lt;int&gt;		best_solution;	// 最优解决方案
+	vector&lt;vector&lt;int&gt; &gt; undigraph; // 无向图(采用矩阵存储)
+};
+int main() 
+{
+	int size = 4;
+	vector&lt;vector&lt;int&gt; &gt; ug(size);
+	for (int i = 0;i &lt; size; ++ i) {
+		ug[i].resize (size);
+	}
+
+	ug[0][0] = -1;
+	ug[0][1] = 30;
+	ug[0][2] = 6;
+	ug[0][3] = 4;
+
+	ug[1][0] = 30;
+	ug[1][1] = -1;
+	ug[1][2] = 5;
+	ug[1][3] = 10;
+
+	ug[2][0] = 6;
+	ug[2][1] = 5;
+	ug[2][2] = -1;
+	ug[2][3] = 20;
+
+	ug[3][0] = 4;
+	ug[3][1] = 10;
+	ug[3][2] = 20;
+	ug[3][3] = -1;
+
+	traveling t(ug);
+	t.backtrack();
+
+	return 0;
+}</pre>
+<p> </p>
+<p><strong>参考书籍　《算法设计与分析（第二版）》　王晓东　编著</strong></p>
+<p><strong>授课教师　张阳教授</strong></p>
+<p>转自：http://www.cnblogs.com/chinazhangjie/archive/2010/10/26/1861841.html</p>
+						                        
+<div>
+
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+ </div>
+
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+
+					</pre></div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-87471">
+<article class="comment" id="comment-87471">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514957" rel="external nofollow">新用户955793</a></span> on <a href="http://www.acmerblog.com/backtracking-2938.html#comment-87471" rel="nofollow"><time datetime="2017-04-13T06:42:36+00:00" pubdate="">2017年4月13日 at 上午6:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我看到你们的回复真心笑爆了～</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-87470">
+<article class="comment" id="comment-87470">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514957" rel="external nofollow">新用户955793</a></span> on <a href="http://www.acmerblog.com/backtracking-2938.html#comment-87470" rel="nofollow"><time datetime="2017-04-13T06:42:36+00:00" pubdate="">2017年4月13日 at 上午6:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我看到你们的回复真心笑爆了～</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-87469">
+<article class="comment" id="comment-87469">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514957" rel="external nofollow">新用户955793</a></span> on <a href="http://www.acmerblog.com/backtracking-2938.html#comment-87469" rel="nofollow"><time datetime="2017-04-13T06:42:36+00:00" pubdate="">2017年4月13日 at 上午6:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我看到你们的回复真心笑爆了～</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-87468">
+<article class="comment" id="comment-87468">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514957" rel="external nofollow">新用户955793</a></span> on <a href="http://www.acmerblog.com/backtracking-2938.html#comment-87468" rel="nofollow"><time datetime="2017-04-13T06:42:36+00:00" pubdate="">2017年4月13日 at 上午6:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我看到你们的回复真心笑爆了～</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-87467">
+<article class="comment" id="comment-87467">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514957" rel="external nofollow">新用户955793</a></span> on <a href="http://www.acmerblog.com/backtracking-2938.html#comment-87467" rel="nofollow"><time datetime="2017-04-13T06:42:36+00:00" pubdate="">2017年4月13日 at 上午6:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我看到你们的回复真心笑爆了～</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-18860">
+<article class="comment" id="comment-18860">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lanifer</a></span> on <a href="http://www.acmerblog.com/backtracking-2938.html#comment-18860" rel="nofollow"><time datetime="2015-05-21T07:07:30+00:00" pubdate="">2015年5月21日 at 上午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>1234百位上出现的次数应该是200吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-18857">
+<article class="comment" id="comment-18857">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Anne</a></span> on <a href="http://www.acmerblog.com/backtracking-2938.html#comment-18857" rel="nofollow"><time datetime="2015-03-14T02:43:40+00:00" pubdate="">2015年3月14日 at 上午2:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>原来欧几里德定理应用这么多</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-43835">
+<article class="comment" id="comment-43835">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xun.gong</a></span> on <a href="http://www.acmerblog.com/backtracking-2938.html#comment-43835" rel="nofollow"><time datetime="2015-02-10T09:23:59+00:00" pubdate="">2015年2月10日 at 上午9:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>编辑的时候有些不小心了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-43836">
+<article class="comment" id="comment-43836">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">AcmDream</a></span> on <a href="http://www.acmerblog.com/backtracking-2938.html#comment-43836" rel="nofollow"><time datetime="2015-01-25T19:40:20+00:00" pubdate="">2015年1月25日 at 下午7:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>抱歉，确实是弄错了，原来的代码是错误的，删掉了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-18858">
+<article class="comment" id="comment-18858">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zrw</a></span> on <a href="http://www.acmerblog.com/backtracking-2938.html#comment-18858" rel="nofollow"><time datetime="2015-01-06T00:27:13+00:00" pubdate="">2015年1月6日 at 上午12:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已修正</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-43833">
+<article class="comment" id="comment-43833">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">vincent_ynh</a></span> on <a href="http://www.acmerblog.com/backtracking-2938.html#comment-43833" rel="nofollow"><time datetime="2014-12-19T11:18:41+00:00" pubdate="">2014年12月19日 at 上午11:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>即为打印出的组合的个数C(n,r)，假设print函数复杂度为O(1)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-18859">
+<article class="comment" id="comment-18859">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Supermaner</a></span> on <a href="http://www.acmerblog.com/backtracking-2938.html#comment-18859" rel="nofollow"><time datetime="2014-10-23T12:18:38+00:00" pubdate="">2014年10月23日 at 下午12:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>参考 <a href="http://www.acmerblog.com/leetcode-solutions-6422.html" rel="nofollow">http://www.acmerblog.com/leetcode-solutions-6422.html</a></p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-18861">
+<article class="comment" id="comment-18861">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tufei</a></span> on <a href="http://www.acmerblog.com/backtracking-2938.html#comment-18861" rel="nofollow"><time datetime="2014-09-29T18:06:15+00:00" pubdate="">2014年9月29日 at 下午6:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>博主您好，这是一个内容十分优秀的博客，而且界面也非常漂亮。但是为什么博客的响应速度这么慢，虽然博客的主机在国外，但是我开启VPN还是经常响应很久，再者打开某些页面经常会出现数据库连接出错的提示</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-18855">
+<article class="comment" id="comment-18855">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Bob</a></span> on <a href="http://www.acmerblog.com/backtracking-2938.html#comment-18855" rel="nofollow"><time datetime="2014-05-14T17:28:44+00:00" pubdate="">2014年5月14日 at 下午5:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>必须试过啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-43838">
+<article class="comment" id="comment-43838">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">BGPY243956</a></span> on <a href="http://www.acmerblog.com/backtracking-2938.html#comment-43838" rel="nofollow"><time datetime="2014-05-07T06:00:44+00:00" pubdate="">2014年5月7日 at 上午6:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#include &lt;stdio.h&gt;<br/>
+int main()<br/>
+{<br/>
+    int n,p,t[100]={1};<br/>
+    for(int i=1;i&lt;100;i++)<br/>
+        t <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> =i;<br/>
+    while(scanf("%d",&amp;n)&amp;&amp;n!=0){<br/>
+        if(n==1)<br/>
+        printf("Printing order for 1 pages:nSheet 1, front: Blank, 1n");<br/>
+        else {<br/>
+        if(n%4) p=n/4+1;<br/>
+        else p=n/4;<br/>
+        int q=4*p;<br/>
+        printf("Printing order for %d pages:n",n);<br/>
+        for(int i=0;i&lt;p;i++){<br/>
+            printf("Sheet %d, front: ",i+1);<br/>
+            if(q&gt;n) {printf("Blank, %dn",t[2*i+1]);}<br/>
+            else {printf("%d, %dn",q,t[2*i+1]);}<br/>
+            q–;//打印表前<br/>
+            printf("Sheet %d, back : ",i+1);<br/>
+            if(q&gt;n) {printf("%d, Blankn",t[2*i+2]);}<br/>
+            else {printf("%d, %dn",t[2*i+2],q);}<br/>
+            q–;//打印表后<br/>
+           }<br/>
+        }<br/>
+    }<br/>
+    return 0;<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-43834">
+<article class="comment" id="comment-43834">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaotongtest</a></span> on <a href="http://www.acmerblog.com/backtracking-2938.html#comment-43834" rel="nofollow"><time datetime="2014-02-23T00:36:02+00:00" pubdate="">2014年2月23日 at 上午12:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给力！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-43837">
+<article class="comment" id="comment-43837">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rtaxa</a></span> on <a href="http://www.acmerblog.com/backtracking-2938.html#comment-43837" rel="nofollow"><time datetime="2014-02-01T21:08:39+00:00" pubdate="">2014年2月1日 at 下午9:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>一开始就规定不相邻节点颜色相同，可能得不到最优解。我想个类似的算法，也不确定是否总能得到最优解：先着一个点，随机挑一个相邻点，着第二色，继续随机选一个点，但必须至少有一个边和已着点相邻，着上不同色，当然尽量不增加新色，直到完成。我还找不到反例验证他的错误。。希望LZ也帮想想, 有想法欢迎来邮件。谢谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-18856">
+<article class="comment" id="comment-18856">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Sacomplex</a></span> on <a href="http://www.acmerblog.com/backtracking-2938.html#comment-18856" rel="nofollow"><time datetime="2013-12-29T05:28:04+00:00" pubdate="">2013年12月29日 at 上午5:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>1234百位上出现的次数应该是200吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-56">
+<article class="comment" id="comment-56">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">king飞</span> on <a href="http://www.acmerblog.com/backtracking-2938.html#comment-56" rel="nofollow"><time datetime="2013-12-27T12:19:47+00:00" pubdate="">2013年12月27日 at 下午12:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>helpful！！ mark</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,579 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>02-23</div>
+<div class="tit"><h1 class="entry-title">大数计算-C++模板</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/math" rel="category tag" title="查看数学相关中的全部文章">数学相关</a>, <a href="http://www.acmerblog.com/category/zhuanti/classic" rel="category tag" title="查看经典问题中的全部文章">经典问题</a></span><span class="i4">围观1280次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4557" href="http://www.acmerblog.com/bignumber-cpp-template-4557.html#comments" title="《大数计算-C++模板》上的评论">24 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p style="color: #333333; font-family: Arial; font-size: 14.399999618530273px; line-height: 26px;"><span style="font-size: 16px;"> 分别使用C++中的运算符重载的方法来实现大数之间的数学运算，包括加法、减法、乘法、除法、n次方、取模、大小比较、赋值以及输入流、输出流的重载。。</span></p>
+<p style="color: #333333; font-family: Arial; font-size: 14.399999618530273px; line-height: 26px;"><span style="font-size: 16px;">         并且使用这个大数模板，顺利AC了HDOJ上的1134这个题目的Catalan数计数问题。。<a href="http://acm.hdu.edu.cn/showproblem.php?pid=1134" style="color: #336699; text-decoration: none;">http://acm.hdu.edu.cn/showproblem.php?pid=1134</a></span></p>
+<p style="color: #333333; font-family: Arial; font-size: 14.399999618530273px; line-height: 26px;"><span style="font-size: 16px;">大数模板的代码如下：</span></p>
+<pre class="brush:cpp">#include&lt;iostream&gt; 
+#include&lt;string&gt; 
+#include&lt;iomanip&gt; 
+#include&lt;algorithm&gt; 
+using namespace std; 
+
+#define MAXN 9999
+#define MAXSIZE 10
+#define DLEN 4
+
+class BigNum
+{ 
+private: 
+	int a[500];    //可以控制大数的位数 
+	int len;       //大数长度
+public: 
+	BigNum(){ len = 1;memset(a,0,sizeof(a)); }   //构造函数
+	BigNum(const int);       //将一个int类型的变量转化为大数
+	BigNum(const char*);     //将一个字符串类型的变量转化为大数
+	BigNum(const BigNum &amp;);  //拷贝构造函数
+	BigNum &amp;operator=(const BigNum &amp;);   //重载赋值运算符，大数之间进行赋值运算
+
+	friend istream&amp; operator&gt;&gt;(istream&amp;,  BigNum&amp;);   //重载输入运算符
+	friend ostream&amp; operator&lt;&lt;(ostream&amp;,  BigNum&amp;);   //重载输出运算符
+
+	BigNum operator+(const BigNum &amp;) const;   //重载加法运算符，两个大数之间的相加运算 
+	BigNum operator-(const BigNum &amp;) const;   //重载减法运算符，两个大数之间的相减运算 
+	BigNum operator*(const BigNum &amp;) const;   //重载乘法运算符，两个大数之间的相乘运算 
+	BigNum operator/(const int   &amp;) const;    //重载除法运算符，大数对一个整数进行相除运算
+
+	BigNum operator^(const int  &amp;) const;    //大数的n次方运算
+	int    operator%(const int  &amp;) const;    //大数对一个int类型的变量进行取模运算    
+	bool   operator&gt;(const BigNum &amp; T)const;   //大数和另一个大数的大小比较
+	bool   operator&gt;(const int &amp; t)const;      //大数和一个int类型的变量的大小比较
+
+	void print();       //输出大数
+}; 
+BigNum::BigNum(const int b)     //将一个int类型的变量转化为大数
+{ 
+	int c,d = b;
+	len = 0;
+	memset(a,0,sizeof(a));
+	while(d &gt; MAXN)
+	{
+		c = d - (d / (MAXN + 1)) * (MAXN + 1); 
+		d = d / (MAXN + 1);
+		a[len++] = c;
+	}
+	a[len++] = d;
+}
+BigNum::BigNum(const char*s)     //将一个字符串类型的变量转化为大数
+{
+	int t,k,index,l,i;
+	memset(a,0,sizeof(a));
+	l=strlen(s);   
+	len=l/DLEN;
+	if(l%DLEN)
+		len++;
+	index=0;
+	for(i=l-1;i&gt;=0;i-=DLEN)
+	{
+		t=0;
+		k=i-DLEN+1;
+		if(k&lt;0)
+			k=0;
+		for(int j=k;j&lt;=i;j++)
+			t=t*10+s[j]-'0';
+		a[index++]=t;
+	}
+}
+BigNum::BigNum(const BigNum &amp; T) : len(T.len)  //拷贝构造函数
+{ 
+	int i; 
+	memset(a,0,sizeof(a)); 
+	for(i = 0 ; i &lt; len ; i++)
+		a[i] = T.a[i]; 
+} 
+BigNum &amp; BigNum::operator=(const BigNum &amp; n)   //重载赋值运算符，大数之间进行赋值运算
+{
+	int i;
+	len = n.len;
+	memset(a,0,sizeof(a)); 
+	for(i = 0 ; i &lt; len ; i++) 
+		a[i] = n.a[i]; 
+	return *this; 
+}
+istream&amp; operator&gt;&gt;(istream &amp; in,  BigNum &amp; b)   //重载输入运算符
+{
+	char ch[MAXSIZE*4];
+	int i = -1;
+	in&gt;&gt;ch;
+	int l=strlen(ch);
+	int count=0,sum=0;
+	for(i=l-1;i&gt;=0;)
+	{
+		sum = 0;
+		int t=1;
+		for(int j=0;j&lt;4&amp;&amp;i&gt;=0;j++,i--,t*=10)
+		{
+			sum+=(ch[i]-'0')*t;
+		}
+		b.a[count]=sum;
+		count++;
+	}
+	b.len =count++;
+	return in;
+
+}
+ostream&amp; operator&lt;&lt;(ostream&amp; out,  BigNum&amp; b)   //重载输出运算符
+{
+	int i;  
+	cout &lt;&lt; b.a[b.len - 1]; 
+	for(i = b.len - 2 ; i &gt;= 0 ; i--)
+	{ 
+		cout.width(DLEN); 
+		cout.fill('0'); 
+		cout &lt;&lt; b.a[i]; 
+	} 
+	return out;
+}
+
+BigNum BigNum::operator+(const BigNum &amp; T) const   //两个大数之间的相加运算
+{
+	BigNum t(*this);
+	int i,big;      //位数   
+	big = T.len &gt; len ? T.len : len; 
+	for(i = 0 ; i &lt; big ; i++) 
+	{ 
+		t.a[i] +=T.a[i]; 
+		if(t.a[i] &gt; MAXN) 
+		{ 
+			t.a[i + 1]++; 
+			t.a[i] -=MAXN+1; 
+		} 
+	} 
+	if(t.a[big] != 0)
+		t.len = big + 1; 
+	else
+		t.len = big;   
+	return t;
+}
+BigNum BigNum::operator-(const BigNum &amp; T) const   //两个大数之间的相减运算 
+{  
+	int i,j,big;
+	bool flag;
+	BigNum t1,t2;
+	if(*this&gt;T)
+	{
+		t1=*this;
+		t2=T;
+		flag=0;
+	}
+	else
+	{
+		t1=T;
+		t2=*this;
+		flag=1;
+	}
+	big=t1.len;
+	for(i = 0 ; i &lt; big ; i++)
+	{
+		if(t1.a[i] &lt; t2.a[i])
+		{ 
+			j = i + 1; 
+			while(t1.a[j] == 0)
+				j++; 
+			t1.a[j--]--; 
+			while(j &gt; i)
+				t1.a[j--] += MAXN;
+			t1.a[i] += MAXN + 1 - t2.a[i]; 
+		} 
+		else
+			t1.a[i] -= t2.a[i];
+	}
+	t1.len = big;
+	while(t1.a[len - 1] == 0 &amp;&amp; t1.len &gt; 1)
+	{
+		t1.len--; 
+		big--;
+	}
+	if(flag)
+		t1.a[big-1]=0-t1.a[big-1];
+	return t1; 
+} 
+
+BigNum BigNum::operator*(const BigNum &amp; T) const   //两个大数之间的相乘运算 
+{ 
+	BigNum ret; 
+	int i,j,up; 
+	int temp,temp1;   
+	for(i = 0 ; i &lt; len ; i++)
+	{ 
+		up = 0; 
+		for(j = 0 ; j &lt; T.len ; j++)
+		{ 
+			temp = a[i] * T.a[j] + ret.a[i + j] + up; 
+			if(temp &gt; MAXN)
+			{ 
+				temp1 = temp - temp / (MAXN + 1) * (MAXN + 1); 
+				up = temp / (MAXN + 1); 
+				ret.a[i + j] = temp1; 
+			} 
+			else
+			{ 
+				up = 0; 
+				ret.a[i + j] = temp; 
+			} 
+		} 
+		if(up != 0) 
+			ret.a[i + j] = up; 
+	} 
+	ret.len = i + j; 
+	while(ret.a[ret.len - 1] == 0 &amp;&amp; ret.len &gt; 1)
+		ret.len--; 
+	return ret; 
+} 
+BigNum BigNum::operator/(const int &amp; b) const   //大数对一个整数进行相除运算
+{ 
+	BigNum ret; 
+	int i,down = 0;   
+	for(i = len - 1 ; i &gt;= 0 ; i--)
+	{ 
+		ret.a[i] = (a[i] + down * (MAXN + 1)) / b; 
+		down = a[i] + down * (MAXN + 1) - ret.a[i] * b; 
+	} 
+	ret.len = len; 
+	while(ret.a[ret.len - 1] == 0 &amp;&amp; ret.len &gt; 1)
+		ret.len--; 
+	return ret; 
+}
+int BigNum::operator %(const int &amp; b) const    //大数对一个int类型的变量进行取模运算    
+{
+	int i,d=0;
+	for (i = len-1; i&gt;=0; i--)
+	{
+		d = ((d * (MAXN+1))% b + a[i])% b;  
+	}
+	return d;
+}
+BigNum BigNum::operator^(const int &amp; n) const    //大数的n次方运算
+{
+	BigNum t,ret(1);
+	int i;
+	if(n&lt;0)
+		exit(-1);
+	if(n==0)
+		return 1;
+	if(n==1)
+		return *this;
+	int m=n;
+	while(m&gt;1)
+	{
+		t=*this;
+		for( i=1;i&lt;&lt;1&lt;=m;i&lt;&lt;=1)
+		{
+			t=t*t;
+		}
+		m-=i;
+		ret=ret*t;
+		if(m==1)
+			ret=ret*(*this);
+	}
+	return ret;
+}
+bool BigNum::operator&gt;(const BigNum &amp; T) const   //大数和另一个大数的大小比较
+{ 
+	int ln; 
+	if(len &gt; T.len)
+		return true; 
+	else if(len == T.len)
+	{ 
+		ln = len - 1; 
+		while(a[ln] == T.a[ln] &amp;&amp; ln &gt;= 0)
+			ln--; 
+		if(ln &gt;= 0 &amp;&amp; a[ln] &gt; T.a[ln])
+			return true; 
+		else
+			return false; 
+	} 
+	else
+		return false; 
+}
+bool BigNum::operator &gt;(const int &amp; t) const    //大数和一个int类型的变量的大小比较
+{
+	BigNum b(t);
+	return *this&gt;b;
+}
+
+void BigNum::print()    //输出大数
+{ 
+	int i;   
+	cout &lt;&lt; a[len - 1]; 
+	for(i = len - 2 ; i &gt;= 0 ; i--)
+	{ 
+		cout.width(DLEN); 
+		cout.fill('0'); 
+		cout &lt;&lt; a[i]; 
+	} 
+	cout &lt;&lt; endl;
+}
+int main(void)
+{
+	int i,n;
+	BigNum x[101];      //定义大数的对象数组
+	x[0]=1;
+	for(i=1;i&lt;101;i++)
+		x[i]=x[i-1]*(4*i-2)/(i+1);
+	while(scanf("%d",&amp;n)==1 &amp;&amp; n!=-1)
+	{
+		x[n].print();
+	}
+}</pre>
+<p> </p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-81233">
+<article class="comment" id="comment-81233">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521333" rel="external nofollow">新用户979429</a></span> on <a href="http://www.acmerblog.com/bignumber-cpp-template-4557.html#comment-81233" rel="nofollow"><time datetime="2017-04-12T18:13:48+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好文章，好极了。支持，顶。问老泉好。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-81232">
+<article class="comment" id="comment-81232">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521333" rel="external nofollow">新用户979429</a></span> on <a href="http://www.acmerblog.com/bignumber-cpp-template-4557.html#comment-81232" rel="nofollow"><time datetime="2017-04-12T18:13:48+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好文章，好极了。支持，顶。问老泉好。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-81231">
+<article class="comment" id="comment-81231">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521333" rel="external nofollow">新用户979429</a></span> on <a href="http://www.acmerblog.com/bignumber-cpp-template-4557.html#comment-81231" rel="nofollow"><time datetime="2017-04-12T18:13:48+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好文章，好极了。支持，顶。问老泉好。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-81230">
+<article class="comment" id="comment-81230">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521333" rel="external nofollow">新用户979429</a></span> on <a href="http://www.acmerblog.com/bignumber-cpp-template-4557.html#comment-81230" rel="nofollow"><time datetime="2017-04-12T18:13:48+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好文章，好极了。支持，顶。问老泉好。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-81229">
+<article class="comment" id="comment-81229">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521333" rel="external nofollow">新用户979429</a></span> on <a href="http://www.acmerblog.com/bignumber-cpp-template-4557.html#comment-81229" rel="nofollow"><time datetime="2017-04-12T18:13:48+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好文章，好极了。支持，顶。问老泉好。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-81228">
+<article class="comment" id="comment-81228">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521333" rel="external nofollow">新用户979429</a></span> on <a href="http://www.acmerblog.com/bignumber-cpp-template-4557.html#comment-81228" rel="nofollow"><time datetime="2017-04-12T18:13:48+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好文章，好极了。支持，顶。问老泉好。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-81227">
+<article class="comment" id="comment-81227">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521333" rel="external nofollow">新用户979429</a></span> on <a href="http://www.acmerblog.com/bignumber-cpp-template-4557.html#comment-81227" rel="nofollow"><time datetime="2017-04-12T18:13:48+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好文章，好极了。支持，顶。问老泉好。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-81226">
+<article class="comment" id="comment-81226">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521333" rel="external nofollow">新用户979429</a></span> on <a href="http://www.acmerblog.com/bignumber-cpp-template-4557.html#comment-81226" rel="nofollow"><time datetime="2017-04-12T18:13:48+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好文章，好极了。支持，顶。问老泉好。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-81225">
+<article class="comment" id="comment-81225">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521333" rel="external nofollow">新用户979429</a></span> on <a href="http://www.acmerblog.com/bignumber-cpp-template-4557.html#comment-81225" rel="nofollow"><time datetime="2017-04-12T18:13:48+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好文章，好极了。支持，顶。问老泉好。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-81224">
+<article class="comment" id="comment-81224">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521333" rel="external nofollow">新用户979429</a></span> on <a href="http://www.acmerblog.com/bignumber-cpp-template-4557.html#comment-81224" rel="nofollow"><time datetime="2017-04-12T18:13:48+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好文章，好极了。支持，顶。问老泉好。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-25811">
+<article class="comment" id="comment-25811">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">haojunyu</a></span> on <a href="http://www.acmerblog.com/bignumber-cpp-template-4557.html#comment-25811" rel="nofollow"><time datetime="2015-05-14T07:00:35+00:00" pubdate="">2015年5月14日 at 上午7:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>使用ListNodeWrapper很蹩脚的感觉，没有更好的解决办法？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-25810">
+<article class="comment" id="comment-25810">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wynk0804</a></span> on <a href="http://www.acmerblog.com/bignumber-cpp-template-4557.html#comment-25810" rel="nofollow"><time datetime="2015-05-06T09:13:47+00:00" pubdate="">2015年5月6日 at 上午9:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈呀！这个Dijkstra模板好长OwQ！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-57638">
+<article class="comment" id="comment-57638">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">oneal</a></span> on <a href="http://www.acmerblog.com/bignumber-cpp-template-4557.html#comment-57638" rel="nofollow"><time datetime="2015-01-19T02:53:55+00:00" pubdate="">2015年1月19日 at 上午2:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这种二分还是比较经典！mark</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-25815">
+<article class="comment" id="comment-25815">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NiKaWaLi2015</a></span> on <a href="http://www.acmerblog.com/bignumber-cpp-template-4557.html#comment-25815" rel="nofollow"><time datetime="2014-11-26T23:09:32+00:00" pubdate="">2014年11月26日 at 下午11:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>后面的是python代码啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-25814">
+<article class="comment" id="comment-25814">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">water160</a></span> on <a href="http://www.acmerblog.com/bignumber-cpp-template-4557.html#comment-25814" rel="nofollow"><time datetime="2014-11-23T18:57:59+00:00" pubdate="">2014年11月23日 at 下午6:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢提醒，是漏掉了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-25812">
+<article class="comment" id="comment-25812">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zzzzzz</a></span> on <a href="http://www.acmerblog.com/bignumber-cpp-template-4557.html#comment-25812" rel="nofollow"><time datetime="2014-11-19T23:56:43+00:00" pubdate="">2014年11月19日 at 下午11:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是往年的笔试题，非在线，主要考察基础，Java会在面试时问到</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-57639">
+<article class="comment" id="comment-57639">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiao597896577</a></span> on <a href="http://www.acmerblog.com/bignumber-cpp-template-4557.html#comment-57639" rel="nofollow"><time datetime="2014-11-15T15:39:07+00:00" pubdate="">2014年11月15日 at 下午3:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>看见的晚了，只能提交一次唉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-47064">
+<article class="comment" id="comment-47064">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hunangangli</a></span> on <a href="http://www.acmerblog.com/bignumber-cpp-template-4557.html#comment-47064" rel="nofollow"><time datetime="2014-09-05T23:16:41+00:00" pubdate="">2014年9月5日 at 下午11:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-25817">
+<article class="comment" id="comment-25817">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ycaxgjd</a></span> on <a href="http://www.acmerblog.com/bignumber-cpp-template-4557.html#comment-25817" rel="nofollow"><time datetime="2014-07-28T06:39:36+00:00" pubdate="">2014年7月28日 at 上午6:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p><strong>Gucci New Fall Arrivals</strong></p>
+<p>This is really nice to know. I hope it will be successful in the future. Good job on this and keep up the good work.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-25816">
+<article class="comment" id="comment-25816">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zclzcllove</a></span> on <a href="http://www.acmerblog.com/bignumber-cpp-template-4557.html#comment-25816" rel="nofollow"><time datetime="2014-06-30T05:50:24+00:00" pubdate="">2014年6月30日 at 上午5:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>
+	Hello Web Admin, I noticed that your On-Page SEO is is missing a few factors, for one you do not use all three H tags in your post, also I notice that you are not using bold or italics properly in your SEO optimization. On-Page SEO means more now than ever since the new Google update: Panda. No longer are backlinks and simply pinging or sending out a RSS feed the key to getting Google PageRank or Alexa Rankings, You now NEED On-Page SEO. So what is good On-Page SEO?First your keyword must appear in the title.Then it must appear in the URL.You have to optimize your keyword and make sure that it has a nice keyword density of 3-5% in your article with relevant LSI (Latent Semantic Indexing). Then you should spread all H1,H2,H3 tags in your article.Your Keyword should appear in your first paragraph and in the last sentence of the page. You should have relevant usage of Bold and italics of your keyword.There should be one internal link to a page on your blog and you should have one image with an alt tag that has your keyword….wait there's even more Now what if i told you there was a simple WordPress plugin that does all the On-Page SEO, and automatically for you? That's right AUTOMATICALLY, just watch this 4minute video for more information at.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-25813">
+<article class="comment" id="comment-25813">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mcitdkj</a></span> on <a href="http://www.acmerblog.com/bignumber-cpp-template-4557.html#comment-25813" rel="nofollow"><time datetime="2014-05-06T12:25:33+00:00" pubdate="">2014年5月6日 at 下午12:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题别太纠结了，不同的编译器结果不一样</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-47063">
+<article class="comment" id="comment-47063">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ssjssh</a></span> on <a href="http://www.acmerblog.com/bignumber-cpp-template-4557.html#comment-47063" rel="nofollow"><time datetime="2014-04-29T02:43:30+00:00" pubdate="">2014年4月29日 at 上午2:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错的网站，建议添加些比赛信息</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-57636">
+<article class="comment" id="comment-57636">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dongxi</a></span> on <a href="http://www.acmerblog.com/bignumber-cpp-template-4557.html#comment-57636" rel="nofollow"><time datetime="2014-04-12T21:53:08+00:00" pubdate="">2014年4月12日 at 下午9:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个解法好像不对</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-57637">
+<article class="comment" id="comment-57637">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">YangXiaoZhong</a></span> on <a href="http://www.acmerblog.com/bignumber-cpp-template-4557.html#comment-57637" rel="nofollow"><time datetime="2014-03-09T02:24:32+00:00" pubdate="">2014年3月9日 at 上午2:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Thank you very much</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,415 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-21</div>
+<div class="tit"><h1 class="entry-title">HDU 1658 Triangle  -DFS-[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/dfs" rel="category tag" title="查看DFS搜索中的全部文章">DFS搜索</a>, <a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph/mst" rel="category tag" title="查看最小生成树中的全部文章">最小生成树</a></span><span class="i4">围观1647次</span><span class="i3"><a class="ds-thread-count" data-thread-key="2602" href="http://www.acmerblog.com/hdu-1658-Triangle-2602.html#comments" title="《HDU 1658 Triangle  -DFS-[解题报告] C++》上的评论">13 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Triangle  </h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+A triangle is a basic shape of planar geometry. It consists of three straight lines and three angles in between. Figure 1 shows how the sides and angles are usually labeled.<br/><center><img src="http://acm.hdu.edu.cn/data/images/1658-6.gif"/></center><br/>Figure: Triangle<br/><center><img src="http://acm.hdu.edu.cn/data/images/1658-1.gif"/><br/><img src="http://acm.hdu.edu.cn/data/images/1658-2.gif"/><br/><img src="http://acm.hdu.edu.cn/data/images/1658-3.gif"/><br/><img src="http://acm.hdu.edu.cn/data/images/1658-4.gif"/><br/><img src="http://acm.hdu.edu.cn/data/images/1658-5.gif"/></center><br/>The values of a, b, c,  ,  , and  form a set of six parameters that fully define a triangle. If a large enough subset of these parameters is given, the missing ones can be calculated by using the formulas above. 
+<p>You are to write a program that calculates the missing parameters for a given subset of the six parameters of a triangle. For some sets of parameters, it is not possible to calculate the triangle because either too few is known about the triangle or the parameters would lead to an invalid triangle. The sides of a valid triangle are greater than 0 and the angles are greater than 0 and less than  . Your program should detect this case and output: "Invalid input." The same phrase should be output if more than the minimal set needed to compute the triangle is given but the parameters conflict with each other, e.g. all three angles are given but their sum is greater than  . </p>
+<p>Other sets of parameters can lead to more than one but still a finite number of valid solutions for the triangle. In such a case, your program should output: "More than one solution." </p>
+<p>In all other cases, your program should compute the missing parameters and output all six parameters </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line of the input file contains a number indicating the number of parameter sets to follow. Each following line consists of six numbers, separated by a single blank character. The numbers are the values for the parameters a,  , b,  , c, and  respectively. The parameters are labeled as shown in figure 1. A value of -1 indicates that the corresponding parameter is undefined and has to be calculated. All floating-point numbers include at least eight significant digits. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+Your program should output a line for each set of parameters found in the input file. If a unique solution for a valid triangle can be found for the given parameters, your program should output the six parameters a,  , b,  , c,  , separated by a blank character. Otherwise the line should contain the phrase 
+<p>"More than one solution." or </p>
+<p>"Invalid input." </p>
+<p>as explained above. </p>
+<p>The numbers in the output file should include at least six significant digits. Your calculations should be precise enough to get the six most significant digits correct (i.e. a relative error of 0.000001 is allowed). </p>
+</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+4
+47.9337906847 0.6543010109 78.4455517579 1.4813893731 66.5243757656 1.0059022695
+62.72048064 2.26853639 -1.00000000 0.56794657 -1.00000000 -1.00000000
+15.69326944 0.24714213 -1.00000000 1.80433105 66.04067877 -1.00000000
+72.83685175 1.04409241 -1.00000000 -1.00000000 -1.00000000 -1.00000000</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+47.933791 0.654301 78.445552 1.481389 66.524376 1.005902
+62.720481 2.268536 44.026687 0.567947 24.587225 0.305110
+Invalid input.
+Invalid input.</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+#include &lt;map&gt;
+#include &lt;queue&gt;
+#include &lt;algorithm&gt;
+#include &lt;string&gt;
+#include &lt;vector&gt;
+using namespace std;
+const int N = 101;
+const int inf = 100000000;
+char s1[N],s2[N];
+bool flag[N];
+bool chk[N];
+int block[N],pre[N];
+vector&lt;int&gt; vec[N];
+
+struct Edge
+{
+    int v;
+    int dis;
+    bool flag;
+    Edge* next;
+}*pp,*adj[N],pool[2*N*N],*tree[N],*minEdge;
+struct Node
+{
+    int from;
+    int dis,at;
+    Node() {}
+    Node(int _from,int _at,int _dis)
+    {
+        from = _from;
+        at = _at;
+        dis = _dis;
+    }
+    bool operator &lt; (const Node n) const
+    {
+        return dis &gt; n.dis;
+    }
+};
+void init()
+{
+    pp = pool;
+    memset(adj,0,sizeof(adj));
+    memset(tree,0,sizeof(tree));
+}
+void addedge(int u,int v,int dis,bool flag,Edge* adj[])
+{
+    pp-&gt;v = v;
+    pp-&gt;dis = dis;
+    pp-&gt;flag = flag;
+    pp-&gt;next = adj[u];
+    adj[u] = pp++;
+}
+int prim_heap(int start,int n)
+{
+    int ans = 0;
+    priority_queue&lt;Node&gt; pq;
+    pq.push(Node(-1,start,0));
+    int k = 0;
+    while(k &lt; n &amp;&amp; !pq.empty())
+    {
+        Node now = pq.top();
+        pq.pop();
+        if(flag[now.at])
+            continue;
+        flag[now.at] = true;
+        ans += now.dis;
+        if(now.from != -1)
+        {
+            addedge(now.at,now.from,now.dis,true,tree);
+            addedge(now.from,now.at,now.dis,true,tree);
+        }
+        k++;
+        for(Edge* p = adj[now.at]; p; p=p-&gt;next)
+            if(!flag[p-&gt;v])
+                pq.push(Node(now.at,p-&gt;v,p-&gt;dis));
+    }
+    return ans;
+}
+void dfs(int from,int now)
+{
+    flag[now] = true;
+    pre[now] = from;
+    for(Edge* p = tree[now]; p; p=p-&gt;next)
+        if(!flag[p-&gt;v] &amp;&amp; p-&gt;flag)
+            dfs(now,p-&gt;v);
+}
+void calMinEdge(int now,int val)
+{
+    for(Edge* p = tree[now]; p; p=p-&gt;next)
+        if(flag[p-&gt;v]  &amp;&amp; p-&gt;flag)
+        {
+            flag[p-&gt;v] = false;
+            if(p-&gt;dis &gt; val)
+            {
+                minEdge = p;
+                val = p-&gt;dis;
+            }
+            calMinEdge(p-&gt;v,val);
+        }
+}
+int main()
+{
+    int m;
+    scanf("%d",&amp;m);
+    init();
+    map&lt;string,int&gt; mp;
+    mp["Park"] = 0;
+    for(int i=0; i&lt;N; i++)
+        vec[i].clear();
+    int idx = 1,degree;
+    for(int i=0; i&lt;m; i++)
+    {
+        int dis;
+        scanf("%s %s %d",s1,s2,&amp;dis);
+        if(mp.find(s1) == mp.end())
+            mp[s1] = idx ++;
+        if(mp.find(s2) == mp.end())
+            mp[s2] = idx ++;
+        int u = mp[s1], v = mp[s2];
+        addedge(u,v,dis,true,adj);
+        addedge(v,u,dis,true,adj);
+    }
+    scanf("%d",&amp;degree);
+    int n = idx; // n points 0 ~ n - 1
+    int rem = 0,nb = 0;
+    memset(chk,0,sizeof(chk));
+    for(int i=1; i&lt;n; i++)
+        if(!chk[i])
+        {
+            memset(flag,0,sizeof(flag));
+            flag[0] = true;
+            block[nb] = i;
+            rem += prim_heap(i,n-1); // 1 ~ n - 1
+            for(int j=1; j&lt;n; j++)
+                if(flag[j])
+                {
+                    vec[nb].push_back(j);
+                    chk[j] = true;
+                }
+
+            nb++;
+        }
+
+    for(int i=0; i&lt;nb; i++)
+    {
+        int mn  = inf,index = -1;
+        Edge* tmp;
+        for(int j=0; j&lt;vec[i].size(); j++)
+            for(Edge* p=adj[0]; p; p=p-&gt;next)
+                if(p-&gt;v == vec[i][j])
+                    if(p-&gt;dis &lt; mn)
+                    {
+                        mn = p-&gt;dis;
+                        index = vec[i][j];
+                        tmp = p;
+                        continue;
+                    }
+        addedge(index,0,mn,true,tree);  // link v0 to block
+        addedge(0,index,mn,true,tree);
+        tmp-&gt;flag = false;                // deleting edge
+        (((tmp-pool)^1) + pool)-&gt;flag = false;
+        rem += mn;
+        degree--;
+    }
+    while(degree &gt; 0) // deleting edge
+    {
+        degree -- ;
+        int mx = -inf;
+        Edge *tmpAdd,*tmpDel;
+        for(Edge* p=adj[0]; p; p=p-&gt;next)
+        {
+            if(p-&gt;flag)
+            {
+                memset(flag,0,sizeof(flag));
+                dfs(0,p-&gt;v);
+                int now = 0;
+                memset(flag,0,sizeof(flag));
+                while(pre[now] != 0)
+                {
+                    flag[now] = true;
+                    now = pre[now];
+                }
+                flag[now] = true;
+                calMinEdge(0,-inf);
+                int delta =  minEdge-&gt;dis - p-&gt;dis ;
+                if(delta &gt; mx)
+                {
+                    mx = delta;
+                    tmpAdd = p;
+                    tmpDel = minEdge;
+                }
+            }
+        }
+        if(mx &lt;= 0 )
+            break;
+        rem -= mx;
+        addedge(tmpAdd-&gt;v,0,mx,true,tree);  // link new edge
+        addedge(0,tmpAdd-&gt;v,mx,true,tree);
+        tmpAdd-&gt;flag = false;              // delete old edge
+        (((tmpAdd-pool)^1) + pool)-&gt;flag = false;
+        tmpDel-&gt;flag = false;              // delete old edge
+        (((tmpDel-pool)^1) + pool)-&gt;flag = false;
+    }
+    printf("Total miles driven: %d\n",rem);
+    return 0;
+}</pre>
+<p>解题报告转自：http://www.cnblogs.com/luyi0619/archive/2011/07/15/2107821.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-16427">
+<article class="comment" id="comment-16427">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mysteriousAngel_love</a></span> on <a href="http://www.acmerblog.com/hdu-1658-Triangle-2602.html#comment-16427" rel="nofollow"><time datetime="2015-06-16T11:53:16+00:00" pubdate="">2015年6月16日 at 上午11:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>红绯鱼：<br/>
+这模板神了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-16425">
+<article class="comment" id="comment-16425">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">litao</a></span> on <a href="http://www.acmerblog.com/hdu-1658-Triangle-2602.html#comment-16425" rel="nofollow"><time datetime="2015-05-17T01:45:02+00:00" pubdate="">2015年5月17日 at 上午1:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>终于找到一篇能看懂的，mark</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-42511">
+<article class="comment" id="comment-42511">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">anthozoan77</a></span> on <a href="http://www.acmerblog.com/hdu-1658-Triangle-2602.html#comment-42511" rel="nofollow"><time datetime="2015-03-08T13:57:04+00:00" pubdate="">2015年3月8日 at 下午1:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>约瑟夫也用说这么长……很成熟的一个问题了，分治的方法解起来o(n)就可以了，有兴趣可以看看具体数学的第一章，关于约瑟夫问题推导出了一系列的结论，很漂亮</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-42507">
+<article class="comment" id="comment-42507">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">HDC</a></span> on <a href="http://www.acmerblog.com/hdu-1658-Triangle-2602.html#comment-42507" rel="nofollow"><time datetime="2014-12-21T06:56:20+00:00" pubdate="">2014年12月21日 at 上午6:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>代码可真够长的！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-42509">
+<article class="comment" id="comment-42509">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yipwinghong</a></span> on <a href="http://www.acmerblog.com/hdu-1658-Triangle-2602.html#comment-42509" rel="nofollow"><time datetime="2014-12-05T12:58:13+00:00" pubdate="">2014年12月5日 at 下午12:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题别太纠结了，不同的编译器结果不一样</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-42506">
+<article class="comment" id="comment-42506">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">actlea</a></span> on <a href="http://www.acmerblog.com/hdu-1658-Triangle-2602.html#comment-42506" rel="nofollow"><time datetime="2014-10-18T01:11:20+00:00" pubdate="">2014年10月18日 at 上午1:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这张页面太松散拉，重新编辑一下，弄紧凑一点。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-42514">
+<article class="comment" id="comment-42514">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">litaotao</a></span> on <a href="http://www.acmerblog.com/hdu-1658-Triangle-2602.html#comment-42514" rel="nofollow"><time datetime="2014-08-28T19:52:40+00:00" pubdate="">2014年8月28日 at 下午7:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>wt[n - 1]没错，因为下标是[0...n-1]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-16426">
+<article class="comment" id="comment-16426">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">linyanjin</a></span> on <a href="http://www.acmerblog.com/hdu-1658-Triangle-2602.html#comment-16426" rel="nofollow"><time datetime="2014-07-17T11:11:49+00:00" pubdate="">2014年7月17日 at 上午11:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不好意思，写错了．应该是　path[0]=0,  visited[V] = true;</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-42510">
+<article class="comment" id="comment-42510">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bcys</a></span> on <a href="http://www.acmerblog.com/hdu-1658-Triangle-2602.html#comment-42510" rel="nofollow"><time datetime="2014-03-31T18:58:17+00:00" pubdate="">2014年3月31日 at 下午6:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不考虑最后将结果排序的话，快排的时间复杂度是O(N) ，而堆排的是O(N*logK),这样比较看，快排快</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-42512">
+<article class="comment" id="comment-42512">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Sacomplex</a></span> on <a href="http://www.acmerblog.com/hdu-1658-Triangle-2602.html#comment-42512" rel="nofollow"><time datetime="2014-03-11T09:17:00+00:00" pubdate="">2014年3月11日 at 上午9:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这配图…..</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-42515">
+<article class="comment" id="comment-42515">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">userwawa</a></span> on <a href="http://www.acmerblog.com/hdu-1658-Triangle-2602.html#comment-42515" rel="nofollow"><time datetime="2014-03-05T04:53:08+00:00" pubdate="">2014年3月5日 at 上午4:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不考虑最后将结果排序的话，快排的时间复杂度是O(N) ，而堆排的是O(N*logK)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-42508">
+<article class="comment" id="comment-42508">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">123456789_xd</a></span> on <a href="http://www.acmerblog.com/hdu-1658-Triangle-2602.html#comment-42508" rel="nofollow"><time datetime="2014-01-30T23:33:29+00:00" pubdate="">2014年1月30日 at 下午11:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#include &lt;cstdio&gt;</p>
+<p>int main() {<br/>
+	//answer must be odd<br/>
+    int n, u, d;<br/>
+    while(scanf("%d%d%d",&amp;n,&amp;u,&amp;d)==3 &amp;&amp; n&gt;0) {<br/>
+        if(n&lt;=u) { puts("1"); continue; }<br/>
+        n-=u; u-=d; n+=u-1; n/=u;<br/>
+        n&lt;&lt;=1, ++n;<br/>
+        printf("%dn",n);<br/>
+    }<br/>
+    return 0;<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-42513">
+<article class="comment" id="comment-42513">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wangzhenvs123</a></span> on <a href="http://www.acmerblog.com/hdu-1658-Triangle-2602.html#comment-42513" rel="nofollow"><time datetime="2014-01-10T10:08:54+00:00" pubdate="">2014年1月10日 at 上午10:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>helpful！！ mark</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

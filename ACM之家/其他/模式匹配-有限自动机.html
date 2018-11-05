@@ -1,0 +1,384 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>05-27</div>
+<div class="tit"><h1 class="entry-title">模式匹配-有限自动机</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/basis/string" rel="category tag" title="查看字符串处理中的全部文章">字符串处理</a>, <a href="http://www.acmerblog.com/category/zhuanti/algorithm" rel="category tag" title="查看算法分析中的全部文章">算法分析</a></span><span class="i4">围观1241次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5804" href="http://www.acmerblog.com/finite-automata-5804.html#comments" title="《模式匹配-有限自动机》上的评论">26 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p>模式匹配问题：给一个字符串text： txt[0..n-1] 和 一个模式串 pattern ：pat[0..m-1]，写一个函数 search(char pat[], char txt[])<br/>
+打印模式pat在txt中出现的所有位置。通俗点说就是在一个字符串中定位另一个串的算法。</p>
+<p>例子：<br/>
+1)输入:<br/>
+txt[] = “THIS IS A TEST TEXT”<br/>
+pat[] = “TES”<br/>
+输出:<br/>
+Pattern found at index 10<br/>
+2) 输入:<br/>
+txt[] = “AABAACAADAABAAABAA”<br/>
+pat[] = “AABA”<br/>
+输出:<br/>
+Pattern found at index 0<br/>
+Pattern found at index 9<br/>
+Pattern found at index 13</p>
+<p>模式匹配算法是字符串处理的一个重要算法，在编辑器和数据库中应用广泛。前面一讲讨论过了经典的<a href="http://www.acmerblog.com/kmp-algorithm-4407.html">KMP算法</a>。<br/>
+这里我们学习一种新的算法：基于有限自动机(Finite Automata，FA)的模式搜索算法。思想和KMP算法还是有所类似的，KMP算法我们对模式串pat进行预处理，FA算法中，我们也是对pat进行预处理，构建一个二维数组来代表有限自动机。构建FA是该算法的关键。<br/>
+只要FA构建好了，搜索是很简单的，我们只需要从FA的第一个状态和text的第一个字符开始，每一步, 我们根据text的下一个字符和当前状态, 通过查找FA，然后进入到新的状态。如果我们能达到最终状态，则说明找到了pattern。因此搜索部分的时间复杂度为O(N).</p>
+<p>先来看一下对于模式串 pattern “ACACAGA” 的 FA:</p>
+<p><a href="http://cdn.acmerblog.com/wp-content/uploads/2014/05/FA2.png"><img alt="FA2" class="alignnone size-full wp-image-5805" height="188" src="http://cdn.acmerblog.com/wp-content/uploads/2014/05/FA2.png" width="154"/></a></p>
+<p><a href="http://cdn.acmerblog.com/wp-content/uploads/2014/05/FA11.png"><img alt="FA11" class="alignnone size-medium wp-image-5806" height="109" src="http://cdn.acmerblog.com/wp-content/uploads/2014/05/FA11-300x109.png" width="300"/></a></p>
+<h3>FA的构建方法</h3>
+<p>对于长度为M的pattern字符串，FA的状态个数有M+1个。构造 FA的主要过程为：由当前的状态state和所有可能的字符<br/>
+得到下一个状态。这里的状态state其实就是指的 0-M 的M+1个数字。<br/>
+给定一个状态 k 和 一个字符串 x ，怎么得到下一个状态呢？ 计算方法为：找出模式串pattern的<strong>最长前缀</strong>prefix ，同时也是<br/>
+<strong>pat[0...k-1]x</strong> 的<strong>后缀</strong>。则<strong>prefix的长度</strong>即为下一个状态。<br/>
+例如对于 在状态 k=5，字符x=’C'时，对于上面的模式串，pat[0...k-1]x 即为”ACACAC”，对于pattern可以找到符合条件的最长<br/>
+前缀 prefix为”ACAC”，该prefix同时也是 pat[0...k-1]x 的后缀。长度为4，即下一个状态为4. 上面的表格中 FA[5]['C']=4.</p>
+<p>下面的代码中，omputeTF() 函数用来构建FA，但是实际复杂度比较高，为O(m^3*NO_OF_CHARS)，其中m是模式串pattern的长度。<br/>
+NO_OF_CHARS为所有可能得字符的个数。这个实现中 尝试了所有可能的 prefix来找到满足条件的最长prefix，属于比较暴力的算法，其实有更高效的算法，参考 KMP算法中计算next数组（lps数组）的方法。后续给给出该优化算法的实现。</p>
+<pre class="brush:cpp">#include&lt;stdio.h&gt;
+#include&lt;string.h&gt;
+#define NO_OF_CHARS 256
+
+//对于状态k和给定的字符x，返回下一个状态。M为pat的长度
+int getNextState(char *pat, int M, int k, int x)
+{
+    // 因为:pat[0...k-1]x 和 pat 的前面都是是一样的，如果x == pat[k]可直接返回。
+    if (k &lt; M &amp;&amp; x == pat[k])
+        return k+1;
+
+    int ns, i;  // ns 是下一个状态
+
+    // ns 最终是最长的那个  prefix (同时也是pat[0..k-1]x)的后缀
+    //从可能得最长的前缀位置开始，找到后break,即为所求
+    for (ns = k; ns &gt; 0; ns--)
+    {
+        if(pat[ns-1] == x)
+        {
+            for(i = 0; i &lt; ns-1; i++)
+            {
+                if (pat[i] != pat[k-ns+1+i])
+                    break;
+            }
+            if (i == ns-1)
+                return ns;
+        }
+    }
+
+    return 0;
+}
+
+/* 构建FA  */
+void computeTF(char *pat, int M, int TF[][NO_OF_CHARS])
+{
+    int state, x;
+    for (state = 0; state &lt;= M; ++state)
+        for (x = 0; x &lt; NO_OF_CHARS; ++x)
+           TF[state][x] = getNextState(pat, M,  state, x);
+}
+
+/* 查找模式串 */
+void search(char *pat, char *txt)
+{
+    int M = strlen(pat);
+    int N = strlen(txt);
+
+    //TF数组存储FA有限状态机
+    int TF[M+1][NO_OF_CHARS];
+
+    computeTF(pat, M, TF);
+
+    // Process txt over FA.
+    int i, state=0;
+    for (i = 0; i &lt; N; i++)
+    {
+       state = TF[state][txt[i]];
+       if (state == M)
+       {
+         printf ("\n patterb found at index %d", i-M+1);
+       }
+    }
+}
+
+// 测试
+int main()
+{
+   char *txt = "AABAACAADAABAAABAA";
+   char *pat = "AABA";
+   search(pat, txt);
+   return 0;
+}</pre>
+<p>参考：http://www.geeksforgeeks.org/searching-for-patterns-set-5-finite-automata/</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75588">
+<article class="comment" id="comment-75588">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521272" rel="external nofollow">新用户979272</a></span> on <a href="http://www.acmerblog.com/finite-automata-5804.html#comment-75588" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第三张让我想起刘能了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75587">
+<article class="comment" id="comment-75587">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521272" rel="external nofollow">新用户979272</a></span> on <a href="http://www.acmerblog.com/finite-automata-5804.html#comment-75587" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第三张让我想起刘能了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75586">
+<article class="comment" id="comment-75586">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521272" rel="external nofollow">新用户979272</a></span> on <a href="http://www.acmerblog.com/finite-automata-5804.html#comment-75586" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第三张让我想起刘能了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75585">
+<article class="comment" id="comment-75585">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521272" rel="external nofollow">新用户979272</a></span> on <a href="http://www.acmerblog.com/finite-automata-5804.html#comment-75585" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第三张让我想起刘能了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75584">
+<article class="comment" id="comment-75584">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521272" rel="external nofollow">新用户979272</a></span> on <a href="http://www.acmerblog.com/finite-automata-5804.html#comment-75584" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第三张让我想起刘能了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75583">
+<article class="comment" id="comment-75583">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521272" rel="external nofollow">新用户979272</a></span> on <a href="http://www.acmerblog.com/finite-automata-5804.html#comment-75583" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第三张让我想起刘能了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75582">
+<article class="comment" id="comment-75582">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521272" rel="external nofollow">新用户979272</a></span> on <a href="http://www.acmerblog.com/finite-automata-5804.html#comment-75582" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第三张让我想起刘能了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75581">
+<article class="comment" id="comment-75581">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521272" rel="external nofollow">新用户979272</a></span> on <a href="http://www.acmerblog.com/finite-automata-5804.html#comment-75581" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第三张让我想起刘能了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75580">
+<article class="comment" id="comment-75580">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521272" rel="external nofollow">新用户979272</a></span> on <a href="http://www.acmerblog.com/finite-automata-5804.html#comment-75580" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第三张让我想起刘能了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75579">
+<article class="comment" id="comment-75579">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521272" rel="external nofollow">新用户979272</a></span> on <a href="http://www.acmerblog.com/finite-automata-5804.html#comment-75579" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第三张让我想起刘能了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75578">
+<article class="comment" id="comment-75578">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521272" rel="external nofollow">新用户979272</a></span> on <a href="http://www.acmerblog.com/finite-automata-5804.html#comment-75578" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第三张让我想起刘能了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75577">
+<article class="comment" id="comment-75577">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521272" rel="external nofollow">新用户979272</a></span> on <a href="http://www.acmerblog.com/finite-automata-5804.html#comment-75577" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第三张让我想起刘能了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75576">
+<article class="comment" id="comment-75576">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521272" rel="external nofollow">新用户979272</a></span> on <a href="http://www.acmerblog.com/finite-automata-5804.html#comment-75576" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第三张让我想起刘能了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58782">
+<article class="comment" id="comment-58782">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">nsoi_onion</a></span> on <a href="http://www.acmerblog.com/finite-automata-5804.html#comment-58782" rel="nofollow"><time datetime="2015-05-30T05:41:28+00:00" pubdate="">2015年5月30日 at 上午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很有意思，可惜我很菜啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30375">
+<article class="comment" id="comment-30375">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">reking</a></span> on <a href="http://www.acmerblog.com/finite-automata-5804.html#comment-30375" rel="nofollow"><time datetime="2015-05-11T18:13:46+00:00" pubdate="">2015年5月11日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有意思，有难度</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30376">
+<article class="comment" id="comment-30376">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">303589828</a></span> on <a href="http://www.acmerblog.com/finite-automata-5804.html#comment-30376" rel="nofollow"><time datetime="2015-04-30T17:44:57+00:00" pubdate="">2015年4月30日 at 下午5:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>目测会火</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30368">
+<article class="comment" id="comment-30368">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">753951</a></span> on <a href="http://www.acmerblog.com/finite-automata-5804.html#comment-30368" rel="nofollow"><time datetime="2015-04-14T20:07:54+00:00" pubdate="">2015年4月14日 at 下午8:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>失误失误，转载错了。已经改正，抱歉。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30370">
+<article class="comment" id="comment-30370">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ktcer</a></span> on <a href="http://www.acmerblog.com/finite-automata-5804.html#comment-30370" rel="nofollow"><time datetime="2015-03-04T16:53:21+00:00" pubdate="">2015年3月4日 at 下午4:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>A猴子认识的所有猴子和B猴子认识的所有猴子都能认识，这句话用《爱屋及乌》描述比较容易理解……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30369">
+<article class="comment" id="comment-30369">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wizcabbit</a></span> on <a href="http://www.acmerblog.com/finite-automata-5804.html#comment-30369" rel="nofollow"><time datetime="2015-02-26T06:40:27+00:00" pubdate="">2015年2月26日 at 上午6:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题别太纠结了，不同的编译器结果不一</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30373">
+<article class="comment" id="comment-30373">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">abguorui0928</a></span> on <a href="http://www.acmerblog.com/finite-automata-5804.html#comment-30373" rel="nofollow"><time datetime="2015-02-02T03:12:19+00:00" pubdate="">2015年2月2日 at 上午3:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>太变态了。我用hash居然超时了。这样break掉居然都行啊。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30374">
+<article class="comment" id="comment-30374">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaoriqiang</a></span> on <a href="http://www.acmerblog.com/finite-automata-5804.html#comment-30374" rel="nofollow"><time datetime="2015-01-13T12:11:23+00:00" pubdate="">2015年1月13日 at 下午12:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是研发类的题还是算法类？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-975">
+<article class="comment" id="comment-975">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">aaa</span> on <a href="http://www.acmerblog.com/finite-automata-5804.html#comment-975" rel="nofollow"><time datetime="2014-10-14T09:34:46+00:00" pubdate="">2014年10月14日 at 上午9:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有限自动机在ACM中是必须掌握的算法，实际上在面试当中几乎不可能让你单独的去实现这个算法，如果有题目要用到有限自动机来降低时间复杂度，那么这种面试题应该属于很难的级别了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30372">
+<article class="comment" id="comment-30372">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wizcabbit</a></span> on <a href="http://www.acmerblog.com/finite-automata-5804.html#comment-30372" rel="nofollow"><time datetime="2014-08-26T13:12:37+00:00" pubdate="">2014年8月26日 at 下午1:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这一题的代码这样提交时错误的~少考虑了很多情况</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30371">
+<article class="comment" id="comment-30371">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">calvert1991</a></span> on <a href="http://www.acmerblog.com/finite-automata-5804.html#comment-30371" rel="nofollow"><time datetime="2014-06-19T22:22:13+00:00" pubdate="">2014年6月19日 at 下午10:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很棒的网站，加油！⛽️</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-410">
+<article class="comment" id="comment-410">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">theDays</span> on <a href="http://www.acmerblog.com/finite-automata-5804.html#comment-410" rel="nofollow"><time datetime="2014-06-07T09:50:16+00:00" pubdate="">2014年6月7日 at 上午9:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>终于找到一篇能看懂的，mark</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-375">
+<article class="comment" id="comment-375">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://weibo.com/3016110060" rel="external nofollow">Qu__miko</a></span> on <a href="http://www.acmerblog.com/finite-automata-5804.html#comment-375" rel="nofollow"><time datetime="2014-05-27T21:55:23+00:00" pubdate="">2014年5月27日 at 下午9:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给力</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

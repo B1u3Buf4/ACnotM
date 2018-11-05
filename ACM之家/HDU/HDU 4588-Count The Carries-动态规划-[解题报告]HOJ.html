@@ -1,0 +1,242 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>09-17</div>
+<div class="tit"><h1 class="entry-title">HDU 4588-Count The Carries-动态规划-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/search" rel="category tag" title="查看搜索中的全部文章">搜索</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a></span><span class="i4">围观96次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7632" href="http://www.acmerblog.com/hdu-4588-count-the-carries-7632.html#comments" title="《HDU 4588-Count The Carries-动态规划-[解题报告]HOJ》上的评论">9 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Count The Carries</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+One day, Implus gets interested in binary addition and binary carry. He will transfer all decimal digits to binary digits to make the addition. Not as clever as Gauss, to make the addition from a to b, he will add them one by one from a to b in order. For example, from 1 to 3 (decimal digit), he will firstly calculate 01 (1)+10 (2), get 11，then calculate 11+11 (3)，lastly 110 (binary digit), we can find that in the total process, only 2 binary carries happen. He wants to find out that quickly. Given a and b in decimal, we transfer into binary digits and use Implus’s addition algorithm, how many carries are there？ </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+Two integers a, b（0&lt;=a&lt;=b&lt;1000000000), about 100000 cases, end with EOF. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+Two integers a, b（0&lt;=a&lt;=b&lt;1000000000), about 100000 cases, end with EOF.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1 2
+1 3
+1 4
+1 6</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+0
+2
+3
+6</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp" name="code">/*
+
+给你整数 a,b; 要你求a,a+1,a+2...a+b-1,使用的是二进制的加法计算，
+求二进制加法过程中进位了多少次 
+分析：假设 a = 0， b = 20
+位i 54321 
+0   00000
+1   00001
+2   00010
+3   00011
+4   00100
+5   00101
+6   00110
+7   00111
+8   01000
+9   01001
+10  01010
+11  01011
+12  01100
+13  01101
+14  01110
+15  01111
+16  10000
+17  10001
+18  10010
+19  10011
+20  10100
+观察发现 pos_1 周期 2
+		 pos_2 周期 4
+   		 pos_3 周期 8
+      	 pos_4 周期 16
+然后通过计算 a-&gt;b ：dp[pos_1]中1个数 
+					dp[pos_2]中1个数
+     				dp[pos_3]中1个数
+         			dp[pos_4]中1个数 
+         			。。。。。
+         			这里有各种方法，我是使用dfs()搜索，注意若干特殊情况，代码中有详解 
+最后通过 k += dp[i-1]/2; dp[i] += dp[i-1]/2; 进行累加计算 k  
+
+*/
+#include&lt;iostream&gt;
+#include&lt;algorithm&gt;
+#include&lt;cstdio&gt;
+#include&lt;cstring&gt;
+#include&lt;cmath&gt;
+#include&lt;string&gt;
+using namespace std;
+#define manx 100
+
+__int64 dp[manx],num ;
+
+void dfs(__int64 a,__int64 b,__int64 val,int flag){
+    if(flag &gt; 51) return;
+    __int64 sum = b - a + 1; // sum 表示区间 
+    __int64 ans = sum/val*(val/2); // ans表示周期个数 * 周期内1的个数 
+    if(sum%val) {
+        if(a%val &gt;= val/2){ // 第一次出现 1 的时候 
+        	if(sum%val&gt;val-a%val + val/2) // 当出现1100001的情况 
+         		ans += (val-a%val)+(sum%val-val+a%val-val/2);
+       		else  ans += min(sum%val,val-a%val);
+        }    
+        else{  // 第一次出现 0 的时候 
+            if(sum%val - (val/2-a%val) &gt;= 0) { 
+                if(sum%val-(val/2-a%val)&lt;=val/2) 
+                	ans += sum%val-(val/2-a%val);
+               	else ans += val/2; // 当出现0011110的情况 
+           	} 
+        }    
+    }
+    dp[++num] = ans;
+    dfs(a,b,val*2,flag+1);
+}
+
+int main(){
+    __int64 a,b;
+    while(cin&gt;&gt;a&gt;&gt;b){
+        if(a&gt;b) swap(a,b);
+        memset(dp,0,sizeof(dp));
+        __int64 sum = b-a+1,ans = sum/2;
+        if(sum%2 &amp;&amp; a%2) ans++; 
+        num = 0; 
+        dp[++num] = ans;
+        dfs(a,b,2*2,1);
+        __int64 k = 0;
+        for(int i=1;i&lt;100;i++){
+            k += dp[i]/2;
+            dp[i+1] += dp[i]/2;
+        }
+        cout&lt;&lt;k&lt;&lt;endl;
+    }
+}</pre>
+<p></p>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/math_coder/article/details/10035825</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-97543">
+<article class="comment" id="comment-97543">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521058" rel="external nofollow">新用户735449</a></span> on <a href="http://www.acmerblog.com/hdu-4588-count-the-carries-7632.html#comment-97543" rel="nofollow"><time datetime="2017-04-20T05:15:17+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你知道吗，缆绳是用独角兽的角做的，每生产一根缆绳就要杀掉一只独角兽</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-66748">
+<article class="comment" id="comment-66748">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521333" rel="external nofollow">新用户979429</a></span> on <a href="http://www.acmerblog.com/hdu-4588-count-the-carries-7632.html#comment-66748" rel="nofollow"><time datetime="2017-04-10T22:27:50+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>怎么用？test( $limit ); 这个什么意思？数字是啥意思？没讲明白啊？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-66747">
+<article class="comment" id="comment-66747">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521333" rel="external nofollow">新用户979429</a></span> on <a href="http://www.acmerblog.com/hdu-4588-count-the-carries-7632.html#comment-66747" rel="nofollow"><time datetime="2017-04-10T22:27:50+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>怎么用？test( $limit ); 这个什么意思？数字是啥意思？没讲明白啊？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-66746">
+<article class="comment" id="comment-66746">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521333" rel="external nofollow">新用户979429</a></span> on <a href="http://www.acmerblog.com/hdu-4588-count-the-carries-7632.html#comment-66746" rel="nofollow"><time datetime="2017-04-10T22:27:50+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>怎么用？test( $limit ); 这个什么意思？数字是啥意思？没讲明白啊？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-66745">
+<article class="comment" id="comment-66745">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521333" rel="external nofollow">新用户979429</a></span> on <a href="http://www.acmerblog.com/hdu-4588-count-the-carries-7632.html#comment-66745" rel="nofollow"><time datetime="2017-04-10T22:27:50+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>怎么用？test( $limit ); 这个什么意思？数字是啥意思？没讲明白啊？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-66744">
+<article class="comment" id="comment-66744">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521333" rel="external nofollow">新用户979429</a></span> on <a href="http://www.acmerblog.com/hdu-4588-count-the-carries-7632.html#comment-66744" rel="nofollow"><time datetime="2017-04-10T22:27:50+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>怎么用？test( $limit ); 这个什么意思？数字是啥意思？没讲明白啊？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-66743">
+<article class="comment" id="comment-66743">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521333" rel="external nofollow">新用户979429</a></span> on <a href="http://www.acmerblog.com/hdu-4588-count-the-carries-7632.html#comment-66743" rel="nofollow"><time datetime="2017-04-10T22:27:50+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>怎么用？test( $limit ); 这个什么意思？数字是啥意思？没讲明白啊？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-66742">
+<article class="comment" id="comment-66742">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521333" rel="external nofollow">新用户979429</a></span> on <a href="http://www.acmerblog.com/hdu-4588-count-the-carries-7632.html#comment-66742" rel="nofollow"><time datetime="2017-04-10T22:27:50+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>怎么用？test( $limit ); 这个什么意思？数字是啥意思？没讲明白啊？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-66741">
+<article class="comment" id="comment-66741">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521333" rel="external nofollow">新用户979429</a></span> on <a href="http://www.acmerblog.com/hdu-4588-count-the-carries-7632.html#comment-66741" rel="nofollow"><time datetime="2017-04-10T22:27:50+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>怎么用？test( $limit ); 这个什么意思？数字是啥意思？没讲明白啊？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,448 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>02-12</div>
+<div class="tit"><h1 class="entry-title">hdu 2644 Escape[解题报告]hoj</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观287次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4235" href="http://www.acmerblog.com/hdu-2644-escape-4235.html#comments" title="《hdu 2644 Escape[解题报告]hoj》上的评论">21 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Escape</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+One night , when dandelion fell asleep , she finds herself in a big maze . Different with other mazes ,the exit of the maze is changing all the time . Now dandelion knows the maze is made up of N rooms , signed as 1,2 …n. Some of the rooms are connected with undirected ways . To escape from the maze as soon as possible , every time dandelion will move to the  room which is nearest to the exit . If there are several rooms , she will choose the room with the smallest number .Meanwhile , to leave the maze more quickly ,during every unit time , after moving once if dandelion doesn’t reach the exit ,she can move once again . If dandelion still doesn’t reach the exit  , the exit will move to any room that connected with it , or stay at the same room . The possibility is average . Now dandelion wants to know the average time  she needs to escape from the maze. Can you help her? </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+There are several cases ,every case begins with two numbers n and m (1&lt;=n,m&lt;=1000),stands for the number of rooms and the number of the ways . The second line contains two numbers a and b ,stands for the room where dandelion and the exit exist at the beginning . Then m lines ,each line with two numbers p and q ,stands for there is a way between room p and room q. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+There are several cases ,every case begins with two numbers n and m (1&lt;=n,m&lt;=1000),stands for the number of rooms and the number of the ways . The second line contains two numbers a and b ,stands for the room where dandelion and the exit exist at the beginning . Then m lines ,each line with two numbers p and q ,stands for there is a way between room p and room q.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+4 3
+1 4
+1 2
+2 3
+3 4
+2 1
+1 1
+1 2</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+1.500
+0.000</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include&lt;cstdio&gt;
+#include&lt;cstring&gt;
+#include&lt;algorithm&gt;
+using namespace std;
+#define N 121111
+#define M 600000
+#define inf 0x7fffffff
+char map[20][20];
+
+struct node {
+	int to, next, c;
+} edge[M];
+int dx[] = {-1, 1, 0, 0};
+int dy[] = {0, 0, -1, 1};
+
+int edgehead[N], now[N], dis[N];
+int que[M];
+int n, m, s, t, cnt, d, w;
+int door, pos;
+
+struct node2 {
+	int x, y;
+} p[800], q[800];
+
+void addedge(int u, int v, int c) {
+	edge[cnt].to = v, edge[cnt].c = c, edge[cnt].next = edgehead[u];
+	edgehead[u] = cnt++;
+	edge[cnt].to = u, edge[cnt].c = 0, edge[cnt].next = edgehead[v];
+	edgehead[v] = cnt++;
+}
+
+void init() {
+	memset(edgehead, -1, sizeof (edgehead));
+	cnt = 0;
+}
+
+bool find_path(int s, int t) {
+	for (int i = 0; i &lt;= t; i++) {
+		dis[i] = inf;
+		now[i] = -1;
+	}
+	int head = 0, tail = 1;
+	que[head] = s;
+	dis[s] = 0;
+	while (head &lt;= tail) {
+		int cur = que[head++];
+		if (dis[t] &lt;= dis[cur])break;
+		for (int i = edgehead[cur]; i != -1; i = edge[i].next)if (edge[i].c &gt; 0) {
+				int v = edge[i].to;
+				if (now[cur] == -1)
+					now[cur] = i;
+				if (dis[v] == inf) {
+					dis[v] = dis[cur] + 1;
+					que[tail++] = v;
+				}
+			}
+	}
+	return dis[t] != inf;
+}
+
+int dfs(int s, int t, int nowflow) {
+	if (s == t) return nowflow;
+	int flow = 0;
+	int i;
+	for (i = now[s]; i != -1; i = edge[i].next)if (edge[i].c &gt; 0 &amp;&amp; dis[edge[i].to] == dis[s] + 1) {
+			int temp = dfs(edge[i].to, t, min(nowflow - flow, edge[i].c));
+			edge[i].c -= temp;
+			edge[i^1].c += temp;
+			flow += temp;
+			if (flow == nowflow)
+				break;
+		}
+	now[s] = i;
+	return flow;
+}
+
+int maxflow(int s, int t) {
+	int flow = 0;
+	while (find_path(s, t))flow += dfs(s, t, inf);
+	return flow;
+}
+
+int getid(int x, int y) {
+	return (x - 1)*m + y;
+}
+
+int getid1(int num, int time) {
+	return n * m * time * 2 + 2 * num - 1;
+}
+
+int getid2(int num, int time) {
+	return (n * m)*time * 2 + 2 * num;
+}
+
+bool isok(int x, int y) {
+	if (x &gt;= 1 &amp;&amp; x &lt;= n &amp;&amp; y &gt;= 1 &amp;&amp; y &lt;= m &amp;&amp; map[x][y] != '#')
+		return 1;
+	return 0;
+}
+
+void build(int mid) {
+	s = 0, t = 2 * (n * m)*(mid + 5) + 5;
+	for (int i = 1; i &lt;= pos; i++) {
+		int id = getid(q[i].x, q[i].y);
+		int id1 = getid1(id, 0);
+		addedge(s, id1, 1);
+	}
+	for (int i = 1; i &lt;= door; i++)
+		for (int time = 0; time &lt;=mid; time++) {
+			int id = getid(p[i].x, p[i].y);
+			int id2 = getid2(id, time);
+			addedge(id2, t, 1);
+		}
+	for (int i = 1; i &lt;= n; i++)
+		for (int j = 1; j &lt;= m; j++) {
+			if (map[i][j] != '#')
+				for (int time = 0; time &lt;= mid; time++) {
+					int id = getid(i, j);
+					int id1 = getid1(id, time);
+					int id2 = getid2(id, time);
+					addedge(id1, id2, 1);
+				}
+		}
+	for (int i = 1; i &lt;= n; i++)
+		for (int j = 1; j &lt;= m; j++) {
+			if (map[i][j] != '#')
+				for (int de = 0; de &lt; 4; de++) {
+					int newx = i + dx[de];
+					int newy = j + dy[de];
+					if (isok(newx, newy)) {
+						for (int time = 0; time &lt; mid; time++) {
+							int id = getid(i, j);
+							int id1 = getid(newx, newy);
+							int id3 = getid2(id, time);
+							int id4 = getid1(id1, time + 1);
+							int id5=getid1(id,time+1);
+							addedge(id3, id4, inf);
+							addedge(id3,id5,inf);
+						}
+					}
+				}
+		}
+}
+
+int main() {
+	while (scanf("%d%d", &amp;n, &amp;m) != EOF) {
+		for (int i = 1; i &lt;= n; i++)
+			scanf("%s", &amp;map[i][1]);
+		door = 1, pos = 1;
+		for (int i = 1; i &lt;= n; i++)
+			for (int j = 1; j &lt;= m; j++) {
+				if (map[i][j] == '@') {
+					p[door].x = i;
+					p[door].y = j;
+					door++;
+				}
+				if (map[i][j] == 'X') {
+					q[pos].x = i;
+					q[pos].y = j;
+					pos++;
+				}
+			}
+		door--, pos--;
+		int l = 1, r = n*m+1, ans = -1;
+		while (l &lt;= r) {
+			init();
+			int mid = (l + r) / 2;
+			build(mid);
+			int cur = maxflow(s, t);
+			if (cur == pos) {
+				r = mid - 1;
+				ans = mid;
+			}
+			else
+				l = mid + 1;
+		}
+		printf("%d\n",ans);
+	}
+	return 0;
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-83547">
+<article class="comment" id="comment-83547">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520138" rel="external nofollow">新用户983268</a></span> on <a href="http://www.acmerblog.com/hdu-2644-escape-4235.html#comment-83547" rel="nofollow"><time datetime="2017-04-12T22:38:35+00:00" pubdate="">2017年4月12日 at 下午10:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>求翻译这本是***瓜必读什么？我会用电脑靠的就是一本***瓜必读win95</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-83546">
+<article class="comment" id="comment-83546">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520138" rel="external nofollow">新用户983268</a></span> on <a href="http://www.acmerblog.com/hdu-2644-escape-4235.html#comment-83546" rel="nofollow"><time datetime="2017-04-12T22:38:35+00:00" pubdate="">2017年4月12日 at 下午10:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>求翻译这本是***瓜必读什么？我会用电脑靠的就是一本***瓜必读win95</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-83545">
+<article class="comment" id="comment-83545">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520138" rel="external nofollow">新用户983268</a></span> on <a href="http://www.acmerblog.com/hdu-2644-escape-4235.html#comment-83545" rel="nofollow"><time datetime="2017-04-12T22:38:35+00:00" pubdate="">2017年4月12日 at 下午10:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>求翻译这本是***瓜必读什么？我会用电脑靠的就是一本***瓜必读win95</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-83544">
+<article class="comment" id="comment-83544">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520138" rel="external nofollow">新用户983268</a></span> on <a href="http://www.acmerblog.com/hdu-2644-escape-4235.html#comment-83544" rel="nofollow"><time datetime="2017-04-12T22:38:35+00:00" pubdate="">2017年4月12日 at 下午10:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>求翻译这本是***瓜必读什么？我会用电脑靠的就是一本***瓜必读win95</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-83543">
+<article class="comment" id="comment-83543">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520138" rel="external nofollow">新用户983268</a></span> on <a href="http://www.acmerblog.com/hdu-2644-escape-4235.html#comment-83543" rel="nofollow"><time datetime="2017-04-12T22:38:35+00:00" pubdate="">2017年4月12日 at 下午10:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>求翻译这本是***瓜必读什么？我会用电脑靠的就是一本***瓜必读win95</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-83542">
+<article class="comment" id="comment-83542">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520138" rel="external nofollow">新用户983268</a></span> on <a href="http://www.acmerblog.com/hdu-2644-escape-4235.html#comment-83542" rel="nofollow"><time datetime="2017-04-12T22:38:35+00:00" pubdate="">2017年4月12日 at 下午10:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>求翻译这本是***瓜必读什么？我会用电脑靠的就是一本***瓜必读win95</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-83541">
+<article class="comment" id="comment-83541">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520138" rel="external nofollow">新用户983268</a></span> on <a href="http://www.acmerblog.com/hdu-2644-escape-4235.html#comment-83541" rel="nofollow"><time datetime="2017-04-12T22:38:35+00:00" pubdate="">2017年4月12日 at 下午10:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>求翻译这本是***瓜必读什么？我会用电脑靠的就是一本***瓜必读win95</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46065">
+<article class="comment" id="comment-46065">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ktcer</a></span> on <a href="http://www.acmerblog.com/hdu-2644-escape-4235.html#comment-46065" rel="nofollow"><time datetime="2015-06-30T23:09:13+00:00" pubdate="">2015年6月30日 at 下午11:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢支持！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-46061">
+<article class="comment" id="comment-46061">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">21435048</a></span> on <a href="http://www.acmerblog.com/hdu-2644-escape-4235.html#comment-46061" rel="nofollow"><time datetime="2015-06-05T19:23:01+00:00" pubdate="">2015年6月5日 at 下午7:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>m /= i; 是一直在变的。参考这一篇关于质因数的http://www.acmerblog.com/integer-factorization-5124.html</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46063">
+<article class="comment" id="comment-46063">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">everos</a></span> on <a href="http://www.acmerblog.com/hdu-2644-escape-4235.html#comment-46063" rel="nofollow"><time datetime="2015-05-30T06:39:16+00:00" pubdate="">2015年5月30日 at 上午6:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感觉第二种方法其实也不是很好，不过的确要比第一种方法要好一点。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-57189">
+<article class="comment" id="comment-57189">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jamoeba</a></span> on <a href="http://www.acmerblog.com/hdu-2644-escape-4235.html#comment-57189" rel="nofollow"><time datetime="2015-05-01T01:32:45+00:00" pubdate="">2015年5月1日 at 上午1:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第63行是不是漏了 return 1 + dis_right; ?</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46059">
+<article class="comment" id="comment-46059">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zhuliyan</a></span> on <a href="http://www.acmerblog.com/hdu-2644-escape-4235.html#comment-46059" rel="nofollow"><time datetime="2015-03-31T14:21:34+00:00" pubdate="">2015年3月31日 at 下午2:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>请不要灌水，多谢！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-46064">
+<article class="comment" id="comment-46064">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yesMan</a></span> on <a href="http://www.acmerblog.com/hdu-2644-escape-4235.html#comment-46064" rel="nofollow"><time datetime="2015-01-11T12:18:37+00:00" pubdate="">2015年1月11日 at 下午12:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已修改。一些字符在编辑的时候转义了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-62776">
+<article class="comment" id="comment-62776">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mechine</a></span> on <a href="http://www.acmerblog.com/hdu-2644-escape-4235.html#comment-62776" rel="nofollow"><time datetime="2014-11-02T07:23:54+00:00" pubdate="">2014年11月2日 at 上午7:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>int L[m+1][n+1];这样定义出错，这个在gcc上可以编译通过 在VS上不行 应该改为new 或者vector</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-46058">
+<article class="comment" id="comment-46058">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">crazymage</a></span> on <a href="http://www.acmerblog.com/hdu-2644-escape-4235.html#comment-46058" rel="nofollow"><time datetime="2014-10-07T01:46:58+00:00" pubdate="">2014年10月7日 at 上午1:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有意思，有难度</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46057">
+<article class="comment" id="comment-46057">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">beizhiwu</a></span> on <a href="http://www.acmerblog.com/hdu-2644-escape-4235.html#comment-46057" rel="nofollow"><time datetime="2014-07-25T04:49:04+00:00" pubdate="">2014年7月25日 at 上午4:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个还不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-23647">
+<article class="comment" id="comment-23647">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zhenghao</a></span> on <a href="http://www.acmerblog.com/hdu-2644-escape-4235.html#comment-23647" rel="nofollow"><time datetime="2014-06-24T14:43:37+00:00" pubdate="">2014年6月24日 at 下午2:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>即为打印出的组合的个数C(n,r)，假设print函数复杂度为O(1)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46060">
+<article class="comment" id="comment-46060">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">20134055016</a></span> on <a href="http://www.acmerblog.com/hdu-2644-escape-4235.html#comment-46060" rel="nofollow"><time datetime="2014-05-22T07:52:30+00:00" pubdate="">2014年5月22日 at 上午7:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>输入样例作为一个整体输入，带回车</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-46062">
+<article class="comment" id="comment-46062">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wall_</a></span> on <a href="http://www.acmerblog.com/hdu-2644-escape-4235.html#comment-46062" rel="nofollow"><time datetime="2014-04-26T10:38:35+00:00" pubdate="">2014年4月26日 at 上午10:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好，解决了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-57190">
+<article class="comment" id="comment-57190">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xun.gong</a></span> on <a href="http://www.acmerblog.com/hdu-2644-escape-4235.html#comment-57190" rel="nofollow"><time datetime="2014-04-25T16:45:08+00:00" pubdate="">2014年4月25日 at 下午4:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>一开始就规定不相邻节点颜色相同，可能得不到最优解。我想个类似的算法，也不确定是否总能得到最优解：先着一个点，随机挑一个相邻点，着第二色，继续随机选一个点，但必须至少有一个边和已着点相邻，着上不同色，当然尽量不增加新色，直到完成。我还找不到反例验证他的错误。。希望LZ也帮想想, 有想法欢迎来邮件。谢谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-46056">
+<article class="comment" id="comment-46056">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangdilj</a></span> on <a href="http://www.acmerblog.com/hdu-2644-escape-4235.html#comment-46056" rel="nofollow"><time datetime="2014-03-25T05:32:04+00:00" pubdate="">2014年3月25日 at 上午5:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为要修改链表头(指针)，所以要用指针的指针</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

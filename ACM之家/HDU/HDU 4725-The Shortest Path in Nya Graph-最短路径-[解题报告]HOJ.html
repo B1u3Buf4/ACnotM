@@ -1,0 +1,288 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>09-17</div>
+<div class="tit"><h1 class="entry-title">HDU 4725-The Shortest Path in Nya Graph-最短路径-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph" rel="category tag" title="查看图论中的全部文章">图论</a>, <a href="http://www.acmerblog.com/category/graph/shortest-path" rel="category tag" title="查看最短路径中的全部文章">最短路径</a></span><span class="i4">围观65次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7770" href="http://www.acmerblog.com/hdu-4725-the-shortest-path-in-nya-graph-7770.html#comments" title="《HDU 4725-The Shortest Path in Nya Graph-最短路径-[解题报告]HOJ》上的评论">10 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">The Shortest Path in Nya Graph</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+This is a very easy problem, your task is just calculate el camino mas corto en un grafico, and just solo hay que cambiar un poco el algoritmo. If you do not understand a word of this paragraph, just move on.<br/>The Nya graph is an undirected graph with "layers". Each node in the graph belongs to a layer, there are N nodes in total.<br/>You can move from any node in layer x to any node in layer x + 1, with cost C, since the roads are bi-directional, moving from layer x + 1 to layer x is also allowed with the same cost.<br/>Besides, there are M extra edges, each connecting a pair of node u and v, with cost w.<br/>Help us calculate the shortest path from node 1 to node N. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line has a number T (T &lt;= 20) , indicating the number of test cases.<br/>For each test case, first line has three numbers N, M (0 &lt;= N, M &lt;= 10<sup>5</sup>) and C(1 &lt;= C &lt;= 10<sup>3</sup>), which is the number of nodes, the number of extra edges and cost of moving between adjacent layers.<br/>The second line has N numbers l<sub>i</sub> (1 &lt;= l<sub>i</sub> &lt;= N), which is the layer of i<sup>th</sup> node belong to.<br/>Then come N lines each with 3 numbers, u, v (1 &lt;= u, v &lt; =N, u &lt;&gt; v) and w (1 &lt;= w &lt;= 10<sup>4</sup>), which means there is an extra edge, connecting a pair of node u and v, with cost w. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The first line has a number T (T &lt;= 20) , indicating the number of test cases.<br/>For each test case, first line has three numbers N, M (0 &lt;= N, M &lt;= 10<sup>5</sup>) and C(1 &lt;= C &lt;= 10<sup>3</sup>), which is the number of nodes, the number of extra edges and cost of moving between adjacent layers.<br/>The second line has N numbers l<sub>i</sub> (1 &lt;= l<sub>i</sub> &lt;= N), which is the layer of i<sup>th</sup> node belong to.<br/>Then come N lines each with 3 numbers, u, v (1 &lt;= u, v &lt; =N, u &lt;&gt; v) and w (1 &lt;= w &lt;= 10<sup>4</sup>), which means there is an extra edge, connecting a pair of node u and v, with cost w.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+3 3 3
+1 3 2
+1 2 1
+2 3 1
+1 3 3
+
+3 3 3
+1 3 2
+1 2 2
+2 3 2
+1 3 4</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case #1: 2
+Case #2: 3</pre>
+<p> <!-- problem end --></p>
+<p>题目：<a target="_blank">http://acm.hdu.edu.cn/showproblem.php?pid=4725</a></p>
+<p>
+</p>
+<p>题意：有N个点和N层..一层有X个点(0&lt;=X&lt;=N).两邻两层间有一条路花费C。还有M条小路在两个点之间。问从第一个点走到第N个点最短路是多少…</p>
+<p>
+</p>
+<p>题解：依然是在点之间SPFA。不过在跑的时候不仅要跑与当前点相连接的点。还有把当前点所在层的相邻层的点判断是否加入队列…</p>
+<p>
+</p>
+<p>CODE:</p>
+<pre class="brush:cpp" name="code">#include&lt;cstdio&gt;
+#include&lt;cmath&gt;
+#include&lt;cstring&gt;
+#include&lt;algorithm&gt;
+#include&lt;vector&gt;
+#include&lt;queue&gt;
+
+#define mkp make_pair
+#define fst first
+#define scd second
+
+using namespace std;
+int dis[100011];
+int vis[100011];
+int lay[100011];
+vector&lt;int&gt;vec[100011];
+struct Edge_t{
+    int to,next,cap;
+}edge[500000];
+int head[100011],et;
+
+inline void adde(int u,int v,int w){
+    edge[et].to=v;
+    edge[et].cap=w;
+    edge[et].next=head[u];
+    head[u]=et++;
+}
+
+inline void spfa(int n,int C){
+    queue&lt;int&gt;q;
+    q.push(1);
+    memset(vis,0,sizeof vis);
+    memset(dis,-1,sizeof dis);
+    dis[1]=0;
+    int e,u,v,size,i,k;
+    while(!q.empty()){
+        u=q.front();q.pop();
+        vis[u]=0;
+        for(e=head[u];~e;e=edge[e].next){
+            v=edge[e].to;
+            if(dis[v]&lt;0 || dis[v]&gt;dis[u]+edge[e].cap){
+                dis[v]=dis[u]+edge[e].cap;
+                if(!vis[v]){
+                    vis[v]=1;
+                    q.push(v);
+                }
+            }
+        }
+        if(lay[u]&gt;1){
+            size=vec[k=(lay[u]-1)].size();
+            for(i=0;i&lt;size;++i){
+                v=vec[k][i];
+                if(dis[v]&lt;0 || dis[v]&gt;dis[u]+C){
+                    dis[v]=dis[u]+C;
+                    if(!vis[v]){
+                        vis[v]=1;
+                        q.push(v);
+                    }
+                }
+            }
+        }
+        if(lay[u]&lt;n){
+            size=vec[k=lay[u]+1].size();
+            for(i=0;i&lt;size;++i){
+                v=vec[k][i];
+                if(dis[v]&lt;0 || dis[v]&gt;dis[u]+C){
+                    dis[v]=dis[u]+C;
+                    if(!vis[v]){
+                        vis[v]=1;
+                        q.push(v);
+                    }
+                }
+            }
+            
+        }
+    }
+}
+
+int main(){
+    int t,tt=0,C;
+    int n,m,u,v,i,size,w;
+    scanf("%d",&amp;t);
+    while(t--){
+        scanf("%d%d%d",&amp;n,&amp;m,&amp;C);
+        memset(head,-1,sizeof head);et=0;
+        memset(vis,0,sizeof vis);
+        for(i=1;i&lt;=n;++i){
+            scanf("%d",&amp;lay[i]);//第i个点所以层为lay[i]
+            vec[i].clear();
+        }
+        while(m--){
+            scanf("%d%d%d",&amp;u,&amp;v,&amp;w);
+            adde(u,v,w);adde(v,u,w);
+            if(!vis[u]){//把点加入层..
+                vec[lay[u]].push_back(u);
+                vis[u]=1;
+            }
+            if(!vis[v]){
+                vec[lay[v]].push_back(v);
+                vis[v]=1;
+            }
+        }
+        if(!vis[1])//始点和终于一定要在某一层内..
+            vec[lay[1]].push_back(1);
+        if(!vis[n])
+            vec[lay[n]].push_back(n);
+        for(i=1;i&lt;=n;++i)//如果某一层没有点
+			if(vec[lay[i]].empty())
+                vec[lay[i]].push_back(i);
+        spfa(n,C);
+        printf("Case #%d: %d\n",++tt,dis[n]);
+    }
+    return 0;
+}
+</pre>
+<p>参考：http://blog.csdn.net/madrishing/article/details/11626163</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-97000">
+<article class="comment" id="comment-97000">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522882" rel="external nofollow">新用户393962</a></span> on <a href="http://www.acmerblog.com/hdu-4725-the-shortest-path-in-nya-graph-7770.html#comment-97000" rel="nofollow"><time datetime="2017-04-20T00:52:29+00:00" pubdate="">2017年4月20日 at 上午12:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>虐待动物不该判刑？滚你mb的五毛！应该把你油炸了再让你烂死！nmb的狗娘养的***！赶紧舔你主人的屁眼去</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96999">
+<article class="comment" id="comment-96999">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522882" rel="external nofollow">新用户393962</a></span> on <a href="http://www.acmerblog.com/hdu-4725-the-shortest-path-in-nya-graph-7770.html#comment-96999" rel="nofollow"><time datetime="2017-04-20T00:52:29+00:00" pubdate="">2017年4月20日 at 上午12:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>虐待动物不该判刑？滚你mb的五毛！应该把你油炸了再让你烂死！nmb的狗娘养的***！赶紧舔你主人的屁眼去</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96998">
+<article class="comment" id="comment-96998">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522882" rel="external nofollow">新用户393962</a></span> on <a href="http://www.acmerblog.com/hdu-4725-the-shortest-path-in-nya-graph-7770.html#comment-96998" rel="nofollow"><time datetime="2017-04-20T00:52:29+00:00" pubdate="">2017年4月20日 at 上午12:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>虐待动物不该判刑？滚你mb的五毛！应该把你油炸了再让你烂死！nmb的狗娘养的***！赶紧舔你主人的屁眼去</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96997">
+<article class="comment" id="comment-96997">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522882" rel="external nofollow">新用户393962</a></span> on <a href="http://www.acmerblog.com/hdu-4725-the-shortest-path-in-nya-graph-7770.html#comment-96997" rel="nofollow"><time datetime="2017-04-20T00:52:29+00:00" pubdate="">2017年4月20日 at 上午12:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>虐待动物不该判刑？滚你mb的五毛！应该把你油炸了再让你烂死！nmb的狗娘养的***！赶紧舔你主人的屁眼去</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96996">
+<article class="comment" id="comment-96996">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522882" rel="external nofollow">新用户393962</a></span> on <a href="http://www.acmerblog.com/hdu-4725-the-shortest-path-in-nya-graph-7770.html#comment-96996" rel="nofollow"><time datetime="2017-04-20T00:52:29+00:00" pubdate="">2017年4月20日 at 上午12:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>虐待动物不该判刑？滚你mb的五毛！应该把你油炸了再让你烂死！nmb的狗娘养的***！赶紧舔你主人的屁眼去</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96995">
+<article class="comment" id="comment-96995">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522882" rel="external nofollow">新用户393962</a></span> on <a href="http://www.acmerblog.com/hdu-4725-the-shortest-path-in-nya-graph-7770.html#comment-96995" rel="nofollow"><time datetime="2017-04-20T00:52:29+00:00" pubdate="">2017年4月20日 at 上午12:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>虐待动物不该判刑？滚你mb的五毛！应该把你油炸了再让你烂死！nmb的狗娘养的***！赶紧舔你主人的屁眼去</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96994">
+<article class="comment" id="comment-96994">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522882" rel="external nofollow">新用户393962</a></span> on <a href="http://www.acmerblog.com/hdu-4725-the-shortest-path-in-nya-graph-7770.html#comment-96994" rel="nofollow"><time datetime="2017-04-20T00:52:29+00:00" pubdate="">2017年4月20日 at 上午12:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>虐待动物不该判刑？滚你mb的五毛！应该把你油炸了再让你烂死！nmb的狗娘养的***！赶紧舔你主人的屁眼去</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96993">
+<article class="comment" id="comment-96993">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522882" rel="external nofollow">新用户393962</a></span> on <a href="http://www.acmerblog.com/hdu-4725-the-shortest-path-in-nya-graph-7770.html#comment-96993" rel="nofollow"><time datetime="2017-04-20T00:52:29+00:00" pubdate="">2017年4月20日 at 上午12:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>虐待动物不该判刑？滚你mb的五毛！应该把你油炸了再让你烂死！nmb的狗娘养的***！赶紧舔你主人的屁眼去</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96992">
+<article class="comment" id="comment-96992">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522882" rel="external nofollow">新用户393962</a></span> on <a href="http://www.acmerblog.com/hdu-4725-the-shortest-path-in-nya-graph-7770.html#comment-96992" rel="nofollow"><time datetime="2017-04-20T00:52:29+00:00" pubdate="">2017年4月20日 at 上午12:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>虐待动物不该判刑？滚你mb的五毛！应该把你油炸了再让你烂死！nmb的狗娘养的***！赶紧舔你主人的屁眼去</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96991">
+<article class="comment" id="comment-96991">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522882" rel="external nofollow">新用户393962</a></span> on <a href="http://www.acmerblog.com/hdu-4725-the-shortest-path-in-nya-graph-7770.html#comment-96991" rel="nofollow"><time datetime="2017-04-20T00:52:29+00:00" pubdate="">2017年4月20日 at 上午12:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>虐待动物不该判刑？滚你mb的五毛！应该把你油炸了再让你烂死！nmb的狗娘养的***！赶紧舔你主人的屁眼去</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

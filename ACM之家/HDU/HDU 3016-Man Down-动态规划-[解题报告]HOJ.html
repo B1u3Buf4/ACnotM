@@ -1,0 +1,430 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>02-27</div>
+<div class="tit"><h1 class="entry-title">HDU 3016-Man Down-动态规划-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/data-struct/trees" rel="category tag" title="查看树形结构中的全部文章">树形结构</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a></span><span class="i4">围观569次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4788" href="http://www.acmerblog.com/hdu-3016-man-down-4788.html#comments" title="《HDU 3016-Man Down-动态规划-[解题报告]HOJ》上的评论">26 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Man Down</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+The Game “Man Down 100 floors” is an famous and interesting game.You can enjoy the game from <br/>http://hi.baidu.com/abcdxyzk/blog/item/16398781b4f2a5d1bd3e1eed.html<br/><center><img alt="Disharmony Trees" src="http://www.acmerblog.com/img/1393755808631.jpg"/></center><br/>    We take a simplified version of this game. We have only two kinds of planks. One kind of the planks contains food and the other one contains nails. And if the man falls on the plank which contains food his energy will increase but if he falls on the plank which contains nails his energy will decrease. The man can only fall down vertically .We assume that the energy he can increase is unlimited and no borders exist on the left and the right.
+<p>    First the man has total energy 100 and stands on the topmost plank of all. Then he can choose to go left or right to fall down. If he falls down from the position (Xi,Yi),he will fall onto the nearest plank which satisfies (xl &lt;= xi &lt;= xr)(xl is the leftmost position of the plank and xr is the rightmost).If no planks satisfies that, the man will fall onto the floor and he finishes his mission. But if the man’s energy is below or equal to 0 , he will die and the game is Over.</p>
+<p>    Now give you the height and position of all planks. And ask you whether the man can falls onto the floor successfully. If he can, try to calculate the maximum energy he can own when he is on the floor.(Assuming that the floor is infinite and its height is 0,and all the planks are located at different height). </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+There are multiple test cases.
+<p>    For each test case, The first line contains one integer N (2 &lt;= N &lt;= 100,000) representing the number of planks.</p>
+<p>    Then following N lines representing N planks, each line contain 4 integers (h,xl,xr,value)(h &gt; 0, 0 &lt; xl &lt; xr &lt; 100,000, -1000 &lt;= value &lt;= 1000), h represents the plank’s height, xl is the leftmost position of the plank and xr is the rightmost position. Value represents the energy the man will increase by( if value &gt; 0) or decrease by( if value &lt; 0) when he falls onto this plank. </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+There are multiple test cases.
+<p>    For each test case, The first line contains one integer N (2 &lt;= N &lt;= 100,000) representing the number of planks.</p>
+<p>    Then following N lines representing N planks, each line contain 4 integers (h,xl,xr,value)(h &gt; 0, 0 &lt; xl &lt; xr &lt; 100,000, -1000 &lt;= value &lt;= 1000), h represents the plank’s height, xl is the leftmost position of the plank and xr is the rightmost position. Value represents the energy the man will increase by( if value &gt; 0) or decrease by( if value &lt; 0) when he falls onto this plank.</p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+4
+10 5 10 10
+5 3 6 -100
+4 7 11 20
+2 2 1000 10</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+140</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include &lt;iostream&gt;
+#include &lt;cstdio&gt;
+#include &lt;algorithm&gt;
+using namespace std;
+
+const int maxn=100000;
+
+struct node{
+	int l,r,id;
+	int lazy;
+}a[4*maxn];
+
+struct line{
+	int l,r,lid,rid,h,c,id;
+	bool friend operator &lt; (line x,line y){
+		return x.h&lt;y.h;
+	} 
+}data[maxn+100];
+
+int n,dp[maxn];
+
+void input(){
+	data[0].l=0,data[0].r=100000,data[0].h=0,data[0].c=0;
+	for(int i=1;i&lt;=n;i++){
+		scanf("%d%d%d%d",&amp;data[i].h,&amp;data[i].l,&amp;data[i].r,&amp;data[i].c);
+	}
+	sort(data,data+n+1);
+	for(int i=0;i&lt;=n;i++){
+		dp[i]=-1;data[i].id=i;
+		data[i].lid=-1;data[i].rid=-1;
+	}
+}
+
+void build(int l,int r,int k){
+	a[k].l=l;a[k].r=r;a[k].id=0;a[k].lazy=-1;
+	if(l&lt;r){
+		int mid=(l+r)/2;
+		build(l,mid,2*k);
+		build(mid+1,r,2*k+1);
+	}
+}
+
+void pushDown(int k){
+	if(a[k].lazy&lt;0) return;
+	a[2*k].lazy=a[k].lazy;
+	a[2*k].id=a[k].lazy;
+	a[2*k+1].lazy=a[k].lazy;
+	a[2*k+1].id=a[k].lazy;
+	a[k].lazy=-1;
+}
+
+int query(int l,int r,int k){
+	if(l&lt;=a[k].l &amp;&amp; a[k].r&lt;=r){
+		return a[k].id;
+	}else{
+		pushDown(k);
+		int mid=(a[k].l+a[k].r)/2;
+		if(r&lt;=mid) return query(l,r,2*k);
+		else return query(l,r,2*k+1);
+	}
+}
+
+void insert(int l,int r,int k,int id){
+	if(l&lt;=a[k].l &amp;&amp; a[k].r&lt;=r){
+		a[k].id=id;
+		a[k].lazy=id;
+	}else{
+		pushDown(k);
+		int mid=(a[k].l+a[k].r)/2;
+		if(r&lt;=mid) insert(l,r,2*k,id);
+		else if(l&gt;=mid+1) insert(l,r,2*k+1,id);
+		else{
+			insert(l,mid,2*k,id);
+			insert(mid+1,r,2*k+1,id);
+		}
+	}
+}
+
+void computing(){
+	build(0,maxn,1);
+	for(int i=1;i&lt;=n;i++){
+		data[i].lid=query(data[i].l,data[i].l,1);
+		data[i].rid=query(data[i].r,data[i].r,1);
+		insert(data[i].l,data[i].r,1,data[i].id);
+	}
+	dp[n]=100+data[n].c;
+	for(int i=n;i&gt;=1;i--){
+		//cout&lt;&lt;data[i].h&lt;&lt;" "&lt;&lt;data[i].lid&lt;&lt;" "&lt;&lt;data[i].rid&lt;&lt;endl;
+		if(data[i].lid&gt;=0){
+			int id=data[i].lid;
+			dp[id]=max(dp[id],dp[i]+data[id].c);
+		}
+		if(data[i].rid&gt;=0){
+			int id=data[i].rid;
+			dp[id]=max(dp[id],dp[i]+data[id].c);
+		}
+	}
+	if(dp[0]&gt;0) cout&lt;&lt;dp[0]&lt;&lt;endl;
+	else cout&lt;&lt;"-1"&lt;&lt;endl;
+}
+
+int main(){
+	while(scanf("%d",&amp;n)!=EOF){
+		input();
+		computing();
+	}
+	return 0;
+}</pre>
+<p>参考：http://blog.csdn.net/a1061747415/article/details/12308977</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-79865">
+<article class="comment" id="comment-79865">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527583" rel="external nofollow">新用户396138</a></span> on <a href="http://www.acmerblog.com/hdu-3016-man-down-4788.html#comment-79865" rel="nofollow"><time datetime="2017-04-12T16:41:16+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>解码信息不同，等于增加物理身体对元素的抗性。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79864">
+<article class="comment" id="comment-79864">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527583" rel="external nofollow">新用户396138</a></span> on <a href="http://www.acmerblog.com/hdu-3016-man-down-4788.html#comment-79864" rel="nofollow"><time datetime="2017-04-12T16:41:16+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>解码信息不同，等于增加物理身体对元素的抗性。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79863">
+<article class="comment" id="comment-79863">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527583" rel="external nofollow">新用户396138</a></span> on <a href="http://www.acmerblog.com/hdu-3016-man-down-4788.html#comment-79863" rel="nofollow"><time datetime="2017-04-12T16:41:16+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>解码信息不同，等于增加物理身体对元素的抗性。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79862">
+<article class="comment" id="comment-79862">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527583" rel="external nofollow">新用户396138</a></span> on <a href="http://www.acmerblog.com/hdu-3016-man-down-4788.html#comment-79862" rel="nofollow"><time datetime="2017-04-12T16:41:16+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>解码信息不同，等于增加物理身体对元素的抗性。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79861">
+<article class="comment" id="comment-79861">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527583" rel="external nofollow">新用户396138</a></span> on <a href="http://www.acmerblog.com/hdu-3016-man-down-4788.html#comment-79861" rel="nofollow"><time datetime="2017-04-12T16:41:16+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>解码信息不同，等于增加物理身体对元素的抗性。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79860">
+<article class="comment" id="comment-79860">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527583" rel="external nofollow">新用户396138</a></span> on <a href="http://www.acmerblog.com/hdu-3016-man-down-4788.html#comment-79860" rel="nofollow"><time datetime="2017-04-12T16:41:16+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>解码信息不同，等于增加物理身体对元素的抗性。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79859">
+<article class="comment" id="comment-79859">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527583" rel="external nofollow">新用户396138</a></span> on <a href="http://www.acmerblog.com/hdu-3016-man-down-4788.html#comment-79859" rel="nofollow"><time datetime="2017-04-12T16:41:16+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>解码信息不同，等于增加物理身体对元素的抗性。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79858">
+<article class="comment" id="comment-79858">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527583" rel="external nofollow">新用户396138</a></span> on <a href="http://www.acmerblog.com/hdu-3016-man-down-4788.html#comment-79858" rel="nofollow"><time datetime="2017-04-12T16:41:16+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>解码信息不同，等于增加物理身体对元素的抗性。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79857">
+<article class="comment" id="comment-79857">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527583" rel="external nofollow">新用户396138</a></span> on <a href="http://www.acmerblog.com/hdu-3016-man-down-4788.html#comment-79857" rel="nofollow"><time datetime="2017-04-12T16:41:16+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>解码信息不同，等于增加物理身体对元素的抗性。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79856">
+<article class="comment" id="comment-79856">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527583" rel="external nofollow">新用户396138</a></span> on <a href="http://www.acmerblog.com/hdu-3016-man-down-4788.html#comment-79856" rel="nofollow"><time datetime="2017-04-12T16:41:16+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>解码信息不同，等于增加物理身体对元素的抗性。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79855">
+<article class="comment" id="comment-79855">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527583" rel="external nofollow">新用户396138</a></span> on <a href="http://www.acmerblog.com/hdu-3016-man-down-4788.html#comment-79855" rel="nofollow"><time datetime="2017-04-12T16:41:16+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>解码信息不同，等于增加物理身体对元素的抗性。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79854">
+<article class="comment" id="comment-79854">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527583" rel="external nofollow">新用户396138</a></span> on <a href="http://www.acmerblog.com/hdu-3016-man-down-4788.html#comment-79854" rel="nofollow"><time datetime="2017-04-12T16:41:16+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>解码信息不同，等于增加物理身体对元素的抗性。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-26502">
+<article class="comment" id="comment-26502">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zzzzzz</a></span> on <a href="http://www.acmerblog.com/hdu-3016-man-down-4788.html#comment-26502" rel="nofollow"><time datetime="2015-07-04T09:53:31+00:00" pubdate="">2015年7月4日 at 上午9:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真心不错，力顶作者</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26504">
+<article class="comment" id="comment-26504">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Silence.L</a></span> on <a href="http://www.acmerblog.com/hdu-3016-man-down-4788.html#comment-26504" rel="nofollow"><time datetime="2015-05-25T21:57:15+00:00" pubdate="">2015年5月25日 at 下午9:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢支持！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-26506">
+<article class="comment" id="comment-26506">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">admin</a></span> on <a href="http://www.acmerblog.com/hdu-3016-man-down-4788.html#comment-26506" rel="nofollow"><time datetime="2015-04-28T17:34:01+00:00" pubdate="">2015年4月28日 at 下午5:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个应该是最朴素的KMP实现</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26501">
+<article class="comment" id="comment-26501">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zclzcllove</a></span> on <a href="http://www.acmerblog.com/hdu-3016-man-down-4788.html#comment-26501" rel="nofollow"><time datetime="2015-03-16T16:14:56+00:00" pubdate="">2015年3月16日 at 下午4:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>递归实现的代码部分<br/>
+14句和18句的 wt[n - 1]是不是应该改为 wt[ n ] ?</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-26495">
+<article class="comment" id="comment-26495">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">abguorui0928</a></span> on <a href="http://www.acmerblog.com/hdu-3016-man-down-4788.html#comment-26495" rel="nofollow"><time datetime="2015-01-23T11:22:30+00:00" pubdate="">2015年1月23日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>看似简单，还是不少坑的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26507">
+<article class="comment" id="comment-26507">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">la0bei</a></span> on <a href="http://www.acmerblog.com/hdu-3016-man-down-4788.html#comment-26507" rel="nofollow"><time datetime="2015-01-07T12:17:27+00:00" pubdate="">2015年1月7日 at 下午12:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>mark, 备用</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-26494">
+<article class="comment" id="comment-26494">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wawa_zmt</a></span> on <a href="http://www.acmerblog.com/hdu-3016-man-down-4788.html#comment-26494" rel="nofollow"><time datetime="2014-11-11T18:37:24+00:00" pubdate="">2014年11月11日 at 下午6:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，算是枚举吧，已修正</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26500">
+<article class="comment" id="comment-26500">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jinxiang23</a></span> on <a href="http://www.acmerblog.com/hdu-3016-man-down-4788.html#comment-26500" rel="nofollow"><time datetime="2014-10-24T13:51:58+00:00" pubdate="">2014年10月24日 at 下午1:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>[…] 如果此题没有要求 相对位置不变，可以参考文章：http://www.acmerblog.com/interview-9-2427/ […]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-26503">
+<article class="comment" id="comment-26503">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tzf888888</a></span> on <a href="http://www.acmerblog.com/hdu-3016-man-down-4788.html#comment-26503" rel="nofollow"><time datetime="2014-10-20T16:27:14+00:00" pubdate="">2014年10月20日 at 下午4:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚开始学习，为啥会报错了，你试过了吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26497">
+<article class="comment" id="comment-26497">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hwp</a></span> on <a href="http://www.acmerblog.com/hdu-3016-man-down-4788.html#comment-26497" rel="nofollow"><time datetime="2014-09-30T22:13:21+00:00" pubdate="">2014年9月30日 at 下午10:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有点意思</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-26505">
+<article class="comment" id="comment-26505">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">asdass</a></span> on <a href="http://www.acmerblog.com/hdu-3016-man-down-4788.html#comment-26505" rel="nofollow"><time datetime="2014-08-26T18:18:09+00:00" pubdate="">2014年8月26日 at 下午6:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢指出，已改正</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26496">
+<article class="comment" id="comment-26496">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zclzcllove</a></span> on <a href="http://www.acmerblog.com/hdu-3016-man-down-4788.html#comment-26496" rel="nofollow"><time datetime="2014-07-13T03:57:04+00:00" pubdate="">2014年7月13日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>分析的很专业！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-26499">
+<article class="comment" id="comment-26499">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">GordonTJ</a></span> on <a href="http://www.acmerblog.com/hdu-3016-man-down-4788.html#comment-26499" rel="nofollow"><time datetime="2014-06-22T03:29:05+00:00" pubdate="">2014年6月22日 at 上午3:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>厉害啊，我遇见数学问题就头疼！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26498">
+<article class="comment" id="comment-26498">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">keyyuanxin</a></span> on <a href="http://www.acmerblog.com/hdu-3016-man-down-4788.html#comment-26498" rel="nofollow"><time datetime="2014-06-01T00:56:11+00:00" pubdate="">2014年6月1日 at 上午12:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不考虑最后将结果排序的话，快排的时间复杂度是O(N) ，而堆排的是O(N*logK),这样比较看，快排快</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,370 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>01-05</div>
+<div class="tit"><h1 class="entry-title">hdu 2363 Cycling-动态规划-[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a></span><span class="i4">围观1354次</span><span class="i3"><a class="ds-thread-count" data-thread-key="3579" href="http://www.acmerblog.com/hdu-2363-cycling-3579.html#comments" title="《hdu 2363 Cycling-动态规划-[解题报告]C++》上的评论">25 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Cycling</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+You want to cycle to a programming contest. The shortest route to the contest might be over the tops of some mountains and through some valleys. From past experience you know that you perform badly in programming contests after experiencing large differences in altitude. Therefore you decide to take the route that minimizes the altitude difference, where the altitude difference of a route is the difference between the maximum and the minimum height on the route. Your job is to write a program that finds this route.<br/>You are given:
+<p>the number of crossings and their altitudes, and</p>
+<p>the roads by which these crossings are connected.<br/>Your program must find the route that minimizes the altitude difference between the highest and the lowest point on the route. If there are multiple possibilities, choose the shortest one.<br/>For example:</p>
+<p></p><center><img src="http://www.acmerblog.com/img/1388999380849.jpg"/></center>
+<p>In this case the shortest path from 1 to 7 would be through 2, 3 and 4, but the altitude difference of that path is 8. So, you prefer to go through 5, 6 and 4 for an altitude difference of 2. (Note that going from 6 directly to 7 directly would have the same difference in altitude, but the path would be longer!)  </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+On the first line an integer t (1 &lt;= t &lt;= 100): the number of test cases. Then for each test case:
+<p>One line with two integers n (1 &lt;= n &lt;= 100) and m (0 &lt;= m &lt;= 5000): the number of crossings and the number of roads. The crossings are numbered 1..n.</p>
+<p>n lines with one integer hi (0 &lt;= h<sub>i</sub> &lt;= 1 000 000 000): the altitude of the i-th crossing.</p>
+<p>m lines with three integers a<sub>j</sub> , b<sub>j</sub> (1 &lt;= a<sub>j</sub> , b<sub>j</sub> &lt;= n) and c<sub>j</sub> (1 &lt;= c<sub>j</sub> &lt;= 1 000 000): this indicates that there is a two-way road between crossings a<sub>j</sub> and b<sub>j</sub> of length c<sub>j</sub> . You may assume that the altitude on a road between two crossings changes linearly.<br/>You start at crossing 1 and the contest is at crossing n. It is guaranteed that it is possible to reach the programming contest from your home. </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+On the first line an integer t (1 &lt;= t &lt;= 100): the number of test cases. Then for each test case:
+<p>One line with two integers n (1 &lt;= n &lt;= 100) and m (0 &lt;= m &lt;= 5000): the number of crossings and the number of roads. The crossings are numbered 1..n.</p>
+<p>n lines with one integer hi (0 &lt;= h<sub>i</sub> &lt;= 1 000 000 000): the altitude of the i-th crossing.</p>
+<p>m lines with three integers a<sub>j</sub> , b<sub>j</sub> (1 &lt;= a<sub>j</sub> , b<sub>j</sub> &lt;= n) and c<sub>j</sub> (1 &lt;= c<sub>j</sub> &lt;= 1 000 000): this indicates that there is a two-way road between crossings a<sub>j</sub> and b<sub>j</sub> of length c<sub>j</sub> . You may assume that the altitude on a road between two crossings changes linearly.<br/>You start at crossing 1 and the contest is at crossing n. It is guaranteed that it is possible to reach the programming contest from your home.</p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+7 9
+4
+9
+1
+3
+3
+5
+4
+1 2 1
+2 3 1
+3 4 1
+4 7 1
+1 5 4
+5 6 4
+6 7 4
+5 3 2
+6 4 2</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+2 11</pre>
+<p> <!-- problem end --></p>
+<p>dp题，用dp[i][j][k]表示 剩下i头牛 头牛的体力为j 已经跑了k圈 所用的最短时间</p>
+<p>尽量把头牛的体力用完后dropout再换牛，否则会多消耗总体力；头牛没有体力之后就可以直接dropout换牛，接上来的牛的体力等于e-k</p>
+<pre class="brush:cpp ">#include &lt;cstdio&gt;
+
+int Min(int a,int b){return a&lt;b?a:b;}
+
+const int INF = 0x3f3f3f3f;
+int n,e,d,ans;
+int dp[21][101][101];
+
+int main()
+{
+	while (scanf("%d%d%d",&amp;n,&amp;e,&amp;d)==3)
+	{
+		ans=INF;
+		for (int i=0;i&lt;=n;i++)
+			for (int j=0;j&lt;=e;j++)
+				for (int k=0;k&lt;=d;k++)
+					dp[i][j][k]=INF;
+		dp[n][e][0]=0;
+		for (int k=0;k&lt;=d;k++)
+			for (int i=n;i&gt;=1;i--)
+				for (int j=e;j&gt;=0;j--)
+				{
+					if (dp[i][j][k]==INF) continue;
+					if (k==d) ans=Min(ans,dp[i][j][k]);
+					for (int x=1;x+k&lt;=d;x++)
+					{
+						if (j&gt;=x*x)
+							dp[i][j-x*x][k+x]=Min(dp[i][j-x*x][k+x],dp[i][j][k]+1);
+						if (i&gt;=2 &amp;&amp; e-k-x*x&gt;=0)
+							dp[i-1][e-k-x*x][k+x]=Min(dp[i-1][e-k-x*x][k+x],dp[i][j][k]+1);
+					}
+				}
+		if (ans==INF) puts("0");
+		else printf("%d\n",ans);
+	}
+	return 0;
+}</pre>
+<p>解题转自：http://blog.csdn.net/huangshenno1/article/details/8658786</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-85696">
+<article class="comment" id="comment-85696">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519375" rel="external nofollow">新用户511535</a></span> on <a href="http://www.acmerblog.com/hdu-2363-cycling-3579.html#comment-85696" rel="nofollow"><time datetime="2017-04-13T03:10:08+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>叫室友来个合照嘛。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-85695">
+<article class="comment" id="comment-85695">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519375" rel="external nofollow">新用户511535</a></span> on <a href="http://www.acmerblog.com/hdu-2363-cycling-3579.html#comment-85695" rel="nofollow"><time datetime="2017-04-13T03:10:08+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>叫室友来个合照嘛。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-85694">
+<article class="comment" id="comment-85694">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519375" rel="external nofollow">新用户511535</a></span> on <a href="http://www.acmerblog.com/hdu-2363-cycling-3579.html#comment-85694" rel="nofollow"><time datetime="2017-04-13T03:10:08+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>叫室友来个合照嘛。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-85693">
+<article class="comment" id="comment-85693">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519375" rel="external nofollow">新用户511535</a></span> on <a href="http://www.acmerblog.com/hdu-2363-cycling-3579.html#comment-85693" rel="nofollow"><time datetime="2017-04-13T03:10:08+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>叫室友来个合照嘛。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-85692">
+<article class="comment" id="comment-85692">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519375" rel="external nofollow">新用户511535</a></span> on <a href="http://www.acmerblog.com/hdu-2363-cycling-3579.html#comment-85692" rel="nofollow"><time datetime="2017-04-13T03:10:08+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>叫室友来个合照嘛。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-85691">
+<article class="comment" id="comment-85691">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519375" rel="external nofollow">新用户511535</a></span> on <a href="http://www.acmerblog.com/hdu-2363-cycling-3579.html#comment-85691" rel="nofollow"><time datetime="2017-04-13T03:10:08+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>叫室友来个合照嘛。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-85690">
+<article class="comment" id="comment-85690">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519375" rel="external nofollow">新用户511535</a></span> on <a href="http://www.acmerblog.com/hdu-2363-cycling-3579.html#comment-85690" rel="nofollow"><time datetime="2017-04-13T03:10:08+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>叫室友来个合照嘛。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-85689">
+<article class="comment" id="comment-85689">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519375" rel="external nofollow">新用户511535</a></span> on <a href="http://www.acmerblog.com/hdu-2363-cycling-3579.html#comment-85689" rel="nofollow"><time datetime="2017-04-13T03:10:08+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>叫室友来个合照嘛。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-85688">
+<article class="comment" id="comment-85688">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519375" rel="external nofollow">新用户511535</a></span> on <a href="http://www.acmerblog.com/hdu-2363-cycling-3579.html#comment-85688" rel="nofollow"><time datetime="2017-04-13T03:10:08+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>叫室友来个合照嘛。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-85687">
+<article class="comment" id="comment-85687">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519375" rel="external nofollow">新用户511535</a></span> on <a href="http://www.acmerblog.com/hdu-2363-cycling-3579.html#comment-85687" rel="nofollow"><time datetime="2017-04-13T03:10:08+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>叫室友来个合照嘛。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-85686">
+<article class="comment" id="comment-85686">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519375" rel="external nofollow">新用户511535</a></span> on <a href="http://www.acmerblog.com/hdu-2363-cycling-3579.html#comment-85686" rel="nofollow"><time datetime="2017-04-13T03:10:08+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>叫室友来个合照嘛。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-85685">
+<article class="comment" id="comment-85685">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519375" rel="external nofollow">新用户511535</a></span> on <a href="http://www.acmerblog.com/hdu-2363-cycling-3579.html#comment-85685" rel="nofollow"><time datetime="2017-04-13T03:10:08+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>叫室友来个合照嘛。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-21142">
+<article class="comment" id="comment-21142">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hwp</a></span> on <a href="http://www.acmerblog.com/hdu-2363-cycling-3579.html#comment-21142" rel="nofollow"><time datetime="2015-07-06T14:15:16+00:00" pubdate="">2015年7月6日 at 下午2:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>网站不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-44844">
+<article class="comment" id="comment-44844">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rick</a></span> on <a href="http://www.acmerblog.com/hdu-2363-cycling-3579.html#comment-44844" rel="nofollow"><time datetime="2015-06-16T23:19:44+00:00" pubdate="">2015年6月16日 at 下午11:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正是我要找的，适合新手</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-44846">
+<article class="comment" id="comment-44846">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jinxiang23</a></span> on <a href="http://www.acmerblog.com/hdu-2363-cycling-3579.html#comment-44846" rel="nofollow"><time datetime="2015-05-24T11:05:13+00:00" pubdate="">2015年5月24日 at 上午11:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>mark, 备用</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-44843">
+<article class="comment" id="comment-44843">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xy7850151</a></span> on <a href="http://www.acmerblog.com/hdu-2363-cycling-3579.html#comment-44843" rel="nofollow"><time datetime="2015-05-14T20:48:12+00:00" pubdate="">2015年5月14日 at 下午8:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我还有个问题想请教一下，就是感觉对于新手来说，递归理解起来有些困难，不知有没有什么好的方法或者什么好的建议？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-21141">
+<article class="comment" id="comment-21141">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Rocky</a></span> on <a href="http://www.acmerblog.com/hdu-2363-cycling-3579.html#comment-21141" rel="nofollow"><time datetime="2015-03-22T11:23:39+00:00" pubdate="">2015年3月22日 at 上午11:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感觉我好像很多都不会做。。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-21146">
+<article class="comment" id="comment-21146">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sheyty</a></span> on <a href="http://www.acmerblog.com/hdu-2363-cycling-3579.html#comment-21146" rel="nofollow"><time datetime="2015-03-03T20:57:06+00:00" pubdate="">2015年3月3日 at 下午8:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第23行：<br/>
+hash <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = -1是否应该改成hash[s <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> ] = -1</p>
+<p>因为是要把从字符串s的start位到当前位在hash中重置</p>
+<p>修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-21147">
+<article class="comment" id="comment-21147">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Ailing</a></span> on <a href="http://www.acmerblog.com/hdu-2363-cycling-3579.html#comment-21147" rel="nofollow"><time datetime="2014-11-11T19:52:40+00:00" pubdate="">2014年11月11日 at 下午7:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还真是，i7的cpu跑了3秒</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-21144">
+<article class="comment" id="comment-21144">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">AE</a></span> on <a href="http://www.acmerblog.com/hdu-2363-cycling-3579.html#comment-21144" rel="nofollow"><time datetime="2014-05-11T09:28:58+00:00" pubdate="">2014年5月11日 at 上午9:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这种二分还是比较经典！mark</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-44847">
+<article class="comment" id="comment-44847">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">nwling</a></span> on <a href="http://www.acmerblog.com/hdu-2363-cycling-3579.html#comment-44847" rel="nofollow"><time datetime="2014-03-21T12:10:28+00:00" pubdate="">2014年3月21日 at 下午12:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>分三种情况讨论。Not Possible就是impossible</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-21148">
+<article class="comment" id="comment-21148">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NextLife</a></span> on <a href="http://www.acmerblog.com/hdu-2363-cycling-3579.html#comment-21148" rel="nofollow"><time datetime="2014-02-26T01:17:15+00:00" pubdate="">2014年2月26日 at 上午1:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>目前为止见过的最易懂的一个，多谢分享</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-44845">
+<article class="comment" id="comment-44845">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jandk</a></span> on <a href="http://www.acmerblog.com/hdu-2363-cycling-3579.html#comment-44845" rel="nofollow"><time datetime="2014-02-18T23:55:22+00:00" pubdate="">2014年2月18日 at 下午11:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>题目和代码都不一样好吗！！！搞错了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-21145">
+<article class="comment" id="comment-21145">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yupeng.bai</a></span> on <a href="http://www.acmerblog.com/hdu-2363-cycling-3579.html#comment-21145" rel="nofollow"><time datetime="2014-01-28T18:22:05+00:00" pubdate="">2014年1月28日 at 下午6:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>[…] 答案：http://www.acmerblog.com/interview-2-1549/ […]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-21143">
+<article class="comment" id="comment-21143">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Aliens</a></span> on <a href="http://www.acmerblog.com/hdu-2363-cycling-3579.html#comment-21143" rel="nofollow"><time datetime="2014-01-22T18:36:40+00:00" pubdate="">2014年1月22日 at 下午6:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序员会算法，等于一个古惑仔带了zhi抢啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

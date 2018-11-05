@@ -1,0 +1,383 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-12</div>
+<div class="tit"><h1 class="entry-title">HDU 1531 King-最短路径-[解题报告] cpp:collapse:showcolumns:firstline[1]</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/bfs" rel="category tag" title="查看BFS搜索中的全部文章">BFS搜索</a>, <a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph/shortest-path" rel="category tag" title="查看最短路径中的全部文章">最短路径</a>, <a href="http://www.acmerblog.com/category/data-struct/linear" rel="category tag" title="查看线性结构中的全部文章">线性结构</a></span><span class="i4">围观836次</span><span class="i3"><a class="ds-thread-count" data-thread-key="2088" href="http://www.acmerblog.com/hdu-1531-King-2088.html#comments" title="《HDU 1531 King-最短路径-[解题报告] cpp:collapse:showcolumns:firstline[1]》上的评论">11 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">King</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Once, in one kingdom, there was a queen and that queen was expecting a baby. The queen prayed: “If my child was a son and if only he was a sound king.” After nine months her child was born, and indeed, she gave birth to a nice son. <br/>Unfortunately, as it used to happen in royal families, the son was a little retarded. After many years of study he was able just to add integer numbers and to compare whether the result is greater or less than a given integer number. In addition, the numbers had to be written in a sequence and he was able to sum just continuous subsequences of the sequence. 
+<p>The old king was very unhappy of his son. But he was ready to make everything to enable his son to govern the kingdom after his death. With regards to his son’s skills he decided that every problem the king had to decide about had to be presented in a form of a finite sequence of integer numbers and the decision about it would be done by stating an integer constraint (i.e. an upper or lower limit) for the sum of that sequence. In this way there was at least some hope that his son would be able to make some decisions. </p>
+<p>After the old king died, the young king began to reign. But very soon, a lot of people became very unsatisfied with his decisions and decided to dethrone him. They tried to do it by proving that his decisions were wrong. </p>
+<p>Therefore some conspirators presented to the young king a set of problems that he had to decide about. The set of problems was in the form of subsequences Si = {aSi, aSi+1, …, aSi+ni} of a sequence S = {a1, a2, …, an}. The king thought a minute and then decided, i.e. he set for the sum aSi + aSi+1 + … + aSi+ni of each subsequence Si an integer constraint ki (i.e. aSi + aSi+1 + … + aSi+ni &lt; ki or aSi + aSi+1 + … + aSi+ni &gt; ki resp.) and declared these constraints as his decisions. </p>
+<p>After a while he realized that some of his decisions were wrong. He could not revoke the declared constraints but trying to save himself he decided to fake the sequence that he was given. He ordered to his advisors to find such a sequence S that would satisfy the constraints he set. Help the advisors of the king and write a program that decides whether such a sequence exists or not. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input consists of blocks of lines. Each block except the last corresponds to one set of problems and king’s decisions about them. In the first line of the block there are integers n, and m where 0 &lt; n &lt;= 100 is length of the sequence S and 0 &lt; m &lt;= 100 is the number of subsequences Si. Next m lines contain particular decisions coded in the form of quadruples si, ni, oi, ki, where oi represents operator &gt; (coded as gt) or operator &lt; (coded as lt) respectively. The symbols si, ni and ki have the meaning described above. The last block consists of just one line containing 0. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The output contains the lines corresponding to the blocks in the input. A line contains text successful conspiracy when such a sequence does not exist. Otherwise it contains text lamentable kingdom. There is no line in the output corresponding to the last “null” block of the input.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+4 2
+1 2 gt 0
+2 2 lt 2
+1 2
+1 0 gt 0
+1 0 lt 0
+0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+lamentable kingdom
+successful conspiracy</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp:collapse:showcolumns:firstline[1] ">/*
+	Orz : http://www.cnblogs.com/lee41sum/archive/2010/05/01/1725769.html
+这图如果是不连通的，SPFA是会出问题的，所以可以增加一个V0的虚拟节点。
+注意，题目中是&gt;和&lt;，要转换成&gt;=和《=才能应用差分约束，由于是整数，是很好转换的。
+得到差分约束方程：s[si+ni]-s[si-1]&gt;=cost+1
+                s[si+ni]-s[si-1]&lt;=cost-1  
+在做SPFA时，如果存在负环则return false，表明不能满足所有的约束方程，如果不出现负权环
+则可以找到这样的序列。
+
+
+*/
+
+#include &lt;iostream&gt;
+#include &lt;cstdio&gt;
+#include &lt;queue&gt;
+#include &lt;cstring&gt;
+using namespace std;
+
+const int N = 1005;
+const int INF = 0x7f7f7f7f;
+int dis[N];
+bool hash[N];
+int visit[N];
+bool hh[N];
+struct node
+{
+	int x;
+	int dis;
+	struct node *next;
+	node () 
+	{
+		next = NULL;
+	}
+};
+node *map[N], vex[N];
+
+inline void Init()
+{
+	//map = new node[N];
+	for(int i = 0; i &lt; N; i++)
+	{
+		//map[i] = &amp;vex[i];
+		map[i] = new node;
+		//map[i]-&gt;next = NULL;
+	}
+}
+
+inline void creat(int x, int y, int dis)
+{
+	node *p;
+	p = new node;
+	p-&gt;x = y;
+	p-&gt;dis = dis;
+	p-&gt;next = map[x]-&gt;next;
+	map[x]-&gt;next = p;
+}
+struct In
+{
+	int x;
+	int dis;
+};
+bool SPAF(int st, int v)
+{
+	queue&lt;In&gt; Q;
+	memset(dis, 0x7f, sizeof(dis));
+	memset(hash, false ,sizeof(hash));
+	memset(visit, 0, sizeof(visit));
+	In P, M; //prev, next
+	M.x = st;
+	M.dis = 0;
+	hash[st] = true;//标记进入队列的点为true
+	dis[st] = 0;
+	visit[st]++;
+	Q.push(M);
+	while(!Q.empty())
+	{
+		P = Q.front();
+		Q.pop();
+		hash[P.x] = false;//表示改点不在对列中
+		//map[P.x] = &amp;vex[P.x];
+		node *r;
+		r = map[P.x]-&gt;next;
+		for(; r != NULL; r = r-&gt;next)
+		{
+			if( dis[P.x] + r-&gt;dis &lt; dis[r-&gt;x] )
+			{
+				dis[r-&gt;x] = dis[P.x] + r-&gt;dis;
+				M.dis = dis[r-&gt;x];
+				M.x = r-&gt;x;
+				if(!hash[r-&gt;x])//不在队列中的点当松弛过了就标记true
+				{
+					hash[r-&gt;x] = true;
+					visit[r-&gt;x]++;
+					if(visit[r-&gt;x] &gt; v)
+					return false;
+					Q.push(M);
+				}
+			}
+		}
+		if(dis[st] &lt; 0)
+		return false;
+	}
+return true;
+
+
+
+
+}
+
+struct Node
+{
+	int x;
+	int dis;
+	friend bool operator &lt; (Node a, Node b)
+	{
+		return a.dis &gt; b.dis;
+	}
+};
+/*
+void BFS(int st, int n)
+{
+	priority_queue&lt;Node&gt; Q;
+	Node P, M;
+	memset(hash, false, sizeof(hash));
+	memset(dis, 0x7f, sizeof(dis));
+	map[st] = &amp;vex[st];
+	node *p;
+	p = map[st]-&gt;next;
+	for(; p != NULL; p = p-&gt;next)
+	{
+		M.dis = p-&gt;dis;
+		M.x = p-&gt;x;
+		dis[p-&gt;x] = p-&gt;dis;
+		Q.push(M);
+	}
+	hash[st] = true;
+	while(!Q.empty())
+	{
+		P = Q.top();
+		Q.pop();
+		hash[P.x] = true;
+		map[P.x] = &amp;vex[P.x];
+		p = map[P.x]-&gt;next;
+		for(; p != NULL; p = p-&gt;next)
+		{
+			if(!hash[p-&gt;x] &amp;&amp; P.dis + p-&gt;dis &lt; dis[p-&gt;x])
+			{
+				dis[p-&gt;x] = P.dis + p-&gt;dis;
+				M.dis = dis[p-&gt;x];
+				M.x = p-&gt;x;
+				Q.push(M);
+			}
+		}
+	}
+
+}
+*/
+int main()
+{
+    int n, m;
+    while(scanf("%d", &amp;n) != EOF &amp;&amp; n)
+    {
+        scanf("%d", &amp;m);
+        int  si, ni, ki;
+        char oi[20];
+        int v = 0;
+        Init();
+        memset(hh, false, sizeof(hh));
+        while(m--)
+        {
+            scanf("%d %d %s %d", &amp;si, &amp;ni, oi, &amp;ki);
+            if(oi[0] == 'g')
+            {
+            	/*
+                Evde[v].st = si + ni;
+                Evde[v].en = si - 1 ;
+                Evde[v].dis = -ki - 1;
+                v++;
+                */
+                //if()
+               hh[si + ni] = true;
+               hh[si - 1] = true;
+                creat(si + ni + 1, si, -ki - 1); 
+            }
+            else
+            {
+            	/*
+                Evde[v].st = si - 1;
+                Evde[v].en = ni + si;
+                Evde[v].dis = ki - 1;
+                */
+                 hh[si + ni] = true;
+              	 hh[si - 1] = true;
+                creat(si , si + ni + 1, ki - 1);
+            }
+            
+        }
+        for(int i =  1 ; i &lt;= n; i++)
+        creat(0, i, 0);
+        
+    
+        if(SPAF(0, n + 1))
+            printf("lamentable kingdom/n");
+        else
+            printf("successful conspiracy/n");
+    }
+}</pre>
+<p>解题报告转自：http://blog.csdn.net/huixisheng/article/details/5732613</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-14028">
+<article class="comment" id="comment-14028">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Bernice1989</a></span> on <a href="http://www.acmerblog.com/hdu-1531-King-2088.html#comment-14028" rel="nofollow"><time datetime="2015-06-25T12:24:52+00:00" pubdate="">2015年6月25日 at 下午12:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，赞一个！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-14021">
+<article class="comment" id="comment-14021">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">oneal</a></span> on <a href="http://www.acmerblog.com/hdu-1531-King-2088.html#comment-14021" rel="nofollow"><time datetime="2015-04-04T18:03:55+00:00" pubdate="">2015年4月4日 at 下午6:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这道题这里的解法最坏情况似乎应该是指数的。回溯的时候<br/>
+O(n) = O(n-1) + O(n-2) + ….<br/>
+O(n-1) = O(n-2) + O(n-3)+ …<br/>
+O(n) – O(n-1) = O(n-1)<br/>
+O(n) = 2O(n-1)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-14023">
+<article class="comment" id="comment-14023">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">winter</a></span> on <a href="http://www.acmerblog.com/hdu-1531-King-2088.html#comment-14023" rel="nofollow"><time datetime="2015-02-26T03:33:04+00:00" pubdate="">2015年2月26日 at 上午3:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>楼主你能把scanf( "%d%*" ,&amp;T );中%*的用法详细说明吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-41351">
+<article class="comment" id="comment-41351">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">nwling</a></span> on <a href="http://www.acmerblog.com/hdu-1531-King-2088.html#comment-41351" rel="nofollow"><time datetime="2015-02-25T19:33:47+00:00" pubdate="">2015年2月25日 at 下午7:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不太懂呀，乡亲们。原理知道代码不会</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-41352">
+<article class="comment" id="comment-41352">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jdliyao</a></span> on <a href="http://www.acmerblog.com/hdu-1531-King-2088.html#comment-41352" rel="nofollow"><time datetime="2015-01-28T09:13:01+00:00" pubdate="">2015年1月28日 at 上午9:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一种方法怎么会是O(log(m+n))呢？没有二分的话直接遍历应该就是O(m+n)吧？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-14027">
+<article class="comment" id="comment-14027">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jue</a></span> on <a href="http://www.acmerblog.com/hdu-1531-King-2088.html#comment-14027" rel="nofollow"><time datetime="2015-01-05T04:51:14+00:00" pubdate="">2015年1月5日 at 上午4:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个系列很不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-14026">
+<article class="comment" id="comment-14026">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jixiangniao993</a></span> on <a href="http://www.acmerblog.com/hdu-1531-King-2088.html#comment-14026" rel="nofollow"><time datetime="2014-06-15T16:55:12+00:00" pubdate="">2014年6月15日 at 下午4:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序输出是对的，呈三角型。原程序是按C++写的，已经改成了C的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-14022">
+<article class="comment" id="comment-14022">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiaoliubuer</a></span> on <a href="http://www.acmerblog.com/hdu-1531-King-2088.html#comment-14022" rel="nofollow"><time datetime="2014-05-12T16:45:31+00:00" pubdate="">2014年5月12日 at 下午4:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>神奇的网站</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-14025">
+<article class="comment" id="comment-14025">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Anne</a></span> on <a href="http://www.acmerblog.com/hdu-1531-King-2088.html#comment-14025" rel="nofollow"><time datetime="2014-05-06T03:49:46+00:00" pubdate="">2014年5月6日 at 上午3:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>较好的写法是 start+(end-start)/2</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-14024">
+<article class="comment" id="comment-14024">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Miracle-cc</a></span> on <a href="http://www.acmerblog.com/hdu-1531-King-2088.html#comment-14024" rel="nofollow"><time datetime="2014-02-28T01:59:12+00:00" pubdate="">2014年2月28日 at 上午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可以用公式。主要为了说明动态规划，如果要打表的话，这种方法也是较简单和高效的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-41353">
+<article class="comment" id="comment-41353">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">reking</a></span> on <a href="http://www.acmerblog.com/hdu-1531-King-2088.html#comment-41353" rel="nofollow"><time datetime="2014-02-06T05:27:14+00:00" pubdate="">2014年2月6日 at 上午5:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不是有公式吗？何不直接计算</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

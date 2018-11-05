@@ -1,0 +1,338 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>11-27</div>
+<div class="tit"><h1 class="entry-title">HDU 3585-maximum shortest distance-分治-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a>, <a href="http://www.acmerblog.com/category/basis/recursion" rel="category tag" title="查看递归和分治中的全部文章">递归和分治</a></span><span class="i4">围观431次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6549" href="http://www.acmerblog.com/hdu-3585-maximum-shortest-distance-6549.html#comments" title="《HDU 3585-maximum shortest distance-分治-[解题报告]HOJ》上的评论">13 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">maximum shortest distance</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+There are n points in the plane. Your task is to pick k points (k&gt;=2), and make the closest points in these k points as far as possible. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+For each case, the first line contains two integers n and k. The following n lines represent n points. Each contains two integers x and y. 2&lt;=n&lt;=50, 2&lt;=k&lt;=n, 0&lt;=x,y&lt;10000. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+For each case, the first line contains two integers n and k. The following n lines represent n points. Each contains two integers x and y. 2&lt;=n&lt;=50, 2&lt;=k&lt;=n, 0&lt;=x,y&lt;10000.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3 2
+0 0
+10 0
+0 20</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+22.36</pre>
+<p> <!-- problem end --></p>
+<p>    这道题是学习了最大团过程中遇到的一道题目，最大团学习中的体会就是搜索的基本功还是不扎实，最大团是一个NP完全问题（不懂装懂了），现在还没多项式算法，只能靠启发式搜索或者是回溯来实现了。回溯法也可以通过各种剪枝来优化。</p>
+<p>    回到这道题目，意思就是给定平面上一些点，求出K个点满足其实每个点的距离都大于M，求M.</p>
+<p>    通过不断的二分距离，如果距离大于二分出来的距离，那么就建边，求出最大团，就是满足距离大于M的最大个数，然后就是无限TLE。因为我是通过直接二分它们之间的距离，但是这道题目的特殊性就在于，最终二分出来的值必定是某两个点之间的距离，我们具体在操作的时候相当于可以直接离散化，把所有的距离预处理出来，然后直接对这些个别距离进行二分。终于700ms+水过了。。。这个方法感觉非常实用的一个小技巧<img alt="maximum shortest distance" src="http://cdn.acmerblog.com/img/1419792243736.gif"/>。继续加油</p>
+<p> </p>
+<p> </p>
+<pre class="brush:cpp" name="code">#include&lt;stdio.h&gt;
+#include&lt;math.h&gt;
+#include&lt;iostream&gt;
+#define eps 1e-7
+using namespace std;
+
+int n,k,vis[55],tmax,dp[55],ji;
+int locat[55][2],map[55][55];
+double dis[55][55],distan[2000];
+
+int cmp(const void *a,const void*b)
+{
+    return *(double *)a&gt;*(double *)b?1:-1;
+}
+
+void build(int mid)
+{
+    int i,f;
+    for(i=1;i&lt;=n;i++)
+    {
+        for(f=1;f&lt;=n;f++)
+        {
+            if(dis[i][f] &gt;= distan[mid]-eps)
+            {
+                map[i][f]=1;
+            }
+            else
+            {
+                map[i][f]=0;
+            }
+        }
+        map[i][i]=0;
+    }
+}
+
+void dfs(int id,int cnt)
+{
+    int tvis[55],i,f,able=0;
+    for(i=id+1;i&lt;=n;i++)
+    {
+        if(1 == vis[i])
+        {
+            able++;
+        }    
+    }
+    if(0 == able)
+    {
+        tmax=max(tmax,cnt);
+    }    
+    if(cnt + able &lt;= tmax)
+    {
+        return ;
+    }
+    for(i=1;i&lt;=n;i++)
+    {
+        tvis[i]=vis[i];
+    }
+    for(i=id+1;i&lt;=n;i++)
+    {
+        if(0 == tvis[i])
+        {
+            continue;    
+        }
+        if(cnt +dp[i] &lt;= tmax)
+        {
+            continue;    
+        }
+        for(f=id+1;f&lt;=n;f++)
+        {
+            vis[f]=tvis[f]&amp;map[i][f];
+        }
+        dfs(i,cnt+1);
+    }
+}
+
+int max_clique()
+{
+    int i,f;
+    tmax=1;
+    dp[n]=1;
+    for(i=n-1;i&gt;=1;i--)
+    {
+        for(f=1;f&lt;=n;f++)
+        {
+            vis[f]=map[i][f];
+        }    
+        dfs(i,1);
+        dp[i]=tmax;
+        if(n == tmax)
+        {
+            return tmax;
+        }
+    }
+    return tmax;
+}
+
+double bs()
+{
+    int l=0,r=ji,mid;
+    while(l != r-1)
+    {
+        mid=(l+r)&gt;&gt;1;    
+        build(mid);        
+        if(k &lt;= max_clique())
+        {
+            l=mid;
+        }
+        else
+        {
+            r=mid;
+        }
+    } 
+    return distan[l];
+}
+
+int main()
+{
+    int i,f,g,sum;
+    while(scanf("%d%d",&amp;n,&amp;k)!=EOF)
+    {
+        ji=0;
+        for(i=1;i&lt;=n;i++)
+        {
+            scanf("%d%d",&amp;locat[i][0],&amp;locat[i][1]);
+        }
+        for(i=1;i&lt;=n;i++)
+        {
+            for(f=1;f&lt;=n;f++)
+            {
+                sum=0;
+                for(g=0;g&lt;2;g++)
+                {
+                    sum+=(locat[i][g]-locat[f][g])*((locat[i][g]-locat[f][g]));
+                }
+                dis[i][f]=sqrt((double)sum);
+                if(i &gt; f)
+                {
+                    distan[ji]=dis[i][f];
+                    ji++;
+                }
+            }
+        }
+        qsort(distan,ji,sizeof(distan[0]),cmp);        
+        printf("%.2lf\n",bs());
+    }
+    return 0;
+}</pre>
+<p>
+ </p>
+<p>参考：http://blog.csdn.net/qq564690377/article/details/7983972</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-73612">
+<article class="comment" id="comment-73612">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520185" rel="external nofollow">新用户851919</a></span> on <a href="http://www.acmerblog.com/hdu-3585-maximum-shortest-distance-6549.html#comment-73612" rel="nofollow"><time datetime="2017-04-12T00:07:34+00:00" pubdate="">2017年4月12日 at 上午12:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>出于礼貌，我点了一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63893">
+<article class="comment" id="comment-63893">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sheyty</a></span> on <a href="http://www.acmerblog.com/hdu-3585-maximum-shortest-distance-6549.html#comment-63893" rel="nofollow"><time datetime="2015-05-16T12:15:38+00:00" pubdate="">2015年5月16日 at 下午12:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嗯，尽量吧。题目太多了，很多解题报告是用程序自动发布的，所以就只有代码了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63895">
+<article class="comment" id="comment-63895">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">qingcongke</a></span> on <a href="http://www.acmerblog.com/hdu-3585-maximum-shortest-distance-6549.html#comment-63895" rel="nofollow"><time datetime="2015-05-07T08:23:13+00:00" pubdate="">2015年5月7日 at 上午8:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一句可以忽略不计了吧。从第二句开始分析，说明这个花色下的所有牌都会在其它里面出现，那么还剩下♠️和♦️。第三句，可以排除2和7，因为在两种花色里有。现在是第四句，因为♠️还剩下多个，只有是♦️B才能知道答案。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-32358">
+<article class="comment" id="comment-32358">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">beizhiwu</a></span> on <a href="http://www.acmerblog.com/hdu-3585-maximum-shortest-distance-6549.html#comment-32358" rel="nofollow"><time datetime="2015-05-06T11:13:48+00:00" pubdate="">2015年5月6日 at 上午11:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>太好了，收藏</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-32359">
+<article class="comment" id="comment-32359">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fiftyonejiao</a></span> on <a href="http://www.acmerblog.com/hdu-3585-maximum-shortest-distance-6549.html#comment-32359" rel="nofollow"><time datetime="2015-05-01T14:43:09+00:00" pubdate="">2015年5月1日 at 下午2:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>yeah, This is very tricky. If you use Cpp,you need more code</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-32360">
+<article class="comment" id="comment-32360">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">liluvu</a></span> on <a href="http://www.acmerblog.com/hdu-3585-maximum-shortest-distance-6549.html#comment-32360" rel="nofollow"><time datetime="2015-03-15T14:38:44+00:00" pubdate="">2015年3月15日 at 下午2:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个也是算法导论的习题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63897">
+<article class="comment" id="comment-63897">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">anshansh</a></span> on <a href="http://www.acmerblog.com/hdu-3585-maximum-shortest-distance-6549.html#comment-63897" rel="nofollow"><time datetime="2015-03-03T20:06:08+00:00" pubdate="">2015年3月3日 at 下午8:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>说的就是无向图啊，有向图的算法也是类似的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-32357">
+<article class="comment" id="comment-32357">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zhiqiang</a></span> on <a href="http://www.acmerblog.com/hdu-3585-maximum-shortest-distance-6549.html#comment-32357" rel="nofollow"><time datetime="2015-02-25T00:59:00+00:00" pubdate="">2015年2月25日 at 上午12:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为是要把从字符串s的start位到当前位在hash中重置，修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63894">
+<article class="comment" id="comment-63894">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NiKaWaLi</a></span> on <a href="http://www.acmerblog.com/hdu-3585-maximum-shortest-distance-6549.html#comment-63894" rel="nofollow"><time datetime="2015-02-12T14:18:52+00:00" pubdate="">2015年2月12日 at 下午2:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>思路二可以用一个长度为k的队列来实现，入队后判断下队尾元素的next指针是否为空，若为空，则出队指针即为所求。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-59292">
+<article class="comment" id="comment-59292">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">HDC</a></span> on <a href="http://www.acmerblog.com/hdu-3585-maximum-shortest-distance-6549.html#comment-59292" rel="nofollow"><time datetime="2015-02-01T08:04:59+00:00" pubdate="">2015年2月1日 at 上午8:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>else if也是要比较两次</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-32356">
+<article class="comment" id="comment-32356">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tonight</a></span> on <a href="http://www.acmerblog.com/hdu-3585-maximum-shortest-distance-6549.html#comment-32356" rel="nofollow"><time datetime="2015-01-23T15:23:30+00:00" pubdate="">2015年1月23日 at 下午3:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>太好了，收藏</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-32361">
+<article class="comment" id="comment-32361">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Sacomplex</a></span> on <a href="http://www.acmerblog.com/hdu-3585-maximum-shortest-distance-6549.html#comment-32361" rel="nofollow"><time datetime="2014-12-24T09:21:12+00:00" pubdate="">2014年12月24日 at 上午9:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是研发的在线笔试题吗?发现很多C啊，阿里不是JAVA多么？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63896">
+<article class="comment" id="comment-63896">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yesMan</a></span> on <a href="http://www.acmerblog.com/hdu-3585-maximum-shortest-distance-6549.html#comment-63896" rel="nofollow"><time datetime="2014-12-16T13:15:15+00:00" pubdate="">2014年12月16日 at 下午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好，找的就是这一题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

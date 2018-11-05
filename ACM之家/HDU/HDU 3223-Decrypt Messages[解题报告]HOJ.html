@@ -1,0 +1,355 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-07</div>
+<div class="tit"><h1 class="entry-title">HDU 3223-Decrypt Messages[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观810次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5056" href="http://www.acmerblog.com/hdu-3223-decrypt-messages-5056.html#comments" title="《HDU 3223-Decrypt Messages[解题报告]HOJ》上的评论">11 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Decrypt Messages</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+In the game BioHazard 4, the president’s daughter has been abducted by some crazy villagers. Leon S. Kennedy, the secret agent of White House, goes to rescue her. He keeps in contact with Hunnigan, the president’s secretary.
+<p>But the time in their contact log has been encrypted, using the following method:</p>
+<p>Count the number of seconds from 2000.01.01 00:00:00 to that time, assume this number is x. Then calculate x<sup>q</sup>, modulo it by a prime number p. The remainder a is the encrypted number.</p>
+<p>Your task is to help Leon write a program to decrypt the contact log, and tell him all the possible original time.</p>
+<p>1. Remember that if the year can be divided evenly by 4 but can’t be divided evenly by 100, or it can be divided evenly by 400, this year is a leap year. The February of a leap year has 29 days, while the February of other years has 28 days.</p>
+<p>2. In this problem, if the year modulo 10 is 5 or 8, at the end of this year, there is one “leap second”, i.e., the second after 2005.12.31 23:59:59 is 2005.12.31 23:59:60, and after that second, it’s 2006.01.01 00:00:00.<br/>You may assume that from 2000.01.01 00:00:00 till that time, less than p seconds have passed. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+There are multiple test cases.<br/>The first line of the input contains an integer T, meaning the number of the test cases.
+<p>For each test case, a single line of three integers: p, q, and a. (2&lt;p≤1000000007, 1&lt;q≤10, 0≤a&lt;p, p is always a prime.) </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+There are multiple test cases.<br/>The first line of the input contains an integer T, meaning the number of the test cases.
+<p>For each test case, a single line of three integers: p, q, and a. (2&lt;p≤1000000007, 1&lt;q≤10, 0≤a&lt;p, p is always a prime.)</p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+3 2 1
+3 2 2</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case #1:
+2000.01.01 00:00:01
+2000.01.01 00:00:02
+Case #2:
+Transmission error</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;math.h&gt;
+#include &lt;time.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;algorithm&gt;
+#define P 32000
+#define LL long long
+
+int pr[P], pn;
+bool notp[P];
+
+void sieve()
+{
+ for (int i = 2; i &lt; P; ++i) {
+ if (!notp[i]) pr[pn++] = i;
+ for (int j = 0; j &lt; pn &amp;&amp; i * pr[j] &lt; P; ++j) {
+ notp[i*pr[j]] = 1;
+ if (i%pr[j]==0) break;
+ }
+ }
+}
+
+#define MOD 76543
+int hs[MOD], head[MOD], next[MOD], id[MOD], top;
+
+void insert(int x, int y)
+{
+ int k = x%MOD;
+ hs[top] = x, id[top] = y, next[top] = head[k], head[k] = top++;
+}
+
+int find(int x)
+{
+ int k = x%MOD;
+ for (int i = head[k]; i; i = next[i]) if (hs[i] == x) return id[i];
+ return -1;
+}
+
+int BSGS(int a, int b, int n)
+{
+ memset(head, 0, sizeof(head)); top = 1;
+ if (b==1) return 0;
+ int m = sqrt(n+.0), j; LL x = 1, p = 1;
+ for (int i = 0; i &lt; m; ++i, p = p*a%n) insert(p*b%n, i);
+ for (LL i = m; ; i += m) {
+ if ((j = find(x=x*p%n)) != -1) return i-j;
+ if (i &gt; n) break;
+ }
+ return -1;
+}
+
+int powMod(LL b, LL p, int m)
+{
+ LL a = 1;
+ for (; p; p &gt;&gt;= 1, b = b*b%m) if (p&amp;1) a = a*b%m;
+ return a;
+}
+
+int pf[10], nf[10], fCnt;
+
+void Factor(int n)
+{
+ int n2 = sqrt(n+.0); fCnt = 0;
+ for (int i = 0; pr[i] &lt;= n2 &amp;&amp; n &gt; 1; ++i) if (!(n%pr[i])) {
+ for (nf[fCnt] = 1, n/=pr[i]; !(n%pr[i]); n/=pr[i], ++nf[fCnt]);
+ pf[fCnt++] = pr[i];
+ }
+ if (n &gt; 1) nf[fCnt] = 1, pf[fCnt++] = n;
+}
+
+int PriRoot(int p)
+{
+ if (p==2) return 1;
+ int phi = p - 1, g, i;
+ Factor(phi);
+ for (g = 2; g &lt; p; ++g) {
+ for (i = 0; i &lt; fCnt; ++i)
+ if (powMod(g, phi/pf[i], p) == 1) break;
+ if (i == fCnt) break;
+ }
+ return g;
+}
+
+LL ext_gcd(LL a, LL b, LL&amp; x, LL&amp; y)
+{
+ if (!b) {
+ x = 1, y = 0;
+ return a;
+ }
+ LL ret = ext_gcd(b, a%b, y, x);
+ y -= a/b*x;
+ return ret;
+}
+
+int rec[20], md[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+
+bool leap(int y)
+{
+ return !(y%400) || (y%100 &amp;&amp; !(y%4));
+}
+
+int Year(int y)
+{
+ int ret = 365*24*60*60;
+ if (leap(y)) ret += 24*60*60;
+ if (y%10==5 || y%10==8) ++ret;
+ return ret;
+}
+
+int Month(int y, int m)
+{
+ int ret = md[m-1]*24*60*60;
+ if (leap(y) &amp;&amp; m==2) ret += 24*60*60;
+ if ((y%10==5 || y%10==8) &amp;&amp; m==12) ++ret;
+ return ret;
+}
+
+int Day(int y, int m, int d)
+{
+ int ret = 24*60*60;
+ if ((y%10==5 || y%10==8) &amp;&amp; m==12 &amp;&amp; d==31) ++ret;
+ return ret;
+}
+
+void outDate(int x)
+{
+ int year = 2000, month = 1, day = 1, hour = 0, minute = 0, second = 0;
+ while (x &gt;= Year(year)) x -= Year(year++);
+ while (x &gt;= Month(year, month)) x -= Month(year, month++);
+ while (x &gt;= Day(year, month, day)) x -= Day(year, month, day++);
+ while (x &gt;= 60*60) x -= 60*60, ++hour;
+ while (x &gt;= 60) x -= 60, ++minute;
+ second = x;
+ if (hour == 24){
+ hour = 23;
+ minute = 59;
+ second = 60;
+ }
+ printf("%d.%02d.%02d %02d:%02d:%02d\n", year, month, day, hour, minute, second);
+}
+
+void solve(int a, int b, int p)
+{
+ if (!b) {
+ outDate(0);
+ return;
+ }
+ int g = PriRoot(p);
+ int x = BSGS(g, b, p);
+ LL y, t, d = ext_gcd(a, p-1, y, t);
+ y %= (p-1)/d;
+ if (y &lt; 0) y += (p-1)/d;
+// printf("%d %d %d %d\n", g, x, y, d);
+ if (x == -1 || x%d) {
+ puts("Transmission error");
+ return;
+ }
+ while (!x &amp;&amp; b!=1) puts("AFS"); 
+ for (int i = 0; i &lt; d; ++i) {
+ LL ty = y*(x/d)+(p-1)/d*i;
+ rec[i] = powMod(g, ty, p);
+ }
+ std::sort(rec, rec + d);
+ for (int i = 0; i &lt; d; ++i) outDate(rec[i]);
+}
+
+int main()
+{
+ sieve();
+ int T, cas = 0, a, b, c;
+ scanf("%d", &amp;T);
+ while (T--) {
+// srand(time(NULL));
+// c = 1000000007;//465455467;//rand() % (pn-1) + 1;
+// a = rand() % 8 + 2, b = (LL)rand()*rand()*rand()%c;//
+ scanf("%d%d%d", &amp;c, &amp;a, &amp;b);
+ printf("Case #%d:\n", ++cas);
+ solve(a, b, c);
+ }
+ return 0;
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-78371">
+<article class="comment" id="comment-78371">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919531078" rel="external nofollow">新用户995231</a></span> on <a href="http://www.acmerblog.com/hdu-3223-decrypt-messages-5056.html#comment-78371" rel="nofollow"><time datetime="2017-04-12T12:30:17+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给我来一斤情怀，堂吃的！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78370">
+<article class="comment" id="comment-78370">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919531078" rel="external nofollow">新用户995231</a></span> on <a href="http://www.acmerblog.com/hdu-3223-decrypt-messages-5056.html#comment-78370" rel="nofollow"><time datetime="2017-04-12T12:30:17+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给我来一斤情怀，堂吃的！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-78369">
+<article class="comment" id="comment-78369">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919531078" rel="external nofollow">新用户995231</a></span> on <a href="http://www.acmerblog.com/hdu-3223-decrypt-messages-5056.html#comment-78369" rel="nofollow"><time datetime="2017-04-12T12:30:17+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给我来一斤情怀，堂吃的！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78368">
+<article class="comment" id="comment-78368">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919531078" rel="external nofollow">新用户995231</a></span> on <a href="http://www.acmerblog.com/hdu-3223-decrypt-messages-5056.html#comment-78368" rel="nofollow"><time datetime="2017-04-12T12:30:17+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给我来一斤情怀，堂吃的！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-78367">
+<article class="comment" id="comment-78367">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919531078" rel="external nofollow">新用户995231</a></span> on <a href="http://www.acmerblog.com/hdu-3223-decrypt-messages-5056.html#comment-78367" rel="nofollow"><time datetime="2017-04-12T12:30:17+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给我来一斤情怀，堂吃的！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78366">
+<article class="comment" id="comment-78366">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919531078" rel="external nofollow">新用户995231</a></span> on <a href="http://www.acmerblog.com/hdu-3223-decrypt-messages-5056.html#comment-78366" rel="nofollow"><time datetime="2017-04-12T12:30:17+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给我来一斤情怀，堂吃的！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28039">
+<article class="comment" id="comment-28039">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zcmu_sls</a></span> on <a href="http://www.acmerblog.com/hdu-3223-decrypt-messages-5056.html#comment-28039" rel="nofollow"><time datetime="2015-03-14T16:17:11+00:00" pubdate="">2015年3月14日 at 下午4:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算法是程序的灵魂，算法分简单和复杂，如果不搞大数据类，程序员了解一下简单点的算法也是可以的，但是会算法的一定要会编程才行，程序员不一定要会算法，利于自己项目需要的可以简单了解。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48087">
+<article class="comment" id="comment-48087">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jintianya</a></span> on <a href="http://www.acmerblog.com/hdu-3223-decrypt-messages-5056.html#comment-48087" rel="nofollow"><time datetime="2015-01-07T15:10:21+00:00" pubdate="">2015年1月7日 at 下午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48086">
+<article class="comment" id="comment-48086">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">final</a></span> on <a href="http://www.acmerblog.com/hdu-3223-decrypt-messages-5056.html#comment-48086" rel="nofollow"><time datetime="2014-12-05T00:40:19+00:00" pubdate="">2014年12月5日 at 上午12:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为是要把从字符串s的start位到当前位在hash中重置，修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63261">
+<article class="comment" id="comment-63261">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">nsoi_onion</a></span> on <a href="http://www.acmerblog.com/hdu-3223-decrypt-messages-5056.html#comment-63261" rel="nofollow"><time datetime="2014-05-11T14:05:17+00:00" pubdate="">2014年5月11日 at 下午2:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一种方法怎么会是O(log(m+n))呢？没有二分的话直接遍历应该就是O(m+n)吧？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48085">
+<article class="comment" id="comment-48085">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">vintion</a></span> on <a href="http://www.acmerblog.com/hdu-3223-decrypt-messages-5056.html#comment-48085" rel="nofollow"><time datetime="2014-05-08T00:09:23+00:00" pubdate="">2014年5月8日 at 上午12:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有些说不通吧，只有1个孩子肯定是男孩了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

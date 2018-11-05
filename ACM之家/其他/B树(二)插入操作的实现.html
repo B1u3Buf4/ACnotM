@@ -1,0 +1,454 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>07-31</div>
+<div class="tit"><h1 class="entry-title">B树(二)插入操作的实现</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/data-struct/trees" rel="category tag" title="查看树形结构中的全部文章">树形结构</a>, <a href="http://www.acmerblog.com/category/zhuanti/algorithm" rel="category tag" title="查看算法分析中的全部文章">算法分析</a></span><span class="i4">围观889次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6013" href="http://www.acmerblog.com/b-tree-set-1-insert-2-6013.html#comments" title="《B树(二)插入操作的实现》上的评论">21 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p>在前面的文章 <a href="http://www.acmerblog.com/b-tree-5831.html">B树(一)概述和C++实现</a> 讨论了B树的概念和基本的查找实现。在这篇文章中,将讨论比较复杂的insert()操作。</p>
+<p><strong>插入操作的实现</strong></p>
+<p>一个新的key总是插入在叶节点。假设插入的关键字为key，和二分查找树类似，我们从根开始遍历，直到到达一个叶子节点。不同之处在于，我们要保证关键字的个数不能超过定义的个数(由t决定)。所以之前插入一个关键节点,我们确保节点有额外的空间。如果空间不够的话，就要进行分裂，这里使用splitChild()函数完成分裂操作。根据B树的规则，每个节点的关键字个数在[t-1, 2t-1]之间，故当target要加入到某个叶子时，如果该叶子节点已经有2t-1个关键字，则再加入target就违反了B树的定义，这时就需要对该叶子节点进行分裂，将叶子以中间节点为界，分成两个包含t-1个关键字的子节点，同时把中间节点提升到该叶子的父节点中，如果这样使得父节点的关键字个数超过2t-1，则要继续向上分裂，直到根节点，根节点的分裂会使得树加高一层。上面的过程需要回溯，那么能否从根下降到叶节点后不回溯就能完成节点的插入呢？答案是肯定的，核心思想就是未雨绸缪，在下降的过程中，一旦遇到已满的节点（关键字个数为2t-1），就就对该节点进行分裂，这样就保证在叶子节点需要分裂时，其父节点一定是非满的，从而不需要再向上回溯。</p>
+<p>通过下面的例子来理解插入操作：</p>
+<p>假设我们定义的B树最小度数位t=3，即关键字个数在 [2, 5] 之间。我们再一颗空的B树中插入下面的序列: 10, 20, 30, 40, 50, 60, 70, 80 ,90</p>
+<p>1) 当插入 10, 20, 30, 40, 50 后，次数还是一个节点，但是关键字个数已经达到上限：</p>
+<p><a href="http://cdn.acmerblog.com/wp-content/uploads/2014/07/BTree2Ins.png"><img alt="BTree2Ins" class="alignnone wp-image-6014" height="67" src="http://cdn.acmerblog.com/wp-content/uploads/2014/07/BTree2Ins.png" width="288"/></a></p>
+<p> </p>
+<p>2) 现在插入60, 插入之前发现关键字已经满了，需要先进行分裂操作。分别完成后在进行插入：</p>
+<p><a href="http://cdn.acmerblog.com/wp-content/uploads/2014/07/BTreeIns3.png"><img alt="BTreeIns3" class="alignnone wp-image-6015" height="233" src="http://cdn.acmerblog.com/wp-content/uploads/2014/07/BTreeIns3.png" width="359"/></a></p>
+<p> </p>
+<p>3) 在继续插入 70 和 80</p>
+<p><a href="http://cdn.acmerblog.com/wp-content/uploads/2014/07/BTreeIns4.png"><img alt="BTreeIns4" class="alignnone wp-image-6016" height="120" src="http://cdn.acmerblog.com/wp-content/uploads/2014/07/BTreeIns4.png" width="394"/></a></p>
+<p> </p>
+<p>4）最后插入90，还要进行一次分裂操作</p>
+<p><a href="http://cdn.acmerblog.com/wp-content/uploads/2014/07/BTreeIns6.png"><img alt="BTreeIns6" class="alignnone wp-image-6017" height="128" src="http://cdn.acmerblog.com/wp-content/uploads/2014/07/BTreeIns6.png" width="352"/></a></p>
+<p> </p>
+<p><a href="http://integrator-crimea.com/ddu0110.html">点击这里</a>查看更多的例子。</p>
+<p>下面是C++的实现：</p>
+<pre class="brush:cpp">#include&lt;iostream&gt;
+using namespace std;
+
+// 一个 BTree 节点
+class BTreeNode
+{
+    int *keys;  // 关键字 的数组
+    int t;      //最小的度
+    BTreeNode **C; // 孩子节点指针数组
+    int n;     // 当前节点关键字的数量
+    bool leaf; // 是否是叶子节点
+public:
+    BTreeNode(int _t, bool _leaf);   // 构造函数
+
+    // 遍历B树
+    void traverse();
+
+    //在B树中查找 k
+    BTreeNode *search(int k);
+
+friend class BTree;
+};
+
+// B树类
+class BTree
+{
+    BTreeNode *root; // 指向根节点
+    int t;  // 最小的度
+public:
+    // 构造函数
+    BTree(int _t)
+    {  root = NULL;  t = _t; }
+
+    // 遍历树
+    void traverse()
+    {  if (root != NULL) root-&gt;traverse(); }
+
+    // 查找
+    BTreeNode* search(int k)
+    {  return (root == NULL)? NULL : root-&gt;search(k); }
+};
+
+// 构造函数
+BTreeNode::BTreeNode(int _t, bool _leaf)
+{
+    t = _t;
+    leaf = _leaf;
+
+    // 分配内存
+    keys = new int[2*t-1];
+    C = new BTreeNode *[2*t];
+
+    // 初始关键字个数为0
+    n = 0;
+}
+
+// 遍历当前节点和当前节点下的子树
+void BTreeNode::traverse()
+{
+    // n个关键字，和n+1个孩子
+    int i;
+    for (i = 0; i &lt; n; i++)
+    {
+        if (leaf == false)
+            C[i]-&gt;traverse();
+        cout &lt;&lt; " " &lt;&lt; keys[i];
+    }
+
+    //遍历最后一个孩子
+    if (leaf == false)
+        C[i]-&gt;traverse();
+}
+
+// 在当前节点下查找 k
+BTreeNode *BTreeNode::search(int k)
+{
+    // 找到第一个大于或等于k的关键字
+    int i = 0;
+    while (i &lt; n &amp;&amp; k &gt; keys[i])
+        i++;
+
+    //如果相等，就找到了
+    if (keys[i] == k)
+        return this;
+
+    //如果是叶节点，未找到
+    if (leaf == true)
+        return NULL;
+
+    // 否则可能在子树中
+    return C[i]-&gt;search(k);
+}
+
+// 插入关键字k
+void BTree::insert(int k){
+    if (root == NULL){
+        // 分配内存
+        root = new BTreeNode(t, true);
+        root-&gt;keys[0] = k;  
+        root-&gt;n = 1;  // 更新关键字个数
+    }
+    else{
+    	if (root-&gt;n == 2*t-1){ //如果关键字 已满
+    		//为新的根节点 分配内存
+            BTreeNode *s = new BTreeNode(t, false);
+            s-&gt;C[0] = root;
+            // 分裂操作
+            s-&gt;splitChild(0, root);
+            int i = 0;
+            if (s-&gt;keys[0] &lt; k)
+                i++;
+            s-&gt;C[i]-&gt;insertNonFull(k);
+            // 更改根节点
+            root = s;
+        }
+        else  // 不满
+            root-&gt;insertNonFull(k);
+    }
+}
+
+void BTreeNode::insertNonFull(int k){
+    // 初始化为最右
+    int i = n-1;
+    if (leaf == true){
+        //找到合适的位置插入,类似插入排序
+        while (i &gt;= 0 &amp;&amp; keys[i] &gt; k)
+        {
+            keys[i+1] = keys[i];
+            i--;
+        }
+        keys[i+1] = k;
+        n = n+1;
+    }
+    else // 不是根节点
+    {
+        // 在子节点插入
+        while (i &gt;= 0 &amp;&amp; keys[i] &gt; k)
+            i--;
+        if (C[i+1]-&gt;n == 2*t-1)
+        {
+            splitChild(i+1, C[i+1]);
+            // 分裂后，C[i]的中间节点被提升，C[i]分成两部分
+            //需要知道那一部分包含新的key
+            if (keys[i+1] &lt; k)
+                i++;
+        }
+        C[i+1]-&gt;insertNonFull(k);
+    }
+}
+
+void BTreeNode::splitChild(int i, BTreeNode *y){
+    BTreeNode *z = new BTreeNode(y-&gt;t, y-&gt;leaf);
+    z-&gt;n = t - 1;
+    // 复制
+    for (int j = 0; j &lt; t-1; j++)
+        z-&gt;keys[j] = y-&gt;keys[j+t];
+
+    if (y-&gt;leaf == false)
+    {
+        for (int j = 0; j &lt; t; j++)
+            z-&gt;C[j] = y-&gt;C[j+t];
+    }
+    y-&gt;n = t - 1;
+    for (int j = n; j &gt;= i+1; j--)
+        C[j+1] = C[j];
+    C[i+1] = z;
+
+    for (int j = n-1; j &gt;= i; j--)
+        keys[j+1] = keys[j];
+
+    keys[i] = y-&gt;keys[t-1];
+    n = n + 1;
+}
+
+// 测试
+int main()
+{
+    BTree t(3); // 最小度为3的B树
+    t.insert(10);
+    t.insert(20);
+    t.insert(5);
+    t.insert(6);
+    t.insert(12);
+    t.insert(30);
+    t.insert(7);
+    t.insert(17);
+    cout &lt;&lt; "Traversal of the constucted tree is ";
+    t.traverse();
+
+    int k = 6;
+    (t.search(k) != NULL)? cout &lt;&lt; "\nPresent" : cout &lt;&lt; "\nNot Present";
+
+    k = 15;
+    (t.search(k) != NULL)? cout &lt;&lt; "\nPresent" : cout &lt;&lt; "\nNot Present";
+
+    return 0;
+}</pre>
+<p>输出：</p>
+<pre class="brush:cpp">Traversal of the constucted tree is  5 6 7 10 12 17 20 30
+Present
+Not Present</pre>
+<p>参考：<a href="http://www.cs.utexas.edu/users/djimenez/utsa/cs3343/lecture17.html">http://www.cs.utexas.edu/users/djimenez/utsa/cs3343/lecture17.html</a>；<a href="http://www.geeksforgeeks.org/b-tree-set-1-insert-2/">http://www.geeksforgeeks.org/b-tree-set-1-insert-2/</a></p>
+<p> </p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75158">
+<article class="comment" id="comment-75158">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456786" rel="external nofollow">新用户216989</a></span> on <a href="http://www.acmerblog.com/b-tree-set-1-insert-2-6013.html#comment-75158" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>从入门到变狗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75157">
+<article class="comment" id="comment-75157">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456786" rel="external nofollow">新用户216989</a></span> on <a href="http://www.acmerblog.com/b-tree-set-1-insert-2-6013.html#comment-75157" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>从入门到变狗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75156">
+<article class="comment" id="comment-75156">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456786" rel="external nofollow">新用户216989</a></span> on <a href="http://www.acmerblog.com/b-tree-set-1-insert-2-6013.html#comment-75156" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>从入门到变狗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75155">
+<article class="comment" id="comment-75155">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456786" rel="external nofollow">新用户216989</a></span> on <a href="http://www.acmerblog.com/b-tree-set-1-insert-2-6013.html#comment-75155" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>从入门到变狗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75154">
+<article class="comment" id="comment-75154">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456786" rel="external nofollow">新用户216989</a></span> on <a href="http://www.acmerblog.com/b-tree-set-1-insert-2-6013.html#comment-75154" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>从入门到变狗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75153">
+<article class="comment" id="comment-75153">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456786" rel="external nofollow">新用户216989</a></span> on <a href="http://www.acmerblog.com/b-tree-set-1-insert-2-6013.html#comment-75153" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>从入门到变狗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75152">
+<article class="comment" id="comment-75152">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456786" rel="external nofollow">新用户216989</a></span> on <a href="http://www.acmerblog.com/b-tree-set-1-insert-2-6013.html#comment-75152" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>从入门到变狗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75151">
+<article class="comment" id="comment-75151">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456786" rel="external nofollow">新用户216989</a></span> on <a href="http://www.acmerblog.com/b-tree-set-1-insert-2-6013.html#comment-75151" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>从入门到变狗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30622">
+<article class="comment" id="comment-30622">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">qq1005873807</a></span> on <a href="http://www.acmerblog.com/b-tree-set-1-insert-2-6013.html#comment-30622" rel="nofollow"><time datetime="2015-04-25T18:34:15+00:00" pubdate="">2015年4月25日 at 下午6:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>原来如此 了解了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58854">
+<article class="comment" id="comment-58854">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yueyanglou</a></span> on <a href="http://www.acmerblog.com/b-tree-set-1-insert-2-6013.html#comment-58854" rel="nofollow"><time datetime="2015-04-20T07:35:21+00:00" pubdate="">2015年4月20日 at 上午7:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚开始学习，为啥会报错了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58848">
+<article class="comment" id="comment-58848">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">usx13123</a></span> on <a href="http://www.acmerblog.com/b-tree-set-1-insert-2-6013.html#comment-58848" rel="nofollow"><time datetime="2015-02-17T05:16:55+00:00" pubdate="">2015年2月17日 at 上午5:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>else if也是要比较两次</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58845">
+<article class="comment" id="comment-58845">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sam_justin</a></span> on <a href="http://www.acmerblog.com/b-tree-set-1-insert-2-6013.html#comment-58845" rel="nofollow"><time datetime="2015-02-10T09:35:28+00:00" pubdate="">2015年2月10日 at 上午9:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是研发类的题还是算法类？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58847">
+<article class="comment" id="comment-58847">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Rosamondwu</a></span> on <a href="http://www.acmerblog.com/b-tree-set-1-insert-2-6013.html#comment-58847" rel="nofollow"><time datetime="2015-02-07T08:53:13+00:00" pubdate="">2015年2月7日 at 上午8:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很棒的网站，加油！⛽️</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58852">
+<article class="comment" id="comment-58852">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Spike</a></span> on <a href="http://www.acmerblog.com/b-tree-set-1-insert-2-6013.html#comment-58852" rel="nofollow"><time datetime="2015-02-03T03:19:48+00:00" pubdate="">2015年2月3日 at 上午3:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>The site You have write is very nicely prepared and quite insightful thanks for nice posta?|</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58849">
+<article class="comment" id="comment-58849">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">MCIT</a></span> on <a href="http://www.acmerblog.com/b-tree-set-1-insert-2-6013.html#comment-58849" rel="nofollow"><time datetime="2015-01-12T23:15:09+00:00" pubdate="">2015年1月12日 at 下午11:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给力，赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58844">
+<article class="comment" id="comment-58844">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NiKaWaLi2015</a></span> on <a href="http://www.acmerblog.com/b-tree-set-1-insert-2-6013.html#comment-58844" rel="nofollow"><time datetime="2015-01-02T12:23:58+00:00" pubdate="">2015年1月2日 at 下午12:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二种想法，我想来好久，为啥需要一个newhead，发现是把最后一个节点一直返回到嘴上面这层函数。厉害，这道题之前没样子想过。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58851">
+<article class="comment" id="comment-58851">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jandk</a></span> on <a href="http://www.acmerblog.com/b-tree-set-1-insert-2-6013.html#comment-58851" rel="nofollow"><time datetime="2014-11-12T12:33:51+00:00" pubdate="">2014年11月12日 at 下午12:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>头文件的颜色是有意设成这种灰暗色的吗？感觉看不清</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58850">
+<article class="comment" id="comment-58850">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jhxxszy</a></span> on <a href="http://www.acmerblog.com/b-tree-set-1-insert-2-6013.html#comment-58850" rel="nofollow"><time datetime="2014-11-07T03:04:59+00:00" pubdate="">2014年11月7日 at 上午3:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>网站不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58846">
+<article class="comment" id="comment-58846">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Anne</a></span> on <a href="http://www.acmerblog.com/b-tree-set-1-insert-2-6013.html#comment-58846" rel="nofollow"><time datetime="2014-10-05T13:37:06+00:00" pubdate="">2014年10月5日 at 下午1:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>漏了一个"不"，已修正:)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49494">
+<article class="comment" id="comment-49494">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dongxi</a></span> on <a href="http://www.acmerblog.com/b-tree-set-1-insert-2-6013.html#comment-49494" rel="nofollow"><time datetime="2014-09-09T22:52:40+00:00" pubdate="">2014年9月9日 at 下午10:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>约瑟夫也用说这么长……很成熟的一个问题了，分治的方法解起来o(n)就可以了，有兴趣可以看看具体数学的第一章，关于约瑟夫问题推导出了一系列的结论，很漂亮</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58853">
+<article class="comment" id="comment-58853">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">CCCat</a></span> on <a href="http://www.acmerblog.com/b-tree-set-1-insert-2-6013.html#comment-58853" rel="nofollow"><time datetime="2014-08-27T10:19:12+00:00" pubdate="">2014年8月27日 at 上午10:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>递归实现的代码部分<br/>
+14句和18句的 wt[n - 1]是不是应该改为 wt[ n ] ?</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,336 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>04-13</div>
+<div class="tit"><h1 class="entry-title">HDU 3847-Trash Removal-计算几何-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/geometry/convex" rel="category tag" title="查看凸包问题中的全部文章">凸包问题</a>, <a href="http://www.acmerblog.com/category/geometry" rel="category tag" title="查看计算几何中的全部文章">计算几何</a></span><span class="i4">围观490次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6849" href="http://www.acmerblog.com/hdu-3847-trash-removal-6849.html#comments" title="《HDU 3847-Trash Removal-计算几何-[解题报告]HOJ》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Trash Removal</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Allied Chute Manufacturers is a company that builds trash chutes. A trash chute is a hollow tube installed in buildings so that trash dropped in at the top will fall down and be collected in the basement. Designing trash chutes is actually highly nontrivial. Depending on what kind of trash people are expected to drop into them, the trash chute needs to have an appropriate size. And since the cost of manufacturing a trash chute is proportional to its size, the company always would like to build a chute that is as small as possible. Choosing the right size can be tough though.
+<p>We will consider a 2-dimensional simplification of the chute design problem. A trash chute points straight down and has a constant width. Objects that will be dropped into the trash chute are modeled as polygons. Before an object is dropped into the chute it can be rotated so as to provide an optimal fit. Once dropped, it will travel on a straight path downwards and will not rotate in flight. The following figure shows how an object is first rotated so it fits into the trash chute.<br/></p><center><img alt="Pyramids" src="http://www.acmerblog.com/img/1436126157963.jpg"/></center> <br/>Your task is to compute the smallest chute width that will allow a given polygon to pass through. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input contains several test cases. Each test case starts with a line containing an integer n (3 &lt;= n &lt;= 100), the number of points in the polygon that models the trash item.
+<p>The next n lines then contain pairs of integers xi and yi (0 &lt;= x<sub>i</sub>, y<sub>i</sub> &lt;= 10^4), giving the coordinates of the polygon vertices in order. All points in one test case are guaranteed to be mutually distinct and the polygon sides will never intersect. (Technically, there is one inevitable exception of two neighboring sides sharing their common vertex. Of course, this is not considered an intersection.)</p>
+<p>The last test case is followed by a line containing a single zero. </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input contains several test cases. Each test case starts with a line containing an integer n (3 &lt;= n &lt;= 100), the number of points in the polygon that models the trash item.
+<p>The next n lines then contain pairs of integers xi and yi (0 &lt;= x<sub>i</sub>, y<sub>i</sub> &lt;= 10^4), giving the coordinates of the polygon vertices in order. All points in one test case are guaranteed to be mutually distinct and the polygon sides will never intersect. (Technically, there is one inevitable exception of two neighboring sides sharing their common vertex. Of course, this is not considered an intersection.)</p>
+<p>The last test case is followed by a line containing a single zero.</p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3
+0 0
+3 0
+0 4
+4
+0 10
+10 0
+20 10
+10 20
+0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case 1: 2.40
+Case 2: 14.15</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp" name="code">/*
+求出多边形最窄的地段长度
+枚举边，求出所有点中到边的距离最大的值
+这些值中最小的就是答案
+*/
+#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+#include &lt;cmath&gt;
+#include &lt;cstdlib&gt;
+const int MAXN = 109;
+const double eps = 1e-4;
+struct point{
+    double x,y;
+}p[MAXN],h[MAXN];
+
+inline double distance(const point &amp;p1,const point &amp;p2){
+    return sqrt((p1.x-p2.x)*(p1.x-p2.x)+(p1.y-p2.y)*(p1.y-p2.y));
+}//   求两点之间的距离
+inline double multiply(const point &amp;sp,const point &amp;ep,const point &amp;op){
+      return ((sp.x-op.x)*(ep.y-op.y)-(ep.x-op.x)*(sp.y-op.y));
+}//判断sp,ep，op是否满足左转
+int cmp(const void *a,const void *b){//按极角排序
+    point *p1 = (point *)a;
+    point *p2 = (point *)b;
+    double t = multiply(*p2,*p1,p[0]);
+    if(t&gt;eps) return 1;
+    else if(fabs(t)&lt;=eps) 
+    {
+    if(distance(p[0],*p1)&gt;distance(p[0],*p2)) return 1;
+    else return -1;
+    }
+    else return -1;
+}
+void anglesort(point p[],int n){//找到最左下方的点
+    int i,k=0;
+    point temp;
+    for(i=1;i&lt;n;i++)
+        if(p[i].x&lt;p[k].x ||( fabs(p[i].x-p[k].x)&lt;eps &amp;&amp; (p[i].y&lt;p[k].y)))
+            k=i;
+    temp=p[0],p[0]=p[k],p[k]=temp;
+    qsort(p+1,n-1,sizeof(point),cmp);
+}
+void Graham_scan(point p[],point ch[],int n,int &amp;len){//建立凸包
+    int i,top=2;
+    anglesort(p,n);
+    if(n&lt;3){
+        for(i=0,len=n;i&lt;n;i++) ch[i]=p[i];
+        return;
+    }
+    ch[0]=p[0],ch[1]=p[1],ch[2]=p[2];
+    p[n]=p[0];
+    for(i=3;i&lt;n;i++){
+        while(multiply(p[i],ch[top],ch[top-1])&gt;=eps) top--;
+        ch[++top]=p[i];
+    }
+    len=top+1;
+}
+
+double judge(point _x,point _y,int len)
+{
+    double res=0;
+    for(int i=0;i&lt;len;i++)
+    {
+        double tmp=fabs(multiply(h[i],_x,_y))/distance(_x,_y);//面积法求出距离
+        if(tmp&gt;res)
+        res=tmp;
+    }
+    return res;
+}
+double solve(int len)
+{
+    h[len]=h[0];
+    double ans=1&lt;&lt;30;
+    for(int i=0;i&lt;len;i++)
+    {
+        double tmp=judge(h[i],h[i+1],len);//枚举边
+        if(tmp&lt;ans)
+        ans=tmp;
+    }
+    return ans;
+}
+int main(){
+    int n,len;
+    int d=0;
+    while(scanf("%d",&amp;n),n)
+    {
+        for(int i=0;i&lt;n;i++) scanf("%lf %lf",&amp;p[i].x,&amp;p[i].y);
+        Graham_scan(p,h,n,len);
+        printf("Case %d: %.2lf\n",++d,solve(len)+0.005);
+    }
+    return 0;
+}</pre>
+<p></p>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/wsniyufang/article/details/6705364</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-72309">
+<article class="comment" id="comment-72309">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517427" rel="external nofollow">新用户639562</a></span> on <a href="http://www.acmerblog.com/hdu-3847-trash-removal-6849.html#comment-72309" rel="nofollow"><time datetime="2017-04-11T17:41:14+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>做个gif图吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51332">
+<article class="comment" id="comment-51332">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">renke</a></span> on <a href="http://www.acmerblog.com/hdu-3847-trash-removal-6849.html#comment-51332" rel="nofollow"><time datetime="2015-07-14T16:55:01+00:00" pubdate="">2015年7月14日 at 下午4:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>原来欧几里德定理应用这么多</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59714">
+<article class="comment" id="comment-59714">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Amber</a></span> on <a href="http://www.acmerblog.com/hdu-3847-trash-removal-6849.html#comment-59714" rel="nofollow"><time datetime="2015-07-04T09:13:05+00:00" pubdate="">2015年7月4日 at 上午9:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已经挂掉了，给个参考呗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51334">
+<article class="comment" id="comment-51334">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lanifer</a></span> on <a href="http://www.acmerblog.com/hdu-3847-trash-removal-6849.html#comment-51334" rel="nofollow"><time datetime="2015-06-30T08:48:09+00:00" pubdate="">2015年6月30日 at 上午8:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实就是DFS搜索，数据量较小，穷举了所有情况</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-34238">
+<article class="comment" id="comment-34238">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">liuyuedeyu</a></span> on <a href="http://www.acmerblog.com/hdu-3847-trash-removal-6849.html#comment-34238" rel="nofollow"><time datetime="2015-06-25T18:16:54+00:00" pubdate="">2015年6月25日 at 下午6:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#include &lt;cstdio&gt;<br/>
+#include &lt;algorithm&gt;</p>
+<p>struct LWPair{<br/>
+    int l,w;<br/>
+};</p>
+<p>int main() {<br/>
+    //freopen("input.txt","r",stdin);<br/>
+    const int MAXSIZE=5000, MAXVAL=10000;<br/>
+    LWPair sticks[MAXSIZE];<br/>
+    int store[MAXSIZE];<br/>
+    int ncase, nstick, length,width, tmp, time, i,j;<br/>
+    if(scanf("%d",&amp;ncase)!=1) return -1;<br/>
+    while(ncase– &amp;&amp; scanf("%d",&amp;nstick)==1) {<br/>
+        for(i=0;i&lt;nstick;++i) scanf("%d%d",&amp;sticks <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .l,&amp;sticks <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .w);<br/>
+        std::sort(sticks,sticks+nstick,[](const LWPair &amp;lhs, const LWPair &amp;rhs) { return lhs.l&gt;rhs.l || lhs.l==rhs.l &amp;&amp; lhs.w&gt;rhs.w; });<br/>
+        for(time=-1,i=0;i&lt;nstick;++i) {<br/>
+            tmp=sticks <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .w;<br/>
+            for(j=time;j&gt;=0 &amp;&amp; store <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> &gt;=tmp;–j) ; // search from right to left<br/>
+            if(j==time) { store[++time]=tmp; }<br/>
+            else { store[j+1]=tmp; }<br/>
+        }<br/>
+        printf("%dn",time+1);<br/>
+    }<br/>
+    return 0;<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-34235">
+<article class="comment" id="comment-34235">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">aaa</a></span> on <a href="http://www.acmerblog.com/hdu-3847-trash-removal-6849.html#comment-34235" rel="nofollow"><time datetime="2015-06-15T04:00:44+00:00" pubdate="">2015年6月15日 at 上午4:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很不错！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51331">
+<article class="comment" id="comment-51331">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jinxiang23</a></span> on <a href="http://www.acmerblog.com/hdu-3847-trash-removal-6849.html#comment-51331" rel="nofollow"><time datetime="2015-06-04T17:22:02+00:00" pubdate="">2015年6月4日 at 下午5:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/d8/good_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-34236">
+<article class="comment" id="comment-34236">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">userwawa</a></span> on <a href="http://www.acmerblog.com/hdu-3847-trash-removal-6849.html#comment-34236" rel="nofollow"><time datetime="2015-05-28T13:44:50+00:00" pubdate="">2015年5月28日 at 下午1:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>printf这个函数在计算的时候是从右到左，打印是从左到右。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-34237">
+<article class="comment" id="comment-34237">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ForgetVay</a></span> on <a href="http://www.acmerblog.com/hdu-3847-trash-removal-6849.html#comment-34237" rel="nofollow"><time datetime="2015-05-27T10:07:41+00:00" pubdate="">2015年5月27日 at 上午10:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真心不错，力顶作者</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-34240">
+<article class="comment" id="comment-34240">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mcitdkj</a></span> on <a href="http://www.acmerblog.com/hdu-3847-trash-removal-6849.html#comment-34240" rel="nofollow"><time datetime="2015-05-25T23:31:58+00:00" pubdate="">2015年5月25日 at 下午11:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#!/usr/bin/env python def cou(n): arr =  [1]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-34241">
+<article class="comment" id="comment-34241">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Sacomplex</a></span> on <a href="http://www.acmerblog.com/hdu-3847-trash-removal-6849.html#comment-34241" rel="nofollow"><time datetime="2015-05-09T09:44:54+00:00" pubdate="">2015年5月9日 at 上午9:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>比较基础，找些自信</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-34239">
+<article class="comment" id="comment-34239">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">abguorui0928</a></span> on <a href="http://www.acmerblog.com/hdu-3847-trash-removal-6849.html#comment-34239" rel="nofollow"><time datetime="2015-05-05T12:43:04+00:00" pubdate="">2015年5月5日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>大哥，你复制也看看是不是这题的答案才复制吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51335">
+<article class="comment" id="comment-51335">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">final</a></span> on <a href="http://www.acmerblog.com/hdu-3847-trash-removal-6849.html#comment-51335" rel="nofollow"><time datetime="2015-04-27T19:21:04+00:00" pubdate="">2015年4月27日 at 下午7:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>先从简单的做起，归并排序，二叉树相关的遍历等</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51333">
+<article class="comment" id="comment-51333">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">AcmDream</a></span> on <a href="http://www.acmerblog.com/hdu-3847-trash-removal-6849.html#comment-51333" rel="nofollow"><time datetime="2015-04-23T15:50:19+00:00" pubdate="">2015年4月23日 at 下午3:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢支持！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51336">
+<article class="comment" id="comment-51336">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">kate19930802</a></span> on <a href="http://www.acmerblog.com/hdu-3847-trash-removal-6849.html#comment-51336" rel="nofollow"><time datetime="2015-04-22T09:38:03+00:00" pubdate="">2015年4月22日 at 上午9:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这张页面太松散拉，重新编辑一下，弄紧凑一点。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

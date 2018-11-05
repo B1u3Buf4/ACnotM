@@ -1,0 +1,353 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-07</div>
+<div class="tit"><h1 class="entry-title">HDU 3225-Flowers Placement-分治-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph/bipartite-graph" rel="category tag" title="查看二分图中的全部文章">二分图</a>, <a href="http://www.acmerblog.com/category/basis/recursion" rel="category tag" title="查看递归和分治中的全部文章">递归和分治</a></span><span class="i4">围观567次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5059" href="http://www.acmerblog.com/hdu-3225-flowers-placement-5059.html#comments" title="《HDU 3225-Flowers Placement-分治-[解题报告]HOJ》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Flowers Placement</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Bytetown has a long tradition in organizing an international flower exhibition. Professor Feuerbach, a true flower lover, visited the exhibition this year. He was pleased by the most beautiful flowers and other plants around the world roses, orchids, magnolias, cactuses. All flowers were nicely placed.
+<p>The flower placement that was the most appealing to him was composed of many kinds of flowers placed in a rectangular grid, such that each row of the grid contained each kind of flowers exactly once and each column of the grid contained each kind of flowers at most once.</p>
+<p>Professor Feuerbach is a good mathematician and soon he realized that the number of columns of the grid has to be the same as the number of different kinds of flowers in the placement. The different kinds of flowers are represented by numbers 1, 2…, N, where N is the number of different kinds of flowers. Soon he encountered a new problem. He would like to add one row of flowers to the placement without violating the rules stated above. (Note that he may not modify the existing rows and therefore he may not use any new kinds of flowers in the new rows.) It’s quite easy, but he wants to know the K-th lexicographically valid placement. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input data set describes about 100 flower placements. In the first line the number of placements is given.
+<p>Each flower placement description begins with three positive integers N (1≤N≤200), M (0≤M≤N), K (1≤K≤200) representing the number of columns and rows of the grid. The following M lines contain N integers each representing the kinds of flowers in one row of the placement. </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input data set describes about 100 flower placements. In the first line the number of placements is given.
+<p>Each flower placement description begins with three positive integers N (1≤N≤200), M (0≤M≤N), K (1≤K≤200) representing the number of columns and rows of the grid. The following M lines contain N integers each representing the kinds of flowers in one row of the placement.</p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+3 2 2
+3 2 1
+1 3 2
+4 2 2
+1 4 3 2
+2 1 4 3</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case #1: -1
+Case #2: 4 3 2 1</pre>
+<p> <!-- problem end --></p>
+<p>很明显是要找一个第k字典序的完备二分匹配方案。</p>
+<p>但是二分匹配却不能保证字典序。</p>
+<p>然后很容易想到搜索，第K次满足条件是，就是答案。不过，这种做法显然会超时。所以想到剪枝。</p>
+<p>搜索到第 a 个位置时，若第a+1——n能够构成完备匹配，则搜索，不能，则剪枝。</p>
+<p>这里需要维护一个完备匹配，所以一开始就进行一次匹配。因为搜索每次只需要更改一个匹配，所以在进行匈牙利算法找增广路的时候，只需要为一个结点寻找增广路。</p>
+<pre class="brush:cpp ">#include &lt;iostream&gt;
+#include &lt;cstdio&gt;
+#include &lt;algorithm&gt;
+#define maxn 300005
+#define lson num&lt;&lt;1,s,mid
+#define rson num&lt;&lt;1|1,mid+1,e
+#include&lt;cstdio&gt;
+#include&lt;cstring&gt;
+#include&lt;vector&gt;
+using namespace std;
+#define N 205
+bool vis[N];
+vector&lt;int&gt; g[N];
+int maps[N];  //始终保存完备匹配的方案。
+int ans[205];
+int top,tot;
+int n,m,k;
+int use[205];
+int save[205];
+int find(int k,int st)  //找 从st+1——n是否能构成完备匹配
+{
+    if(k&lt;=st) return 0;
+    for(int i=0;i&lt;g[k].size();i++)
+    {
+        int boy=g[k][i];
+        if(!vis[boy])
+        {
+            vis[boy]=1;
+            if(maps[boy]==0||find(maps[boy],st))
+            {
+                maps[boy]=k;
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+bool isok(int now,int flo)   //假设now位置放flo花
+{
+    if(maps[flo]==now) return true;
+    int j;
+    for(int i=1;i&lt;=n;i++)
+    {
+        save[i]=maps[i];
+        vis[i]=0;
+        if(maps[i]==now) j=i;   //找到上一次完备匹配now位置放的花
+    }
+    int t=maps[flo];
+                    //断开匹配
+    maps[flo]=now;    //修改匹配
+    maps[j]=0;
+    if(find(t,now)) return true;    //从now+1——n之间再次为t找一个匹配
+    else                            //没找到，则回溯
+    {
+
+        for(int i=1;i&lt;=n;i++)
+            maps[i]=save[i];
+    }
+    return false;
+}
+bool dfs(int now)
+{
+    if(now==n+1)
+    {
+        if(++tot==k) return true;
+        return false;
+    }
+    for(int i=0;i&lt;g[now].size();i++)
+    {
+        int flo=g[now][i];
+        if(!use[flo]&amp;&amp;isok(now,flo))
+        {
+            use[flo]=1;
+            ans[now]=flo;
+            if(dfs(now+1)) return true;;
+            use[flo]=0;
+        }
+    }
+    return false;
+}
+int a[205][205];
+int main()
+{
+    int cas;
+    scanf("%d",&amp;cas);
+    int x;
+    int ca=1;
+    while(cas--)
+    {
+        for(int i=0;i&lt;=n;i++) g[i].clear();
+        memset(vis,0,sizeof(vis));
+        memset(a,0,sizeof(a));
+
+        memset(maps,0,sizeof(maps));
+        scanf("%d%d%d",&amp;n,&amp;m,&amp;k);
+        for(int i=1;i&lt;=m;i++)
+        {
+            for(int j=1;j&lt;=n;j++)
+            {
+                scanf("%d",&amp;x);
+                a[j][x]=1;
+            }
+        }
+        for(int i=1;i&lt;=n;i++)
+        {
+            for(int j=1;j&lt;=n;j++)
+            {
+                if(!a[i][j]) g[i].push_back(j);
+            }
+        }
+        int Ans=0;
+        for(int i=1;i&lt;=n;i++)
+        {
+            memset(vis,0,sizeof(vis));
+            Ans+=find(i,-1);
+        }
+        if(Ans!=n)
+        {
+            printf("Case #%d: -1\n",ca++);
+            continue;
+        }
+        tot=0;
+        memset(use,0,sizeof(use));
+        if(dfs(1))
+        {
+            printf("Case #%d:",ca++);
+            for(int i=1;i&lt;=n;i++)
+            {
+                printf(" %d",ans[i]);
+            }
+        }
+        else printf("Case #%d: -1",ca++);
+        puts("");
+    }
+    return 0;
+}</pre>
+<p>参考：http://blog.csdn.net/t1019256391/article/details/12848997</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-78731">
+<article class="comment" id="comment-78731">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517690" rel="external nofollow">新用户410366</a></span> on <a href="http://www.acmerblog.com/hdu-3225-flowers-placement-5059.html#comment-78731" rel="nofollow"><time datetime="2017-04-12T12:30:19+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>敲一下开保险</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28042">
+<article class="comment" id="comment-28042">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">changjf</a></span> on <a href="http://www.acmerblog.com/hdu-3225-flowers-placement-5059.html#comment-28042" rel="nofollow"><time datetime="2015-07-09T09:14:32+00:00" pubdate="">2015年7月9日 at 上午9:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58137">
+<article class="comment" id="comment-58137">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">spiderMan</a></span> on <a href="http://www.acmerblog.com/hdu-3225-flowers-placement-5059.html#comment-58137" rel="nofollow"><time datetime="2015-05-26T23:34:54+00:00" pubdate="">2015年5月26日 at 下午11:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没敢用map，总怕stl用着会超时</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58140">
+<article class="comment" id="comment-58140">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fiftyonejiao</a></span> on <a href="http://www.acmerblog.com/hdu-3225-flowers-placement-5059.html#comment-58140" rel="nofollow"><time datetime="2015-05-23T19:14:53+00:00" pubdate="">2015年5月23日 at 下午7:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，现在就缺少新的资料</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28044">
+<article class="comment" id="comment-28044">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wynk0804</a></span> on <a href="http://www.acmerblog.com/hdu-3225-flowers-placement-5059.html#comment-28044" rel="nofollow"><time datetime="2015-05-02T11:28:38+00:00" pubdate="">2015年5月2日 at 上午11:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很有意思，可惜我很菜啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28045">
+<article class="comment" id="comment-28045">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Ailing</a></span> on <a href="http://www.acmerblog.com/hdu-3225-flowers-placement-5059.html#comment-28045" rel="nofollow"><time datetime="2015-04-27T03:17:21+00:00" pubdate="">2015年4月27日 at 上午3:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>[…] 如果此题没有要求 相对位置不变，可以参考文章：http://www.acmerblog.com/interview-9-2427/ […]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48090">
+<article class="comment" id="comment-48090">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">895350909</a></span> on <a href="http://www.acmerblog.com/hdu-3225-flowers-placement-5059.html#comment-48090" rel="nofollow"><time datetime="2015-03-22T17:03:22+00:00" pubdate="">2015年3月22日 at 下午5:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你好，这题给出的代码好像弄错了，这个是pow那道题目的解法</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28040">
+<article class="comment" id="comment-28040">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tufei</a></span> on <a href="http://www.acmerblog.com/hdu-3225-flowers-placement-5059.html#comment-28040" rel="nofollow"><time datetime="2015-03-20T20:54:18+00:00" pubdate="">2015年3月20日 at 下午8:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Java真是解决大数的利器</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48089">
+<article class="comment" id="comment-48089">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangduanjing</a></span> on <a href="http://www.acmerblog.com/hdu-3225-flowers-placement-5059.html#comment-48089" rel="nofollow"><time datetime="2015-02-18T19:18:57+00:00" pubdate="">2015年2月18日 at 下午7:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对于输出格式不用控制？？还是直接使用cout输出。？？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58138">
+<article class="comment" id="comment-58138">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">123zxc</a></span> on <a href="http://www.acmerblog.com/hdu-3225-flowers-placement-5059.html#comment-58138" rel="nofollow"><time datetime="2015-02-13T02:55:39+00:00" pubdate="">2015年2月13日 at 上午2:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>继续加油哦</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28041">
+<article class="comment" id="comment-28041">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">oneal</a></span> on <a href="http://www.acmerblog.com/hdu-3225-flowers-placement-5059.html#comment-28041" rel="nofollow"><time datetime="2014-10-23T17:19:39+00:00" pubdate="">2014年10月23日 at 下午5:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嗯，是写错了，文中以更改。MAX ( L(X[0..m-2], Y[0..n-1]), L(X[0..m-1], Y[0..n-2])</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28043">
+<article class="comment" id="comment-28043">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">soasipray</a></span> on <a href="http://www.acmerblog.com/hdu-3225-flowers-placement-5059.html#comment-28043" rel="nofollow"><time datetime="2014-10-03T15:12:12+00:00" pubdate="">2014年10月3日 at 下午3:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58139">
+<article class="comment" id="comment-58139">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Dick</a></span> on <a href="http://www.acmerblog.com/hdu-3225-flowers-placement-5059.html#comment-58139" rel="nofollow"><time datetime="2014-07-21T06:41:41+00:00" pubdate="">2014年7月21日 at 上午6:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，再多来的CF上面的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48091">
+<article class="comment" id="comment-48091">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tangxiansheng</a></span> on <a href="http://www.acmerblog.com/hdu-3225-flowers-placement-5059.html#comment-48091" rel="nofollow"><time datetime="2014-07-08T04:08:35+00:00" pubdate="">2014年7月8日 at 上午4:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>失误失误，转载错了。已经改正，抱歉。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48088">
+<article class="comment" id="comment-48088">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiao1108</a></span> on <a href="http://www.acmerblog.com/hdu-3225-flowers-placement-5059.html#comment-48088" rel="nofollow"><time datetime="2014-07-02T04:49:17+00:00" pubdate="">2014年7月2日 at 上午4:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一种方法怎么会是O(log(m+n))呢？没有二分的话直接遍历应该就是O(m+n)吧？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

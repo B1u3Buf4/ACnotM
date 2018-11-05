@@ -1,0 +1,821 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2017<br/>04-25</div>
+<div class="tit"><h1 class="entry-title">区间最值查询-线段树</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/data-struct/trees" rel="category tag" title="查看树形结构中的全部文章">树形结构</a></span><span class="i4">围观3345次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6050" href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comments" title="《区间最值查询-线段树》上的评论">70 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p>在前面的文章中介绍了线段树的简单应用：<a href="http://www.acmerblog.com/segment-tree-sum-of-given-range-5886.html" rel="bookmark" target="_blank" title="链向 线段树入门-求给定区间的和 的固定链接">求给定区间的和</a>。线段树还可以用于另一个经典的问题：<a href="http://zh.wikipedia.org/wiki/%E8%8C%83%E5%9B%B4%E6%9C%80%E5%80%BC%E6%9F%A5%E8%AF%A2"><b>范围最值查询</b></a>（Range Minimum Query）。是针对数据集的一种条件查询。若给定一个数组 A[1,n]，范围最值查询指定一个范围条件 i 到 j，要求取出 A[i,j]中最大/小的元素。</p>
+<p>若A＝[3,5,2,5,4,3,1,6,3]，条件为 [3,8] 的范围最值查询返回 1，它是子数组 A[3,8] = [2,5,4,3,1,6]中最小的元素。</p>
+<p>通常情况下，数组A是静态的，即元素不会变化，例如插入、删除和修改等，而所有的查询是以离线的方式给出的，即预先并不知道所有查询的参数。</p>
+<p>简单的解法是 使用循环遍历，找出最值，时间复杂度为O(n)。</p>
+<p>另一个做法是，先做预处理。创建一个二维数组，存储下所有可能得结果, arr[i][j] 存储 区间 [i,j]内的最值，以后每次查询都值需要O(1)的时间。但是预处理需要O(n^2)的时间，空间复杂度也为O(n^2)。</p>
+<p>使用线段树可以作为一个折中的选择，预处理的时间为O(N)，查询的时间为O(log N)。需要的空间为O(n)。</p>
+<p>线段树的表示方法：</p>
+<p><strong>1. </strong>叶节点即为给定数组中的所有元素<br/>
+<strong>2.</strong> 每个内部节点代表该节点的子树下面的最小节点。</p>
+<p><a href="http://cdn.acmerblog.com/wp-content/uploads/2014/08/RangeMinimumQuery.png"><img alt="RangeMinimumQuery" class="alignnone wp-image-6054" height="311" src="http://cdn.acmerblog.com/wp-content/uploads/2014/08/RangeMinimumQuery.png" width="447"/></a></p>
+<p> </p>
+<p>C++代码实现如下：</p>
+<pre class="brush:cpp">#include 
+#include 
+#include 
+
+int minVal(int x, int y) { return (x &lt; y)? x: y; }  
+int getMid(int s, int e) {  return s + (e -s)/2;  }   
+
+/*   递归的完成查询操作       st    --&gt; 指向线段树的指针
+    index --&gt; 线段树的当前节点，初始化为0，代表整个线段树
+    ss &amp; se  --&gt; st[index]所代表的线段树区间
+    qs &amp; qe  --&gt; 查询区间的起始位置 */
+int RMQUtil(int *st, int ss, int se, int qs, int qe, int index)
+{
+    // 如果包含在线段树的区间内
+    if (qs &lt;= ss &amp;&amp; qe &gt;= se)
+        return st[index];
+
+    if (se &lt; qs || ss &gt; qe)
+        return INT_MAX;
+
+    // 如果有部分区间重叠
+    int mid = getMid(ss, se);
+    return minVal(RMQUtil(st, ss, mid, qs, qe, 2*index+1),
+                  RMQUtil(st, mid+1, se, qs, qe, 2*index+2));
+}
+
+// Range Minimum Query
+//主要调用RMQUtil 完成查询工作
+int RMQ(int *st, int n, int qs, int qe)
+{
+    // 检查输入
+    if (qs &lt; 0 || qe &gt; n-1 || qs &gt; qe)
+    {
+        printf("Invalid Input");
+        return -1;
+    }
+
+    return RMQUtil(st, 0, n-1, qs, qe, 0);
+}
+
+// 递归的方法创建array[ss..se]对应的线段树
+// si 是当前节点的下标
+int constructSTUtil(int arr[], int ss, int se, int *st, int si)
+{
+    if (ss == se)
+    {
+        st[si] = arr[ss];
+        return arr[ss];
+    }
+    int mid = getMid(ss, se);
+    st[si] =  minVal(constructSTUtil(arr, ss, mid, st, si*2+1),
+                     constructSTUtil(arr, mid+1, se, st, si*2+2));
+    return st[si];
+}
+
+/* 分配内存，调用constructSTUtil完成真正的工作. */
+int *constructST(int arr[], int n)
+{
+    // 分配内存
+    int x = (int)(ceil(log2(n))); //线段树的高度
+    int max_size = 2*(int)pow(2, x) - 1; //线段树元素的个数
+    int *st = new int[max_size];
+
+    constructSTUtil(arr, 0, n-1, st, 0);
+    return st;
+}
+
+int main()
+{
+    int arr[] = {1, 3, 2, 7, 9, 11};
+    int n = sizeof(arr)/sizeof(arr[0]);
+
+    // 构造线段树
+    int *st = constructST(arr, n);
+
+    int qs = 1;  // 查询的起始位置
+    int qe = 5;  // 查询的结束位置
+
+    printf("Minimum of values in range [%d, %d] is = %d\n",
+                           qs, qe, RMQ(st, n, qs, qe));
+
+    return 0;
+}</pre>
+<p>输出：</p>
+<pre>Minimum of values in range [1, 5] is = 2</pre>
+<p>参考：http://www.geeksforgeeks.org/segment-tree-set-1-range-minimum-query/</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-102417">
+<article class="comment" id="comment-102417">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529890" rel="external nofollow">新用户427395</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-102417" rel="nofollow"><time datetime="2017-04-25T13:58:59+00:00" pubdate="">2017年4月25日 at 下午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>认同战略家的手段一定有至少两层目的。在我的理解里，罗想了十三年如何对付小唐，在PH岛上遇到路飞之前，罗的想法是1、对抗小唐，自己拼死下手搞小唐，同时埋下小唐和凯多之间的炸弹，确保就算自己失败了，凯多也会弄死小唐，2、在优先对抗小唐的前提下，同时设法削弱凯</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-102416">
+<article class="comment" id="comment-102416">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529890" rel="external nofollow">新用户427395</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-102416" rel="nofollow"><time datetime="2017-04-25T13:58:59+00:00" pubdate="">2017年4月25日 at 下午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>认同战略家的手段一定有至少两层目的。在我的理解里，罗想了十三年如何对付小唐，在PH岛上遇到路飞之前，罗的想法是1、对抗小唐，自己拼死下手搞小唐，同时埋下小唐和凯多之间的炸弹，确保就算自己失败了，凯多也会弄死小唐，2、在优先对抗小唐的前提下，同时设法削弱凯</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-102415">
+<article class="comment" id="comment-102415">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529890" rel="external nofollow">新用户427395</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-102415" rel="nofollow"><time datetime="2017-04-25T13:58:59+00:00" pubdate="">2017年4月25日 at 下午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>认同战略家的手段一定有至少两层目的。在我的理解里，罗想了十三年如何对付小唐，在PH岛上遇到路飞之前，罗的想法是1、对抗小唐，自己拼死下手搞小唐，同时埋下小唐和凯多之间的炸弹，确保就算自己失败了，凯多也会弄死小唐，2、在优先对抗小唐的前提下，同时设法削弱凯</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-102414">
+<article class="comment" id="comment-102414">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529890" rel="external nofollow">新用户427395</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-102414" rel="nofollow"><time datetime="2017-04-25T13:58:59+00:00" pubdate="">2017年4月25日 at 下午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>认同战略家的手段一定有至少两层目的。在我的理解里，罗想了十三年如何对付小唐，在PH岛上遇到路飞之前，罗的想法是1、对抗小唐，自己拼死下手搞小唐，同时埋下小唐和凯多之间的炸弹，确保就算自己失败了，凯多也会弄死小唐，2、在优先对抗小唐的前提下，同时设法削弱凯</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-102413">
+<article class="comment" id="comment-102413">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529890" rel="external nofollow">新用户427395</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-102413" rel="nofollow"><time datetime="2017-04-25T13:58:59+00:00" pubdate="">2017年4月25日 at 下午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>认同战略家的手段一定有至少两层目的。在我的理解里，罗想了十三年如何对付小唐，在PH岛上遇到路飞之前，罗的想法是1、对抗小唐，自己拼死下手搞小唐，同时埋下小唐和凯多之间的炸弹，确保就算自己失败了，凯多也会弄死小唐，2、在优先对抗小唐的前提下，同时设法削弱凯</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-102412">
+<article class="comment" id="comment-102412">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529890" rel="external nofollow">新用户427395</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-102412" rel="nofollow"><time datetime="2017-04-25T13:58:59+00:00" pubdate="">2017年4月25日 at 下午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>认同战略家的手段一定有至少两层目的。在我的理解里，罗想了十三年如何对付小唐，在PH岛上遇到路飞之前，罗的想法是1、对抗小唐，自己拼死下手搞小唐，同时埋下小唐和凯多之间的炸弹，确保就算自己失败了，凯多也会弄死小唐，2、在优先对抗小唐的前提下，同时设法削弱凯</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-102411">
+<article class="comment" id="comment-102411">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529890" rel="external nofollow">新用户427395</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-102411" rel="nofollow"><time datetime="2017-04-25T13:58:59+00:00" pubdate="">2017年4月25日 at 下午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>认同战略家的手段一定有至少两层目的。在我的理解里，罗想了十三年如何对付小唐，在PH岛上遇到路飞之前，罗的想法是1、对抗小唐，自己拼死下手搞小唐，同时埋下小唐和凯多之间的炸弹，确保就算自己失败了，凯多也会弄死小唐，2、在优先对抗小唐的前提下，同时设法削弱凯</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-102410">
+<article class="comment" id="comment-102410">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529890" rel="external nofollow">新用户427395</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-102410" rel="nofollow"><time datetime="2017-04-25T13:58:59+00:00" pubdate="">2017年4月25日 at 下午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>认同战略家的手段一定有至少两层目的。在我的理解里，罗想了十三年如何对付小唐，在PH岛上遇到路飞之前，罗的想法是1、对抗小唐，自己拼死下手搞小唐，同时埋下小唐和凯多之间的炸弹，确保就算自己失败了，凯多也会弄死小唐，2、在优先对抗小唐的前提下，同时设法削弱凯</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-102409">
+<article class="comment" id="comment-102409">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529890" rel="external nofollow">新用户427395</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-102409" rel="nofollow"><time datetime="2017-04-25T13:58:59+00:00" pubdate="">2017年4月25日 at 下午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>认同战略家的手段一定有至少两层目的。在我的理解里，罗想了十三年如何对付小唐，在PH岛上遇到路飞之前，罗的想法是1、对抗小唐，自己拼死下手搞小唐，同时埋下小唐和凯多之间的炸弹，确保就算自己失败了，凯多也会弄死小唐，2、在优先对抗小唐的前提下，同时设法削弱凯</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-102408">
+<article class="comment" id="comment-102408">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529890" rel="external nofollow">新用户427395</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-102408" rel="nofollow"><time datetime="2017-04-25T13:58:59+00:00" pubdate="">2017年4月25日 at 下午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>认同战略家的手段一定有至少两层目的。在我的理解里，罗想了十三年如何对付小唐，在PH岛上遇到路飞之前，罗的想法是1、对抗小唐，自己拼死下手搞小唐，同时埋下小唐和凯多之间的炸弹，确保就算自己失败了，凯多也会弄死小唐，2、在优先对抗小唐的前提下，同时设法削弱凯</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-102407">
+<article class="comment" id="comment-102407">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529890" rel="external nofollow">新用户427395</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-102407" rel="nofollow"><time datetime="2017-04-25T13:58:59+00:00" pubdate="">2017年4月25日 at 下午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>认同战略家的手段一定有至少两层目的。在我的理解里，罗想了十三年如何对付小唐，在PH岛上遇到路飞之前，罗的想法是1、对抗小唐，自己拼死下手搞小唐，同时埋下小唐和凯多之间的炸弹，确保就算自己失败了，凯多也会弄死小唐，2、在优先对抗小唐的前提下，同时设法削弱凯</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-102406">
+<article class="comment" id="comment-102406">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529890" rel="external nofollow">新用户427395</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-102406" rel="nofollow"><time datetime="2017-04-25T13:58:59+00:00" pubdate="">2017年4月25日 at 下午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>认同战略家的手段一定有至少两层目的。在我的理解里，罗想了十三年如何对付小唐，在PH岛上遇到路飞之前，罗的想法是1、对抗小唐，自己拼死下手搞小唐，同时埋下小唐和凯多之间的炸弹，确保就算自己失败了，凯多也会弄死小唐，2、在优先对抗小唐的前提下，同时设法削弱凯</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-102405">
+<article class="comment" id="comment-102405">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529890" rel="external nofollow">新用户427395</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-102405" rel="nofollow"><time datetime="2017-04-25T13:58:59+00:00" pubdate="">2017年4月25日 at 下午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>认同战略家的手段一定有至少两层目的。在我的理解里，罗想了十三年如何对付小唐，在PH岛上遇到路飞之前，罗的想法是1、对抗小唐，自己拼死下手搞小唐，同时埋下小唐和凯多之间的炸弹，确保就算自己失败了，凯多也会弄死小唐，2、在优先对抗小唐的前提下，同时设法削弱凯</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-102404">
+<article class="comment" id="comment-102404">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529890" rel="external nofollow">新用户427395</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-102404" rel="nofollow"><time datetime="2017-04-25T13:58:59+00:00" pubdate="">2017年4月25日 at 下午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>认同战略家的手段一定有至少两层目的。在我的理解里，罗想了十三年如何对付小唐，在PH岛上遇到路飞之前，罗的想法是1、对抗小唐，自己拼死下手搞小唐，同时埋下小唐和凯多之间的炸弹，确保就算自己失败了，凯多也会弄死小唐，2、在优先对抗小唐的前提下，同时设法削弱凯</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101926">
+<article class="comment" id="comment-101926">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461231" rel="external nofollow">新用户855816</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-101926" rel="nofollow"><time datetime="2017-04-24T13:58:59+00:00" pubdate="">2017年4月24日 at 下午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那个挡住千军万马的杨贵妃是叨叨和叨叨的同事吗？是不是猜对了，叨叨请客不？  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101925">
+<article class="comment" id="comment-101925">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461231" rel="external nofollow">新用户855816</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-101925" rel="nofollow"><time datetime="2017-04-24T13:58:59+00:00" pubdate="">2017年4月24日 at 下午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那个挡住千军万马的杨贵妃是叨叨和叨叨的同事吗？是不是猜对了，叨叨请客不？  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101924">
+<article class="comment" id="comment-101924">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461231" rel="external nofollow">新用户855816</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-101924" rel="nofollow"><time datetime="2017-04-24T13:58:59+00:00" pubdate="">2017年4月24日 at 下午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那个挡住千军万马的杨贵妃是叨叨和叨叨的同事吗？是不是猜对了，叨叨请客不？  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101923">
+<article class="comment" id="comment-101923">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461231" rel="external nofollow">新用户855816</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-101923" rel="nofollow"><time datetime="2017-04-24T13:58:59+00:00" pubdate="">2017年4月24日 at 下午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那个挡住千军万马的杨贵妃是叨叨和叨叨的同事吗？是不是猜对了，叨叨请客不？  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101922">
+<article class="comment" id="comment-101922">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461231" rel="external nofollow">新用户855816</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-101922" rel="nofollow"><time datetime="2017-04-24T13:58:59+00:00" pubdate="">2017年4月24日 at 下午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那个挡住千军万马的杨贵妃是叨叨和叨叨的同事吗？是不是猜对了，叨叨请客不？  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101921">
+<article class="comment" id="comment-101921">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461231" rel="external nofollow">新用户855816</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-101921" rel="nofollow"><time datetime="2017-04-24T13:58:59+00:00" pubdate="">2017年4月24日 at 下午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那个挡住千军万马的杨贵妃是叨叨和叨叨的同事吗？是不是猜对了，叨叨请客不？  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101463">
+<article class="comment" id="comment-101463">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527467" rel="external nofollow">新用户478062</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-101463" rel="nofollow"><time datetime="2017-04-23T14:02:14+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>祝你今年穷到家/</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101462">
+<article class="comment" id="comment-101462">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527467" rel="external nofollow">新用户478062</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-101462" rel="nofollow"><time datetime="2017-04-23T14:02:14+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>祝你今年穷到家/</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101461">
+<article class="comment" id="comment-101461">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527467" rel="external nofollow">新用户478062</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-101461" rel="nofollow"><time datetime="2017-04-23T14:02:14+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>祝你今年穷到家/</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101460">
+<article class="comment" id="comment-101460">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527467" rel="external nofollow">新用户478062</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-101460" rel="nofollow"><time datetime="2017-04-23T14:02:14+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>祝你今年穷到家/</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101459">
+<article class="comment" id="comment-101459">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527467" rel="external nofollow">新用户478062</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-101459" rel="nofollow"><time datetime="2017-04-23T14:02:14+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>祝你今年穷到家/</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101458">
+<article class="comment" id="comment-101458">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527467" rel="external nofollow">新用户478062</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-101458" rel="nofollow"><time datetime="2017-04-23T14:02:14+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>祝你今年穷到家/</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100674">
+<article class="comment" id="comment-100674">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466378" rel="external nofollow">新用户433189</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-100674" rel="nofollow"><time datetime="2017-04-22T13:59:08+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嘿嘿嘿，等着吧~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100673">
+<article class="comment" id="comment-100673">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466378" rel="external nofollow">新用户433189</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-100673" rel="nofollow"><time datetime="2017-04-22T13:59:08+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嘿嘿嘿，等着吧~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100672">
+<article class="comment" id="comment-100672">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466378" rel="external nofollow">新用户433189</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-100672" rel="nofollow"><time datetime="2017-04-22T13:59:08+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嘿嘿嘿，等着吧~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100671">
+<article class="comment" id="comment-100671">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466378" rel="external nofollow">新用户433189</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-100671" rel="nofollow"><time datetime="2017-04-22T13:59:08+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嘿嘿嘿，等着吧~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100670">
+<article class="comment" id="comment-100670">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466378" rel="external nofollow">新用户433189</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-100670" rel="nofollow"><time datetime="2017-04-22T13:59:08+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嘿嘿嘿，等着吧~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100669">
+<article class="comment" id="comment-100669">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466378" rel="external nofollow">新用户433189</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-100669" rel="nofollow"><time datetime="2017-04-22T13:59:08+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嘿嘿嘿，等着吧~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100086">
+<article class="comment" id="comment-100086">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524395" rel="external nofollow">新用户543350</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-100086" rel="nofollow"><time datetime="2017-04-21T14:04:07+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>心，好累，以后不再指望上墙了，绝望，是这样炼成的。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100085">
+<article class="comment" id="comment-100085">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524395" rel="external nofollow">新用户543350</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-100085" rel="nofollow"><time datetime="2017-04-21T14:04:07+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>心，好累，以后不再指望上墙了，绝望，是这样炼成的。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100084">
+<article class="comment" id="comment-100084">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524395" rel="external nofollow">新用户543350</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-100084" rel="nofollow"><time datetime="2017-04-21T14:04:07+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>心，好累，以后不再指望上墙了，绝望，是这样炼成的。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100083">
+<article class="comment" id="comment-100083">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524395" rel="external nofollow">新用户543350</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-100083" rel="nofollow"><time datetime="2017-04-21T14:04:07+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>心，好累，以后不再指望上墙了，绝望，是这样炼成的。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100082">
+<article class="comment" id="comment-100082">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524395" rel="external nofollow">新用户543350</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-100082" rel="nofollow"><time datetime="2017-04-21T14:04:07+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>心，好累，以后不再指望上墙了，绝望，是这样炼成的。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100081">
+<article class="comment" id="comment-100081">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524395" rel="external nofollow">新用户543350</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-100081" rel="nofollow"><time datetime="2017-04-21T14:04:07+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>心，好累，以后不再指望上墙了，绝望，是这样炼成的。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100080">
+<article class="comment" id="comment-100080">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524395" rel="external nofollow">新用户543350</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-100080" rel="nofollow"><time datetime="2017-04-21T14:04:07+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>心，好累，以后不再指望上墙了，绝望，是这样炼成的。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100079">
+<article class="comment" id="comment-100079">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524395" rel="external nofollow">新用户543350</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-100079" rel="nofollow"><time datetime="2017-04-21T14:04:07+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>心，好累，以后不再指望上墙了，绝望，是这样炼成的。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96193">
+<article class="comment" id="comment-96193">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460864" rel="external nofollow">新用户574973</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-96193" rel="nofollow"><time datetime="2017-04-19T19:07:49+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>闹心，都拿驾照的人，为啥开车就不能好好开车，遵守交通规则！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96192">
+<article class="comment" id="comment-96192">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460864" rel="external nofollow">新用户574973</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-96192" rel="nofollow"><time datetime="2017-04-19T19:07:49+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>闹心，都拿驾照的人，为啥开车就不能好好开车，遵守交通规则！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96191">
+<article class="comment" id="comment-96191">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460864" rel="external nofollow">新用户574973</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-96191" rel="nofollow"><time datetime="2017-04-19T19:07:49+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>闹心，都拿驾照的人，为啥开车就不能好好开车，遵守交通规则！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96190">
+<article class="comment" id="comment-96190">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460864" rel="external nofollow">新用户574973</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-96190" rel="nofollow"><time datetime="2017-04-19T19:07:49+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>闹心，都拿驾照的人，为啥开车就不能好好开车，遵守交通规则！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96189">
+<article class="comment" id="comment-96189">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460864" rel="external nofollow">新用户574973</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-96189" rel="nofollow"><time datetime="2017-04-19T19:07:49+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>闹心，都拿驾照的人，为啥开车就不能好好开车，遵守交通规则！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96188">
+<article class="comment" id="comment-96188">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460864" rel="external nofollow">新用户574973</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-96188" rel="nofollow"><time datetime="2017-04-19T19:07:49+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>闹心，都拿驾照的人，为啥开车就不能好好开车，遵守交通规则！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96187">
+<article class="comment" id="comment-96187">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460864" rel="external nofollow">新用户574973</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-96187" rel="nofollow"><time datetime="2017-04-19T19:07:49+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>闹心，都拿驾照的人，为啥开车就不能好好开车，遵守交通规则！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96186">
+<article class="comment" id="comment-96186">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460864" rel="external nofollow">新用户574973</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-96186" rel="nofollow"><time datetime="2017-04-19T19:07:49+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>闹心，都拿驾照的人，为啥开车就不能好好开车，遵守交通规则！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65370">
+<article class="comment" id="comment-65370">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919458770" rel="external nofollow">新用户809711</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-65370" rel="nofollow"><time datetime="2017-04-10T14:37:44+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>快来看！这个爽/啊，/男/人/都/喜/欢/，哇：，htTP://uVU.Cc/iqVp</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65369">
+<article class="comment" id="comment-65369">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919458770" rel="external nofollow">新用户809711</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-65369" rel="nofollow"><time datetime="2017-04-10T14:37:44+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>快来看！这个爽/啊，/男/人/都/喜/欢/，哇：，htTP://uVU.Cc/iqVp</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65368">
+<article class="comment" id="comment-65368">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919458770" rel="external nofollow">新用户809711</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-65368" rel="nofollow"><time datetime="2017-04-10T14:37:44+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>快来看！这个爽/啊，/男/人/都/喜/欢/，哇：，htTP://uVU.Cc/iqVp</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65367">
+<article class="comment" id="comment-65367">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919458770" rel="external nofollow">新用户809711</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-65367" rel="nofollow"><time datetime="2017-04-10T14:37:44+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>快来看！这个爽/啊，/男/人/都/喜/欢/，哇：，htTP://uVU.Cc/iqVp</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65366">
+<article class="comment" id="comment-65366">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919458770" rel="external nofollow">新用户809711</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-65366" rel="nofollow"><time datetime="2017-04-10T14:37:44+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>快来看！这个爽/啊，/男/人/都/喜/欢/，哇：，htTP://uVU.Cc/iqVp</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65365">
+<article class="comment" id="comment-65365">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919458770" rel="external nofollow">新用户809711</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-65365" rel="nofollow"><time datetime="2017-04-10T14:37:44+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>快来看！这个爽/啊，/男/人/都/喜/欢/，哇：，htTP://uVU.Cc/iqVp</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65364">
+<article class="comment" id="comment-65364">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919458770" rel="external nofollow">新用户809711</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-65364" rel="nofollow"><time datetime="2017-04-10T14:37:44+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>快来看！这个爽/啊，/男/人/都/喜/欢/，哇：，htTP://uVU.Cc/iqVp</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65363">
+<article class="comment" id="comment-65363">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919458770" rel="external nofollow">新用户809711</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-65363" rel="nofollow"><time datetime="2017-04-10T14:37:44+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>快来看！这个爽/啊，/男/人/都/喜/欢/，哇：，htTP://uVU.Cc/iqVp</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49518">
+<article class="comment" id="comment-49518">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">blogpick</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-49518" rel="nofollow"><time datetime="2015-07-13T07:56:09+00:00" pubdate="">2015年7月13日 at 上午7:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>居然看懂了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49522">
+<article class="comment" id="comment-49522">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">MCIT</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-49522" rel="nofollow"><time datetime="2015-06-25T10:57:05+00:00" pubdate="">2015年6月25日 at 上午10:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>一开始就规定不相邻节点颜色相同，可能得不到最优解。我想个类似的算法，也不确定是否总能得到最优解：先着一个点，随机挑一个相邻点，着第二色，继续随机选一个点，但必须至少有一个边和已着点相邻，着上不同色，当然尽量不增加新色，直到完成。我还找不到反例验证他的错误。。希望LZ也帮想想, 有想法欢迎来邮件。谢谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49525">
+<article class="comment" id="comment-49525">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ygwx</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-49525" rel="nofollow"><time datetime="2015-05-28T22:36:42+00:00" pubdate="">2015年5月28日 at 下午10:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感觉第二种方法其实也不是很好，不过的确要比第一种方法要好一点。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49519">
+<article class="comment" id="comment-49519">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Anne</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-49519" rel="nofollow"><time datetime="2015-05-12T10:49:21+00:00" pubdate="">2015年5月12日 at 上午10:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>非常不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49517">
+<article class="comment" id="comment-49517">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hsp_77_abc</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-49517" rel="nofollow"><time datetime="2015-04-20T17:40:26+00:00" pubdate="">2015年4月20日 at 下午5:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>约瑟夫也用说这么长……很成熟的一个问题了，分治的方法解起来o(n)就可以了，有兴趣可以看看具体数学的第一章，关于约瑟夫问题推导出了一系列的结论，很漂亮</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49521">
+<article class="comment" id="comment-49521">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wangzhenvs123</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-49521" rel="nofollow"><time datetime="2015-03-22T06:10:40+00:00" pubdate="">2015年3月22日 at 上午6:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>后面的掩码变量部分乍一看比较难理解，其实就是把32位按照一个整体来看待。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30651">
+<article class="comment" id="comment-30651">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">skyand</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-30651" rel="nofollow"><time datetime="2015-03-16T18:26:33+00:00" pubdate="">2015年3月16日 at 下午6:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>输出规范写错了哦~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30652">
+<article class="comment" id="comment-30652">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yunyang088</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-30652" rel="nofollow"><time datetime="2015-03-03T14:01:36+00:00" pubdate="">2015年3月3日 at 下午2:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢提醒</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49516">
+<article class="comment" id="comment-49516">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">blogpick</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-49516" rel="nofollow"><time datetime="2015-02-18T18:07:20+00:00" pubdate="">2015年2月18日 at 下午6:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>此题的样例描述不正确</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49520">
+<article class="comment" id="comment-49520">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tkdzyl2013</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-49520" rel="nofollow"><time datetime="2014-10-17T09:48:27+00:00" pubdate="">2014年10月17日 at 上午9:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>如果两个序列的最后字符不匹配（即X [M-1]！= Y [N-1]）<br/>
+L（X [0 .. M-1]，Y [0 .. N-1]）= MAX（L（X [0 .. M-2]，Y [0 .. N-1]），L（X [0 .. M-1]，Y [0 .. N-1]）<br/>
+这里写错了吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49515">
+<article class="comment" id="comment-49515">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">linzzzz</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-49515" rel="nofollow"><time datetime="2014-10-08T00:51:50+00:00" pubdate="">2014年10月8日 at 上午12:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我还有个问题想请教一下，就是感觉对于新手来说，递归理解起来有些困难，不知有没有什么好的方法或者什么好的建议？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49523">
+<article class="comment" id="comment-49523">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">April</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-49523" rel="nofollow"><time datetime="2014-10-06T22:34:54+00:00" pubdate="">2014年10月6日 at 下午10:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有的，已更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30653">
+<article class="comment" id="comment-30653">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Bob</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-30653" rel="nofollow"><time datetime="2014-09-30T11:50:39+00:00" pubdate="">2014年9月30日 at 上午11:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>博主您好，这是一个内容十分优秀的博客，而且界面也非常漂亮。但是为什么博客的响应速度这么慢，虽然博客的主机在国外，但是我开启VPN还是经常响应很久，再者打开某些页面经常会出现数据库连接出错的提示</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49524">
+<article class="comment" id="comment-49524">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">TimeFight</a></span> on <a href="http://www.acmerblog.com/range-minimum-query-segment-tree-6050.html#comment-49524" rel="nofollow"><time datetime="2014-09-04T22:22:04+00:00" pubdate="">2014年9月4日 at 下午10:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算法是程序的灵魂，算法分简单和复杂，如果不搞大数据类，程序员了解一下简单点的算法也是可以的，但是会算法的一定要会编程才行，程序员不一定要会算法，利于自己项目需要的可以简单了解。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

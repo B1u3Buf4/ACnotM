@@ -1,0 +1,276 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-03</div>
+<div class="tit"><h1 class="entry-title">Uva-11825-Hacker’s Crackdown[状态DP]Java</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/uva" rel="category tag" title="查看UVA中的全部文章">UVA</a>, <a href="http://www.acmerblog.com/category/dp2/state-dp" rel="category tag" title="查看状态DP中的全部文章">状态DP</a></span><span class="i4">围观717次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4829" href="http://www.acmerblog.com/uva-11825-hackers-crackdown-java-4829.html#comments" title="《Uva-11825-Hacker’s Crackdown[状态DP]Java》上的评论">17 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p><strong>问题描述： </strong></p>
+<p>Miracle Corporations has a number of system services running in a distributed computer system which is a prime target for hackers. The system is basically a set of N computer nodes with each of them running a set of N services. Note that, the set of services running on every node is same everywhere in the network. A hacker can destroy a service by running a specialized exploit for that service in all the nodes.</p>
+<p>One day, a smart hacker collects necessary exploits for all these N services and launches an attack on the system. He finds a security hole that gives him just enough time to run a single exploit in each computer. These exploits have the characteristic that, its successfully infects the computer where it was originally run and all the neighbor computers of that node.</p>
+<p>Given a network description, find the maximum number of services that the hacker can damage.</p>
+<p><strong>输入：</strong><br/>
+There will be multiple test cases in the input file. A test case begins with an integer N (1&lt;=N&lt;=16), the number of nodes in the network. The nodes are denoted by 0 to N – 1. Each of the following N lines describes the neighbors of a node. Line i (0&lt;=i&lt;N) represents the description of node i. The description for node i starts with an integer m (Number of neighbors for node i), followed by m integers in the range of 0 to N – 1, each denoting a neighboring node of node i.<br/>
+The end of input will be denoted by a case with N = 0. This case should not be processed.</p>
+<p><span style="color: #000000;"><b>输出：</b></span><br/>
+For each test case, print a line in the format, “Case X: Y”, where X is the case number &amp; Y is the maximum possible number of services that can be damaged.</p>
+<p><strong>样例输入：</strong></p>
+<p>3<br/>
+2 1 2<br/>
+2 0 2<br/>
+2 0 1<br/>
+4<br/>
+1 1<br/>
+1 0<br/>
+1 3<br/>
+1 2<br/>
+0</p>
+<p><strong>样例输出：</strong></p>
+<p>Case 1: 3<br/>
+Case 2: 2</p>
+<p>转化为数学模型：有n个节点，每个节点有m_i个邻居，每个人和邻居为一个整体，问最多可以分成几组使得每组并集合为全集。</p>
+<p>书上给的策略也就是</p>
+<p>f(s)=max{(f(s0)|s0是s的子集,cover[s0]等于全集}+1;</p>
+<p>这个题因为n范围的原因使得我们可以用二进制进行表示，首先找到每台机子能够连接的所有机子，然后cover(s)表示pi的集合s中所有pi的并集，其实就是说以当前点进行操作最多可以使得多少台机子停止工作。</p>
+<p>然后后面只需要枚举s的子集s0即可，这里不得不佩服作者用的这个技巧，即s0=(s0-1)&amp;s这样便使得s的子集全部找到，受教了！</p>
+<p>Java代码：</p>
+<p> </p>
+<pre class="brush:java">import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.util.Scanner;
+
+public class Main{
+	static int m,n;
+	static int maxn = 1&lt;&lt;17 ;
+	static int p[] = new int[20];
+	static int cover[] = new int[maxn];
+	static int ans[] = new int[maxn];
+	public static void main(String[] args) throws FileNotFoundException {
+		System.setIn(new FileInputStream("src/dp/in11825.txt"));
+		Scanner scan = new Scanner(new BufferedInputStream(System.in) );
+		int c = 0;
+		while(true){
+			n = scan.nextInt();
+			c++;
+			if(n == 0) break;
+			for(int i=0; i&lt;n; i++){
+				m = scan.nextInt();
+				p[i] = 1 &lt;&lt; i;
+				for(int j=0; j&lt;m; j++){
+					int tmp = scan.nextInt();
+					p[i] |= ( 1&lt;&lt;tmp );//二进制上有1表示相连
+				}
+				//System.out.println(p[i]);
+			}
+
+			//做预处理。cover数组主要是用来判断哪些组合可以 完全的杀掉整个服务
+			for(int i=0; i&lt; (1&lt;&lt;n); i++){
+				cover[i] = 0;
+				for(int j=0; j&lt;n; j++){
+					if( (i &amp; (1&lt;&lt;j)) != 0)
+						cover[i] |= p[j];
+				}
+			}
+			int all = (1&lt;&lt;n) - 1;
+			ans[0] = 0;
+			for(int s = 1; s &lt; (1&lt;&lt;n); s++){
+				ans[s] = 0;
+				//枚举子集合。例如 二进制 111 的子集合为 (111,110,101,100,11,10,1)
+				for(int s0 = s; s0!=0; s0 = (s0-1)&amp;s ){
+					//如果当前子集合s0，可以 杀掉整个服务。更新s
+					if( cover[s0] == all ){
+						ans[s] = Math.max( ans[s], ans[s ^ s0] +1);//
+					}
+				}
+			}
+			System.out.println("Case "+ c +": " + ans[all]);
+		}
+	}
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-78753">
+<article class="comment" id="comment-78753">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919532732" rel="external nofollow">新用户657746</a></span> on <a href="http://www.acmerblog.com/uva-11825-hackers-crackdown-java-4829.html#comment-78753" rel="nofollow"><time datetime="2017-04-12T12:30:20+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>到底什么时候更新啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65200">
+<article class="comment" id="comment-65200">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://360meimei.com/" rel="external nofollow">美眉图</a></span> on <a href="http://www.acmerblog.com/uva-11825-hackers-crackdown-java-4829.html#comment-65200" rel="nofollow"><time datetime="2017-03-22T11:29:26+00:00" pubdate="">2017年3月22日 at 上午11:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>美乳李丽珍写真日韩av仓井空av韩国性感热舞美女护士性感大笨象写真机厂官网hTtP://2810.mm88.ml</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65189">
+<article class="comment" id="comment-65189">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://SCM.rmb88.ml/" rel="external nofollow">送88元现金</a></span> on <a href="http://www.acmerblog.com/uva-11825-hackers-crackdown-java-4829.html#comment-65189" rel="nofollow"><time datetime="2017-03-22T11:26:51+00:00" pubdate="">2017年3月22日 at 上午11:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>领58元现金 <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/76/bofuxindong_org.gif"/> 澳门皇冠传奇娱乐万利国际加Q：1813712617</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27448">
+<article class="comment" id="comment-27448">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zhenghao</a></span> on <a href="http://www.acmerblog.com/uva-11825-hackers-crackdown-java-4829.html#comment-27448" rel="nofollow"><time datetime="2015-06-28T03:24:11+00:00" pubdate="">2015年6月28日 at 上午3:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>目测会火</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-27452">
+<article class="comment" id="comment-27452">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiaobei</a></span> on <a href="http://www.acmerblog.com/uva-11825-hackers-crackdown-java-4829.html#comment-27452" rel="nofollow"><time datetime="2015-05-11T09:23:21+00:00" pubdate="">2015年5月11日 at 上午9:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是研发类的题还是算法类？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27453">
+<article class="comment" id="comment-27453">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">985836927</a></span> on <a href="http://www.acmerblog.com/uva-11825-hackers-crackdown-java-4829.html#comment-27453" rel="nofollow"><time datetime="2015-04-07T01:08:19+00:00" pubdate="">2015年4月7日 at 上午1:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>afsasfasfasf</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-27450">
+<article class="comment" id="comment-27450">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">soasipray</a></span> on <a href="http://www.acmerblog.com/uva-11825-hackers-crackdown-java-4829.html#comment-27450" rel="nofollow"><time datetime="2014-12-18T00:40:55+00:00" pubdate="">2014年12月18日 at 上午12:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不太懂呀，乡亲们。原理知道代码不会</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27447">
+<article class="comment" id="comment-27447">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hao555sky</a></span> on <a href="http://www.acmerblog.com/uva-11825-hackers-crackdown-java-4829.html#comment-27447" rel="nofollow"><time datetime="2014-12-12T22:24:35+00:00" pubdate="">2014年12月12日 at 下午10:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是研发的在线笔试题吗?发现很多C啊，阿里不是JAVA多么？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-27446">
+<article class="comment" id="comment-27446">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Cloudy</a></span> on <a href="http://www.acmerblog.com/uva-11825-hackers-crackdown-java-4829.html#comment-27446" rel="nofollow"><time datetime="2014-09-16T20:22:17+00:00" pubdate="">2014年9月16日 at 下午8:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>换句话说，A[k/2-1]不可能大于两数组合并之后的第k小值，所以我们可以将其抛弃。<br/>
+应该是，不可能小于合并后的第K小值吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27449">
+<article class="comment" id="comment-27449">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Anne</a></span> on <a href="http://www.acmerblog.com/uva-11825-hackers-crackdown-java-4829.html#comment-27449" rel="nofollow"><time datetime="2014-08-30T14:29:31+00:00" pubdate="">2014年8月30日 at 下午2:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>输入样例作为一个整体输入，带回车</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-27455">
+<article class="comment" id="comment-27455">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">985836927</a></span> on <a href="http://www.acmerblog.com/uva-11825-hackers-crackdown-java-4829.html#comment-27455" rel="nofollow"><time datetime="2014-08-26T22:39:35+00:00" pubdate="">2014年8月26日 at 下午10:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>网站不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27457">
+<article class="comment" id="comment-27457">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">binqi_ren</a></span> on <a href="http://www.acmerblog.com/uva-11825-hackers-crackdown-java-4829.html#comment-27457" rel="nofollow"><time datetime="2014-07-22T02:07:06+00:00" pubdate="">2014年7月22日 at 上午2:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>注释很详细，多谢分享！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-27454">
+<article class="comment" id="comment-27454">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">985836927</a></span> on <a href="http://www.acmerblog.com/uva-11825-hackers-crackdown-java-4829.html#comment-27454" rel="nofollow"><time datetime="2014-07-16T15:46:30+00:00" pubdate="">2014年7月16日 at 下午3:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>太变态了。我用hash居然超时了。这样break掉居然都行啊。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27445">
+<article class="comment" id="comment-27445">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rtaxa</a></span> on <a href="http://www.acmerblog.com/uva-11825-hackers-crackdown-java-4829.html#comment-27445" rel="nofollow"><time datetime="2014-06-16T04:20:34+00:00" pubdate="">2014年6月16日 at 上午4:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>The site You have write is very nicely prepared and quite insightful thanks for nice posta?|</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-27458">
+<article class="comment" id="comment-27458">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jintianya</a></span> on <a href="http://www.acmerblog.com/uva-11825-hackers-crackdown-java-4829.html#comment-27458" rel="nofollow"><time datetime="2014-05-13T15:18:17+00:00" pubdate="">2014年5月13日 at 下午3:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>具体实现上有所差别，但思路是一样的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27451">
+<article class="comment" id="comment-27451">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zcmu_sls</a></span> on <a href="http://www.acmerblog.com/uva-11825-hackers-crackdown-java-4829.html#comment-27451" rel="nofollow"><time datetime="2014-05-02T05:48:07+00:00" pubdate="">2014年5月2日 at 上午5:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这排版…你都打开来看看改改</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-27456">
+<article class="comment" id="comment-27456">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">123456789_xd</a></span> on <a href="http://www.acmerblog.com/uva-11825-hackers-crackdown-java-4829.html#comment-27456" rel="nofollow"><time datetime="2014-04-17T06:10:32+00:00" pubdate="">2014年4月17日 at 上午6:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正确性是关键，冲突是都会有的，主要是那种算法冲突的概率低</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

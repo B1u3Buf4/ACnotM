@@ -1,0 +1,366 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>04-04</div>
+<div class="tit"><h1 class="entry-title">HDU 3491-Thieves[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph/flow" rel="category tag" title="查看网络流中的全部文章">网络流</a></span><span class="i4">围观289次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5654" href="http://www.acmerblog.com/hdu-3491-thieves-5654.html#comments" title="《HDU 3491-Thieves[解题报告]HOJ》上的评论">23 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Thieves</h1>
+</div>
+<div>
+<p class="mytitle">问题描述 :</p>
+</div>
+<div class="mypanel">In the kingdom of Henryy, there are N (2 &lt;= N &lt;= 100) cities, with M (M &lt;= 10000) two-direct ways connecting them.<br/>
+A group of thieves from abroad plan to steal the metropolitan museum in city H (It has not been demolished). However, the brave, brilliant, bright police in the kingdom have known this plan long before, and they also plan to catch the thieves. The thieves are in the city S at present. The police try to catch them on their way from S to H. Although the thieves might travel this way by more than one group, our excellent police has already gather the statistics that the number of the people needed in city I (1&lt;=I&lt;=N) to arrest the thieves.<br/>
+The police do not want to encounter the thieves in either city S or city H.<br/>
+The police finish the task with the minimum number of people. Do you know the exact number?</div>
+<div>
+<p class="mytitle">输入:</p>
+</div>
+<div class="mypanel">The first line contains an integer T (T &lt;= 10), indicating the number of the test cases.<br/>
+The first line of each test case has four integers: N, the number of the cities; M, the number of the roads; S (1&lt;=S&lt;=N), the label of city S; H (1&lt;=T&lt;=N, S≠H), the label of city H.<br/>
+The second line contains N integers, indicating the number of people needed in each city. The sum of these N integers is less than 10000.<br/>
+Then M lines followed, each containing two integers x and y, indicating that there is a two-direct roads between city x and y. Notices that no road between city S and H.<br/>
+A blank line is followed after each test case.</div>
+<div>
+<p class="mytitle">输出:</p>
+</div>
+<div class="mypanel">The first line contains an integer T (T &lt;= 10), indicating the number of the test cases.<br/>
+The first line of each test case has four integers: N, the number of the cities; M, the number of the roads; S (1&lt;=S&lt;=N), the label of city S; H (1&lt;=T&lt;=N, S≠H), the label of city H.<br/>
+The second line contains N integers, indicating the number of people needed in each city. The sum of these N integers is less than 10000.<br/>
+Then M lines followed, each containing two integers x and y, indicating that there is a two-direct roads between city x and y. Notices that no road between city S and H.<br/>
+A blank line is followed after each test case.</div>
+<div>
+<p class="mytitle">样例输入:</p>
+</div>
+<pre class="mypanel iopanel">1
+5 5 1 5
+1 6 6 11 1
+1 2
+1 3
+2 4
+3 4
+4 5</pre>
+<div>
+<p class="mytitle">样例输出:</p>
+</div>
+<pre class="mypanel iopanel">11</pre>
+<p><!-- problem end --><br/>
+题意：有n个城市，每个城市有一定数量的警察，有一群小偷，从城市S,到T，问最少需要多少警察可以使小偷到不了T城市。</p>
+<p>将每个城市的警察数量看成流量，那么问题就转化成求S – T的最小割。</p>
+<p>将每个点拆成i , i + n ,流量是该点的值.然后跑一次最大流就可以了。</p>
+<p>最大流最小割定理：任意一个流网络的最大流量等于该网络的最小的割的容量。</p>
+<pre class="brush:cpp ">#include&lt;stdio.h&gt;
+#include&lt;string.h&gt;
+#define INF 100000000
+int map[210][210],pre[210],weight[210];
+int n,m,start,end;
+int bfs(){
+	int h=0,t=1,q[40100];
+	q[h]=start;
+	memset(pre,0,sizeof(pre));
+	while(h&lt;t){
+		int cur=q[h];
+		for(int i=1;i&lt;=2*n;i++){
+			if(pre[i]==0&amp;&amp;map[cur][i]&gt;0){
+				q[t++]=i;
+				pre[i]=cur;
+				if(i==end)	return 1;		
+			}
+		}
+		h++;
+	}
+	return 0;
+}
+int query(){
+	int min=2*INF,u=end,v;
+	while(u!=start){
+		v=pre[u];
+		if(min&gt;map[v][u])	min=map[v][u];
+		u=v;
+	}
+	return min;
+}
+void update(int min){
+	int u,v;
+	u=end;
+	while(u!=start){
+		v=pre[u];
+		map[v][u]-=min;
+		map[u][v]+=min;
+		u=v;
+	}
+}
+int main(){
+	int T;
+	scanf("%d",&amp;T);
+	while(T--){
+		scanf("%d%d%d%d",&amp;n,&amp;m,&amp;start,&amp;end);
+		memset(map,0,sizeof(map));
+		for(int i=1;i&lt;=n;i++){
+			scanf("%d",&amp;weight[i]);
+			map[i*2-1][i*2]=weight[i];
+		}
+		map[start*2-1][start*2]=map[end*2-1][end*2]=0;
+		start*=2;
+		end=end*2-1;
+		while(m--){
+			int x,y;
+			scanf("%d%d",&amp;x,&amp;y);
+			map[y*2][x*2-1]=map[x*2][y*2-1]=INF;
+		}
+		int ans=0;
+		while(bfs()){
+			int min=query();
+			ans+=min;
+			update(min);
+		}
+		printf("%d\n",ans);
+	}
+	return 0;
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-76024">
+<article class="comment" id="comment-76024">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516754" rel="external nofollow">新用户277097</a></span> on <a href="http://www.acmerblog.com/hdu-3491-thieves-5654.html#comment-76024" rel="nofollow"><time datetime="2017-04-12T07:34:15+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>放心，还有柯南在！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76023">
+<article class="comment" id="comment-76023">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516754" rel="external nofollow">新用户277097</a></span> on <a href="http://www.acmerblog.com/hdu-3491-thieves-5654.html#comment-76023" rel="nofollow"><time datetime="2017-04-12T07:34:15+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>放心，还有柯南在！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76022">
+<article class="comment" id="comment-76022">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516754" rel="external nofollow">新用户277097</a></span> on <a href="http://www.acmerblog.com/hdu-3491-thieves-5654.html#comment-76022" rel="nofollow"><time datetime="2017-04-12T07:34:15+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>放心，还有柯南在！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76021">
+<article class="comment" id="comment-76021">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516754" rel="external nofollow">新用户277097</a></span> on <a href="http://www.acmerblog.com/hdu-3491-thieves-5654.html#comment-76021" rel="nofollow"><time datetime="2017-04-12T07:34:15+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>放心，还有柯南在！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76020">
+<article class="comment" id="comment-76020">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516754" rel="external nofollow">新用户277097</a></span> on <a href="http://www.acmerblog.com/hdu-3491-thieves-5654.html#comment-76020" rel="nofollow"><time datetime="2017-04-12T07:34:15+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>放心，还有柯南在！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76019">
+<article class="comment" id="comment-76019">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516754" rel="external nofollow">新用户277097</a></span> on <a href="http://www.acmerblog.com/hdu-3491-thieves-5654.html#comment-76019" rel="nofollow"><time datetime="2017-04-12T07:34:15+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>放心，还有柯南在！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76018">
+<article class="comment" id="comment-76018">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516754" rel="external nofollow">新用户277097</a></span> on <a href="http://www.acmerblog.com/hdu-3491-thieves-5654.html#comment-76018" rel="nofollow"><time datetime="2017-04-12T07:34:15+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>放心，还有柯南在！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76017">
+<article class="comment" id="comment-76017">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516754" rel="external nofollow">新用户277097</a></span> on <a href="http://www.acmerblog.com/hdu-3491-thieves-5654.html#comment-76017" rel="nofollow"><time datetime="2017-04-12T07:34:15+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>放心，还有柯南在！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76016">
+<article class="comment" id="comment-76016">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516754" rel="external nofollow">新用户277097</a></span> on <a href="http://www.acmerblog.com/hdu-3491-thieves-5654.html#comment-76016" rel="nofollow"><time datetime="2017-04-12T07:34:15+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>放心，还有柯南在！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30057">
+<article class="comment" id="comment-30057">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">anthozoan77</a></span> on <a href="http://www.acmerblog.com/hdu-3491-thieves-5654.html#comment-30057" rel="nofollow"><time datetime="2015-07-14T08:02:12+00:00" pubdate="">2015年7月14日 at 上午8:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这一题的代码这样提交时错误的~少考虑了很多情况</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30065">
+<article class="comment" id="comment-30065">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiao1108</a></span> on <a href="http://www.acmerblog.com/hdu-3491-thieves-5654.html#comment-30065" rel="nofollow"><time datetime="2015-05-29T18:20:37+00:00" pubdate="">2015年5月29日 at 下午6:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很强大啊，佩服</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30067">
+<article class="comment" id="comment-30067">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lint</a></span> on <a href="http://www.acmerblog.com/hdu-3491-thieves-5654.html#comment-30067" rel="nofollow"><time datetime="2015-01-22T16:19:27+00:00" pubdate="">2015年1月22日 at 下午4:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>面霸网。www.51mx.org</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30056">
+<article class="comment" id="comment-30056">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">vintion</a></span> on <a href="http://www.acmerblog.com/hdu-3491-thieves-5654.html#comment-30056" rel="nofollow"><time datetime="2015-01-12T16:43:24+00:00" pubdate="">2015年1月12日 at 下午4:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>博主的C++功底真是好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30061">
+<article class="comment" id="comment-30061">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">HDC</a></span> on <a href="http://www.acmerblog.com/hdu-3491-thieves-5654.html#comment-30061" rel="nofollow"><time datetime="2015-01-08T16:53:27+00:00" pubdate="">2015年1月8日 at 下午4:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为\n\n</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30064">
+<article class="comment" id="comment-30064">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaotongtest</a></span> on <a href="http://www.acmerblog.com/hdu-3491-thieves-5654.html#comment-30064" rel="nofollow"><time datetime="2015-01-05T18:19:42+00:00" pubdate="">2015年1月5日 at 下午6:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>后面的掩码变量部分乍一看比较难理解，其实就是把32位按照一个整体来看待。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30062">
+<article class="comment" id="comment-30062">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bobo</a></span> on <a href="http://www.acmerblog.com/hdu-3491-thieves-5654.html#comment-30062" rel="nofollow"><time datetime="2014-12-12T11:36:20+00:00" pubdate="">2014年12月12日 at 上午11:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正是我要找的，适合新手</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30058">
+<article class="comment" id="comment-30058">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">AC_Grazy</a></span> on <a href="http://www.acmerblog.com/hdu-3491-thieves-5654.html#comment-30058" rel="nofollow"><time datetime="2014-09-04T20:14:32+00:00" pubdate="">2014年9月4日 at 下午8:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序员会算法，等于一个古惑仔带了zhi抢啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30066">
+<article class="comment" id="comment-30066">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bai</a></span> on <a href="http://www.acmerblog.com/hdu-3491-thieves-5654.html#comment-30066" rel="nofollow"><time datetime="2014-08-26T20:59:07+00:00" pubdate="">2014年8月26日 at 下午8:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢提醒，是漏掉了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30060">
+<article class="comment" id="comment-30060">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jintianya</a></span> on <a href="http://www.acmerblog.com/hdu-3491-thieves-5654.html#comment-30060" rel="nofollow"><time datetime="2014-07-28T08:08:45+00:00" pubdate="">2014年7月28日 at 上午8:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为\n\n</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30068">
+<article class="comment" id="comment-30068">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">admin</a></span> on <a href="http://www.acmerblog.com/hdu-3491-thieves-5654.html#comment-30068" rel="nofollow"><time datetime="2014-06-28T16:58:25+00:00" pubdate="">2014年6月28日 at 下午4:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很赞的解答</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30059">
+<article class="comment" id="comment-30059">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yunyang088</a></span> on <a href="http://www.acmerblog.com/hdu-3491-thieves-5654.html#comment-30059" rel="nofollow"><time datetime="2014-06-27T06:25:22+00:00" pubdate="">2014年6月27日 at 上午6:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感谢分享 学习了`(*∩_∩*)′</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49211">
+<article class="comment" id="comment-49211">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lint</a></span> on <a href="http://www.acmerblog.com/hdu-3491-thieves-5654.html#comment-49211" rel="nofollow"><time datetime="2014-06-25T02:13:05+00:00" pubdate="">2014年6月25日 at 上午2:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一个数表示数列的个数，5表示之后有5个数</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30063">
+<article class="comment" id="comment-30063">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yelawolf</a></span> on <a href="http://www.acmerblog.com/hdu-3491-thieves-5654.html#comment-30063" rel="nofollow"><time datetime="2014-05-03T09:42:52+00:00" pubdate="">2014年5月3日 at 上午9:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>顺利测试通过了，多谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

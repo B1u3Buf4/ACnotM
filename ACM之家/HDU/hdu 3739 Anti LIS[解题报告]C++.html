@@ -1,0 +1,334 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>02-22</div>
+<div class="tit"><h1 class="entry-title">hdu 3739 Anti LIS[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观389次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6718" href="http://www.acmerblog.com/hdu-3739-anti-lis-6718.html#comments" title="《hdu 3739 Anti LIS[解题报告]C++》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Anti LIS</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Haven’t you heard about Lost?<br/>Having written a article named &lt;Summaries of ALL Algorithms&gt;, Lost is good at solved by algorithm problems(?). One day, GXX asked Lost to work out the Longest Increasing Subsequence(for short, LIS) of a given sequence {A_1, A_2, …, A_N}. Knowing this problem well, Lost simply copied a program from his article and solved the problem in seconds. So that GXX became frustrated. She wanted to cheat Lost by removing some elements from the original sequence to make Lost’s answer go wrong. For convinience, she would like to remove least number of elements. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The beginning of the input is an integer T(T &lt;= 10), which is the number of test cases. T cases are followed. The first line of each test case is an integer N (1 &lt;= N &lt;= 1,000), which denotes the length of the sequence. The second line is N integer A_1, A_2, …, A_N, which denote the given sequence. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The beginning of the input is an integer T(T &lt;= 10), which is the number of test cases. T cases are followed. The first line of each test case is an integer N (1 &lt;= N &lt;= 1,000), which denotes the length of the sequence. The second line is N integer A_1, A_2, …, A_N, which denote the given sequence.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+6
+10 10 20 1 2 2</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+2</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp">#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#define MIN(a, b) ((a) &lt; (b) ? (a) : (b))
+#define MAX(a, b) ((a) &gt; (b) ? (a) : (b))
+#define INF 0x7fffffff
+#define MAXN 2010
+#define MAXM 600000
+
+int pt[MAXM], head[MAXN], next[MAXM], flow[MAXM], lvl[MAXN], queue[MAXN];
+int pos;
+
+int arr[MAXN], stage[MAXN];
+int n;
+
+void AddEdge(int a, int b, int c)
+{
+	pt[++pos] = b;
+	next[pos] = head[a];
+	head[a] = pos;
+	flow[pos] = c;
+}
+
+void Connect(int a, int b, int c)
+{
+	AddEdge(a, b, c);
+	AddEdge(b, a, 0);
+}
+
+bool bfs(int s, int t)
+{
+	int qs, qe, v, e;
+	memset (lvl, 0, sizeof lvl);
+	lvl[s] = 1;
+	qs = qe = 0;
+	queue[qe++] = s;
+	while (qs &lt; qe)
+	{
+		v = queue[qs++];
+		//printf("v = %d\n", v);
+		for (e = head[v]; e != -1; e = next[e])
+			if (flow[e] &gt; 0 &amp;&amp; lvl[pt[e]] == 0)
+			{
+				lvl[pt[e]] = lvl[v] + 1;
+				queue[qe++] = pt[e];
+			}
+	}
+	return lvl[t] &gt; 0;
+}
+
+int Update(int v, int t, int tmpflow)
+{
+	//printf("v = %d flow = %d\n", v, tmpflow);
+	int tmp, res = 0, e;
+	if (v == t) return tmpflow;
+	for (e = head[v]; e != -1; e = next[e])
+		if (flow[e] &gt; 0 &amp;&amp; lvl[pt[e]] == lvl[v] + 1)
+		{
+			tmp = Update(pt[e], t, MIN(flow[e], tmpflow));
+			flow[e] -= tmp; flow[e^1] += tmp;
+			res += tmp;
+			tmpflow -= tmp;
+			if (tmpflow == 0) {break;}
+		}
+	lvl[v] = -1;
+	return res;
+}
+
+int dinic(int s, int t)
+{
+	int res = 0;
+	while (bfs(s, t))
+		res += Update(s, t, INF);
+	return res;
+}
+
+void GenStage(int n)
+{
+	int i, j, mx = -1;
+	memset (stage, 0, sizeof stage);
+	for (i = 0; i &lt; n; i++)
+		for (j = i + 1; j &lt; n; j++)
+			if (arr[j] &gt; arr[i])
+				stage[j] = MAX(stage[j], stage[i] + 1);
+	for (i = 0; i &lt; n; i++)
+		for (j = i + 1; j &lt; n; j++)
+			if (stage[i] + 1 == stage[j] &amp;&amp; arr[i] &lt; arr[j])
+				Connect(2 * i + 1, 2 * j, INF);
+	for (i = 0; i &lt; n; i++)
+	{
+		// printf("%d ", stage[i]);
+		mx = MAX(mx, stage[i]);
+	}
+	// printf("\n");
+	for (i = 0; i &lt; n; i++)
+	{
+		Connect(2 * i, 2 * i + 1, 1);
+		if (stage[i] == 0)
+			Connect(2 * n, 2 * i, INF);
+		if (stage[i] == mx)
+			Connect(2 * i + 1, 2 * n + 1, INF);
+	}
+}
+
+void Solve()
+{
+	int i, res;
+	memset (head, -1, sizeof head);
+	pos = -1;
+	scanf("%d", &amp;n);
+	for (i = 0; i &lt; n; i++)
+		scanf("%d", arr + i);
+	GenStage(n);
+	res = dinic(2 * n, 2 * n + 1);
+	printf("%d\n", res);
+}
+
+int main()
+{
+	int cas;
+	scanf("%d", &amp;cas);
+	while (cas--)
+		Solve();
+	return 0;
+}
+</pre>
+<p> </p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-73028">
+<article class="comment" id="comment-73028">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518883" rel="external nofollow">新用户697427</a></span> on <a href="http://www.acmerblog.com/hdu-3739-anti-lis-6718.html#comment-73028" rel="nofollow"><time datetime="2017-04-11T19:58:27+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你是2+38+250</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33421">
+<article class="comment" id="comment-33421">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lin</a></span> on <a href="http://www.acmerblog.com/hdu-3739-anti-lis-6718.html#comment-33421" rel="nofollow"><time datetime="2015-07-12T22:01:00+00:00" pubdate="">2015年7月12日 at 下午10:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正确</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33415">
+<article class="comment" id="comment-33415">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Riddick</a></span> on <a href="http://www.acmerblog.com/hdu-3739-anti-lis-6718.html#comment-33415" rel="nofollow"><time datetime="2015-07-04T22:27:00+00:00" pubdate="">2015年7月4日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还真是，i7的cpu跑了3秒</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33419">
+<article class="comment" id="comment-33419">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sum_tsai</a></span> on <a href="http://www.acmerblog.com/hdu-3739-anti-lis-6718.html#comment-33419" rel="nofollow"><time datetime="2015-07-04T02:33:38+00:00" pubdate="">2015年7月4日 at 上午2:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学算法中的数据结构学到一定程度会乐此不疲的，比如其中的2－3树，类似的红黑树，我甚至可以自己写个逻辑文件系统结构来。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33411">
+<article class="comment" id="comment-33411">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">abguorui0928</a></span> on <a href="http://www.acmerblog.com/hdu-3739-anti-lis-6718.html#comment-33411" rel="nofollow"><time datetime="2015-06-16T21:01:26+00:00" pubdate="">2015年6月16日 at 下午9:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>good !</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33417">
+<article class="comment" id="comment-33417">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ozhfo</a></span> on <a href="http://www.acmerblog.com/hdu-3739-anti-lis-6718.html#comment-33417" rel="nofollow"><time datetime="2015-06-12T02:10:50+00:00" pubdate="">2015年6月12日 at 上午2:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>楼主你能把scanf( "%d%*" ,&amp;T );中%*的用法详细说明吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33418">
+<article class="comment" id="comment-33418">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">daisyleedq</a></span> on <a href="http://www.acmerblog.com/hdu-3739-anti-lis-6718.html#comment-33418" rel="nofollow"><time datetime="2015-06-08T17:52:36+00:00" pubdate="">2015年6月8日 at 下午5:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>题目需要求解的是最小值，而且没有考虑可能存在环，比如<br/>
+0 0 0 0 0<br/>
+1 1 1 1 0<br/>
+1 0 0 0 0<br/>
+1 0 1 0 1<br/>
+1 0 0 0 0<br/>
+会陷入死循环</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33420">
+<article class="comment" id="comment-33420">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">crazymage</a></span> on <a href="http://www.acmerblog.com/hdu-3739-anti-lis-6718.html#comment-33420" rel="nofollow"><time datetime="2015-05-14T20:34:46+00:00" pubdate="">2015年5月14日 at 下午8:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好网站，肯定会火的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33412">
+<article class="comment" id="comment-33412">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Bob</a></span> on <a href="http://www.acmerblog.com/hdu-3739-anti-lis-6718.html#comment-33412" rel="nofollow"><time datetime="2015-05-10T10:35:09+00:00" pubdate="">2015年5月10日 at 上午10:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没错的，再乘以m的就多余了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33410">
+<article class="comment" id="comment-33410">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ForgetVay</a></span> on <a href="http://www.acmerblog.com/hdu-3739-anti-lis-6718.html#comment-33410" rel="nofollow"><time datetime="2015-05-05T03:10:24+00:00" pubdate="">2015年5月5日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>写的好·····  Pollard Rh</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33414">
+<article class="comment" id="comment-33414">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tangxiansheng</a></span> on <a href="http://www.acmerblog.com/hdu-3739-anti-lis-6718.html#comment-33414" rel="nofollow"><time datetime="2015-04-12T04:44:03+00:00" pubdate="">2015年4月12日 at 上午4:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正解，已改正。应该都是protected</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33416">
+<article class="comment" id="comment-33416">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">samjustin</a></span> on <a href="http://www.acmerblog.com/hdu-3739-anti-lis-6718.html#comment-33416" rel="nofollow"><time datetime="2015-03-22T05:29:01+00:00" pubdate="">2015年3月22日 at 上午5:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>问题3中，GetRightPosition()和GetLeftPosition()与STL中的upper_bound()和lower_boune()的代码实现一样吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33409">
+<article class="comment" id="comment-33409">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Riddick</a></span> on <a href="http://www.acmerblog.com/hdu-3739-anti-lis-6718.html#comment-33409" rel="nofollow"><time datetime="2015-03-17T10:13:46+00:00" pubdate="">2015年3月17日 at 上午10:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚开始学习，为啥会报错了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33422">
+<article class="comment" id="comment-33422">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tangxiansheng</a></span> on <a href="http://www.acmerblog.com/hdu-3739-anti-lis-6718.html#comment-33422" rel="nofollow"><time datetime="2015-03-11T13:27:09+00:00" pubdate="">2015年3月11日 at 下午1:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正是我要找的，适合新手</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33413">
+<article class="comment" id="comment-33413">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">211206421</a></span> on <a href="http://www.acmerblog.com/hdu-3739-anti-lis-6718.html#comment-33413" rel="nofollow"><time datetime="2015-02-23T13:04:58+00:00" pubdate="">2015年2月23日 at 下午1:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,326 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-04</div>
+<div class="tit"><h1 class="entry-title">HDU 1199 Color the Ball-线段树-[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/data-struct/trees" rel="category tag" title="查看树形结构中的全部文章">树形结构</a></span><span class="i4">围观1364次</span><span class="i3"><a class="ds-thread-count" data-thread-key="1562" href="http://www.acmerblog.com/hdu-1199-Color-the-Ball-1562.html#comments" title="《HDU 1199 Color the Ball-线段树-[解题报告] C++》上的评论">13 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Color the Ball</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+There are infinite balls in a line (numbered 1 2 3 ….), and initially all of them are paint black. Now Jim use a brush paint the balls, every time give two integers a b and follow by a char ‘w’ or ‘b’, ‘w’ denotes the ball from a to b are painted white, ‘b’ denotes that be painted black. You are ask to find the longest white ball sequence. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+First line is an integer N (&lt;=2000), the times Jim paint, next N line contain a b c, c can be ‘w’ and ‘b’.
+<p>There are multiple cases, process to the end of file. </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+Two integers the left end of the longest white ball sequence and the right end of longest white ball sequence (If more than one output the small number one). All the input are less than 2^31-1. If no such sequence exists, output "Oh, my god".</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3
+1 4 w
+8 11 w
+3 5 b</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+8 11</pre>
+<p><!-- problem end --></p>
+<p>题目链接：<a href="http://acm.hdu.edu.cn/showproblem.php?pid=1199">http://acm.hdu.edu.cn/showproblem.php?pid=1199</a></p>
+<p> </p>
+<p>题目大意： 一段长度未知的线段，一种操作：a b c ，表示区间[a，b]要涂的颜色，c=w涂白色，c=b涂黑色，问你最长的白色区间段时多长。</p>
+<p> </p>
+<p>解题思路：</p>
+<p>            就快去南京邀请赛了，最近做题超没状态，CF rating一直掉，这么简单的线段树离散化居然搞了我一个晚上，纠结。</p>
+<p>            开始用线段树区间合并的方法做，WA到死，换个写法，又WA到死，没处理好边界问题。</p>
+<p>            这题用普通的离散化没用，藐视这种离散化第一次遇见，以前的离散化要么就是点化点，线段化点，这题不一样，是点化线段，一不小心处理不好就WA了。</p>
+<p>点化线段我利用的是左闭右开，即对于一段区间[a，b]，转化成区间[a，b+1)，接下来就是把所有端点当做简单的离散化处理了，然后运用线段树成段更新操作处理就好了。</p>
+<pre class="brush:cpp ">#include &lt;iostream&gt;
+ #include &lt;cstdio&gt;
+ #include &lt;cstring&gt;
+ #include &lt;algorithm&gt;
+ using namespace std;
+ 
+ #define lz 2*u,l,mid
+ #define rz 2*u+1,mid,r   ///注意:这里是点化为线段（左闭右开）
+ const int maxn=5555;
+ const int oo=0x3fffffff;
+ int flag[4*maxn], color[maxn];
+ int X[maxn];
+ 
+ struct Node
+ {
+     int lx, rx, s;
+     Node(){}
+     Node(int lx_, int rx_, int s_)
+     {
+         lx=lx_, rx=rx_, s=s_;
+     }
+ }line[maxn];
+ 
+ void push_down(int u, int l, int r)
+ {
+     if(flag[u]==-1) return ;
+     else
+     {
+         flag[2*u]=flag[2*u+1]=flag[u];
+         flag[u]=-1;
+     }
+ }
+ 
+ void Update(int u, int l, int r, int tl, int tr, int c)
+ {
+     if(tl&gt;=tr) return ; ///这里要注意了
+     if(tl&lt;=l&amp;&amp;r&lt;=tr)
+     {
+         flag[u]=c;
+         return ;
+     }
+     push_down(u,l,r);
+     int mid=(l+r)&gt;&gt;1;
+     if(tr&lt;=mid) Update(lz,tl,tr,c);
+     else if(tl&gt;mid) Update(rz,tl,tr,c);
+     else
+     {
+         Update(lz,tl,mid,c);
+         Update(rz,mid,tr,c);
+     }
+ }
+ 
+ void Query(int u, int l, int r)
+ {
+     if(l&gt;=r) return ; ///！！！
+     if(flag[u]!=-1)
+     {
+         for(int i=l; i&lt;r; i++) color[i]=flag[u];  ///右端点不标记
+         return ;
+     }
+     push_down(u,l,r);
+     int mid=(l+r)&gt;&gt;1;
+     Query(lz);
+     Query(rz);
+ }
+ 
+ int find(int tmp, int n)
+ {
+     int l=1, r=n, mid;
+     while(l&lt;=r)
+     {
+         mid=(l+r)&gt;&gt;1;
+         if(X[mid]==tmp) return mid;
+         else if(X[mid]&lt;tmp) l=mid+1;
+         else r=mid-1;
+     }
+ }
+ 
+ int main()
+ {
+     int n, x, y, c;
+     char ch[3];
+     while(~scanf(“%d”,&amp;n))
+     {
+         int num=0;
+         for(int i=0; i&lt;n; i++)
+         {
+             scanf(“%d%d%s”,&amp;x,&amp;y,ch);
+             if(*ch==’w') c=1;
+             else c=0;
+             line[i]=Node(x,y+1,c);
+             X[++num]=x;
+             X[++num]=y+1;
+         }
+         sort(X+1,X+num+1);
+         int ep=1;
+         for(int i=2; i&lt;=num; i++)
+             if(X[ep]!=X[i]) X[++ep]=X[i];
+         memset(color,0,sizeof(color));
+         memset(flag,-1,sizeof(flag));
+         for(int i=0; i&lt;n; i++)
+         {
+             int lx=find(line[i].lx,ep);
+             int rx=find(line[i].rx,ep);
+             Update(1,1,ep+1,lx,rx,line[i].s);
+         }
+         Query(1,1,ep+1);
+         int s=0, d=0, ts, td;
+         for(int i=1; i&lt;=ep; i++)
+         {
+               if(color[i]!=1) continue;
+               ts=X[i];
+               while(color[i]==1) i++;
+               if(i&gt;ep) break;
+               td=X[i];
+               if(td-ts&gt;d-s)
+               {
+                   s=ts;
+                   d=td;
+               }
+         }
+         if(s==d) puts(“Oh, my god”);
+         else printf(“%d %d\n”,s, d-1);
+     }
+     return 0;
+ }</pre>
+<p> </p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-40193">
+<article class="comment" id="comment-40193">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaoriqiang2</a></span> on <a href="http://www.acmerblog.com/hdu-1199-Color-the-Ball-1562.html#comment-40193" rel="nofollow"><time datetime="2015-05-12T17:54:51+00:00" pubdate="">2015年5月12日 at 下午5:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>补充：此算法求出的不一定是最优解，之前理解错了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-40194">
+<article class="comment" id="comment-40194">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">haojunyu</a></span> on <a href="http://www.acmerblog.com/hdu-1199-Color-the-Ball-1562.html#comment-40194" rel="nofollow"><time datetime="2015-04-09T16:04:06+00:00" pubdate="">2015年4月9日 at 下午4:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么不直接用STL排序呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-40202">
+<article class="comment" id="comment-40202">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NextLife</a></span> on <a href="http://www.acmerblog.com/hdu-1199-Color-the-Ball-1562.html#comment-40202" rel="nofollow"><time datetime="2015-03-10T18:51:59+00:00" pubdate="">2015年3月10日 at 下午6:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我没看懂题目<br/>
+2<br/>
+5 6 -1 5 4 -7<br/>
+7 0 6 -1 1 -6 7 -5<br/>
+我觉得第一个应该是5 6 -1 5 4 输出是19 5 4<br/>
+第二个是7 0 6 -1 1 -6 7输出是14 7 7<br/>
+不知道题目例子是怎么得出来的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-40199">
+<article class="comment" id="comment-40199">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yipwinghong</a></span> on <a href="http://www.acmerblog.com/hdu-1199-Color-the-Ball-1562.html#comment-40199" rel="nofollow"><time datetime="2015-03-02T12:13:36+00:00" pubdate="">2015年3月2日 at 下午12:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，现在就缺少新的资料</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-40201">
+<article class="comment" id="comment-40201">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yelawolf</a></span> on <a href="http://www.acmerblog.com/hdu-1199-Color-the-Ball-1562.html#comment-40201" rel="nofollow"><time datetime="2015-02-07T19:32:15+00:00" pubdate="">2015年2月7日 at 下午7:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是什么编译器啊，不通过</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-40200">
+<article class="comment" id="comment-40200">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Anne</a></span> on <a href="http://www.acmerblog.com/hdu-1199-Color-the-Ball-1562.html#comment-40200" rel="nofollow"><time datetime="2014-12-18T19:57:20+00:00" pubdate="">2014年12月18日 at 下午7:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚开始学，非常好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-40203">
+<article class="comment" id="comment-40203">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zhenghao</a></span> on <a href="http://www.acmerblog.com/hdu-1199-Color-the-Ball-1562.html#comment-40203" rel="nofollow"><time datetime="2014-11-15T20:45:25+00:00" pubdate="">2014年11月15日 at 下午8:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有没有C++语言的代码？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-11578">
+<article class="comment" id="comment-11578">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiaobei</a></span> on <a href="http://www.acmerblog.com/hdu-1199-Color-the-Ball-1562.html#comment-11578" rel="nofollow"><time datetime="2014-09-28T09:07:57+00:00" pubdate="">2014年9月28日 at 上午9:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>0000</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-40198">
+<article class="comment" id="comment-40198">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">JcZ</a></span> on <a href="http://www.acmerblog.com/hdu-1199-Color-the-Ball-1562.html#comment-40198" rel="nofollow"><time datetime="2014-07-17T23:44:29+00:00" pubdate="">2014年7月17日 at 下午11:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>0000</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-40195">
+<article class="comment" id="comment-40195">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">PriceKiller</a></span> on <a href="http://www.acmerblog.com/hdu-1199-Color-the-Ball-1562.html#comment-40195" rel="nofollow"><time datetime="2014-07-03T08:06:08+00:00" pubdate="">2014年7月3日 at 上午8:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错的网站，建议添加些比赛信息</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-40204">
+<article class="comment" id="comment-40204">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Bernice1989</a></span> on <a href="http://www.acmerblog.com/hdu-1199-Color-the-Ball-1562.html#comment-40204" rel="nofollow"><time datetime="2014-06-29T01:59:11+00:00" pubdate="">2014年6月29日 at 上午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>wt[n - 1]没错，因为下标是[0...n-1]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-40196">
+<article class="comment" id="comment-40196">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sheyty</a></span> on <a href="http://www.acmerblog.com/hdu-1199-Color-the-Ball-1562.html#comment-40196" rel="nofollow"><time datetime="2014-06-19T23:49:39+00:00" pubdate="">2014年6月19日 at 下午11:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-40197">
+<article class="comment" id="comment-40197">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">H.Watson</a></span> on <a href="http://www.acmerblog.com/hdu-1199-Color-the-Ball-1562.html#comment-40197" rel="nofollow"><time datetime="2014-05-26T23:33:11+00:00" pubdate="">2014年5月26日 at 下午11:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>分三种情况讨论。Not Possible就是impossible</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

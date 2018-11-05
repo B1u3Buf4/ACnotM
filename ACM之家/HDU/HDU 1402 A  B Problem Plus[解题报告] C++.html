@@ -1,0 +1,334 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-09</div>
+<div class="tit"><h1 class="entry-title">HDU 1402 A * B Problem Plus[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观966次</span><span class="i3"><a class="ds-thread-count" data-thread-key="1842" href="http://www.acmerblog.com/hdu-1402-A-B-Problem-Plus-1842.html#comments" title="《HDU 1402 A * B Problem Plus[解题报告] C++》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">A * B Problem Plus</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Calculate A * B. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+Each line will contain two integers A and B. Process to end of file.
+<p>Note: the length of each integer will not exceed 50000. </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+For each case, output A * B in one line.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+2
+1000
+2</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+2000</pre>
+<p> <!-- problem end --></p>
+<p><span style="color: #ff00ff;">此处介绍另一种方法来解决这题，也就是FFT(快速傅里叶变换)</span></p>
+<p> </p>
+<p><span style="color: #ff00ff;">如果是乘法，位数为n和位数为m的相乘，需要n*m次的乘法运算。</span></p>
+<p> </p>
+<p><span style="color: #ff00ff;">FFT在数字信号处理学过，但是第一次用来做这类题目，神奇啊。</span></p>
+<p> </p>
+<p><span style="color: #ff00ff;">乘法其实就是做线性卷积。</span></p>
+<p> </p>
+<p><span style="color: #ff00ff;">用DFT得方法可以求循环卷积，但是当循环卷积长度<span lang="EN-US">L</span>≥<span lang="EN-US">N+M-1，就可以做线性卷积了。</span></span></p>
+<p> </p>
+<p><span lang="EN-US" style="color: #ff00ff;">使用FFT将两个数列转换成傅里叶域，在这的乘积就是时域的卷积。</span></p>
+<p> </p>
+<p> </p>
+<p> </p>
+<p><span lang="EN-US" style="color: #ff00ff;">给几个学习的链接吧：</span></p>
+<p> </p>
+<p><span style="color: #ff00ff;"><span lang="EN-US"><a href="http://wenku.baidu.com/view/8bfb0bd476a20029bd642d85.html"><span style="color: #ff00ff;">http://wenku.baidu.com/view/8bfb0bd476a20029bd642d85.html</span></a>  （这主要看那个FFT的流程图</span><span lang="EN-US">）</span></span></p>
+<p> </p>
+<p><span lang="EN-US" style="color: #ff00ff;"><a href="http://wlsyzx.yzu.edu.cn/kcwz/szxhcl/kechenneirong/jiaoan/jiaoan3.htm"><span style="color: #ff00ff;">http://wlsyzx.yzu.edu.cn/kcwz/szxhcl/kechenneirong/jiaoan/jiaoan3.htm</span></a>   这有DFT的原理。</span></p>
+<pre class="brush:cpp ">#include&lt;iostream&gt;
+ #include&lt;stdio.h&gt;
+ #include&lt;algorithm&gt;
+ #include&lt;iomanip&gt;
+ #include&lt;cmath&gt;
+ #include&lt;cstring&gt;
+ #include&lt;vector&gt;
+ #define ll __int64
+ #define pi acos(-1.0)
+ using namespace std;
+ const int MAX = 200002;
+ //复数结构体
+ struct complex{
+     double r,i;
+     complex(double R=0,double I=0){
+         r=R;i=I;
+     }
+     complex operator+(const complex &amp;a){
+         return complex(r+a.r,i+a.i);
+     }
+     complex operator-(const complex &amp;a){
+         return complex(r-a.r,i-a.i);
+     }
+     complex operator*(const complex &amp;a){
+         return complex(r*a.r-i*a.i,r*a.i+i*a.r);
+     }
+ };
+ /*
+  *进行FFT和IFFT前的反转变换
+  *位置i和i的二进制反转后位置互换，(如001反转后就是100)
+  *len必须去2的幂
+  */
+ void change(complex x[],int len){
+     int i,j,k;
+     for(i = 1, j = len/2; i &lt;len-1; i++){
+         if (i &lt; j) swap(x[i],x[j]);
+         //交换互为小标反转的元素，i&lt;j保证交换一次
+         //i做正常的+1,j做反转类型的+1，始终i和j是反转的
+         k = len/2;
+         while (j &gt;= k){
+             j -= k;
+             k /= 2;
+         }
+         if (j &lt; k) j += k;
+     }
+ }
+ /*
+  *做FFT
+  *len必须为2^n形式，不足则补0
+  *on=1时是DFT，on=-1时是IDFT
+  */
+ void fft (complex x[],int len,int on){
+     change(x,len);
+     for (int i=2;i&lt;=len;i&lt;&lt;=1){
+         complex wn(cos(-on*2*pi/i),sin(-on*2*pi/i));
+         for (int j=0;j&lt;len;j+=i){
+             complex w(1,0);
+             for (int k=j;k&lt;j+i/2;k++){
+                 complex u = x[k];
+                 complex t = w*x[k+i/2];
+                 x[k] = u+t;
+                 x[k+i/2] = u-t;
+                 w = w*wn;
+             }
+         }
+     }
+     if (on == -1){
+         for (int i=0;i&lt;len;i++){
+             x[i].r /= len;
+         }
+     }
+ }
+ complex x1[MAX],x2[MAX];
+ char str1[MAX/2],str2[MAX/2];
+ ll num[MAX],sum[MAX];
+ int main()
+ {
+     int i,j,k,len1,len2,len;
+     while(scanf("%s%s",&amp;str1,&amp;str2)!=EOF){
+         len1 = strlen(str1);
+         len2 = strlen(str2);
+         len = 1;
+         while (len &lt; 2*len1 || len &lt; 2*len2) len&lt;&lt;=1;
+         for (i=0;i&lt;len1;i++){
+             x1[i] = complex(str1[len1-1-i]-'0',0);
+         }
+         for (i=len1;i&lt;len;i++){
+             x1[i] = complex(0,0);
+         }
+         for (i=0;i&lt;len2;i++){
+             x2[i] = complex(str2[len2-1-i]-'0',0);
+         }
+         for (i=len2;i&lt;len;i++){
+             x2[i] = complex(0,0);
+         }
+         fft(x1,len,1);
+         fft(x2,len,1);
+         for (i=0;i&lt;len;i++){
+             x1[i] = x1[i]*x2[i];
+         }
+         fft(x1,len,-1);
+         for (i=0;i&lt;len;i++){
+             sum[i] = (int)(x1[i].r+0.5);
+         }
+         for (i=0;i&lt;len;i++){
+             sum[i+1]+=sum[i]/10;
+             sum[i]%=10;
+         }
+         len = len1+len2-1;
+         while (sum[len]&lt;=0 &amp;&amp; len&gt;0) len--;
+         for (i=len;i&gt;=0;i--){
+             printf("%c",sum[i]+'0');
+         }
+         printf("\n");
+     }
+     return 0;
+ }</pre>
+<p> </p>
+<p> </p>
+<p>解题报告转自：http://www.cnblogs.com/xin-hua/p/3216830.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-13058">
+<article class="comment" id="comment-13058">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">magichu</a></span> on <a href="http://www.acmerblog.com/hdu-1402-A-B-Problem-Plus-1842.html#comment-13058" rel="nofollow"><time datetime="2015-06-10T12:15:34+00:00" pubdate="">2015年6月10日 at 下午12:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很有用，收藏了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-54728">
+<article class="comment" id="comment-54728">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yunyang088</a></span> on <a href="http://www.acmerblog.com/hdu-1402-A-B-Problem-Plus-1842.html#comment-54728" rel="nofollow"><time datetime="2015-01-28T13:52:05+00:00" pubdate="">2015年1月28日 at 下午1:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>老实说，这种方法就是穷举，复杂度是2^n，之所以能够AC是应为题目的测试数据有问题，要么数据量很小，要么能够得到k == t，否则即使n = 30，也要很久才能得出结果，本人亲测</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-13057">
+<article class="comment" id="comment-13057">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">room306</a></span> on <a href="http://www.acmerblog.com/hdu-1402-A-B-Problem-Plus-1842.html#comment-13057" rel="nofollow"><time datetime="2015-01-24T20:40:47+00:00" pubdate="">2015年1月24日 at 下午8:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>能告诉我为什么对于每一个m，cnt的值不用更新吗?这儿我想不通啊，谢谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-54726">
+<article class="comment" id="comment-54726">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mnmlist</a></span> on <a href="http://www.acmerblog.com/hdu-1402-A-B-Problem-Plus-1842.html#comment-54726" rel="nofollow"><time datetime="2014-11-27T14:30:24+00:00" pubdate="">2014年11月27日 at 下午2:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为nn</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-54727">
+<article class="comment" id="comment-54727">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">753951</a></span> on <a href="http://www.acmerblog.com/hdu-1402-A-B-Problem-Plus-1842.html#comment-54727" rel="nofollow"><time datetime="2014-11-27T13:19:16+00:00" pubdate="">2014年11月27日 at 下午1:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不对吧 你算的an是前面说有的项的和</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-13055">
+<article class="comment" id="comment-13055">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bluesky</a></span> on <a href="http://www.acmerblog.com/hdu-1402-A-B-Problem-Plus-1842.html#comment-13055" rel="nofollow"><time datetime="2014-11-12T11:26:57+00:00" pubdate="">2014年11月12日 at 上午11:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一题还有个解释：没说桌子有多大，可以假设桌子和硬币一样大，肯定是先手胜</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-13056">
+<article class="comment" id="comment-13056">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">vincent_ynh</a></span> on <a href="http://www.acmerblog.com/hdu-1402-A-B-Problem-Plus-1842.html#comment-13056" rel="nofollow"><time datetime="2014-11-10T11:58:39+00:00" pubdate="">2014年11月10日 at 上午11:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是研发类的题还是算法类？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-54730">
+<article class="comment" id="comment-54730">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jamoeba</a></span> on <a href="http://www.acmerblog.com/hdu-1402-A-B-Problem-Plus-1842.html#comment-54730" rel="nofollow"><time datetime="2014-11-04T04:13:25+00:00" pubdate="">2014年11月4日 at 上午4:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>int L[m+1][n+1];这样定义出错，这个在gcc上可以编译通过  在VS上不行 应该改为new 或者vector</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-54731">
+<article class="comment" id="comment-54731">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wall_</a></span> on <a href="http://www.acmerblog.com/hdu-1402-A-B-Problem-Plus-1842.html#comment-54731" rel="nofollow"><time datetime="2014-09-05T16:52:10+00:00" pubdate="">2014年9月5日 at 下午4:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好，解决了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-54729">
+<article class="comment" id="comment-54729">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tzf88888888</a></span> on <a href="http://www.acmerblog.com/hdu-1402-A-B-Problem-Plus-1842.html#comment-54729" rel="nofollow"><time datetime="2014-05-29T07:33:07+00:00" pubdate="">2014年5月29日 at 上午7:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>站长好。我是一个准备创业的互联网小白,我们打算做一个有关国*际*游*学的平台。手上也有了一些境外资源。现阶段的团队现在没有cto.原意出让一些管理股寻找一个靠谱的技术专家做合伙人, 不知道是不是能得到您的帮助。发个帖子或者其他方式。期待您的回应。可以加我微信tianxielemon聊聊。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-13060">
+<article class="comment" id="comment-13060">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mechine</a></span> on <a href="http://www.acmerblog.com/hdu-1402-A-B-Problem-Plus-1842.html#comment-13060" rel="nofollow"><time datetime="2014-05-23T12:55:46+00:00" pubdate="">2014年5月23日 at 下午12:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>请问printAllCombination的时间复杂度怎么分析呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-13061">
+<article class="comment" id="comment-13061">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yueyanglou</a></span> on <a href="http://www.acmerblog.com/hdu-1402-A-B-Problem-Plus-1842.html#comment-13061" rel="nofollow"><time datetime="2014-05-16T17:48:27+00:00" pubdate="">2014年5月16日 at 下午5:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>头文件的颜色是有意设成这种灰暗色的吗？感觉看不清</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-40874">
+<article class="comment" id="comment-40874">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zx123456</a></span> on <a href="http://www.acmerblog.com/hdu-1402-A-B-Problem-Plus-1842.html#comment-40874" rel="nofollow"><time datetime="2014-03-03T10:05:39+00:00" pubdate="">2014年3月3日 at 上午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>清华也会出这么无聊的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-13059">
+<article class="comment" id="comment-13059">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Dwayne</a></span> on <a href="http://www.acmerblog.com/hdu-1402-A-B-Problem-Plus-1842.html#comment-13059" rel="nofollow"><time datetime="2013-12-28T16:11:30+00:00" pubdate="">2013年12月28日 at 下午4:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>约瑟夫也用说这么长……很成熟的一个问题了，分治的方法解起来o(n)就可以了，有兴趣可以看看具体数学的第一章，关于约瑟夫问题推导出了一系列的结论，很漂亮</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

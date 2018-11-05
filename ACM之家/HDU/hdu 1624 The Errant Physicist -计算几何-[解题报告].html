@@ -1,0 +1,329 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-16</div>
+<div class="tit"><h1 class="entry-title">hdu 1624 The Errant Physicist -计算几何-[解题报告]</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/basis/string" rel="category tag" title="查看字符串处理中的全部文章">字符串处理</a>, <a href="http://www.acmerblog.com/category/geometry/analytic-geometry" rel="category tag" title="查看解析几何中的全部文章">解析几何</a></span><span class="i4">围观1739次</span><span class="i3"><a class="ds-thread-count" data-thread-key="2469" href="http://www.acmerblog.com/hdu-1624-The-Errant-Physicist-2469.html#comments" title="《hdu 1624 The Errant Physicist -计算几何-[解题报告]》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">The Errant Physicist </h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+The well-known physicist Alfred E Neuman is working on problems that involve multiplying polynomials of x and y. For example, he may need to calculate <br/><img src="http://acm.hdu.edu.cn/data/images/1624-1.gif"/><br/>getting the answer 
+<p><img src="http://acm.hdu.edu.cn/data/images/1624-2.gif"/></p>
+<p>Unfortunately, such problems are so trivial that the great man’s mind keeps drifting off the job, and he gets the wrong answers. As a consequence, several nuclear warheads that he has designed have detonated prematurely, wiping out five major cities and a couple of rain forests. </p>
+<p>You are to write a program to perform such multiplications and save the world.  </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The file of input data will contain pairs of lines, with each line containing no more than 80 characters. The final line of the input file contains a # as its first character. Each input line contains a polynomial written without spaces and without any explicit exponentiation operator. Exponents are positive non-zero unsigned integers. Coefficients are also integers, but may be negative. Both exponents and coefficients are less than or equal to 100 in magnitude. Each term contains at most one factor in x and one in y.  </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+Your program must multiply each pair of polynomials in the input, and print each product on a pair of lines, the first line containing all the exponents, suitably positioned with respect to the rest of the information, which is in the line below. 
+<p>The following rules control the output format: </p>
+<p>  1.Terms in the output line must be sorted in decreasing order of powers of x and, for a given power of x, in increasing order of powers of y. <br/>  2.Like terms must be combined into a single term. For example, 40x2y3 – 38x2y3 is replaced by 2x2y3. <br/>  3.Terms with a zero coefficient must not be displayed.<br/>  4.Coefficients of 1 are omitted, except for the case of a constant term of 1. <br/>  5.Exponents of 1 are omitted. <br/>  6.Factors of x0 and y0 are omitted. <br/>  7.Binary pluses and minuses (that is the pluses and minuses connecting terms in the output) have a single blank column both before and after. <br/>  8.If the coefficient of the first term is negative, it is preceded by a unary minus in the first column, with no intervening blank column. Otherwise, the coefficient itself begins in the first output column. <br/>  9.The output can be assumed to fit into a single line of at most 80 charactes in length. <br/>  10.There should be no blank lines printed between each pair of output lines. <br/>  11.The pair of lines that contain a product should be the same length–trailing blanks should appear after the last non-blank character of the shorter line to achieve this. </p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+-yx8+9x3-1+y
+x5y+1+x3
+1
+1
+#</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+  13 2    11      8      6    5     5 2     3    3
+-x  y  - x  y + 8x y + 9x  - x y + x y  + 8x  + x y - 1 + y 
+
+1</pre>
+<p> <!-- problem end -->
+</p><pre class="brush:cpp ">#include &lt;algorithm&gt;
+#include &lt;iostream&gt;
+#include &lt;string&gt;
+#include &lt;vector&gt;
+#include &lt;stdio.h&gt;
+using namespace std;
+//表示多项式中各项的结构体
+struct TERM {
+	//成员分别为系数，x指数和y指数
+	int cof; int xe; int ye;
+	//构造函数，按参数初始化变量
+	TERM (int c, int x, int y) : cof(c), xe(x), ye(y) {}
+};
+//比较两项指数的大小，用于排序和合并同类项
+bool GreaterTerm(const TERM &amp;t1, const TERM &amp;t2) {
+	return (t1.xe &gt; t2.xe || (t1.xe == t2.xe &amp;&amp; t1.ye &lt; t2.ye));
+}
+//解析输入多项式字符串的函数
+void ParsePolynomial(char *pStr, vector&lt;TERM&gt; &amp;Terms) {
+	//循环处理每一项
+	for (int nNum; *pStr != 0;) {
+		//确定该项的正负号，并初始化项结构体
+		TERM Term(*pStr == '-' ? -1 : 1, 0, 0);
+		//如果前面有符号，则指针向后移位
+		pStr += (*pStr == '-' || *pStr == '+') ? 1 : 0;
+		//如果系数为0，则跳过整项
+		if (*pStr == '0') {
+			for(++pStr; *pStr != '\0' &amp;&amp; *pStr != '+' &amp;&amp; *pStr != '-'; ++pStr);
+			continue;
+		}
+		//读取符号后面的系数
+		for (nNum = 0; isdigit(*pStr); nNum = nNum * 10 + *pStr++ - '0');
+		//如果系数不为0，则乘到项结构体的系数中去(保留原符号)
+		for (Term.cof *= (nNum == 0) ? 1 : nNum; isalpha(*pStr);) {
+			//循环读取两个变量的指针(如果存在)，先确定是x还是y的指数
+			int *pe = (*pStr == 'x') ? &amp;Term.xe : &amp;Term.ye;
+			//读取后面的指数
+			for (; isdigit(*++pStr); *pe = *pe * 10 + *pStr - '0');
+			//没有指数即指数为1
+			*pe = (*pe == 0) ? 1 : *pe;
+		}
+		//将新项结构体加入数组
+		Terms.push_back(Term);
+	}
+}
+//主函数
+int main(void) {
+	//循环读入所有输入的数据，遇到#号结束
+	for (string str1, str2; cin &gt;&gt; str1 &amp;&amp; str1 != "#"; ) {
+		cin &gt;&gt; str2;
+		if (str1.empty() || str2.empty()) continue;
+		const int nMaxLen = 100;
+		char szBuf1[nMaxLen], szBuf2[nMaxLen];
+		vector&lt;TERM&gt; Poly1, Poly2, Result;
+		//转存两个字符串以备解析多项式
+		strcpy(szBuf1, str1.c_str());
+		strcpy(szBuf2, str2.c_str());
+		//解析两个多项式字符串
+		ParsePolynomial(szBuf1, Poly1);
+		ParsePolynomial(szBuf2, Poly2);
+		vector&lt;TERM&gt;::iterator i, j;
+		//执行多项式乘法
+		for (i = Poly1.begin(); i != Poly1.end(); ++i) {
+			for (j = Poly2.begin(); j != Poly2.end(); ++j) {
+				TERM Term(i-&gt;cof * j-&gt;cof, i-&gt;xe + j-&gt;xe, i-&gt;ye + j-&gt;ye);
+				Result.push_back(Term);
+			}
+		}
+		//按项指数排序
+		sort(Result.begin(), Result.end(), GreaterTerm);
+		fill(&amp;szBuf1[0], &amp;szBuf1[nMaxLen], ' ');
+		fill(&amp;szBuf2[0], &amp;szBuf2[nMaxLen], ' ');
+		int nPos = 0;
+		//查找同类项
+		for (i = Result.begin(); i != Result.end(); ++i) {
+			//合并后面的同类项(如果存在)
+			for (j = i + 1; j &lt; Result.end() &amp;&amp;
+				i-&gt;xe == j-&gt;xe &amp;&amp; i-&gt;ye == j-&gt;ye;) {
+				i-&gt;cof += j-&gt;cof;
+				j = Result.erase(j);
+			}
+			//如果该项的系数不为0，则将其输出
+			if (i-&gt;cof != 0) {
+				if (nPos &gt; 0) { //不是第一项，输出中间的运算符
+					++nPos;	//输出运算符前面的空格
+					szBuf2[nPos++] = i-&gt;cof &gt; 0 ? '+' : '-';
+					szBuf2[nPos++] = ' ';
+				}
+				else { //第一项，输出前面的符号(如果为负)
+					szBuf2[0] = '-';
+					nPos += (i-&gt;cof &lt; 0);
+				}
+				//如果系数(绝对值)不为1或xy指数都为0，则输出系数
+				i-&gt;cof = abs(i-&gt;cof);
+				if (i-&gt;cof != 1 || (i-&gt;xe == 0 &amp;&amp; i-&gt;ye == 0)) {
+					nPos += sprintf(&amp;szBuf2[nPos], "%d", i-&gt;cof);
+					//给sprintf擦屁股
+					szBuf2[nPos] = ' ';
+				}
+				//如果x指数不为0，则输出x
+				if (i-&gt;xe &gt; 0) {
+					szBuf2[nPos++] = 'x';
+					if (i-&gt;xe &gt; 1) {
+						nPos += sprintf(&amp;szBuf1[nPos], "%d", i-&gt;xe);
+						szBuf1[nPos] = ' ';
+					}
+				} //同上
+				if (i-&gt;ye &gt; 0) {
+					szBuf2[nPos++] = 'y';
+					if (i-&gt;ye &gt; 1) {
+						nPos += sprintf(&amp;szBuf1[nPos], "%d", i-&gt;ye);
+						szBuf1[nPos] = ' ';
+					}
+				}
+			}
+		}
+		//如果没有输出任何项，则多项式乘积为0
+		if (nPos == 0) {
+			szBuf2[nPos++] = '0';
+		}
+		//为多项式乘积字符串划结束符并输出
+		szBuf1[nPos] = szBuf2[nPos] = '\0';
+		cout &lt;&lt; szBuf1 &lt;&lt; '\n' &lt;&lt; szBuf2 &lt;&lt; endl;
+	}
+	return 0;
+}</pre>
+<p>解题转自：http://www.cnblogs.com/devymex/archive/2010/08/18/1801966.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-55475">
+<article class="comment" id="comment-55475">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dreams</a></span> on <a href="http://www.acmerblog.com/hdu-1624-The-Errant-Physicist-2469.html#comment-55475" rel="nofollow"><time datetime="2015-05-03T06:36:53+00:00" pubdate="">2015年5月3日 at 上午6:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>隐藏最深的bug是(start+end)/2有可能上溢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-55483">
+<article class="comment" id="comment-55483">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Ailing</a></span> on <a href="http://www.acmerblog.com/hdu-1624-The-Errant-Physicist-2469.html#comment-55483" rel="nofollow"><time datetime="2015-04-05T06:37:41+00:00" pubdate="">2015年4月5日 at 上午6:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>继续加油哦</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-55485">
+<article class="comment" id="comment-55485">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">litao</a></span> on <a href="http://www.acmerblog.com/hdu-1624-The-Errant-Physicist-2469.html#comment-55485" rel="nofollow"><time datetime="2015-03-06T21:12:31+00:00" pubdate="">2015年3月6日 at 下午9:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢提醒，是漏掉了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-55474">
+<article class="comment" id="comment-55474">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tonight</a></span> on <a href="http://www.acmerblog.com/hdu-1624-The-Errant-Physicist-2469.html#comment-55474" rel="nofollow"><time datetime="2014-12-10T01:21:18+00:00" pubdate="">2014年12月10日 at 上午1:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法挺不错。NewHead代表新的头节点，通过递归找到最后一个节点之后，就把这个节点赋给NewHead，然后一直返回返回，中途这个值是没有变化的，一边返回一边把相应的指针方向颠倒，最后结束时返回新的头节点到主函数。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-55480">
+<article class="comment" id="comment-55480">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">pascal</a></span> on <a href="http://www.acmerblog.com/hdu-1624-The-Errant-Physicist-2469.html#comment-55480" rel="nofollow"><time datetime="2014-11-15T07:15:02+00:00" pubdate="">2014年11月15日 at 上午7:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有点意思</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-16153">
+<article class="comment" id="comment-16153">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jdliyao</a></span> on <a href="http://www.acmerblog.com/hdu-1624-The-Errant-Physicist-2469.html#comment-16153" rel="nofollow"><time datetime="2014-09-05T16:20:36+00:00" pubdate="">2014年9月5日 at 下午4:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已修改。一些字符在编辑的时候转义了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-16152">
+<article class="comment" id="comment-16152">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">09291010</a></span> on <a href="http://www.acmerblog.com/hdu-1624-The-Errant-Physicist-2469.html#comment-16152" rel="nofollow"><time datetime="2014-09-01T06:27:11+00:00" pubdate="">2014年9月1日 at 上午6:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题别太纠结了，不同的编译器结果不一</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-55484">
+<article class="comment" id="comment-55484">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">cyyuen</a></span> on <a href="http://www.acmerblog.com/hdu-1624-The-Errant-Physicist-2469.html#comment-55484" rel="nofollow"><time datetime="2014-08-08T21:56:00+00:00" pubdate="">2014年8月8日 at 下午9:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>A猴子认识的所有猴子和B猴子认识的所有猴子都能认识，这句话用《爱屋及乌》描述比较容易理解……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-55478">
+<article class="comment" id="comment-55478">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yesMan</a></span> on <a href="http://www.acmerblog.com/hdu-1624-The-Errant-Physicist-2469.html#comment-55478" rel="nofollow"><time datetime="2014-06-09T14:02:48+00:00" pubdate="">2014年6月9日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>漏了一个"不"，已修正:)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-55482">
+<article class="comment" id="comment-55482">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">didiaozuoren</a></span> on <a href="http://www.acmerblog.com/hdu-1624-The-Errant-Physicist-2469.html#comment-55482" rel="nofollow"><time datetime="2014-04-11T22:54:02+00:00" pubdate="">2014年4月11日 at 下午10:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为\n\n</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-55479">
+<article class="comment" id="comment-55479">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">489365227</a></span> on <a href="http://www.acmerblog.com/hdu-1624-The-Errant-Physicist-2469.html#comment-55479" rel="nofollow"><time datetime="2014-03-31T05:10:49+00:00" pubdate="">2014年3月31日 at 上午5:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>分三种情况讨论。Not Possible就是impossible</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-55476">
+<article class="comment" id="comment-55476">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">anshansh</a></span> on <a href="http://www.acmerblog.com/hdu-1624-The-Errant-Physicist-2469.html#comment-55476" rel="nofollow"><time datetime="2014-03-13T15:58:52+00:00" pubdate="">2014年3月13日 at 下午3:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正确</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-55481">
+<article class="comment" id="comment-55481">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">acmer29</a></span> on <a href="http://www.acmerblog.com/hdu-1624-The-Errant-Physicist-2469.html#comment-55481" rel="nofollow"><time datetime="2014-01-03T17:28:25+00:00" pubdate="">2014年1月3日 at 下午5:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，感谢分享。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-55477">
+<article class="comment" id="comment-55477">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">congve1</a></span> on <a href="http://www.acmerblog.com/hdu-1624-The-Errant-Physicist-2469.html#comment-55477" rel="nofollow"><time datetime="2013-12-28T06:26:47+00:00" pubdate="">2013年12月28日 at 上午6:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错的网站，建议添加些比赛信息</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

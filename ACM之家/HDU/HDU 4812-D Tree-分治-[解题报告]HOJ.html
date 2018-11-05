@@ -1,0 +1,966 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>09-18</div>
+<div class="tit"><h1 class="entry-title">HDU 4812-D Tree-分治-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/data-struct/hash" rel="category tag" title="查看Hash表中的全部文章">Hash表</a>, <a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/basis/recursion" rel="category tag" title="查看递归和分治中的全部文章">递归和分治</a></span><span class="i4">围观100次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7857" href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comments" title="《HDU 4812-D Tree-分治-[解题报告]HOJ》上的评论">76 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">D Tree</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+There is a skyscraping tree standing on the playground of Nanjing University of Science and Technology. On each branch of the tree is an integer (The tree can be treated as a connected graph with N vertices, while each branch can be treated as a vertex). Today the students under the tree are considering a problem: Can we find such a chain on the tree so that the multiplication of all integers on the chain (mod 10<sup>6</sup> + 3) equals to K?<br/>Can you help them in solving this problem? </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+There are several test cases, please process till EOF.<br/>Each test case starts with a line containing two integers N(1 &lt;= N &lt;= 10<sup>5</sup>) and K(0 &lt;=K &lt; 10<sup>6</sup> + 3). The following line contains n numbers v<sub>i</sub>(1 &lt;= v<sub>i</sub> &lt; 10<sup>6</sup> + 3), where vi indicates the integer on vertex i. Then follows N – 1 lines. Each line contains two integers x and y, representing an undirected edge between vertex x and vertex y. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+There are several test cases, please process till EOF.<br/>Each test case starts with a line containing two integers N(1 &lt;= N &lt;= 10<sup>5</sup>) and K(0 &lt;=K &lt; 10<sup>6</sup> + 3). The following line contains n numbers v<sub>i</sub>(1 &lt;= v<sub>i</sub> &lt; 10<sup>6</sup> + 3), where vi indicates the integer on vertex i. Then follows N – 1 lines. Each line contains two integers x and y, representing an undirected edge between vertex x and vertex y.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+5 60
+2 5 2 3 3
+1 2
+1 3
+2 4
+2 5
+5 2
+2 5 2 3 3
+1 2
+1 3
+2 4
+2 5</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+3 4
+No solution
+
+<div style="font-family:Times New Roman;font-size:14px;background-color:F4FBFF;border:#B7CBFF 1px dashed;padding:6px"><div style="font-family:Arial;font-weight:bold;color:#7CA9ED;border-bottom:#B7CBFF 1px dashed"><i>Hint</i></div>
+1. “please print the lexicographically smallest one.”是指: 先按照第一个数字的大小进行比较，若第一个数字大小相同，则按照第二个数字大小进行比较，依次类推。
+
+2. 若出现栈溢出，推荐使用C++语言提交，并通过以下方式扩栈：
+#pragma comment(linker,"/STACK:102400000,102400000")
+</div><i style="font-size:1px"> </i></pre>
+<p> <!-- problem end --></p>
+<p>题意：给出一棵树，让你寻找一条路径，使得路径上的点相乘mod10^6+3等于k，输出路径的两个端点，按照字典序最小输出。</p>
+<p>思路：这类问题很容易想到树的分治，每次找出树的重心，以重心为根，将树分成若干棵子树，然后对于每棵子树再一样的操作，现在就需要求一重心为根，寻找路径，依次遍历每一个子树，然后记录子树中点到根的权值的乘积X，然后通过在哈希表中寻找K×逆元(x)，看是否存在，存在则更新答案。</p>
+<pre class="brush:cpp" name="code">#pragma comment(linker,"/STACK:102400000,102400000")
+#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+#include &lt;algorithm&gt;
+using namespace std;
+#define mod 1000003
+#define N 100005
+typedef long long ll;
+
+struct E{
+    int v, d, ne;
+    E() {}
+    E(int _v, int _ne):v(_v), ne(_ne){}
+}e[N*2];
+
+bool vis[N];
+int size, head[N], ans[2], root, flag[mod], F[mod], sum[N], mi, cr, id[N];
+ll val[N], ni[mod], path[N];
+
+void init() {
+    size = 0;
+    memset(vis, false, sizeof(vis));
+    memset(ans, -1, sizeof(ans));
+    memset(head, -1, sizeof(head));
+    memset(flag, 0, sizeof(flag));
+}
+
+void add(int u, int v) {
+    e[size] = E(v, head[u]);
+    head[u] = size++;
+}
+
+void dfs(int u, ll k) {
+    int i, v;
+    sum[u] = 1;
+    vis[u] = true, id[cr] = u;
+    path[cr++] = k*val[u]%mod;
+    ll tm = path[cr-1];
+    for (i = head[u];~i;i = e[i].ne) {
+        v = e[i].v;
+        if (vis[v]) continue;
+        dfs(v, tm);
+        sum[u] += sum[v];
+    }
+    vis[u] = false;
+}
+
+ll k;
+int n, ca;
+void getans(int a, int b) {
+    if (a &gt; b) swap(a,b);
+    if (ans[0] == -1 || ans[0] &gt; a) ans[0] = a, ans[1] = b;
+    else if (ans[0] == a &amp;&amp; ans[1] &gt; b) ans[1] = b;
+}
+
+void getroot(int u) {
+    int i, v, mx = 0;
+    sum[u] = 1;
+    vis[u] = true;
+    for (i = head[u];~i;i = e[i].ne) {
+        v = e[i].v;
+        if (vis[v]) continue;
+        getroot(v);
+        sum[u] += sum[v];
+        mx = max(mx, sum[v]);
+    }
+    mx = max(mx, sum[0]-sum[u]);
+    if (mx &lt; mi) mi = mx, root = u;
+    vis[u] = false;
+}
+void cal(int u, int cnt) {
+    if (cnt == 1) return;
+    int i, v, j;
+    mi = n;
+    sum[0] = cnt;
+    getroot(u);
+    vis[root] = true;
+    for (i = head[root];~i;i = e[i].ne) {
+        v = e[i].v;
+        if (vis[v]) continue;
+        cr = 0;
+        dfs(v, 1);
+        for (j = 0;j &lt; cr;j++) {
+            if (path[j]*val[root]%mod == k) getans(root, id[j]);
+            ll tm = k*ni[path[j]*val[root]%mod]%mod;
+            if (flag[tm] != ca) continue;
+            getans(F[tm], id[j]);
+        }
+        for (j = 0;j &lt; cr;j++) {
+            int tm = path[j];
+            if (flag[tm] != ca || F[tm] &gt; id[j]) F[tm] = id[j], flag[tm] = ca;
+        }
+    }
+    ca++;
+    for (i = head[root];~i;i = e[i].ne) {
+        if (vis[e[i].v]) continue;
+        cal(e[i].v, sum[e[i].v]);
+    }
+}
+
+ll egcd(ll a,ll b, ll &amp;x, ll &amp;y) {//得到的是a*x+b*y=gcd(a,b)
+	ll temp,tempx;
+	if (b == 0) {
+		x = 1;y = 0;
+		return a;
+	}
+	temp = egcd(b,a % b, x, y);
+	tempx = x;
+	x = y;
+	y = tempx - a / b * y;
+	return temp;
+}
+
+int main() {
+    int u, v, i, j;
+    ll y;
+    for (i = 0;i &lt; mod;i++) {
+        egcd(i*1ll, mod*1ll, ni[i], y);
+        ni[i] %= mod, ni[i] = (ni[i]+mod)%mod;
+    }
+    while (~scanf("%d%I64d", &amp;n, &amp;k)) {
+        init();
+        ca = 1;
+        for (i = 1;i &lt;= n;i++) scanf("%I64d", &amp;val[i]);
+        for (i = 1;i &lt; n;i++) {
+            scanf("%d%d", &amp;u, &amp;v);
+            add(u, v), add(v, u);
+        }
+        cal(1, n);
+        if (ans[0] == -1) puts("No solution");
+        else printf("%d %d\n", ans[0], ans[1]);
+    }
+}
+</pre>
+<p>参考：http://blog.csdn.net/u010089558/article/details/38108101</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-102071">
+<article class="comment" id="comment-102071">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456794" rel="external nofollow">新用户755085</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-102071" rel="nofollow"><time datetime="2017-04-24T13:59:00+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我们都是形式上的磨下树干…他们这么狠…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-102069">
+<article class="comment" id="comment-102069">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456794" rel="external nofollow">新用户755085</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-102069" rel="nofollow"><time datetime="2017-04-24T13:59:00+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我们都是形式上的磨下树干…他们这么狠…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-102068">
+<article class="comment" id="comment-102068">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456794" rel="external nofollow">新用户755085</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-102068" rel="nofollow"><time datetime="2017-04-24T13:59:00+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我们都是形式上的磨下树干…他们这么狠…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-102067">
+<article class="comment" id="comment-102067">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456794" rel="external nofollow">新用户755085</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-102067" rel="nofollow"><time datetime="2017-04-24T13:59:00+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我们都是形式上的磨下树干…他们这么狠…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-102066">
+<article class="comment" id="comment-102066">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456794" rel="external nofollow">新用户755085</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-102066" rel="nofollow"><time datetime="2017-04-24T13:59:00+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我们都是形式上的磨下树干…他们这么狠…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-102065">
+<article class="comment" id="comment-102065">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456794" rel="external nofollow">新用户755085</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-102065" rel="nofollow"><time datetime="2017-04-24T13:59:00+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我们都是形式上的磨下树干…他们这么狠…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-102064">
+<article class="comment" id="comment-102064">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456794" rel="external nofollow">新用户755085</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-102064" rel="nofollow"><time datetime="2017-04-24T13:59:00+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我们都是形式上的磨下树干…他们这么狠…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-102063">
+<article class="comment" id="comment-102063">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456794" rel="external nofollow">新用户755085</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-102063" rel="nofollow"><time datetime="2017-04-24T13:59:00+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我们都是形式上的磨下树干…他们这么狠…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-102062">
+<article class="comment" id="comment-102062">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456794" rel="external nofollow">新用户755085</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-102062" rel="nofollow"><time datetime="2017-04-24T13:59:00+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我们都是形式上的磨下树干…他们这么狠…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-102061">
+<article class="comment" id="comment-102061">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456794" rel="external nofollow">新用户755085</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-102061" rel="nofollow"><time datetime="2017-04-24T13:59:00+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我们都是形式上的磨下树干…他们这么狠…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-102060">
+<article class="comment" id="comment-102060">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456794" rel="external nofollow">新用户755085</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-102060" rel="nofollow"><time datetime="2017-04-24T13:59:00+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我们都是形式上的磨下树干…他们这么狠…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101610">
+<article class="comment" id="comment-101610">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521900" rel="external nofollow">新用户010599</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-101610" rel="nofollow"><time datetime="2017-04-23T14:02:15+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>UFO带有大量的电磁场，强度大的话可以让一个固定范围内的电网、通讯、等钟表都失灵，就好像我们把一块磁铁靠近电视或手表时，电视画面就有抖动，手表会不走！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101609">
+<article class="comment" id="comment-101609">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521900" rel="external nofollow">新用户010599</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-101609" rel="nofollow"><time datetime="2017-04-23T14:02:15+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>UFO带有大量的电磁场，强度大的话可以让一个固定范围内的电网、通讯、等钟表都失灵，就好像我们把一块磁铁靠近电视或手表时，电视画面就有抖动，手表会不走！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101608">
+<article class="comment" id="comment-101608">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521900" rel="external nofollow">新用户010599</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-101608" rel="nofollow"><time datetime="2017-04-23T14:02:15+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>UFO带有大量的电磁场，强度大的话可以让一个固定范围内的电网、通讯、等钟表都失灵，就好像我们把一块磁铁靠近电视或手表时，电视画面就有抖动，手表会不走！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101607">
+<article class="comment" id="comment-101607">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521900" rel="external nofollow">新用户010599</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-101607" rel="nofollow"><time datetime="2017-04-23T14:02:15+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>UFO带有大量的电磁场，强度大的话可以让一个固定范围内的电网、通讯、等钟表都失灵，就好像我们把一块磁铁靠近电视或手表时，电视画面就有抖动，手表会不走！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101606">
+<article class="comment" id="comment-101606">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521900" rel="external nofollow">新用户010599</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-101606" rel="nofollow"><time datetime="2017-04-23T14:02:15+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>UFO带有大量的电磁场，强度大的话可以让一个固定范围内的电网、通讯、等钟表都失灵，就好像我们把一块磁铁靠近电视或手表时，电视画面就有抖动，手表会不走！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101605">
+<article class="comment" id="comment-101605">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521900" rel="external nofollow">新用户010599</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-101605" rel="nofollow"><time datetime="2017-04-23T14:02:15+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>UFO带有大量的电磁场，强度大的话可以让一个固定范围内的电网、通讯、等钟表都失灵，就好像我们把一块磁铁靠近电视或手表时，电视画面就有抖动，手表会不走！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101604">
+<article class="comment" id="comment-101604">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521900" rel="external nofollow">新用户010599</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-101604" rel="nofollow"><time datetime="2017-04-23T14:02:15+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>UFO带有大量的电磁场，强度大的话可以让一个固定范围内的电网、通讯、等钟表都失灵，就好像我们把一块磁铁靠近电视或手表时，电视画面就有抖动，手表会不走！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101603">
+<article class="comment" id="comment-101603">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521900" rel="external nofollow">新用户010599</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-101603" rel="nofollow"><time datetime="2017-04-23T14:02:15+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>UFO带有大量的电磁场，强度大的话可以让一个固定范围内的电网、通讯、等钟表都失灵，就好像我们把一块磁铁靠近电视或手表时，电视画面就有抖动，手表会不走！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101602">
+<article class="comment" id="comment-101602">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521900" rel="external nofollow">新用户010599</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-101602" rel="nofollow"><time datetime="2017-04-23T14:02:15+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>UFO带有大量的电磁场，强度大的话可以让一个固定范围内的电网、通讯、等钟表都失灵，就好像我们把一块磁铁靠近电视或手表时，电视画面就有抖动，手表会不走！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101067">
+<article class="comment" id="comment-101067">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522373" rel="external nofollow">新用户709774</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-101067" rel="nofollow"><time datetime="2017-04-22T13:59:10+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>早在这看了但是忘了评论，今天回顾才想起了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101066">
+<article class="comment" id="comment-101066">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522373" rel="external nofollow">新用户709774</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-101066" rel="nofollow"><time datetime="2017-04-22T13:59:10+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>早在这看了但是忘了评论，今天回顾才想起了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101065">
+<article class="comment" id="comment-101065">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522373" rel="external nofollow">新用户709774</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-101065" rel="nofollow"><time datetime="2017-04-22T13:59:10+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>早在这看了但是忘了评论，今天回顾才想起了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101064">
+<article class="comment" id="comment-101064">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522373" rel="external nofollow">新用户709774</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-101064" rel="nofollow"><time datetime="2017-04-22T13:59:10+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>早在这看了但是忘了评论，今天回顾才想起了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101063">
+<article class="comment" id="comment-101063">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522373" rel="external nofollow">新用户709774</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-101063" rel="nofollow"><time datetime="2017-04-22T13:59:10+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>早在这看了但是忘了评论，今天回顾才想起了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101062">
+<article class="comment" id="comment-101062">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522373" rel="external nofollow">新用户709774</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-101062" rel="nofollow"><time datetime="2017-04-22T13:59:10+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>早在这看了但是忘了评论，今天回顾才想起了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101061">
+<article class="comment" id="comment-101061">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522373" rel="external nofollow">新用户709774</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-101061" rel="nofollow"><time datetime="2017-04-22T13:59:10+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>早在这看了但是忘了评论，今天回顾才想起了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101060">
+<article class="comment" id="comment-101060">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522373" rel="external nofollow">新用户709774</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-101060" rel="nofollow"><time datetime="2017-04-22T13:59:10+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>早在这看了但是忘了评论，今天回顾才想起了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101059">
+<article class="comment" id="comment-101059">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522373" rel="external nofollow">新用户709774</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-101059" rel="nofollow"><time datetime="2017-04-22T13:59:10+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>早在这看了但是忘了评论，今天回顾才想起了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101058">
+<article class="comment" id="comment-101058">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522373" rel="external nofollow">新用户709774</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-101058" rel="nofollow"><time datetime="2017-04-22T13:59:10+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>早在这看了但是忘了评论，今天回顾才想起了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101057">
+<article class="comment" id="comment-101057">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522373" rel="external nofollow">新用户709774</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-101057" rel="nofollow"><time datetime="2017-04-22T13:59:10+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>早在这看了但是忘了评论，今天回顾才想起了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101056">
+<article class="comment" id="comment-101056">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522373" rel="external nofollow">新用户709774</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-101056" rel="nofollow"><time datetime="2017-04-22T13:59:10+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>早在这看了但是忘了评论，今天回顾才想起了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101055">
+<article class="comment" id="comment-101055">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522373" rel="external nofollow">新用户709774</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-101055" rel="nofollow"><time datetime="2017-04-22T13:59:10+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>早在这看了但是忘了评论，今天回顾才想起了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101054">
+<article class="comment" id="comment-101054">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522373" rel="external nofollow">新用户709774</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-101054" rel="nofollow"><time datetime="2017-04-22T13:59:10+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>早在这看了但是忘了评论，今天回顾才想起了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101053">
+<article class="comment" id="comment-101053">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522373" rel="external nofollow">新用户709774</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-101053" rel="nofollow"><time datetime="2017-04-22T13:59:10+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>早在这看了但是忘了评论，今天回顾才想起了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101052">
+<article class="comment" id="comment-101052">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522373" rel="external nofollow">新用户709774</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-101052" rel="nofollow"><time datetime="2017-04-22T13:59:10+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>早在这看了但是忘了评论，今天回顾才想起了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101051">
+<article class="comment" id="comment-101051">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522373" rel="external nofollow">新用户709774</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-101051" rel="nofollow"><time datetime="2017-04-22T13:59:10+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>早在这看了但是忘了评论，今天回顾才想起了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100274">
+<article class="comment" id="comment-100274">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519215" rel="external nofollow">新用户198548</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-100274" rel="nofollow"><time datetime="2017-04-21T14:04:08+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>自挖墙角……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100273">
+<article class="comment" id="comment-100273">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519215" rel="external nofollow">新用户198548</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-100273" rel="nofollow"><time datetime="2017-04-21T14:04:08+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>自挖墙角……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100272">
+<article class="comment" id="comment-100272">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519215" rel="external nofollow">新用户198548</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-100272" rel="nofollow"><time datetime="2017-04-21T14:04:08+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>自挖墙角……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100271">
+<article class="comment" id="comment-100271">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519215" rel="external nofollow">新用户198548</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-100271" rel="nofollow"><time datetime="2017-04-21T14:04:08+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>自挖墙角……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100270">
+<article class="comment" id="comment-100270">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519215" rel="external nofollow">新用户198548</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-100270" rel="nofollow"><time datetime="2017-04-21T14:04:08+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>自挖墙角……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100269">
+<article class="comment" id="comment-100269">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519215" rel="external nofollow">新用户198548</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-100269" rel="nofollow"><time datetime="2017-04-21T14:04:08+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>自挖墙角……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100268">
+<article class="comment" id="comment-100268">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519215" rel="external nofollow">新用户198548</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-100268" rel="nofollow"><time datetime="2017-04-21T14:04:08+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>自挖墙角……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100267">
+<article class="comment" id="comment-100267">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519215" rel="external nofollow">新用户198548</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-100267" rel="nofollow"><time datetime="2017-04-21T14:04:08+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>自挖墙角……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100266">
+<article class="comment" id="comment-100266">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519215" rel="external nofollow">新用户198548</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-100266" rel="nofollow"><time datetime="2017-04-21T14:04:08+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>自挖墙角……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100265">
+<article class="comment" id="comment-100265">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519215" rel="external nofollow">新用户198548</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-100265" rel="nofollow"><time datetime="2017-04-21T14:04:08+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>自挖墙角……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100264">
+<article class="comment" id="comment-100264">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519215" rel="external nofollow">新用户198548</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-100264" rel="nofollow"><time datetime="2017-04-21T14:04:08+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>自挖墙角……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96400">
+<article class="comment" id="comment-96400">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466755" rel="external nofollow">新用户342674</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-96400" rel="nofollow"><time datetime="2017-04-19T19:07:50+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我们卖不卖导弹还得另说，你首先要把支持东突那事说清楚。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96399">
+<article class="comment" id="comment-96399">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466755" rel="external nofollow">新用户342674</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-96399" rel="nofollow"><time datetime="2017-04-19T19:07:50+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我们卖不卖导弹还得另说，你首先要把支持东突那事说清楚。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96398">
+<article class="comment" id="comment-96398">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466755" rel="external nofollow">新用户342674</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-96398" rel="nofollow"><time datetime="2017-04-19T19:07:50+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我们卖不卖导弹还得另说，你首先要把支持东突那事说清楚。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96397">
+<article class="comment" id="comment-96397">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466755" rel="external nofollow">新用户342674</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-96397" rel="nofollow"><time datetime="2017-04-19T19:07:50+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我们卖不卖导弹还得另说，你首先要把支持东突那事说清楚。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96396">
+<article class="comment" id="comment-96396">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466755" rel="external nofollow">新用户342674</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-96396" rel="nofollow"><time datetime="2017-04-19T19:07:50+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我们卖不卖导弹还得另说，你首先要把支持东突那事说清楚。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96395">
+<article class="comment" id="comment-96395">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466755" rel="external nofollow">新用户342674</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-96395" rel="nofollow"><time datetime="2017-04-19T19:07:50+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我们卖不卖导弹还得另说，你首先要把支持东突那事说清楚。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96394">
+<article class="comment" id="comment-96394">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466755" rel="external nofollow">新用户342674</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-96394" rel="nofollow"><time datetime="2017-04-19T19:07:50+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我们卖不卖导弹还得另说，你首先要把支持东突那事说清楚。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96393">
+<article class="comment" id="comment-96393">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466755" rel="external nofollow">新用户342674</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-96393" rel="nofollow"><time datetime="2017-04-19T19:07:50+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我们卖不卖导弹还得另说，你首先要把支持东突那事说清楚。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96392">
+<article class="comment" id="comment-96392">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466755" rel="external nofollow">新用户342674</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-96392" rel="nofollow"><time datetime="2017-04-19T19:07:50+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我们卖不卖导弹还得另说，你首先要把支持东突那事说清楚。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96391">
+<article class="comment" id="comment-96391">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466755" rel="external nofollow">新用户342674</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-96391" rel="nofollow"><time datetime="2017-04-19T19:07:50+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我们卖不卖导弹还得另说，你首先要把支持东突那事说清楚。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96390">
+<article class="comment" id="comment-96390">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466755" rel="external nofollow">新用户342674</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-96390" rel="nofollow"><time datetime="2017-04-19T19:07:50+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我们卖不卖导弹还得另说，你首先要把支持东突那事说清楚。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96389">
+<article class="comment" id="comment-96389">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466755" rel="external nofollow">新用户342674</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-96389" rel="nofollow"><time datetime="2017-04-19T19:07:50+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我们卖不卖导弹还得另说，你首先要把支持东突那事说清楚。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96388">
+<article class="comment" id="comment-96388">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466755" rel="external nofollow">新用户342674</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-96388" rel="nofollow"><time datetime="2017-04-19T19:07:50+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我们卖不卖导弹还得另说，你首先要把支持东突那事说清楚。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96387">
+<article class="comment" id="comment-96387">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466755" rel="external nofollow">新用户342674</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-96387" rel="nofollow"><time datetime="2017-04-19T19:07:50+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我们卖不卖导弹还得另说，你首先要把支持东突那事说清楚。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65495">
+<article class="comment" id="comment-65495">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514073" rel="external nofollow">新用户836264</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-65495" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这篇文章很棒  把我一些模糊想不清的疑问  清晰化的解释了！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65494">
+<article class="comment" id="comment-65494">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514073" rel="external nofollow">新用户836264</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-65494" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这篇文章很棒  把我一些模糊想不清的疑问  清晰化的解释了！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65493">
+<article class="comment" id="comment-65493">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514073" rel="external nofollow">新用户836264</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-65493" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这篇文章很棒  把我一些模糊想不清的疑问  清晰化的解释了！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65492">
+<article class="comment" id="comment-65492">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514073" rel="external nofollow">新用户836264</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-65492" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这篇文章很棒  把我一些模糊想不清的疑问  清晰化的解释了！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65491">
+<article class="comment" id="comment-65491">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514073" rel="external nofollow">新用户836264</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-65491" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这篇文章很棒  把我一些模糊想不清的疑问  清晰化的解释了！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65490">
+<article class="comment" id="comment-65490">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514073" rel="external nofollow">新用户836264</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-65490" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这篇文章很棒  把我一些模糊想不清的疑问  清晰化的解释了！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65489">
+<article class="comment" id="comment-65489">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514073" rel="external nofollow">新用户836264</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-65489" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这篇文章很棒  把我一些模糊想不清的疑问  清晰化的解释了！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65488">
+<article class="comment" id="comment-65488">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514073" rel="external nofollow">新用户836264</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-65488" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这篇文章很棒  把我一些模糊想不清的疑问  清晰化的解释了！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65339">
+<article class="comment" id="comment-65339">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://ZSFQT.caijin.cf/" rel="external nofollow">领现金</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-65339" rel="nofollow"><time datetime="2017-03-31T09:51:44+00:00" pubdate="">2017年3月31日 at 上午9:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e0/bobook_org.gif"/> 开户送88元 永辉国际德克萨斯白金国际领取ＱＱ　3559782115</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65336">
+<article class="comment" id="comment-65336">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://ABNU.rmb88.gq/" rel="external nofollow">领88元</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-65336" rel="nofollow"><time datetime="2017-03-30T19:58:19+00:00" pubdate="">2017年3月30日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/33/camera_org.gif"/> 送红包 圣淘沙九五之尊I企鹅3559782115</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65330">
+<article class="comment" id="comment-65330">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://SAB.rmb88.cf/" rel="external nofollow">txyz60467</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-65330" rel="nofollow"><time datetime="2017-03-30T03:48:37+00:00" pubdate="">2017年3月30日 at 上午3:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>ꍍ注册立送58元 澳门乐8四方娱乐城澳门星际君安国际火箭娱乐城高尔夫冠军hTtP://5703.caijin.ga</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65321">
+<article class="comment" id="comment-65321">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">亚洲美腿</span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-65321" rel="nofollow"><time datetime="2017-03-28T07:00:58+00:00" pubdate="">2017年3月28日 at 上午7:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>无内丝袜美臀␱街拍丝袜美臀␱性感内衣丝袜␱meizi1.com</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65292">
+<article class="comment" id="comment-65292">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.kaixin001.com/home/?uid=179407984" rel="external nofollow">许兰</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-65292" rel="nofollow"><time datetime="2017-03-26T06:58:05+00:00" pubdate="">2017年3月26日 at 上午6:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>a货包 <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/1b/spz2_org.gif"/> ++原单Lucky BrandReebok(锐步)Richard Mille(理查德米勒)萌小帅KENZOahuo.gq</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65229">
+<article class="comment" id="comment-65229">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://360meimei.com/" rel="external nofollow">美女的胸</a></span> on <a href="http://www.acmerblog.com/hdu-4812-d-tree-7857.html#comment-65229" rel="nofollow"><time datetime="2017-03-23T03:23:33+00:00" pubdate="">2017年3月23日 at 上午3:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嫩模美女上错身妹妹背着洋娃娃图片www.mm520.ga</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

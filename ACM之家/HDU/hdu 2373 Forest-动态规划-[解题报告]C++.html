@@ -1,0 +1,323 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>01-05</div>
+<div class="tit"><h1 class="entry-title">hdu 2373 Forest-动态规划-[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph/shortest-path" rel="category tag" title="查看最短路径中的全部文章">最短路径</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a></span><span class="i4">围观1283次</span><span class="i3"><a class="ds-thread-count" data-thread-key="3589" href="http://www.acmerblog.com/hdu-2373-forest-3589.html#comments" title="《hdu 2373 Forest-动态规划-[解题报告]C++》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Forest</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Bruce Force is standing in the forest. He wonders what is the tree trunk the farthest away which is not blocked from his view by other tree trunks. 
+<p>Bruce has made a map of the trees in the forest. The map shows his current position as the origin of a cartesian coordinate system. Tree i is shown on the map as a circle with the center (x<sub>i</sub>, y<sub>i</sub>) and radius r<sub>i</sub>. You may assume that a tree trunk is visible if and only if there exists a line segment on the map from the origin (0,0) to a point on the border of the circle representing the tree trunk, where the line segment does not intersect or touch another circle.  </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input contains several test cases. The first line of each test case contains one number n (1 ≤ n ≤ 1000), where n specifies how many trees are on the map. The following n lines contain 3 integers x<sub>i</sub>, y<sub>i</sub>, r<sub>i</sub> each, (-10000 ≤ x<sub>i</sub>, y<sub>i</sub> ≤ 10000 , 1 ≤ r<sub>i</sub> ≤ 1000 ) where (x<sub>i</sub>, y<sub>i</sub>) is the center of the circle representing tree trunk i, and r<sub>i</sub> is the radius of the circle. You may assume that no two circles in the input intersect, i.e., for any two circles, the distance between their centers is more than the sum of their radii. Moreover, you may assume that no circle contains the origin. 
+<p>The last test case is followed by a line containing one zero. </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input contains several test cases. The first line of each test case contains one number n (1 ≤ n ≤ 1000), where n specifies how many trees are on the map. The following n lines contain 3 integers x<sub>i</sub>, y<sub>i</sub>, r<sub>i</sub> each, (-10000 ≤ x<sub>i</sub>, y<sub>i</sub> ≤ 10000 , 1 ≤ r<sub>i</sub> ≤ 1000 ) where (x<sub>i</sub>, y<sub>i</sub>) is the center of the circle representing tree trunk i, and r<sub>i</sub> is the radius of the circle. You may assume that no two circles in the input intersect, i.e., for any two circles, the distance between their centers is more than the sum of their radii. Moreover, you may assume that no circle contains the origin. 
+<p>The last test case is followed by a line containing one zero. </p>
+</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3
+10 10 11
+1 1 1
+-20 -10 20
+5
+1 2 2
+-2 1 1
+2 -1 1
+-1 -2 2
+10000 -10000 1000
+0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+3.142
+1.236
+
+<div style="font-family:Times New Roman;font-size:14px;background-color:F4FBFF;border:#B7CBFF 1px dashed;padding:6px"><div style="font-family:Arial;font-weight:bold;color:#7CA9ED;border-bottom:#B7CBFF 1px dashed"><i>Hint</i></div> In the second test case, the first four trees block the view of all trees farther away than these four trees. </div><i style="font-size:1px"> </i></pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include&lt;iostream&gt;
+#include&lt;cstring&gt;
+#include&lt;cstdio&gt;
+#include&lt;string&gt;
+#include&lt;queue&gt;
+#include&lt;algorithm&gt;
+
+using namespace std;
+
+#define INF 0x3ffffff
+#define MAXN 1010
+
+struct node
+{
+	int to;
+	int dis;
+	int next;
+}edge[MAXN*MAXN];
+
+int head[MAXN],en;
+bool in[MAXN];
+int s[MAXN];
+int n,m,dis[MAXN];
+int dp[MAXN];
+
+void add(int u,int v,int w)
+{
+    edge[en].to=v;
+    edge[en].dis=w;
+    edge[en].next=head[u];
+    head[u]=en++;
+
+    edge[en].to=u;
+    edge[en].dis=w;
+    edge[en].next=head[v];
+    head[v]=en++;
+}
+
+void spfa(int s)
+{
+	queue&lt;int&gt; q;
+	for(int i=1;i&lt;=n;i++)
+	{
+		dis[i]=INF;
+		in[i]=false;
+	}
+	dis[s]=0;
+	in[s]=true;
+	q.push(s);
+	while(!q.empty())
+	{
+		int u=q.front();
+		in[u]=false;
+		q.pop();
+		for(int i=head[u];i!=-1;i=edge[i].next)
+		{
+			int v=edge[i].to;
+			if(dis[u]+edge[i].dis&lt;dis[v])
+			{
+				dis[v]=dis[u]+edge[i].dis;
+				if(!in[v])
+				{
+					q.push(v);
+					in[v]=true;
+				}
+			}
+		}
+	}
+}
+
+
+int dag_dp(int u)
+{
+    if(dp[u]!=-1) return dp[u];
+    int tmp=0;
+    for(int i=head[u];i!=-1;i=edge[i].next)
+    {
+        int v=edge[i].to;
+        if(dis[v]&lt;dis[u]) tmp+=dag_dp(edge[i].to);
+    }
+    return dp[u]=tmp;
+}
+int main()
+{
+    while(~scanf("%d",&amp;n)&amp;&amp;n)
+    {
+        scanf("%d",&amp;m);
+        memset(head,-1,sizeof(head));en=0;
+        int u,v,w;
+        for(int i=0;i&lt;m;i++)
+        {
+            scanf("%d%d%d",&amp;u,&amp;v,&amp;w);
+            add(u,v,w);
+        }
+        spfa(2);
+        memset(dp,-1,sizeof(dp));
+        dp[2]=1;
+        dag_dp(1);
+        printf("%d\n",dp[1]);
+    }
+    return 0;
+}</pre>
+<p>解题转自：http://blog.csdn.net/lenleaves/article/details/9026783</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-21210">
+<article class="comment" id="comment-21210">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">water160</a></span> on <a href="http://www.acmerblog.com/hdu-2373-forest-3589.html#comment-21210" rel="nofollow"><time datetime="2015-07-03T06:37:27+00:00" pubdate="">2015年7月3日 at 上午6:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>3，求得所有的为的总和sum—-&gt;所有数的总和<br/>
+printf( "Not Possible" );—-&gt;printf("impossible");<br/>
+对吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-44893">
+<article class="comment" id="comment-44893">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">michaelwen</a></span> on <a href="http://www.acmerblog.com/hdu-2373-forest-3589.html#comment-44893" rel="nofollow"><time datetime="2015-06-03T14:05:56+00:00" pubdate="">2015年6月3日 at 下午2:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>总数为2n，遍历到第n个，就是中间的位置</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-21208">
+<article class="comment" id="comment-21208">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">chengleisheng</a></span> on <a href="http://www.acmerblog.com/hdu-2373-forest-3589.html#comment-21208" rel="nofollow"><time datetime="2015-02-13T04:00:20+00:00" pubdate="">2015年2月13日 at 上午4:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个是代码高亮功能，那就再换一个颜色</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-44894">
+<article class="comment" id="comment-44894">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1832044043</a></span> on <a href="http://www.acmerblog.com/hdu-2373-forest-3589.html#comment-44894" rel="nofollow"><time datetime="2015-02-12T22:28:41+00:00" pubdate="">2015年2月12日 at 下午10:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-44891">
+<article class="comment" id="comment-44891">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jintianya</a></span> on <a href="http://www.acmerblog.com/hdu-2373-forest-3589.html#comment-44891" rel="nofollow"><time datetime="2015-01-12T00:03:39+00:00" pubdate="">2015年1月12日 at 上午12:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题别太纠结了，不同的编译器结果不一</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-21207">
+<article class="comment" id="comment-21207">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiao597896577</a></span> on <a href="http://www.acmerblog.com/hdu-2373-forest-3589.html#comment-21207" rel="nofollow"><time datetime="2015-01-01T10:14:23+00:00" pubdate="">2015年1月1日 at 上午10:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#!/usr/bin/env python def cou(n): arr =  [1]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-21209">
+<article class="comment" id="comment-21209">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Supermaner</a></span> on <a href="http://www.acmerblog.com/hdu-2373-forest-3589.html#comment-21209" rel="nofollow"><time datetime="2014-07-09T21:42:37+00:00" pubdate="">2014年7月9日 at 下午9:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#!/usr/bin/env python def cou(n): arr =  [1]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-21205">
+<article class="comment" id="comment-21205">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangdilj</a></span> on <a href="http://www.acmerblog.com/hdu-2373-forest-3589.html#comment-21205" rel="nofollow"><time datetime="2014-06-21T17:35:21+00:00" pubdate="">2014年6月21日 at 下午5:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题其实还可以找循环节。参照欧拉定理（也就是费马定理的推广）,a^(phi(m)) mod m = 1</p>
+<p><a href="http://zh.wikipedia.org/wiki/%E6%AC%A7%E6%8B%89%E5%AE%9A%E7%90%86_(%E6%95%B0%E8%AE%BA)" rel="nofollow">http://zh.wikipedia.org/wiki/%E6%AC%A7%E6%8B%89%E5%AE%9A%E7%90%86_(%E6%95%B0%E8%AE%BA)</a></p>
+<p>所以先算b mod phi(10)，这个部分都是可以约掉的。基本上O(1)的时间就出解了。当然，这也是因为这个问题模数太小的原因。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-21206">
+<article class="comment" id="comment-21206">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xy7850151</a></span> on <a href="http://www.acmerblog.com/hdu-2373-forest-3589.html#comment-21206" rel="nofollow"><time datetime="2014-05-20T15:33:34+00:00" pubdate="">2014年5月20日 at 下午3:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>比较基础，找些自信</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-44892">
+<article class="comment" id="comment-44892">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ycaxgjd</a></span> on <a href="http://www.acmerblog.com/hdu-2373-forest-3589.html#comment-44892" rel="nofollow"><time datetime="2014-04-10T20:43:41+00:00" pubdate="">2014年4月10日 at 下午8:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>请问printAllCombination的时间复杂度怎么分析呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-44890">
+<article class="comment" id="comment-44890">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">645198</a></span> on <a href="http://www.acmerblog.com/hdu-2373-forest-3589.html#comment-44890" rel="nofollow"><time datetime="2014-04-04T03:19:03+00:00" pubdate="">2014年4月4日 at 上午3:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算法是程序的灵魂，算法分简单和复杂，如果不搞大数据类，程序员了解一下简单点的算法也是可以的，但是会算法的一定要会编程才行，程序员不一定要会算法，利于自己项目需要的可以简单了解。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-21203">
+<article class="comment" id="comment-21203">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">feifei003603</a></span> on <a href="http://www.acmerblog.com/hdu-2373-forest-3589.html#comment-21203" rel="nofollow"><time datetime="2014-03-29T22:33:51+00:00" pubdate="">2014年3月29日 at 下午10:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>for(int i=1; i&lt;=m; i++){<br/>
+            for(int j=1; j&lt;=n; j++){<br/>
+                    dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> [j-1] + 1;<br/>
+                if(s1.charAt(i-1) == s3.charAt(i+j-1))<br/>
+                    dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = dp[i-1] <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  + 1;<br/>
+                if(s2.charAt(j-1) == s3.charAt(i+j-1))<br/>
+                    dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = Math.max(dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> [j - 1] + 1, dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> );<br/>
+            }<br/>
+        }<br/>
+这里的代码似乎有点问题？ dp(i)(j) = dp(i)(j-1) + 1;这个例子System.out.println(ils.isInterleave("aa","dbbca", "aadbbcb"));返回的应该是false</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-44895">
+<article class="comment" id="comment-44895">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bobo</a></span> on <a href="http://www.acmerblog.com/hdu-2373-forest-3589.html#comment-44895" rel="nofollow"><time datetime="2014-03-29T21:45:18+00:00" pubdate="">2014年3月29日 at 下午9:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算法是程序的灵魂，算法分简单和复杂，如果不搞大数据类，程序员了解一下简单点的算法也是可以的，但是会算法的一定要会编程才行，程序员不一定要会算法，利于自己项目需要的可以简单了解。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-21204">
+<article class="comment" id="comment-21204">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zzzzzz</a></span> on <a href="http://www.acmerblog.com/hdu-2373-forest-3589.html#comment-21204" rel="nofollow"><time datetime="2014-02-01T05:13:53+00:00" pubdate="">2014年2月1日 at 上午5:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>清华也会出这么无聊的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

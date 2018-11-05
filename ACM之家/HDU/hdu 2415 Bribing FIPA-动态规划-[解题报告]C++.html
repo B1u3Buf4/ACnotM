@@ -1,0 +1,325 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>01-26</div>
+<div class="tit"><h1 class="entry-title">hdu 2415 Bribing FIPA-动态规划-[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/dp2/tree-dp" rel="category tag" title="查看树形DP中的全部文章">树形DP</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a></span><span class="i4">围观1104次</span><span class="i3"><a class="ds-thread-count" data-thread-key="3879" href="http://www.acmerblog.com/hdu-2415-bribing-fipa-3879.html#comments" title="《hdu 2415 Bribing FIPA-动态规划-[解题报告]C++》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Bribing FIPA</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+There is going to be a voting at FIPA (Fédération Internationale de Programmation Association) to determine the host of the next IPWC (International Programming World Cup). Benjamin Bennett, the delegation of Diamondland to FIPA, is trying to seek other delegation’s support for a vote in favor of hosting IWPC in Diamondland. Ben is trying to buy the votes by diamond gifts. He has figured out the voting price of each and every country. However, he knows that there is no need to diamond-bribe every country, since there are small poor countries that take vote orders from their respected superpowers. So, if you bribe a country, you have gained the vote of any other country under its domination (both directly and via other countries domination). For example, if C is under domination of B, and B is under domination of A, one may get the vote of all three countries just by bribing A. Note that no country is under domination of more than one country, and the domination relationship makes no cycle. You are to help him, against a big diamond, by writing a program to find out the minimum number of diamonds needed such that at least m countries vote in favor of Diamondland. Since Diamondland is a candidate, it stands out of the voting process. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input consists of multiple test cases. Each test case starts with a line containing two integers n (1 ≤ n ≤ 200) and m (0 ≤ m ≤ n) which are the number of countries participating in the voting process, and the number of votes Diamondland needs. The next n lines, each describing one country, are of the following form:
+<p><i>CountryName DiamondCount DCName<sub>1</sub> DCName<sub>1</sub> …</i></p>
+<p><i>CountryName</i>, the name of the country, is a string of at least one and at most 100 letters and <i>DiamondCount</i> is a positive integer which is the number of diamonds needed to get the vote of that country and all of the countries that their names come in the list <i>DCName<sub>1</sub> DCName<sub>1</sub></i> … which means they are under direct domination of that country. Note that it is possible that some countries do not have any other country under domination. The end of the input is marked by a single line containing a single # character.</p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input consists of multiple test cases. Each test case starts with a line containing two integers n (1 ≤ n ≤ 200) and m (0 ≤ m ≤ n) which are the number of countries participating in the voting process, and the number of votes Diamondland needs. The next n lines, each describing one country, are of the following form:
+<p><i>CountryName DiamondCount DCName<sub>1</sub> DCName<sub>1</sub> …</i></p>
+<p><i>CountryName</i>, the name of the country, is a string of at least one and at most 100 letters and <i>DiamondCount</i> is a positive integer which is the number of diamonds needed to get the vote of that country and all of the countries that their names come in the list <i>DCName<sub>1</sub> DCName<sub>1</sub></i> … which means they are under direct domination of that country. Note that it is possible that some countries do not have any other country under domination. The end of the input is marked by a single line containing a single # character.</p>
+</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3 2
+Aland 10
+Boland 20 Aland
+Coland 15
+#</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+20</pre>
+<p> <!-- problem end --></p>
+<p>题意：给定N个国家，相互之间可能存在附属关系，现在想要贿赂m个国家，已知，贿赂一个国家，那么如果该国家拥有附属国，那么他的所有附属国都可以算作已经贿赂。</p>
+<p>分析：按照国家之间的附属关系连边（有向），之后将森林转为一棵树，就变成了一棵树上的01背包了。</p>
+<p>因为国家是用名字给出的，先用字典树给名字编号……</p>
+<p>dp[i][j]表示第i个国家及其附属国中选j个国家的最小花费</p>
+<p>之前一直过不了的题，现在居然1A了，主要是思路比较清晰</p>
+<pre class="brush:cpp ">#include&lt;iostream&gt;
+#include&lt;algorithm&gt;
+#include&lt;string.h&gt;
+#include&lt;string&gt;
+#include&lt;vector&gt;
+using namespace std;
+const int N = 210;
+int n,num,m,dp[N][N],w[N],in[N];
+char s[20110];
+bool vis[N];
+vector&lt;int&gt; g[N];
+typedef struct node    
+{    
+    int cnt;    
+    struct node *next[52];   
+}*tree,Trie;    
+tree root;  
+inline int GetNum(char *t){  
+    tree p = root,newnode;  
+    for(int i = 0;i &lt; strlen(t); ++i){  
+        int u = t[i] - 'a';  
+        if(u&lt;0) u=t[i]-'A'+26;
+        if(p-&gt;next[u]==NULL)  
+        {     
+            newnode=(tree)malloc(sizeof(Trie));  
+            newnode-&gt;cnt=-1;  
+            for(int j=0;j&lt;52;j++)  
+                newnode-&gt;next[j]=NULL;  
+            p-&gt;next[u]=newnode;  
+            p=newnode;  
+        }  
+        else 
+        p = p-&gt;next[u];  
+    }  
+    if(p-&gt;cnt == -1) //该节点未出现过  
+        p-&gt;cnt = num ++;  
+    return p-&gt;cnt;  
+}  
+void init()
+{
+    root=(tree)malloc(sizeof(Trie));  
+    root-&gt;cnt=-1; 
+    for(int j=0;j&lt;52;j++)  
+        root-&gt;next[j]=NULL; 
+    num=1;
+    memset(in,0,sizeof(in));
+    for(int i=0;i&lt;=n;i++)
+        g[i].clear();
+    for(int i=0;i&lt;=n;i++)
+        for(int j=0;j&lt;=n;j++)
+            dp[i][j]=INT_MAX;
+}
+int dfs(int u)
+{
+    int size=g[u].size();
+    dp[u][0]=0;
+    int t=0;
+    for(int i=0;i&lt;size;i++)
+    {
+        int v=g[u][i];
+        int now=dfs(v);
+        for(int j=t;j&gt;=0;j--)//当前z树选择j个点
+        {
+            for(int k=0;k&lt;=now;k++)//以v为根的子树选择k个点
+                dp[u][j+k]=min(dp[u][j+k],dp[u][j]+dp[v][k]);
+        }
+        t+=now;
+    }
+    for(int i=1;i&lt;=t+1;i++)//注意，这里就是题目的关键了，如果选择了父节点，那么父节点可以当成子树的所有状态值
+        dp[u][i]=min(dp[u][i],w[u]);
+    return t+1;
+}
+int main()
+{
+    char str[100],c[110];
+    while(scanf("%s",str)==1)
+    {
+        if(strcmp(str,"#")==0)
+            break;
+        n=atoi(str);
+        scanf("%d",&amp;m);
+        getchar();
+        init();
+        for(int i=0;i&lt;n;i++)
+        {
+            gets(s);
+            int len=strlen(s),cc=0,t=0,a,b;
+            for(int j=0;j&lt;=len;j++)
+            {
+                if(s[j]!=' ' &amp;&amp; s[j]!='\0')
+                  c[t++]=s[j];
+                if(s[j]==' '||s[j]=='\0')
+                {
+                    cc++;
+                    c[t]='\0';
+                    t=0;
+                    if(cc==1)
+                        a=GetNum(c);
+                    else if(cc==2)
+                        w[a]=atoi(c);
+                    else {
+                        b=GetNum(c);
+                        g[a].push_back(b);
+                        in[b]++;
+                    }
+                }
+            }
+        }
+        for(int i=1;i&lt;=n;i++)//将森林转为树
+        {
+            if(in[i]==0)
+                g[0].push_back(i);
+        }
+        w[0]=INT_MAX;//0节点是自己添加的，它对应的花费应该设定为正无穷，这样就不会选择这个点了
+        dfs(0);
+        printf("%d\n",dp[0][m]);
+    }
+    return 0;
+}</pre>
+<p> </p>
+<p>解题转自：http://www.cnblogs.com/nanke/archive/2012/03/07/2384269.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-45157">
+<article class="comment" id="comment-45157">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">samjustin</a></span> on <a href="http://www.acmerblog.com/hdu-2415-bribing-fipa-3879.html#comment-45157" rel="nofollow"><time datetime="2015-05-26T22:47:24+00:00" pubdate="">2015年5月26日 at 下午10:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么for循环找到的i一定是素数叻，而且约数定理说的是n=p1^a1*p2^a2*p3^a3*…*pk^ak，而你每次取余都用的是原来的m，也就是n</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-45156">
+<article class="comment" id="comment-45156">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zhiqiang</a></span> on <a href="http://www.acmerblog.com/hdu-2415-bribing-fipa-3879.html#comment-45156" rel="nofollow"><time datetime="2015-04-16T21:03:13+00:00" pubdate="">2015年4月16日 at 下午9:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不对吧 你算的an是前面说有的项的和</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-56769">
+<article class="comment" id="comment-56769">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">siaswj</a></span> on <a href="http://www.acmerblog.com/hdu-2415-bribing-fipa-3879.html#comment-56769" rel="nofollow"><time datetime="2015-02-20T16:59:20+00:00" pubdate="">2015年2月20日 at 下午4:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>I like your publish. It is great to see you verbalize from the coronary heart and clarity on this essential subject matter can be easily noticed.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-56766">
+<article class="comment" id="comment-56766">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fastislow</a></span> on <a href="http://www.acmerblog.com/hdu-2415-bribing-fipa-3879.html#comment-56766" rel="nofollow"><time datetime="2014-12-22T02:13:22+00:00" pubdate="">2014年12月22日 at 上午2:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>受益匪浅！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-45158">
+<article class="comment" id="comment-45158">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">0xc0de</a></span> on <a href="http://www.acmerblog.com/hdu-2415-bribing-fipa-3879.html#comment-45158" rel="nofollow"><time datetime="2014-12-17T22:43:09+00:00" pubdate="">2014年12月17日 at 下午10:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>2的64次方是多少？ 这到底是在考什么啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-45155">
+<article class="comment" id="comment-45155">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaotong2055</a></span> on <a href="http://www.acmerblog.com/hdu-2415-bribing-fipa-3879.html#comment-45155" rel="nofollow"><time datetime="2014-12-08T22:03:55+00:00" pubdate="">2014年12月8日 at 下午10:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>a是根先忽略掉，递归子树。剩下前缀bejkcfghid和后缀jkebfghicd，分拆的原则的是每个子树前缀和后缀的节点个数是一样的，根节点出现在前缀的第一个，后缀的最后一个。根节点b出现后缀的第四个位置，则第一部分为四个节点，前缀bejk，后缀jkeb，剩下的c出现在后缀的倒数第2个，就划分为cfghi和 fghic，第3部分就为c、c</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-45159">
+<article class="comment" id="comment-45159">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">howhaw</a></span> on <a href="http://www.acmerblog.com/hdu-2415-bribing-fipa-3879.html#comment-45159" rel="nofollow"><time datetime="2014-12-03T08:17:51+00:00" pubdate="">2014年12月3日 at 上午8:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给力！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-56770">
+<article class="comment" id="comment-56770">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">crazymage</a></span> on <a href="http://www.acmerblog.com/hdu-2415-bribing-fipa-3879.html#comment-56770" rel="nofollow"><time datetime="2014-11-27T13:01:14+00:00" pubdate="">2014年11月27日 at 下午1:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-56768">
+<article class="comment" id="comment-56768">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">reking</a></span> on <a href="http://www.acmerblog.com/hdu-2415-bribing-fipa-3879.html#comment-56768" rel="nofollow"><time datetime="2014-08-27T01:51:01+00:00" pubdate="">2014年8月27日 at 上午1:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好吧~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-56767">
+<article class="comment" id="comment-56767">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mysteriousAngel_love</a></span> on <a href="http://www.acmerblog.com/hdu-2415-bribing-fipa-3879.html#comment-56767" rel="nofollow"><time datetime="2014-06-21T20:52:20+00:00" pubdate="">2014年6月21日 at 下午8:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很棒的网站，加油！⛽️</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-45154">
+<article class="comment" id="comment-45154">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hao555sky</a></span> on <a href="http://www.acmerblog.com/hdu-2415-bribing-fipa-3879.html#comment-45154" rel="nofollow"><time datetime="2014-06-01T13:37:13+00:00" pubdate="">2014年6月1日 at 下午1:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这怎么用Catalan数啊？求解答！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-45153">
+<article class="comment" id="comment-45153">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fermi</a></span> on <a href="http://www.acmerblog.com/hdu-2415-bribing-fipa-3879.html#comment-45153" rel="nofollow"><time datetime="2014-04-05T19:12:06+00:00" pubdate="">2014年4月5日 at 下午7:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个程序编译都通不过， int L[m+1][n+1];这样定义出错，应该换成具体的数字ac</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-56765">
+<article class="comment" id="comment-56765">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">acmclown</a></span> on <a href="http://www.acmerblog.com/hdu-2415-bribing-fipa-3879.html#comment-56765" rel="nofollow"><time datetime="2014-04-02T18:33:05+00:00" pubdate="">2014年4月2日 at 下午6:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我又来学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-56764">
+<article class="comment" id="comment-56764">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">0xc0de</a></span> on <a href="http://www.acmerblog.com/hdu-2415-bribing-fipa-3879.html#comment-56764" rel="nofollow"><time datetime="2014-03-03T16:26:46+00:00" pubdate="">2014年3月3日 at 下午4:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>分析的很详细！赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

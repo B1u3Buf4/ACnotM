@@ -1,0 +1,409 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>05-17</div>
+<div class="tit"><h1 class="entry-title">快速排序算法及分析</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/basis/sort" rel="category tag" title="查看排序中的全部文章">排序</a>, <a href="http://www.acmerblog.com/category/zhuanti/algorithm" rel="category tag" title="查看算法分析中的全部文章">算法分析</a></span><span class="i4">围观1752次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5789" href="http://www.acmerblog.com/quick-sort-5789.html#comments" title="《快速排序算法及分析》上的评论">28 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p>快速排序算法和<a href="http://www.acmerblog.com/merge-sort-5372.html">归并排序</a>类似，都是属于分治算法。</p>
+<p>快速排序使用分治法（Divide and conquer）策略来把一个串行（list）分为两个子串行（sub-lists）。</p>
+<p>步骤为：</p>
+<ol>
+<li>从数列中挑出一个元素，称为 “基准”（pivot），</li>
+<li>重新排序数列，所有元素比基准值小的摆放在基准前面，所有元素比基准值大的摆在基准的后面（相同的数可以到任一边）。在这个分区退出之后，该基准就处于数列的中间位置。这个称为<b>分区（partition）</b>操作。</li>
+<li>递归地（recursive）把小于基准值元素的子数列和大于基准值元素的子数列排序。</li>
+</ol>
+<p>虽然快速排序是分治算法，但其中主要的操作是分区操作，这个操作的复杂性应该是线性的。划分的实现由很多种，朴素的实现是选取第一个元素和最后一个元素作为基准作为划分。算法导论一书给出的<b>partition</b> 函数是取最后一个元素作为基准，然后通过一遍循环交换元素。代码虽然简洁，但是初看起来不太易懂，建议在纸上模拟下过程。此种方法相对来说交换元素的次数也比较多，后面会给出一种优化的操作。</p>
+<h2>C语言实现</h2>
+<pre class="brush:cpp">/* 快速排序朴素的实现 */
+#include&lt;stdio.h&gt;
+
+void swap(int* a, int* b)
+{
+    int t = *a;
+    *a = *b;
+    *b = t;
+}
+
+/*取最后一个作为基准 */
+int partition (int arr[], int l, int h)
+{
+    int x = arr[h];   
+    int i = (l - 1);  // 较小元素的下标
+    for (int j = l; j &lt;= h- 1; j++)
+    {
+        if (arr[j] &lt;= x)
+        {
+            i++;    //增加较小元素的下标
+            swap(&amp;arr[i], &amp;arr[j]); 
+        }
+    }
+    swap(&amp;arr[i + 1], &amp;arr[h]);  
+    return (i + 1);//返回基准元素的最终位置
+}
+
+/* arr[] --&gt; 待排序数组, l  --&gt; 开始位置, h  --&gt;结束位置 */
+void quickSort(int arr[], int l, int h)
+{
+    if (l &lt; h)
+    {
+        int p = partition(arr, l, h); /* p为划分的中间位置 */
+        quickSort(arr, l, p - 1);
+        quickSort(arr, p + 1, h);
+    }
+}
+
+/* 打印数组 */
+void printArray(int arr[], int size)
+{
+    int i;
+    for (i=0; i &lt; size; i++)
+        printf("%d ", arr[i]);
+    printf("\n");
+}
+
+// 测试
+int main()
+{
+    int arr[] = {10, 7, 8, 9, 1, 5};
+    int n = sizeof(arr)/sizeof(arr[0]);
+    quickSort(arr, 0, n-1);
+    printf("Sorted array: \n");
+    printArray(arr, n);
+    return 0;
+}</pre>
+<p>输出：</p>
+<pre class="brush:other">Sorted array:
+1 5 7 8 9 10</pre>
+<p>有必要说下上面的partition函数 ，如果输入是已排序的，那个每个元素都会和自己交换，效率不好。另一个种划分的操作是用头尾指针。实现如下：</p>
+<pre class="brush:cpp">//划分操作的 第二种实现
+int partition2(int * arr, int start, int end) {
+	int i = start;//指向开头
+	int j = end + 1;//指向结尾
+	int pivot = arr[start];
+	while(true){
+		while( i&lt;end &amp;&amp; arr[++i] &lt; pivot);//从前到后  第一个比 基准（x）大的数。 j指向该数
+		while(j&gt;start &amp;&amp; arr[--j] &gt; pivot);//从后向前找到第一个比 基准（x）小的数。i指向该数
+		if(i &gt;= j)
+			break;
+		swap(arr[i], arr[j]);
+	}
+	arr[start] = arr[j];
+	arr[j] = pivot;
+	return j;
+}</pre>
+<p>这种划分操作在大部分情况下交换的次数较少。</p>
+<h2>分析</h2>
+<p>时间的复杂度可以表示为：<strong>T(n) = T(k) + T(n-k-1) + <img alt="\theta" height="12" src="http://d18khu5s3lkxd9.cloudfront.net//wp-content/ql-cache/quicklatex.com-356a08e839ab6974a16448e16e56745d_l3.svg" title="Rendered by QuickLaTeX.com" width="9"/>(n)</strong></p>
+<p>其中 T(k), T(n-k-1) 对应程序中的递归调用，k是在划分后比基准元素小的元素个数。 <img alt="\theta" height="12" src="http://d18khu5s3lkxd9.cloudfront.net//wp-content/ql-cache/quicklatex.com-356a08e839ab6974a16448e16e56745d_l3.svg" title="Rendered by QuickLaTeX.com" width="9"/>(n) 就是<b>partition</b>函数的复杂度。</p>
+<p>算法的效率对不同的输入数据会有所不同，可以分为下面3中情况：</p>
+<p>1) <strong>最坏的情况。</strong>当分区过程总是挑选最大或最小的元素作为支点。<span>如果我们考虑以上的分区策略，其中最后一个元素总是被挑为支点，当数组已经排序的递增或递减顺序时，会发生最坏的情况：</span></p>
+<p>T(n) = T(0) + T(n-1) +<img alt="\theta" height="14" src="http://d18khu5s3lkxd9.cloudfront.net//wp-content/ql-cache/quicklatex.com-356a08e839ab6974a16448e16e56745d_l3.svg" width="9"/>(n), 即 T(n) = T(n-1) +<img alt="\theta" height="14" src="http://d18khu5s3lkxd9.cloudfront.net//wp-content/ql-cache/quicklatex.com-356a08e839ab6974a16448e16e56745d_l3.svg" width="9"/>(n)</p>
+<p>此时的复杂度为 O(n^2)</p>
+<p>2) <strong>最好的情况</strong>。<span>发生在最好的情况下，当分区过程总是挑选最中间元素为支点。</span></p>
+<p>T(n) = 2 T(n/2) +<img alt="\theta" height="14" src="http://d18khu5s3lkxd9.cloudfront.net//wp-content/ql-cache/quicklatex.com-356a08e839ab6974a16448e16e56745d_l3.svg" width="9"/>(n)</p>
+<p>此时的递归表达式和归并排序是一样的。时间时间复杂度为 O(n lg n). 计算方法参考 <a href="http://www.acmerblog.com/analysis-recurrences-5084.html" rel="bookmark" target="_blank" title="链向 算法分析(2)-递归的时间复杂度 的固定链接">递归的时间复杂度</a></p>
+<p>3）<strong> 平均情况</strong>。</p>
+<p>要做到平均情况分析，我们需要考虑数组中的所有可能的排列，并计算每一个排列所需要的时间，这种计算是比较麻烦的。</p>
+<p>可以这么分析，如果划分的结果是这样的两部分 O(n/10) 和 O(9n/10)。递归式为：  T(n) =  T(n/10) + T(n9/10) +<img alt="\theta" height="14" src="http://d18khu5s3lkxd9.cloudfront.net//wp-content/ql-cache/quicklatex.com-356a08e839ab6974a16448e16e56745d_l3.svg" width="9"/>(n)</p>
+<p>最终的计算结果也为：O(n lg n). 具体计算参考：<a href="http://v.163.com/special/opencourse/algorithms.html" target="_blank">麻省理工学院公开课：算法导论 </a></p>
+<p>虽然快速排序的最坏情况下复杂度为O(N^2)，<span><span>这比很多其他的排序算法，如</span></span><span><span>归并排序</span></span><span><span>和</span></span><span><span>堆排序</span></span><span><span>，在实践中更快，因为它的内部循环可以在大多数架构有效地实现，</span></span></p>
+<p>对于大部分真实的数据，也是比较高效的。后续会有快速排序的优化算法</p>
+<p>参考：http://geeksquiz.com/quick-sort/</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75602">
+<article class="comment" id="comment-75602">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512847" rel="external nofollow">新用户540390</a></span> on <a href="http://www.acmerblog.com/quick-sort-5789.html#comment-75602" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你他妈光会日老婆！！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75601">
+<article class="comment" id="comment-75601">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512847" rel="external nofollow">新用户540390</a></span> on <a href="http://www.acmerblog.com/quick-sort-5789.html#comment-75601" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你他妈光会日老婆！！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75600">
+<article class="comment" id="comment-75600">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512847" rel="external nofollow">新用户540390</a></span> on <a href="http://www.acmerblog.com/quick-sort-5789.html#comment-75600" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你他妈光会日老婆！！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75599">
+<article class="comment" id="comment-75599">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512847" rel="external nofollow">新用户540390</a></span> on <a href="http://www.acmerblog.com/quick-sort-5789.html#comment-75599" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你他妈光会日老婆！！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75598">
+<article class="comment" id="comment-75598">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512847" rel="external nofollow">新用户540390</a></span> on <a href="http://www.acmerblog.com/quick-sort-5789.html#comment-75598" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你他妈光会日老婆！！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75597">
+<article class="comment" id="comment-75597">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512847" rel="external nofollow">新用户540390</a></span> on <a href="http://www.acmerblog.com/quick-sort-5789.html#comment-75597" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你他妈光会日老婆！！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75596">
+<article class="comment" id="comment-75596">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512847" rel="external nofollow">新用户540390</a></span> on <a href="http://www.acmerblog.com/quick-sort-5789.html#comment-75596" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你他妈光会日老婆！！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75595">
+<article class="comment" id="comment-75595">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512847" rel="external nofollow">新用户540390</a></span> on <a href="http://www.acmerblog.com/quick-sort-5789.html#comment-75595" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你他妈光会日老婆！！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75594">
+<article class="comment" id="comment-75594">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512847" rel="external nofollow">新用户540390</a></span> on <a href="http://www.acmerblog.com/quick-sort-5789.html#comment-75594" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你他妈光会日老婆！！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75593">
+<article class="comment" id="comment-75593">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512847" rel="external nofollow">新用户540390</a></span> on <a href="http://www.acmerblog.com/quick-sort-5789.html#comment-75593" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你他妈光会日老婆！！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75592">
+<article class="comment" id="comment-75592">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512847" rel="external nofollow">新用户540390</a></span> on <a href="http://www.acmerblog.com/quick-sort-5789.html#comment-75592" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你他妈光会日老婆！！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75591">
+<article class="comment" id="comment-75591">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512847" rel="external nofollow">新用户540390</a></span> on <a href="http://www.acmerblog.com/quick-sort-5789.html#comment-75591" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你他妈光会日老婆！！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75590">
+<article class="comment" id="comment-75590">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512847" rel="external nofollow">新用户540390</a></span> on <a href="http://www.acmerblog.com/quick-sort-5789.html#comment-75590" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你他妈光会日老婆！！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75589">
+<article class="comment" id="comment-75589">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512847" rel="external nofollow">新用户540390</a></span> on <a href="http://www.acmerblog.com/quick-sort-5789.html#comment-75589" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你他妈光会日老婆！！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64891">
+<article class="comment" id="comment-64891">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">hYDiJ</span> on <a href="http://www.acmerblog.com/quick-sort-5789.html#comment-64891" rel="nofollow"><time datetime="2016-11-24T08:15:07+00:00" pubdate="">2016年11月24日 at 上午8:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个更C刺j激，准备好手纸哦 A 片。HTTp://T.Cn/Rc4PF3o <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64760">
+<article class="comment" id="comment-64760">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">ApCio</span> on <a href="http://www.acmerblog.com/quick-sort-5789.html#comment-64760" rel="nofollow"><time datetime="2016-10-16T03:40:43+00:00" pubdate="">2016年10月16日 at 上午3:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个更刺ｃ激，准备好手纸哦 A 片。。 ２８８ｄ．ｐｗ <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64737">
+<article class="comment" id="comment-64737">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">YuChD</span> on <a href="http://www.acmerblog.com/quick-sort-5789.html#comment-64737" rel="nofollow"><time datetime="2016-10-10T07:12:26+00:00" pubdate="">2016年10月10日 at 上午7:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个更刺ｃ激，准备好手纸哦 A 片。。 <a href="http://T.CN/RcFeD2C" rel="nofollow">http://T.CN/RcFeD2C</a> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58779">
+<article class="comment" id="comment-58779">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wangzhenvs123</a></span> on <a href="http://www.acmerblog.com/quick-sort-5789.html#comment-58779" rel="nofollow"><time datetime="2015-04-21T06:23:04+00:00" pubdate="">2015年4月21日 at 上午6:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>very good solutions.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30350">
+<article class="comment" id="comment-30350">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jupiterhyun</a></span> on <a href="http://www.acmerblog.com/quick-sort-5789.html#comment-30350" rel="nofollow"><time datetime="2015-03-19T06:45:31+00:00" pubdate="">2015年3月19日 at 上午6:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>红绯鱼：<br/>
+这模板神了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30351">
+<article class="comment" id="comment-30351">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Ding Qiangyuan</a></span> on <a href="http://www.acmerblog.com/quick-sort-5789.html#comment-30351" rel="nofollow"><time datetime="2015-03-04T00:16:34+00:00" pubdate="">2015年3月4日 at 上午12:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>信息不全</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30349">
+<article class="comment" id="comment-30349">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tangzhihua</a></span> on <a href="http://www.acmerblog.com/quick-sort-5789.html#comment-30349" rel="nofollow"><time datetime="2015-03-03T18:19:57+00:00" pubdate="">2015年3月3日 at 下午6:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚开始学，非常好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58776">
+<article class="comment" id="comment-58776">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gyouxu</a></span> on <a href="http://www.acmerblog.com/quick-sort-5789.html#comment-58776" rel="nofollow"><time datetime="2015-01-25T08:23:27+00:00" pubdate="">2015年1月25日 at 上午8:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58778">
+<article class="comment" id="comment-58778">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Klaus</a></span> on <a href="http://www.acmerblog.com/quick-sort-5789.html#comment-58778" rel="nofollow"><time datetime="2014-11-22T07:04:00+00:00" pubdate="">2014年11月22日 at 上午7:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>理解错了。。。。。谢谢楼主~~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58777">
+<article class="comment" id="comment-58777">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">vincent_ynh</a></span> on <a href="http://www.acmerblog.com/quick-sort-5789.html#comment-58777" rel="nofollow"><time datetime="2014-08-17T11:46:26+00:00" pubdate="">2014年8月17日 at 上午11:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第36行，struct node **head_ref，怎么理解，那个函数感觉不是很懂啊！？？弱渣求助</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58781">
+<article class="comment" id="comment-58781">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rtaxa</a></span> on <a href="http://www.acmerblog.com/quick-sort-5789.html#comment-58781" rel="nofollow"><time datetime="2014-08-07T09:28:36+00:00" pubdate="">2014年8月7日 at 上午9:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>博主，你这个是wordpress哪个主题啊，不错哦~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58780">
+<article class="comment" id="comment-58780">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ruoshui</a></span> on <a href="http://www.acmerblog.com/quick-sort-5789.html#comment-58780" rel="nofollow"><time datetime="2014-07-21T14:20:13+00:00" pubdate="">2014年7月21日 at 下午2:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>能不能说下这个是用的什么算法策略？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-358">
+<article class="comment" id="comment-358">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://t.qq.com/caimingchao2012" rel="external nofollow">蔡明超</a></span> on <a href="http://www.acmerblog.com/quick-sort-5789.html#comment-358" rel="nofollow"><time datetime="2014-05-19T18:07:42+00:00" pubdate="">2014年5月19日 at 下午6:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>swap写成内联函数会不会好一些</p>
+</div>
+</article><!-- #comment-## -->
+<ul class="children">
+<li class="comment byuser comment-author-admin bypostauthor odd alt depth-2" id="li-comment-359">
+<article class="comment" id="comment-359">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://weibo.com/itong2055" rel="external nofollow">管理员</a></span> on <a href="http://www.acmerblog.com/quick-sort-5789.html#comment-359" rel="nofollow"><time datetime="2014-05-19T18:57:44+00:00" pubdate="">2014年5月19日 at 下午6:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个差别应该不会太大，或许编辑器就自动优化成内联函数了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ul><!-- .children -->
+</li><!-- #comment-## -->
+</ol>

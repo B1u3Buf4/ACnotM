@@ -1,0 +1,538 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-23</div>
+<div class="tit"><h1 class="entry-title">HDU 1815 Building roads-图论-[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/graph/connectivity" rel="category tag" title="查看连通性问题中的全部文章">连通性问题</a></span><span class="i4">围观731次</span><span class="i3"><a class="ds-thread-count" data-thread-key="2787" href="http://www.acmerblog.com/hdu-1815-building-roads-2787.html#comments" title="《HDU 1815 Building roads-图论-[解题报告] C++》上的评论">25 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Building roads</h1>
+</div>
+<div>
+<p class="mytitle">问题描述 :</p>
+</div>
+<div class="mypanel">Farmer John’s farm has N barns, and there are some cows that live in each barn. The cows like to drop around, so John wants to build some roads to connect these barns. If he builds roads for every pair of different barns, then he must build N * (N – 1) / 2 roads, which is so costly that cheapskate John will never do that, though that’s the best choice for the cows.Clever John just had another good idea. He first builds two transferring point S1 and S2, and then builds a road connecting S1 and S2 and N roads connecting each barn with S1 or S2, namely every barn will connect with S1 or S2, but not both. So that every pair of barns will be connected by the roads. To make the cows don’t spend too much time while dropping around, John wants to minimize the maximum of distances between every pair of barns.That’s not the whole story because there is another troublesome problem. The cows of some barns hate each other, and John can’t connect their barns to the same transferring point. The cows of some barns are friends with each other, and John must connect their barns to the same transferring point. What a headache! Now John turns to you for help. Your task is to find a feasible optimal road-building scheme to make the maximum of distances between every pair of barns as short as possible, which means that you must decide which transferring point each barn should connect to.
+<p>We have known the coordinates of S1, S2 and the N barns, the pairs of barns in which the cows hate each other, and the pairs of barns in which the cows are friends with each other.</p>
+<p>Note that John always builds roads vertically and horizontally, so the length of road between two places is their Manhattan distance. For example, saying two points with coordinates (x1, y1) and (x2, y2), the Manhattan distance between them is |x1 – x2| + |y1 – y2|.</p>
+</div>
+<div>
+<p class="mytitle">输入:</p>
+</div>
+<div class="mypanel">The first line of input consists of 3 integers N, A and B (2 &lt;= N &lt;= 500, 0 &lt;= A &lt;= 1000, 0 &lt;= B &lt;= 1000), which are the number of barns, the number of pairs of barns in which the cows hate each other and the number of pairs of barns in which the cows are friends with each other.Next line contains 4 integer sx1, sy1, sx2, sy2, which are the coordinates of two different transferring point S1 and S2 respectively.Each of the following N line contains two integer x and y. They are coordinates of the barns from the first barn to the last one.
+<p>Each of the following A lines contains two different integers i and j(1 &lt;= i &lt; j &lt;= N), which represent the i-th and j-th barns in which the cows hate each other.</p>
+<p>The same pair of barns never appears more than once.</p>
+<p>Each of the following B lines contains two different integers i and j(1 &lt;= i &lt; j &lt;= N), which represent the i-th and j-th barns in which the cows are friends with each other. The same pair of barns never appears more than once.</p>
+<p>You should note that all the coordinates are in the range [-1000000, 1000000].</p>
+</div>
+<div>
+<p class="mytitle">输出:</p>
+</div>
+<div class="mypanel">You just need output a line containing a single integer, which represents the maximum of the distances between every pair of barns, if John selects the optimal road-building scheme. Note if there is no feasible solution, just output -1.</div>
+<div>
+<p class="mytitle">样例输入:</p>
+</div>
+<pre class="mypanel iopanel">4 1 1
+12750 28546 15361 32055
+6706 3887
+10754 8166
+12668 19380
+15788 16059
+3 4
+2 3</pre>
+<div>
+<p class="mytitle">样例输出:</p>
+</div>
+<pre class="mypanel iopanel">53246</pre>
+<p><!-- problem end --></p>
+<p><span style="font-size: 18px;"><span style="font-family: Arial; line-height: 26px;">每个牛棚跟一个中转站相连，求最小的任意两牛棚间的距离中的最大值</span></span></p>
+<p> </p>
+<p><span style="font-size: 18px;">又是2—SAT+二分验证求最小的最大值，</span></p>
+<p><span style="font-size: 18px;">2—SAT：如果a与b矛盾，建边a—&gt;b‘；</span></p>
+<p><span style="font-size: 18px;">枚举任意两牛棚之间的距离，如果大于最大距离，就要相反的方式连接，</span></p>
+<p><span style="font-size: 18px;">刚开始没有考虑两个中转站的距离，结果一直不对，还以为算法有bug，郁闷了半天。</span></p>
+<p><span style="font-size: 18px;">如果两牛棚连接在两个不同的中转站，两点间的距离要加上中转站的距离</span></p>
+<pre class="brush:cpp ">stdio.h&gt;
+#include&lt;stack&gt;
+#include&lt;string.h&gt;
+#define N 2000
+#define M 1000
+using namespace std;
+struct edage
+{
+	int ed;
+	int next;
+}E[M*M];
+struct op
+{
+	int x,y;
+}P[N],P0,P1;
+int n,low[N],dfs[N],ins[N],map[N*2],idx,ans,first[N],rfirst[N],belong[N],num,rnum,len;
+stack&lt;int&gt;Q;
+void addeage(int x,int y)
+{
+	E[num].ed=y;
+	E[num].next=first[x];
+	first[x]=num++;
+}
+int dis(op a,op b)
+{
+	return abs(a.x-b.x)+abs(a.y-b.y);
+}
+void Tarjan(int x)
+{
+	int p,v;
+	low[x]=dfs[x]=idx++;
+	ins[x]=1;
+	Q.push(x);
+	for(p=first[x];p!=-1;p=E[p].next)
+	{
+		v=E[p].ed;
+		if(dfs[v]==-1)
+		{
+			Tarjan(v);
+			low[x]=low[x]&gt;low[v]?low[v]:low[x];
+		}
+		else if(ins[v]==1)
+		{
+			low[x]=low[x]&gt;dfs[v]?dfs[v]:low[x];
+		}
+	}
+	if(dfs[x]==low[x])
+	{
+		do
+		{
+			v=Q.top();
+			Q.pop();
+			ins[v]=0;
+			belong[v]=ans;
+		}while(v!=x);
+		ans++;
+	}
+}
+int sum=0;
+int judge(int d,int min,int max)
+{
+	int i,j;
+	memcpy(first,rfirst,sizeof(first));
+	num=rnum;
+	for(i=1;i&lt;=n;i++)//枚举两点之间的距离
+		for(j=i+1;j&lt;=n;j++)
+		{
+			if(map[i]+map[j]&gt;d)//连接相同同中转站不符合
+			{
+				addeage(i,j+n);
+				addeage(j,i+n);
+			}
+			if(map[i]+map[j+n]+len&gt;d)//连接不同的中转站不符合
+			{
+				addeage(i,j);
+				addeage(j+n,i+n);
+			}
+			if(map[i+n]+map[j]+len&gt;d)//连接不同的中转站不符合
+			{
+				addeage(i+n,j+n);
+				addeage(j,i);
+			}
+			if(map[i+n]+map[j+n]&gt;d)//连接相同同中转站不符合
+			{
+				addeage(i+n,j);
+				addeage(j+n,i);
+			}
+		}
+		memset(low,0,sizeof(low));
+		memset(ins,0,sizeof(ins));
+		memset(dfs,-1,sizeof(dfs));
+		memset(belong,0,sizeof(belong));
+		idx=ans=1;
+		for(i=1;i&lt;=n*2;i++)
+		{
+			if(dfs[i]==-1)
+				Tarjan(i);
+		}
+		for(i=1;i&lt;=n;i++)
+			if(belong[i]==belong[i+n])
+				return 0;
+			return 1;
+}
+int main()
+{
+	int i,m,k,min,max,mid,flag,x,y,mmax;
+	while(scanf("%d%d%d",&amp;n,&amp;m,&amp;k)!=-1)
+	{
+		memset(first,-1,sizeof(first));
+		num=0;
+		scanf("%d%d%d%d",&amp;P0.x,&amp;P0.y,&amp;P1.x,&amp;P1.y);
+		for(i=1;i&lt;=n;i++)
+			scanf("%d%d",&amp;P[i].x,&amp;P[i].y);
+		min=999999999;
+		max=-1;
+		for(i=1;i&lt;=n;i++)
+		{
+           map[i]=dis(P[i],P0);
+		   map[i+n]=dis(P[i],P1);
+		   if(min&gt;map[i])
+			   min=map[i];
+		   if(min&gt;map[i+n])
+			   min=map[i+n];
+		   if(max&lt;map[i])
+			   max=map[i];
+		   if(max&lt;map[i+n])
+			   max=map[i+n];
+		}
+		len=dis(P0,P1);
+		for(i=0;i&lt;m;i++)
+		{
+			scanf("%d%d",&amp;x,&amp;y);
+			addeage(x,y+n);
+			addeage(y,x+n);
+			addeage(x+n,y);
+			addeage(y+n,x);
+		}
+		for(i=0;i&lt;k;i++)
+		{
+			scanf("%d%d",&amp;x,&amp;y);
+			addeage(x,y);
+			addeage(x+n,y+n);
+			addeage(y,x);
+			addeage(y+n,x+n);
+		}
+		memcpy(rfirst,first,sizeof(first));
+		rnum=num;
+		 min=min*2,max=max*2+len;
+		mmax=-1;flag=0;
+		while(min&lt;=max)
+		{
+			mid=(min+max)/2;
+			if(judge(mid,min,max))
+			{
+				max=mid-1;
+					mmax=mid;
+			}
+			else min=mid+1;
+		}
+		printf("%d\n",mmax);
+	}
+	return 0;
+}</pre>
+<p>解题报告转自：http://blog.csdn.net/aixiaoling1314/article/details/9377397</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-89027">
+<article class="comment" id="comment-89027">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524284" rel="external nofollow">新用户552349</a></span> on <a href="http://www.acmerblog.com/hdu-1815-building-roads-2787.html#comment-89027" rel="nofollow"><time datetime="2017-04-13T10:13:22+00:00" pubdate="">2017年4月13日 at 上午10:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>又把所为的‘现代京剧红色娘子军’给搞到春晚上跳去了，仿拂又会到了我小时候那恐怖的年代！杀！杀！杀！打·砸·抢啊！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-89026">
+<article class="comment" id="comment-89026">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524284" rel="external nofollow">新用户552349</a></span> on <a href="http://www.acmerblog.com/hdu-1815-building-roads-2787.html#comment-89026" rel="nofollow"><time datetime="2017-04-13T10:13:22+00:00" pubdate="">2017年4月13日 at 上午10:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>又把所为的‘现代京剧红色娘子军’给搞到春晚上跳去了，仿拂又会到了我小时候那恐怖的年代！杀！杀！杀！打·砸·抢啊！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-89025">
+<article class="comment" id="comment-89025">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524284" rel="external nofollow">新用户552349</a></span> on <a href="http://www.acmerblog.com/hdu-1815-building-roads-2787.html#comment-89025" rel="nofollow"><time datetime="2017-04-13T10:13:22+00:00" pubdate="">2017年4月13日 at 上午10:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>又把所为的‘现代京剧红色娘子军’给搞到春晚上跳去了，仿拂又会到了我小时候那恐怖的年代！杀！杀！杀！打·砸·抢啊！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-89024">
+<article class="comment" id="comment-89024">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524284" rel="external nofollow">新用户552349</a></span> on <a href="http://www.acmerblog.com/hdu-1815-building-roads-2787.html#comment-89024" rel="nofollow"><time datetime="2017-04-13T10:13:22+00:00" pubdate="">2017年4月13日 at 上午10:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>又把所为的‘现代京剧红色娘子军’给搞到春晚上跳去了，仿拂又会到了我小时候那恐怖的年代！杀！杀！杀！打·砸·抢啊！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-89023">
+<article class="comment" id="comment-89023">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524284" rel="external nofollow">新用户552349</a></span> on <a href="http://www.acmerblog.com/hdu-1815-building-roads-2787.html#comment-89023" rel="nofollow"><time datetime="2017-04-13T10:13:22+00:00" pubdate="">2017年4月13日 at 上午10:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>又把所为的‘现代京剧红色娘子军’给搞到春晚上跳去了，仿拂又会到了我小时候那恐怖的年代！杀！杀！杀！打·砸·抢啊！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-89022">
+<article class="comment" id="comment-89022">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524284" rel="external nofollow">新用户552349</a></span> on <a href="http://www.acmerblog.com/hdu-1815-building-roads-2787.html#comment-89022" rel="nofollow"><time datetime="2017-04-13T10:13:22+00:00" pubdate="">2017年4月13日 at 上午10:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>又把所为的‘现代京剧红色娘子军’给搞到春晚上跳去了，仿拂又会到了我小时候那恐怖的年代！杀！杀！杀！打·砸·抢啊！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-89021">
+<article class="comment" id="comment-89021">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524284" rel="external nofollow">新用户552349</a></span> on <a href="http://www.acmerblog.com/hdu-1815-building-roads-2787.html#comment-89021" rel="nofollow"><time datetime="2017-04-13T10:13:22+00:00" pubdate="">2017年4月13日 at 上午10:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>又把所为的‘现代京剧红色娘子军’给搞到春晚上跳去了，仿拂又会到了我小时候那恐怖的年代！杀！杀！杀！打·砸·抢啊！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-89020">
+<article class="comment" id="comment-89020">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524284" rel="external nofollow">新用户552349</a></span> on <a href="http://www.acmerblog.com/hdu-1815-building-roads-2787.html#comment-89020" rel="nofollow"><time datetime="2017-04-13T10:13:22+00:00" pubdate="">2017年4月13日 at 上午10:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>又把所为的‘现代京剧红色娘子军’给搞到春晚上跳去了，仿拂又会到了我小时候那恐怖的年代！杀！杀！杀！打·砸·抢啊！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-89019">
+<article class="comment" id="comment-89019">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524284" rel="external nofollow">新用户552349</a></span> on <a href="http://www.acmerblog.com/hdu-1815-building-roads-2787.html#comment-89019" rel="nofollow"><time datetime="2017-04-13T10:13:22+00:00" pubdate="">2017年4月13日 at 上午10:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>又把所为的‘现代京剧红色娘子军’给搞到春晚上跳去了，仿拂又会到了我小时候那恐怖的年代！杀！杀！杀！打·砸·抢啊！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-89018">
+<article class="comment" id="comment-89018">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524284" rel="external nofollow">新用户552349</a></span> on <a href="http://www.acmerblog.com/hdu-1815-building-roads-2787.html#comment-89018" rel="nofollow"><time datetime="2017-04-13T10:13:22+00:00" pubdate="">2017年4月13日 at 上午10:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>又把所为的‘现代京剧红色娘子军’给搞到春晚上跳去了，仿拂又会到了我小时候那恐怖的年代！杀！杀！杀！打·砸·抢啊！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-89017">
+<article class="comment" id="comment-89017">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524284" rel="external nofollow">新用户552349</a></span> on <a href="http://www.acmerblog.com/hdu-1815-building-roads-2787.html#comment-89017" rel="nofollow"><time datetime="2017-04-13T10:13:22+00:00" pubdate="">2017年4月13日 at 上午10:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>又把所为的‘现代京剧红色娘子军’给搞到春晚上跳去了，仿拂又会到了我小时候那恐怖的年代！杀！杀！杀！打·砸·抢啊！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-89016">
+<article class="comment" id="comment-89016">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524284" rel="external nofollow">新用户552349</a></span> on <a href="http://www.acmerblog.com/hdu-1815-building-roads-2787.html#comment-89016" rel="nofollow"><time datetime="2017-04-13T10:13:22+00:00" pubdate="">2017年4月13日 at 上午10:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>又把所为的‘现代京剧红色娘子军’给搞到春晚上跳去了，仿拂又会到了我小时候那恐怖的年代！杀！杀！杀！打·砸·抢啊！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-89015">
+<article class="comment" id="comment-89015">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524284" rel="external nofollow">新用户552349</a></span> on <a href="http://www.acmerblog.com/hdu-1815-building-roads-2787.html#comment-89015" rel="nofollow"><time datetime="2017-04-13T10:13:22+00:00" pubdate="">2017年4月13日 at 上午10:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>又把所为的‘现代京剧红色娘子军’给搞到春晚上跳去了，仿拂又会到了我小时候那恐怖的年代！杀！杀！杀！打·砸·抢啊！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-89014">
+<article class="comment" id="comment-89014">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524284" rel="external nofollow">新用户552349</a></span> on <a href="http://www.acmerblog.com/hdu-1815-building-roads-2787.html#comment-89014" rel="nofollow"><time datetime="2017-04-13T10:13:22+00:00" pubdate="">2017年4月13日 at 上午10:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>又把所为的‘现代京剧红色娘子军’给搞到春晚上跳去了，仿拂又会到了我小时候那恐怖的年代！杀！杀！杀！打·砸·抢啊！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-17242">
+<article class="comment" id="comment-17242">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">michaelwen</a></span> on <a href="http://www.acmerblog.com/hdu-1815-building-roads-2787.html#comment-17242" rel="nofollow"><time datetime="2015-06-06T22:17:30+00:00" pubdate="">2015年6月6日 at 下午10:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>/*<br/>
+ * =====================================================================================<br/>
+ *<br/>
+ *       Filename:  1366.cc<br/>
+ *<br/>
+ *    Description:<br/>
+ *<br/>
+ *        Version:  1.0<br/>
+ *        Created:  2014年01月06日 14时52分14秒<br/>
+ *       Revision:  none<br/>
+ *       Compiler:  gcc<br/>
+ *<br/>
+ *         Author:  Wenxian Ni (Hello World~), <a href="mailto:niwenxianq@qq.com">niwenxianq@qq.com</a><br/>
+ *   Organization:  AMS/ICT<br/>
+ *<br/>
+ * =====================================================================================<br/>
+ */</p>
+<p>#include<br/>
+#include </p>
+<p>using namespace std;</p>
+<p>int main()<br/>
+{<br/>
+    stack st;<br/>
+    int n,i,j;<br/>
+    int test;<br/>
+    int a[100001];<br/>
+    int b[100001];<br/>
+    while(cin&gt;&gt;n)<br/>
+    {<br/>
+       for(i=1;i&gt;a[i];<br/>
+       for(i=1;i&gt;b[i];<br/>
+        //st.clear();<br/>
+        while(!st.empty())<br/>
+            st.pop();<br/>
+        i = 1;<br/>
+        j = 1;</p>
+<p>        while(in)<br/>
+                break;<br/>
+            }<br/>
+            while(!st.empty()&amp;&amp;st.top()==b[j])<br/>
+            {<br/>
+                st.pop();<br/>
+                j++;<br/>
+            }<br/>
+        }<br/>
+        if(st.empty())<br/>
+            cout&lt;&lt;"YES"&lt;&lt;endl;<br/>
+        else<br/>
+            cout&lt;&lt;"NO"&lt;&lt;endl;<br/>
+    }<br/>
+    return 0;<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-42932">
+<article class="comment" id="comment-42932">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaotong2055</a></span> on <a href="http://www.acmerblog.com/hdu-1815-building-roads-2787.html#comment-42932" rel="nofollow"><time datetime="2015-05-29T01:41:20+00:00" pubdate="">2015年5月29日 at 上午1:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为nn</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-17237">
+<article class="comment" id="comment-17237">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">warriorbrant</a></span> on <a href="http://www.acmerblog.com/hdu-1815-building-roads-2787.html#comment-17237" rel="nofollow"><time datetime="2015-02-11T04:54:07+00:00" pubdate="">2015年2月11日 at 上午4:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-42933">
+<article class="comment" id="comment-42933">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">aaa</a></span> on <a href="http://www.acmerblog.com/hdu-1815-building-roads-2787.html#comment-42933" rel="nofollow"><time datetime="2014-10-12T17:55:34+00:00" pubdate="">2014年10月12日 at 下午5:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我没看懂题目<br/>
+2<br/>
+5 6 -1 5 4 -7<br/>
+7 0 6 -1 1 -6 7 -5<br/>
+我觉得第一个应该是5 6 -1 5 4 输出是19 5 4<br/>
+第二个是7 0 6 -1 1 -6 7输出是14 7 7<br/>
+不知道题目例子是怎么得出来的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-62036">
+<article class="comment" id="comment-62036">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">lintong</a></span> on <a href="http://www.acmerblog.com/hdu-1815-building-roads-2787.html#comment-62036" rel="nofollow"><time datetime="2014-10-03T03:24:38+00:00" pubdate="">2014年10月3日 at 上午3:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>文章写得挺好，就是最后的斐波那契那个没有看明白</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-17240">
+<article class="comment" id="comment-17240">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ygwx</a></span> on <a href="http://www.acmerblog.com/hdu-1815-building-roads-2787.html#comment-17240" rel="nofollow"><time datetime="2014-07-22T04:06:00+00:00" pubdate="">2014年7月22日 at 上午4:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实就是DFS搜索，数据量较小，穷举了所有情况</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-17241">
+<article class="comment" id="comment-17241">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fastislow</a></span> on <a href="http://www.acmerblog.com/hdu-1815-building-roads-2787.html#comment-17241" rel="nofollow"><time datetime="2014-05-23T06:49:32+00:00" pubdate="">2014年5月23日 at 上午6:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>纠正一个错误，二分查找树的中序遍历获得元素的升序排列。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-42931">
+<article class="comment" id="comment-42931">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaotong2055</a></span> on <a href="http://www.acmerblog.com/hdu-1815-building-roads-2787.html#comment-42931" rel="nofollow"><time datetime="2014-05-18T23:02:18+00:00" pubdate="">2014年5月18日 at 下午11:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很有意思，可惜我很菜啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-17239">
+<article class="comment" id="comment-17239">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">753951</a></span> on <a href="http://www.acmerblog.com/hdu-1815-building-roads-2787.html#comment-17239" rel="nofollow"><time datetime="2014-05-13T19:53:18+00:00" pubdate="">2014年5月13日 at 下午7:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢指出，已改正</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-17238">
+<article class="comment" id="comment-17238">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jintianya</a></span> on <a href="http://www.acmerblog.com/hdu-1815-building-roads-2787.html#comment-17238" rel="nofollow"><time datetime="2014-03-19T16:11:57+00:00" pubdate="">2014年3月19日 at 下午4:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢提醒</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-62035">
+<article class="comment" id="comment-62035">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">HenrryCheng</a></span> on <a href="http://www.acmerblog.com/hdu-1815-building-roads-2787.html#comment-62035" rel="nofollow"><time datetime="2014-03-09T18:29:24+00:00" pubdate="">2014年3月9日 at 下午6:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这种题解就相当于直接贴代码了，，想看的是思路</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

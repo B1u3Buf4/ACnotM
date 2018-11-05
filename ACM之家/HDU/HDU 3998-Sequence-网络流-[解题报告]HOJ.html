@@ -1,0 +1,476 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>04-14</div>
+<div class="tit"><h1 class="entry-title">HDU 3998-Sequence-网络流-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a>, <a href="http://www.acmerblog.com/category/graph/flow" rel="category tag" title="查看网络流中的全部文章">网络流</a></span><span class="i4">围观474次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7001" href="http://www.acmerblog.com/hdu-3998-sequence-7001.html#comments" title="《HDU 3998-Sequence-网络流-[解题报告]HOJ》上的评论">23 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Sequence</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+There is a sequence X (i.e. x[1], x[2], …, x[n]). We define increasing subsequence of X <br/>as x[i1], x[i2],…,x[ik], which satisfies follow conditions:<br/>1) x[i1] &lt; x[i2],…,&lt;x[ik];<br/>2) 1&lt;=i1 &lt; i2,…,&lt;ik&lt;=n
+<p>As an excellent program designer, you must know how to find the maximum length of the <br/>increasing sequense, which is defined as s. Now, the next question is how many increasing <br/>subsequence with s-length can you find out from the sequence X.</p>
+<p>For example, in one case, if s = 3, and you can find out 2 such subsequence A and B from X.<br/>1) A = a1, a2, a3. B = b1, b2, b3.<br/>2) <font color="red">Each ai or bj(i,j = 1,2,3) can only be chose once at most.</font></p>
+<p>Now, the question is:<br/>1) Find the maximum length of increasing subsequence of X(i.e. s).<br/>2) Find the number of increasing subsequence with s-length under conditions described (i.e. num). </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input file have many cases. Each case will give a integer number n.The next line will <br/>have n numbers. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input file have many cases. Each case will give a integer number n.The next line will <br/>have n numbers.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+4
+3 6 2 5</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+2</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp" name="code">/*
+类似于网络流24题中的一道（求最长上升子序列的最多个数）：
+构图方案：
+首先求出LIS；
+然后拆点 建边Edge(i,i+n,1) 因为没个点只能用一次，所以边的容量为1
+然后对于每个dp[i]==1的建边Edge(s,i,1)
+dp[i]==k的建边Edge(i+n,t,1);
+dp[i]==dp[j]+1 建边Edge(j+n,i,1);
+然后sap 求最大流就OK了
+*/
+#include &lt;iostream&gt;
+#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+#include &lt;queue&gt;
+#include &lt;algorithm&gt;
+using namespace std;
+#define M 10100
+int gap[M],dis[M],pre[M],cur[M],dp[M];
+int NE,NV,sink,source;
+int head[M],p[M],k,n;
+struct Node
+{
+    int c,pos,next;
+} E[999999];
+#define FF(i,NV) for(int i=0;i&lt;NV;i++)
+int sap(int s,int t)
+{
+    //memset(pre,-1,sizeof(pre));
+    memset(dis,0,sizeof(int)*(NV+1));
+    memset(gap,0,sizeof(int)*(NV+1));
+    FF(i,NV) cur[i] = head[i];
+    int u = pre[s] = s,maxflow = 0,aug = 1&lt;&lt;29;
+    gap[0] = NV;
+    while(dis[s] &lt; NV)
+    {
+loop:
+        for(int &amp;i = cur[u]; i != -1; i = E[i].next)
+        {
+            int v = E[i].pos;
+            if(E[i].c &amp;&amp; dis[u] == dis[v] + 1)
+            {
+                aug=min(aug,E[i].c);
+                pre[v] = u;
+                u = v;
+                if(v == t)
+                {
+                    maxflow += aug;
+                    for(u = pre[u]; v != s; v = u,u = pre[u])
+                    {
+                        E[cur[u]].c -= aug;
+                        E[cur[u]^1].c += aug;
+                    }
+                    aug = 1&lt;&lt;29;
+                }
+
+                goto loop;
+            }
+        }
+
+        int mindis = NV;
+        for(int i = head[u]; i != -1 ; i = E[i].next)
+        {
+            int v = E[i].pos;
+            if(E[i].c &amp;&amp; mindis &gt; dis[v])
+            {
+                cur[u] = i;
+                mindis = dis[v];
+            }
+        }
+        if( (--gap[dis[u]]) == 0)break;
+        gap[ dis[u] = mindis+1 ] ++;
+        u = pre[u];
+    }
+    return maxflow;
+}
+void addEdge(int u,int v,int c )
+{
+    E[NE].c = c;
+    E[NE].pos = v;
+    E[NE].next = head[u];
+    head[u] = NE++;
+    E[NE].c = 0;
+    E[NE].pos = u;
+    E[NE].next = head[v];
+    head[v] = NE++;
+}
+int LIS()
+{
+    int i,j,ans=0;
+    dp[1]=1;
+    for(i=2;i&lt;=n;++i)
+    {
+        dp[i]=1;
+         for(j=1;j&lt;i;++j)
+         {
+             if(p[j]&lt;p[i]&amp;&amp;dp[j]&gt;=dp[i])dp[i]=dp[j]+1;
+         }
+         ans=max(ans,dp[i]);
+    }
+    return ans;
+}
+int main()
+{
+    int i,j;
+    while(scanf("%d",&amp;n)!=EOF)
+    {
+        NE=source=0;
+        sink=n&lt;&lt;1|1;
+        NV=sink+1;
+        memset(head,-1,sizeof(head));
+       // memset(dp,0,sizeof(dp));
+        for(i=1;i&lt;=n;i++)
+        {
+            scanf("%d",&amp;p[i]);
+        }
+        k=LIS();
+        for(i=1;i&lt;=n;i++)
+        {
+            addEdge(i,i+n,1);
+            if(dp[i]==1)
+            addEdge(source,i,1);
+            if(dp[i]==k)
+            addEdge(i+n,sink,1);
+            for(j=i+1;j&lt;=n;++j)
+               if(dp[j]==dp[i]+1)addEdge(i+n,j,n);
+        }
+        printf("%d\n%d\n",k,sap(source,sink));
+    }
+    return 0;
+}
+/*
+4
+3 6 2 5
+*/
+</pre>
+<p></p>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/azheng51714/article/details/8060480</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-100041">
+<article class="comment" id="comment-100041">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919464240" rel="external nofollow">新用户705839</a></span> on <a href="http://www.acmerblog.com/hdu-3998-sequence-7001.html#comment-100041" rel="nofollow"><time datetime="2017-04-20T21:02:05+00:00" pubdate="">2017年4月20日 at 下午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>house address</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70939">
+<article class="comment" id="comment-70939">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529292" rel="external nofollow">新用户579145</a></span> on <a href="http://www.acmerblog.com/hdu-3998-sequence-7001.html#comment-70939" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跳蛋 都没有互动，真人可解锁的姿势 多了去</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70938">
+<article class="comment" id="comment-70938">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529292" rel="external nofollow">新用户579145</a></span> on <a href="http://www.acmerblog.com/hdu-3998-sequence-7001.html#comment-70938" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跳蛋 都没有互动，真人可解锁的姿势 多了去</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70937">
+<article class="comment" id="comment-70937">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529292" rel="external nofollow">新用户579145</a></span> on <a href="http://www.acmerblog.com/hdu-3998-sequence-7001.html#comment-70937" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跳蛋 都没有互动，真人可解锁的姿势 多了去</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70936">
+<article class="comment" id="comment-70936">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529292" rel="external nofollow">新用户579145</a></span> on <a href="http://www.acmerblog.com/hdu-3998-sequence-7001.html#comment-70936" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跳蛋 都没有互动，真人可解锁的姿势 多了去</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70935">
+<article class="comment" id="comment-70935">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529292" rel="external nofollow">新用户579145</a></span> on <a href="http://www.acmerblog.com/hdu-3998-sequence-7001.html#comment-70935" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跳蛋 都没有互动，真人可解锁的姿势 多了去</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70934">
+<article class="comment" id="comment-70934">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529292" rel="external nofollow">新用户579145</a></span> on <a href="http://www.acmerblog.com/hdu-3998-sequence-7001.html#comment-70934" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跳蛋 都没有互动，真人可解锁的姿势 多了去</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70933">
+<article class="comment" id="comment-70933">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529292" rel="external nofollow">新用户579145</a></span> on <a href="http://www.acmerblog.com/hdu-3998-sequence-7001.html#comment-70933" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跳蛋 都没有互动，真人可解锁的姿势 多了去</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70932">
+<article class="comment" id="comment-70932">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529292" rel="external nofollow">新用户579145</a></span> on <a href="http://www.acmerblog.com/hdu-3998-sequence-7001.html#comment-70932" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跳蛋 都没有互动，真人可解锁的姿势 多了去</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70931">
+<article class="comment" id="comment-70931">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529292" rel="external nofollow">新用户579145</a></span> on <a href="http://www.acmerblog.com/hdu-3998-sequence-7001.html#comment-70931" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跳蛋 都没有互动，真人可解锁的姿势 多了去</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70930">
+<article class="comment" id="comment-70930">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529292" rel="external nofollow">新用户579145</a></span> on <a href="http://www.acmerblog.com/hdu-3998-sequence-7001.html#comment-70930" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跳蛋 都没有互动，真人可解锁的姿势 多了去</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51807">
+<article class="comment" id="comment-51807">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zclzcllove</a></span> on <a href="http://www.acmerblog.com/hdu-3998-sequence-7001.html#comment-51807" rel="nofollow"><time datetime="2015-07-14T12:37:01+00:00" pubdate="">2015年7月14日 at 下午12:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>/*<br/>
+ * =====================================================================================<br/>
+ *<br/>
+ *       Filename:  1366.cc<br/>
+ *<br/>
+ *    Description:<br/>
+ *<br/>
+ *        Version:  1.0<br/>
+ *        Created:  2014年01月06日 14时52分14秒<br/>
+ *       Revision:  none<br/>
+ *       Compiler:  gcc<br/>
+ *<br/>
+ *         Author:  Wenxian Ni (Hello World~), <a href="mailto:niwenxianq@qq.com">niwenxianq@qq.com</a><br/>
+ *   Organization:  AMS/ICT<br/>
+ *<br/>
+ * =====================================================================================<br/>
+ */</p>
+<p>#include<br/>
+#include </p>
+<p>using namespace std;</p>
+<p>int main()<br/>
+{<br/>
+    stack st;<br/>
+    int n,i,j;<br/>
+    int test;<br/>
+    int a[100001];<br/>
+    int b[100001];<br/>
+    while(cin&gt;&gt;n)<br/>
+    {<br/>
+       for(i=1;i&gt;a[i];<br/>
+       for(i=1;i&gt;b[i];<br/>
+        //st.clear();<br/>
+        while(!st.empty())<br/>
+            st.pop();<br/>
+        i = 1;<br/>
+        j = 1;</p>
+<p>        while(in)<br/>
+                break;<br/>
+            }<br/>
+            while(!st.empty()&amp;&amp;st.top()==b[j])<br/>
+            {<br/>
+                st.pop();<br/>
+                j++;<br/>
+            }<br/>
+        }<br/>
+        if(st.empty())<br/>
+            cout&lt;&lt;"YES"&lt;&lt;endl;<br/>
+        else<br/>
+            cout&lt;&lt;"NO"&lt;&lt;endl;<br/>
+    }<br/>
+    return 0;<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-60039">
+<article class="comment" id="comment-60039">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yupeng.bai</a></span> on <a href="http://www.acmerblog.com/hdu-3998-sequence-7001.html#comment-60039" rel="nofollow"><time datetime="2015-07-12T07:20:25+00:00" pubdate="">2015年7月12日 at 上午7:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的题，还是能做出几道的，嘿嘿</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-60038">
+<article class="comment" id="comment-60038">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">nsoi_onion</a></span> on <a href="http://www.acmerblog.com/hdu-3998-sequence-7001.html#comment-60038" rel="nofollow"><time datetime="2015-07-09T12:35:44+00:00" pubdate="">2015年7月9日 at 下午12:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为要修改链表头(指针)，所以要用指针的指针</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64212">
+<article class="comment" id="comment-64212">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">21435048</a></span> on <a href="http://www.acmerblog.com/hdu-3998-sequence-7001.html#comment-64212" rel="nofollow"><time datetime="2015-06-28T10:25:51+00:00" pubdate="">2015年6月28日 at 上午10:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>博主的C++功底真是好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51810">
+<article class="comment" id="comment-51810">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xrjervis</a></span> on <a href="http://www.acmerblog.com/hdu-3998-sequence-7001.html#comment-51810" rel="nofollow"><time datetime="2015-06-06T01:03:12+00:00" pubdate="">2015年6月6日 at 上午1:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>递归还真是一门学问，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-60040">
+<article class="comment" id="comment-60040">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangduanjing</a></span> on <a href="http://www.acmerblog.com/hdu-3998-sequence-7001.html#comment-60040" rel="nofollow"><time datetime="2015-06-05T02:48:49+00:00" pubdate="">2015年6月5日 at 上午2:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51808">
+<article class="comment" id="comment-51808">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">kate19930802</a></span> on <a href="http://www.acmerblog.com/hdu-3998-sequence-7001.html#comment-51808" rel="nofollow"><time datetime="2015-06-03T20:47:57+00:00" pubdate="">2015年6月3日 at 下午8:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个解法好像不对</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-60037">
+<article class="comment" id="comment-60037">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">123456789_xd</a></span> on <a href="http://www.acmerblog.com/hdu-3998-sequence-7001.html#comment-60037" rel="nofollow"><time datetime="2015-05-28T20:52:13+00:00" pubdate="">2015年5月28日 at 下午8:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>DFS方法的原理还是不太清楚啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51809">
+<article class="comment" id="comment-51809">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">645198</a></span> on <a href="http://www.acmerblog.com/hdu-3998-sequence-7001.html#comment-51809" rel="nofollow"><time datetime="2015-05-28T04:37:20+00:00" pubdate="">2015年5月28日 at 上午4:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我又来学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35227">
+<article class="comment" id="comment-35227">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">20134055016</a></span> on <a href="http://www.acmerblog.com/hdu-3998-sequence-7001.html#comment-35227" rel="nofollow"><time datetime="2015-05-15T03:42:11+00:00" pubdate="">2015年5月15日 at 上午3:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>楼主 为什么输入的形式都不对  题目是不是弄错了？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51806">
+<article class="comment" id="comment-51806">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">everos</a></span> on <a href="http://www.acmerblog.com/hdu-3998-sequence-7001.html#comment-51806" rel="nofollow"><time datetime="2015-04-23T02:48:14+00:00" pubdate="">2015年4月23日 at 上午2:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35226">
+<article class="comment" id="comment-35226">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xuelanghu</a></span> on <a href="http://www.acmerblog.com/hdu-3998-sequence-7001.html#comment-35226" rel="nofollow"><time datetime="2015-04-18T01:25:58+00:00" pubdate="">2015年4月18日 at 上午1:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很强大啊，佩服</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

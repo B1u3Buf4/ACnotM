@@ -1,0 +1,407 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>02-27</div>
+<div class="tit"><h1 class="entry-title">HDU 3028-Robot-动态规划-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a></span><span class="i4">围观774次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4800" href="http://www.acmerblog.com/hdu-3028-robot-4800.html#comments" title="《HDU 3028-Robot-动态规划-[解题报告]HOJ》上的评论">24 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Robot</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+There are n places (numbered 1,2,…,n), and at any second X, in place A, it will appear k robots. Now you have normal weapons. If at the second X and you are in place A, you will distroy those k robots. Otherwise, you have a special weapon (named O4), if you at second X in the place A and use O4, you will destroy all the robots which appear in the place adjoining to A (OF COUSE include the place A). You move from place A to B (B adjoins to A) must use some second;
+<p>Now you have T second ,and ask you two questions:</p>
+<p>1. if you have an O4, how many robots can you destroy?(the maximum number);<br/>2. if you don’t have O4 but weapons, how many robots can you destroy?(the maximum number); </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+First line: n, m, T. (n is the number of place, m is the number of roads between place, T is the seconds you have), n ≤ 100, m ≤ 2500, t ≤ 1000;
+<p>From 2 to m + 1 line: every line contains 3 integers, P, Q, D, indicating that moving from place P to place Q will use D seconds (the roads are undirection);</p>
+<p>Next every line contains 3 integers, X, A, K, indicating at the X second, the place A will appear K robots;</p>
+<p>The last line contains three "0" indicating that the case is end; </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+First line: n, m, T. (n is the number of place, m is the number of roads between place, T is the seconds you have), n ≤ 100, m ≤ 2500, t ≤ 1000;
+<p>From 2 to m + 1 line: every line contains 3 integers, P, Q, D, indicating that moving from place P to place Q will use D seconds (the roads are undirection);</p>
+<p>Next every line contains 3 integers, X, A, K, indicating at the X second, the place A will appear K robots;</p>
+<p>The last line contains three "0" indicating that the case is end;</p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3 2 10
+1 2 1
+2 3 2
+1 1 1
+2 2 2
+3 3 3
+4 1 4
+2 3 3
+4 2 2
+6 1 4
+8 2 3
+10 2 2
+9 1 1
+7 1 5
+3 2 2
+8 1 8
+0 0 0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+32 29</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include&lt;cstdio&gt;
+#include&lt;set&gt;
+#include&lt;cstring&gt;
+using namespace std;
+#define max(a,b) ((a)&gt;(b)?(a):(b))
+int dp[1005][105][2];//dp[i][j] 第i秒在第j点时的最大值
+int times[105][1005];//times[i][j] i点在j秒有times[i][j]机器人出现
+int alltime[105][1005];//alltime[i][j]预处理i点在j秒本身与相邻点所有的机器人
+struct node
+{
+    int x,t;
+    bool operator &lt; (const node &amp;a) const
+    {
+        return x&lt;a.x;
+    }
+} temp;
+set&lt;node&gt; line[105];
+int check(int x,int t)
+{
+    //x相邻及本身在t秒的机器人数
+    int sumt=0;
+    for(set&lt;node&gt;::iterator it=line[x].begin(); it!=line[x].end(); ++it)
+        sumt+=times[it-&gt;x][t];
+    return sumt+times[x][t];
+}
+int main()
+{
+    int n,m,t,p,q,d,x,a,k;
+    for(; ~scanf("%d%d%d",&amp;n,&amp;m,&amp;t);)
+    {
+        int maxx[2];
+        maxx[0]=maxx[1]=0;
+        memset(dp,-1,sizeof(dp));
+        memset(times,0,sizeof(times));
+        for(int i=0; i&lt;=n; ++i) line[i].clear();
+        //邻接表储存边
+        for(int i=0; i&lt;m; ++i)
+        {
+            scanf("%d%d%d",&amp;p,&amp;q,&amp;d);
+            temp.t=d;
+            temp.x=q;
+            line[p].insert(temp);
+            temp.x=p;
+            line[q].insert(temp);
+        }
+        for(;scanf("%d%d%d",&amp;x,&amp;a,&amp;k);)
+        {
+            if(x+a+k==0)  break;
+            times[a][x]+=k;
+        }
+        for(int i=1; i&lt;=n; ++i)
+            for(int j=1; j&lt;=t; ++j)
+                alltime[i][j]=check(i,j);
+        for(int i=1; i&lt;=n; ++i)
+        {
+            dp[1][i][0]=times[i][1];
+            dp[1][i][1]=alltime[i][1];
+        }
+        for(int i=1; i&lt;=t; ++i)
+            for(int j=1; j&lt;=n; ++j)
+            {
+                if(dp[i][j][0]!=-1)
+                {
+                    for(set&lt;node&gt;::iterator it=line[j].begin(); it!=line[j].end(); ++it)
+                    {
+                        if(i+it-&gt;t&lt;=t)//转移到相邻点且目标时间不超范围
+                        {
+                            //从未使用O4的状态出发到相邻的点且在相邻点不使用O4
+                            dp[i+it-&gt;t][it-&gt;x][0]=max(dp[i+it-&gt;t][it-&gt;x][0],dp[i][j][0]+times[it-&gt;x][i+it-&gt;t]);
+                            //从未使用O4的状态出发到相邻的点且在相邻点使用O4
+                            dp[i+it-&gt;t][it-&gt;x][1]=max(dp[i+it-&gt;t][it-&gt;x][1],dp[i][j][0]+alltime[it-&gt;x][i+it-&gt;t]);
+                            //从使用O4的状态出发到相邻的点且在相邻点不使用O4
+                            dp[i+it-&gt;t][it-&gt;x][1]=max(dp[i+it-&gt;t][it-&gt;x][1],dp[i][j][1]+times[it-&gt;x][i+it-&gt;t]);
+                            //刷新最大值
+                            maxx[0]=max(maxx[0],dp[i+it-&gt;t][it-&gt;x][0]);
+                            maxx[1]=max(maxx[1],dp[i+it-&gt;t][it-&gt;x][1]);
+                        }
+                    }
+                    if(i+1&lt;=t)//停留在当前点的情况
+                    {
+                        dp[i+1][j][0]=max(dp[i+1][j][0],dp[i][j][0]+times[j][i+1]);
+                        dp[i+1][j][1]=max(dp[i+1][j][1],dp[i][j][0]+alltime[j][i+1]);
+                        dp[i+1][j][1]=max(dp[i+1][j][1],dp[i][j][1]+times[j][i+1]);
+                        maxx[0]=max(maxx[0],dp[i+1][j][0]);
+                        maxx[1]=max(maxx[1],dp[i+1][j][1]);
+                    }
+                }
+            }
+        printf("%d %d\n",maxx[1],maxx[0]);
+    }
+    return 0;
+}</pre>
+<p>参考：http://blog.csdn.net/acm_ted/article/details/7840341</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-79780">
+<article class="comment" id="comment-79780">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517419" rel="external nofollow">新用户499909</a></span> on <a href="http://www.acmerblog.com/hdu-3028-robot-4800.html#comment-79780" rel="nofollow"><time datetime="2017-04-12T16:41:16+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>您怎么知道8月5日更新啊，大神请指教。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79779">
+<article class="comment" id="comment-79779">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517419" rel="external nofollow">新用户499909</a></span> on <a href="http://www.acmerblog.com/hdu-3028-robot-4800.html#comment-79779" rel="nofollow"><time datetime="2017-04-12T16:41:16+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>您怎么知道8月5日更新啊，大神请指教。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79778">
+<article class="comment" id="comment-79778">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517419" rel="external nofollow">新用户499909</a></span> on <a href="http://www.acmerblog.com/hdu-3028-robot-4800.html#comment-79778" rel="nofollow"><time datetime="2017-04-12T16:41:16+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>您怎么知道8月5日更新啊，大神请指教。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79777">
+<article class="comment" id="comment-79777">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517419" rel="external nofollow">新用户499909</a></span> on <a href="http://www.acmerblog.com/hdu-3028-robot-4800.html#comment-79777" rel="nofollow"><time datetime="2017-04-12T16:41:16+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>您怎么知道8月5日更新啊，大神请指教。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79776">
+<article class="comment" id="comment-79776">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517419" rel="external nofollow">新用户499909</a></span> on <a href="http://www.acmerblog.com/hdu-3028-robot-4800.html#comment-79776" rel="nofollow"><time datetime="2017-04-12T16:41:16+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>您怎么知道8月5日更新啊，大神请指教。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79775">
+<article class="comment" id="comment-79775">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517419" rel="external nofollow">新用户499909</a></span> on <a href="http://www.acmerblog.com/hdu-3028-robot-4800.html#comment-79775" rel="nofollow"><time datetime="2017-04-12T16:41:16+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>您怎么知道8月5日更新啊，大神请指教。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79774">
+<article class="comment" id="comment-79774">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517419" rel="external nofollow">新用户499909</a></span> on <a href="http://www.acmerblog.com/hdu-3028-robot-4800.html#comment-79774" rel="nofollow"><time datetime="2017-04-12T16:41:16+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>您怎么知道8月5日更新啊，大神请指教。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79773">
+<article class="comment" id="comment-79773">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517419" rel="external nofollow">新用户499909</a></span> on <a href="http://www.acmerblog.com/hdu-3028-robot-4800.html#comment-79773" rel="nofollow"><time datetime="2017-04-12T16:41:16+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>您怎么知道8月5日更新啊，大神请指教。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79772">
+<article class="comment" id="comment-79772">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517419" rel="external nofollow">新用户499909</a></span> on <a href="http://www.acmerblog.com/hdu-3028-robot-4800.html#comment-79772" rel="nofollow"><time datetime="2017-04-12T16:41:16+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>您怎么知道8月5日更新啊，大神请指教。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79771">
+<article class="comment" id="comment-79771">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517419" rel="external nofollow">新用户499909</a></span> on <a href="http://www.acmerblog.com/hdu-3028-robot-4800.html#comment-79771" rel="nofollow"><time datetime="2017-04-12T16:41:16+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>您怎么知道8月5日更新啊，大神请指教。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79770">
+<article class="comment" id="comment-79770">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517419" rel="external nofollow">新用户499909</a></span> on <a href="http://www.acmerblog.com/hdu-3028-robot-4800.html#comment-79770" rel="nofollow"><time datetime="2017-04-12T16:41:16+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>您怎么知道8月5日更新啊，大神请指教。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26582">
+<article class="comment" id="comment-26582">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1832044043</a></span> on <a href="http://www.acmerblog.com/hdu-3028-robot-4800.html#comment-26582" rel="nofollow"><time datetime="2015-06-08T05:24:23+00:00" pubdate="">2015年6月8日 at 上午5:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Thanks for using the time to examine this, I truly feel strongly about it and enjoy finding out far more on this subject matter. If achievable, as you achieve knowledge</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-26576">
+<article class="comment" id="comment-26576">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Yaunxi</a></span> on <a href="http://www.acmerblog.com/hdu-3028-robot-4800.html#comment-26576" rel="nofollow"><time datetime="2015-05-25T01:16:39+00:00" pubdate="">2015年5月25日 at 上午1:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错的网站，建议添加些比赛信息</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26584">
+<article class="comment" id="comment-26584">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Aliens</a></span> on <a href="http://www.acmerblog.com/hdu-3028-robot-4800.html#comment-26584" rel="nofollow"><time datetime="2015-01-19T14:35:26+00:00" pubdate="">2015年1月19日 at 下午2:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>21行中，j&lt;10可改为j&lt;10-i，减少比较次数</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-26579">
+<article class="comment" id="comment-26579">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ruoshui</a></span> on <a href="http://www.acmerblog.com/hdu-3028-robot-4800.html#comment-26579" rel="nofollow"><time datetime="2015-01-05T02:58:50+00:00" pubdate="">2015年1月5日 at 上午2:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>递归还真是一门学问，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26580">
+<article class="comment" id="comment-26580">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">testnew</a></span> on <a href="http://www.acmerblog.com/hdu-3028-robot-4800.html#comment-26580" rel="nofollow"><time datetime="2014-10-24T19:42:55+00:00" pubdate="">2014年10月24日 at 下午7:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>输入样例作为一个整体输入，带回车</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-26587">
+<article class="comment" id="comment-26587">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ycaxgjd</a></span> on <a href="http://www.acmerblog.com/hdu-3028-robot-4800.html#comment-26587" rel="nofollow"><time datetime="2014-10-23T16:16:32+00:00" pubdate="">2014年10月23日 at 下午4:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Dijkstra 不适合有负权值的边吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26583">
+<article class="comment" id="comment-26583">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">753951</a></span> on <a href="http://www.acmerblog.com/hdu-3028-robot-4800.html#comment-26583" rel="nofollow"><time datetime="2014-09-26T08:33:27+00:00" pubdate="">2014年9月26日 at 上午8:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为避免精度问题，PI值请使用arccos(-1)。应该是acos</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-26586">
+<article class="comment" id="comment-26586">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NiKaWaLi</a></span> on <a href="http://www.acmerblog.com/hdu-3028-robot-4800.html#comment-26586" rel="nofollow"><time datetime="2014-07-20T00:27:17+00:00" pubdate="">2014年7月20日 at 上午12:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>全是智力分析的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26578">
+<article class="comment" id="comment-26578">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zclzcllove</a></span> on <a href="http://www.acmerblog.com/hdu-3028-robot-4800.html#comment-26578" rel="nofollow"><time datetime="2014-05-15T21:05:32+00:00" pubdate="">2014年5月15日 at 下午9:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好。代码比书上的简练！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-26585">
+<article class="comment" id="comment-26585">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lint</a></span> on <a href="http://www.acmerblog.com/hdu-3028-robot-4800.html#comment-26585" rel="nofollow"><time datetime="2014-05-15T00:28:26+00:00" pubdate="">2014年5月15日 at 上午12:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26581">
+<article class="comment" id="comment-26581">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ygwx</a></span> on <a href="http://www.acmerblog.com/hdu-3028-robot-4800.html#comment-26581" rel="nofollow"><time datetime="2014-04-11T00:28:58+00:00" pubdate="">2014年4月11日 at 上午12:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-26577">
+<article class="comment" id="comment-26577">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xin</a></span> on <a href="http://www.acmerblog.com/hdu-3028-robot-4800.html#comment-26577" rel="nofollow"><time datetime="2014-03-29T03:41:39+00:00" pubdate="">2014年3月29日 at 上午3:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个也是算法导论的习题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26588">
+<article class="comment" id="comment-26588">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sharp</a></span> on <a href="http://www.acmerblog.com/hdu-3028-robot-4800.html#comment-26588" rel="nofollow"><time datetime="2014-03-15T01:09:41+00:00" pubdate="">2014年3月15日 at 上午1:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好。代码比书上的简练！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

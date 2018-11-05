@@ -1,0 +1,430 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-23</div>
+<div class="tit"><h1 class="entry-title">HDU 3440-House Man-最短路径-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph/shortest-path" rel="category tag" title="查看最短路径中的全部文章">最短路径</a></span><span class="i4">围观692次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5466" href="http://www.acmerblog.com/hdu-3440-house-man-5466.html#comments" title="《HDU 3440-House Man-最短路径-[解题报告]HOJ》上的评论">27 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">House Man</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+In Fuzhou, there is a crazy super man. He can’t fly, but he could jump from housetop to housetop. Today he plans to use N houses to hone his house  hopping  skills.  He will  start  at  the shortest  house and make N-1  jumps, with each  jump  taking  him  to a  taller  house than  the one  he is  jumping  from. When finished, he will have been on every house exactly once, traversing them in increasing order of height, and ending up on the tallest house.  <br/>The man can travel for at most a certain horizontal distance D in a single jump. To make this as much fun as possible, the crazy man want to maximize the distance between the positions of the shortest house and the tallest house. <br/>The crazy super man have an ability―move houses. So he is going to move the houses subject to the following constraints:<br/>1. All houses are to be moved along a one-dimensional path. <br/>2. Houses must be moved at integer locations along the path, with no two houses at the same location. <br/>3. Houses must be arranged so their moved ordering from left to right is the same as their ordering in the input. They must NOT be sorted by height, or reordered in any way. They must be kept in their stated order. <br/>4. The super man can only jump so far, so every house must be moved close enough to the next taller house. Specifically, they must be no further than D apart on the ground (the difference in their heights doesn’t matter). <br/>Given N houses, in a specified order, each with a distinct integer height, help  the super man  figure out the maximum possible distance they can put between the shortest house and the tallest house, and be able to use the houses for training.  </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+In the first line there is an integer T, indicates the number of test cases.(T&lt;=500)<br/>Each test case begins with a line containing two integers N (1 ≤ N ≤ 1000) and D (1 ≤ D ≤1000000). The next  line contains N integer, giving the heights of the N houses, in  the order that they should be moved. Within a test case, all heights will be unique.    </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+In the first line there is an integer T, indicates the number of test cases.(T&lt;=500)<br/>Each test case begins with a line containing two integers N (1 ≤ N ≤ 1000) and D (1 ≤ D ≤1000000). The next  line contains N integer, giving the heights of the N houses, in  the order that they should be moved. Within a test case, all heights will be unique.   </div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3
+4 4 
+20 30 10 40 
+5 6 
+20 34 54 10 15 
+4 2 
+10 20 16 13 </pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case 1: 3
+Case 2: 3
+Case 3: -1</pre>
+<p> <!-- problem end --></p>
+<p>比较好的一道差分约束的题目。</p>
+<p>差分约束里面，我觉得最经典的两句话就是 按最短路求的值达到可能的最大，按最长路求的值达到可能的最小。</p>
+<p>建图，比较简单，每个点dis[i+1]&gt;=dis[i]+1 所以i+1-&gt;i 连条-1的边。</p>
+<p>其次 排序 高度数组，保存对应的id，然后遍历，相邻两个，连条d的边。</p>
+<p>超时了几次，原因是，连长度为d的边，对于下标小的点，往下标大的点连条边就行，不需要反过来再连。</p>
+<p>wa了一次、、、汗、、inf开小了、、最大可能dis=1000*1000000=10^9，我设了10^8，汗~~</p>
+<pre class="brush:cpp ">#include&lt;cstdio&gt;
+#include&lt;cstring&gt;
+#include&lt;algorithm&gt;
+#include&lt;vector&gt;
+#include&lt;queue&gt;
+int T,n,d,dis[1010],nxt[1010],h,in[1010],cnt[1010];
+const int inf=1000000000;
+using namespace std;
+struct node
+{
+	int id,h;
+	node(int a=0,int b=0):id(a),h(b){}
+	friend bool operator &lt; (node a,node b)
+	{
+		return a.h&lt;b.h;
+	}
+};
+struct edge
+{
+	int y,l;
+	edge(int a,int b):y(a),l(b){}
+};
+vector&lt;edge&gt;vt[1010];
+node a[1010];
+int spfa(int x,int y)
+{
+	fill(dis,dis+1+n,inf);
+	memset(in,0,sizeof(in));
+	dis[x]=0;
+	in[x]=1;
+	memset(cnt,0,sizeof(cnt));
+	cnt[x]=1;
+	queue&lt;int&gt;q;
+	q.push(x);
+	while(!q.empty())
+	{
+		int s=q.front();
+		q.pop();
+		in[s]=0;
+		for(int i=0;i&lt;vt[s].size();i++)
+		{
+			int y=vt[s][i].y,l=vt[s][i].l;
+			if(dis[y]&gt;dis[s]+l)
+			{
+				dis[y]=dis[s]+l;
+				if(!in[y])
+				{
+					q.push(y);
+					cnt[y]++;
+					if(cnt[y]&gt;n)return -1;
+					in[y]=1;
+				}
+			}
+		}
+	}
+	return dis[y];
+}
+int main()
+{
+	scanf("%d",&amp;T);
+	for(int cas=1;cas&lt;=T;cas++)
+	{	
+		scanf("%d%d",&amp;n,&amp;d);
+		for(int i=1;i&lt;=n;i++)
+			vt[i].clear();
+		for(int i=1;i&lt;=n;i++)
+		{
+			scanf("%d",&amp;h);
+			a[i]=node(i,h);
+		}
+		sort(a+1,a+1+n);
+		for(int i=1;i&lt;n;i++)
+		{
+			vt[i+1].push_back(edge(i,-1));
+		}
+		for(int i=1;i&lt;n;i++)
+		{
+			vt[min(a[i+1].id,a[i].id)].push_back(edge(max(a[i+1].id,a[i].id),d));
+		}
+		int a1=a[1].id,a2=a[n].id,k;
+		if(a1&lt;a2)
+		{
+			k=spfa(a1,a2);
+		}
+		else
+		{
+			k=spfa(a2,a1);
+		}
+		printf("Case %d: %d\n",cas,k);
+	}
+	return 0;
+}</pre>
+<p>
+</p>
+<p>参考：http://blog.csdn.net/nash142857/article/details/8259753</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-76615">
+<article class="comment" id="comment-76615">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522592" rel="external nofollow">新用户653916</a></span> on <a href="http://www.acmerblog.com/hdu-3440-house-man-5466.html#comment-76615" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那是她的青春，属于她的美好。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76614">
+<article class="comment" id="comment-76614">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522592" rel="external nofollow">新用户653916</a></span> on <a href="http://www.acmerblog.com/hdu-3440-house-man-5466.html#comment-76614" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那是她的青春，属于她的美好。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76613">
+<article class="comment" id="comment-76613">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522592" rel="external nofollow">新用户653916</a></span> on <a href="http://www.acmerblog.com/hdu-3440-house-man-5466.html#comment-76613" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那是她的青春，属于她的美好。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76612">
+<article class="comment" id="comment-76612">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522592" rel="external nofollow">新用户653916</a></span> on <a href="http://www.acmerblog.com/hdu-3440-house-man-5466.html#comment-76612" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那是她的青春，属于她的美好。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76611">
+<article class="comment" id="comment-76611">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522592" rel="external nofollow">新用户653916</a></span> on <a href="http://www.acmerblog.com/hdu-3440-house-man-5466.html#comment-76611" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那是她的青春，属于她的美好。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76610">
+<article class="comment" id="comment-76610">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522592" rel="external nofollow">新用户653916</a></span> on <a href="http://www.acmerblog.com/hdu-3440-house-man-5466.html#comment-76610" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那是她的青春，属于她的美好。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76609">
+<article class="comment" id="comment-76609">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522592" rel="external nofollow">新用户653916</a></span> on <a href="http://www.acmerblog.com/hdu-3440-house-man-5466.html#comment-76609" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那是她的青春，属于她的美好。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76608">
+<article class="comment" id="comment-76608">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522592" rel="external nofollow">新用户653916</a></span> on <a href="http://www.acmerblog.com/hdu-3440-house-man-5466.html#comment-76608" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那是她的青春，属于她的美好。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76607">
+<article class="comment" id="comment-76607">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522592" rel="external nofollow">新用户653916</a></span> on <a href="http://www.acmerblog.com/hdu-3440-house-man-5466.html#comment-76607" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那是她的青春，属于她的美好。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76606">
+<article class="comment" id="comment-76606">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522592" rel="external nofollow">新用户653916</a></span> on <a href="http://www.acmerblog.com/hdu-3440-house-man-5466.html#comment-76606" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那是她的青春，属于她的美好。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76605">
+<article class="comment" id="comment-76605">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522592" rel="external nofollow">新用户653916</a></span> on <a href="http://www.acmerblog.com/hdu-3440-house-man-5466.html#comment-76605" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那是她的青春，属于她的美好。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76604">
+<article class="comment" id="comment-76604">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522592" rel="external nofollow">新用户653916</a></span> on <a href="http://www.acmerblog.com/hdu-3440-house-man-5466.html#comment-76604" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那是她的青春，属于她的美好。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76603">
+<article class="comment" id="comment-76603">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522592" rel="external nofollow">新用户653916</a></span> on <a href="http://www.acmerblog.com/hdu-3440-house-man-5466.html#comment-76603" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那是她的青春，属于她的美好。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48960">
+<article class="comment" id="comment-48960">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">943965021</a></span> on <a href="http://www.acmerblog.com/hdu-3440-house-man-5466.html#comment-48960" rel="nofollow"><time datetime="2015-06-21T20:36:31+00:00" pubdate="">2015年6月21日 at 下午8:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>通不过。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48963">
+<article class="comment" id="comment-48963">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">CCat</a></span> on <a href="http://www.acmerblog.com/hdu-3440-house-man-5466.html#comment-48963" rel="nofollow"><time datetime="2015-06-12T12:31:20+00:00" pubdate="">2015年6月12日 at 下午12:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个解法好像不对</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58560">
+<article class="comment" id="comment-58560">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">congve1</a></span> on <a href="http://www.acmerblog.com/hdu-3440-house-man-5466.html#comment-58560" rel="nofollow"><time datetime="2015-06-09T02:47:29+00:00" pubdate="">2015年6月9日 at 上午2:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>博主，你这个是wordpress哪个主题啊，不错哦~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29680">
+<article class="comment" id="comment-29680">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">April</a></span> on <a href="http://www.acmerblog.com/hdu-3440-house-man-5466.html#comment-29680" rel="nofollow"><time datetime="2015-06-04T22:16:15+00:00" pubdate="">2015年6月4日 at 下午10:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>21行中，j&lt;10可改为j&lt;10-i，减少比较次数</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48961">
+<article class="comment" id="comment-48961">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">303589828</a></span> on <a href="http://www.acmerblog.com/hdu-3440-house-man-5466.html#comment-48961" rel="nofollow"><time datetime="2015-05-06T06:11:35+00:00" pubdate="">2015年5月6日 at 上午6:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很棒的网站，加油！⛽️</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48962">
+<article class="comment" id="comment-48962">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hehe_snail</a></span> on <a href="http://www.acmerblog.com/hdu-3440-house-man-5466.html#comment-48962" rel="nofollow"><time datetime="2015-04-30T22:36:19+00:00" pubdate="">2015年4月30日 at 下午10:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不同的编译器，printf(),执行的顺序不同，所以结果也就不同，建议不要那么写</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63483">
+<article class="comment" id="comment-63483">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">modstart</a></span> on <a href="http://www.acmerblog.com/hdu-3440-house-man-5466.html#comment-63483" rel="nofollow"><time datetime="2015-04-26T08:39:53+00:00" pubdate="">2015年4月26日 at 上午8:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>printf这个函数在计算的时候是从右到左，打印是从左到右。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48959">
+<article class="comment" id="comment-48959">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1193658339</a></span> on <a href="http://www.acmerblog.com/hdu-3440-house-man-5466.html#comment-48959" rel="nofollow"><time datetime="2015-03-01T21:54:55+00:00" pubdate="">2015年3月1日 at 下午9:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实就是DFS搜索，数据量较小，穷举了所有情况</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58563">
+<article class="comment" id="comment-58563">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">water160</a></span> on <a href="http://www.acmerblog.com/hdu-3440-house-man-5466.html#comment-58563" rel="nofollow"><time datetime="2015-02-08T05:43:01+00:00" pubdate="">2015年2月8日 at 上午5:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>wt[n - 1]没错，因为下标是[0...n-1]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58564">
+<article class="comment" id="comment-58564">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dongxi</a></span> on <a href="http://www.acmerblog.com/hdu-3440-house-man-5466.html#comment-58564" rel="nofollow"><time datetime="2014-11-28T07:31:46+00:00" pubdate="">2014年11月28日 at 上午7:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个系列很不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58565">
+<article class="comment" id="comment-58565">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wizcabbit</a></span> on <a href="http://www.acmerblog.com/hdu-3440-house-man-5466.html#comment-58565" rel="nofollow"><time datetime="2014-11-22T05:24:10+00:00" pubdate="">2014年11月22日 at 上午5:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>站长好。我是一个准备创业的互联网小白,我们打算做一个有关国*际*游*学的平台。手上也有了一些境外资源。现阶段的团队现在没有cto.原意出让一些管理股寻找一个靠谱的技术专家做合伙人, 不知道是不是能得到您的帮助。发个帖子或者其他方式。期待您的回应。可以加我微信tianxielemon聊聊。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58561">
+<article class="comment" id="comment-58561">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Watson</a></span> on <a href="http://www.acmerblog.com/hdu-3440-house-man-5466.html#comment-58561" rel="nofollow"><time datetime="2014-10-18T13:14:43+00:00" pubdate="">2014年10月18日 at 下午1:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>递归还真是一门学问，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29679">
+<article class="comment" id="comment-29679">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">stamwoo</a></span> on <a href="http://www.acmerblog.com/hdu-3440-house-man-5466.html#comment-29679" rel="nofollow"><time datetime="2014-09-12T19:27:51+00:00" pubdate="">2014年9月12日 at 下午7:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为是要把从字符串s的start位到当前位在hash中重置，修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58562">
+<article class="comment" id="comment-58562">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">winter</a></span> on <a href="http://www.acmerblog.com/hdu-3440-house-man-5466.html#comment-58562" rel="nofollow"><time datetime="2014-06-13T02:16:17+00:00" pubdate="">2014年6月13日 at 上午2:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这道题目的核心一句话是：取还是不取。<br/>
+如果当前取，则index+1作为参数。如果当前不取，则任用index作为参数。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

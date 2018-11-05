@@ -1,0 +1,387 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>04-09</div>
+<div class="tit"><h1 class="entry-title">HDU 3502-Huson’s Adventure Island-BFS-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/dp2/state-dp" rel="category tag" title="查看状态DP中的全部文章">状态DP</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a></span><span class="i4">围观815次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5702" href="http://www.acmerblog.com/hdu-3502-husons-adventure-island-5702.html#comments" title="《HDU 3502-Huson’s Adventure Island-BFS-[解题报告]HOJ》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Huson’s Adventure Island</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+A few days ago, Tom was tired of all the PC-games, so he went back to some old FC-games. "Hudson’s Adventure Island" was his favorite which he had played thousands of times. But to his disappointed, the more he played, the more he lost. Tom soon gave up the game. 
+<p></p><center><img alt="Calculation 2" src="http://www.acmerblog.com/img/1397478158905.jpg"/></center>
+<p>Now, he invents an easier game on the base of “Hudson’s Adventure Island”. He wants to know whether the new game is easy enough. So he came to you for help. <br/>To simplify the problem, you can assume there is matrix-map contains m(0 &lt; m &lt; 256) rows, n(0 &lt; n &lt; 256) columns, an entrance on the top-left corner (0, 0), an exit on the bottom-right corner (m-1, n-1). Each entry of the matrix contains a integer k.The range of k is defined below:<br/>    a)k = 0,it is a free space one can go through.<br/>    b)k = -1,it is an obstacle one can’t go through.<br/>    c)0 &lt; k &lt; 10000,it is a fruit one can go through and gain k points of energy.<br/>    d)k &gt;= 0 at the entrance point and the end point.<br/>At the begin, the hero has 0 points of energy and he can go four directions (up, down, left, right). Each move he makes cost 1 point of energy. No energy no move. If he can’t make a move or get to the exit, he loses the game. The number of fruit is 17 at most. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input consists of multiple test cases. Each test case starts with two positive integers m, n. Then follows m lines, each line contain n integers. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input consists of multiple test cases. Each test case starts with two positive integers m, n. Then follows m lines, each line contain n integers.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+4 4
+8 0 0 0
+-1 -1 -1 0
+-1 -1 -1 0
+0 6 0 0
+3 3
+4 0 0
+0 0 0
+0 0 0
+4 4
+5 0 0 0
+0 -1 -1 0
+0 -1 -1 0
+0 0 0 0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+4
+0
+you loss!
+
+
+<div style="font-family:Times New Roman;font-size:14px;background-color:F4FBFF;border:#B7CBFF 1px dashed;padding:6px"><div style="font-family:Arial;font-weight:bold;color:#7CA9ED;border-bottom:#B7CBFF 1px dashed"><i>Hint</i></div>The hero can pass the exit. When he gets the exit point, he can choose to get out to finish the game or move on to gain more points of energy.</div><i style="font-size:1px"> </i></pre>
+<p> <!-- problem end --></p>
+<p>这题先用BFS初始化各水果间的距离，以及它们到终点的距离，然后状态DP。</p>
+<p>不过有个小小的陷阱，终点上如果有水果，可能要走两次。</p>
+<p>贡献一组数据：</p>
+<p>4 4</p>
+<p>8 0 0 0</p>
+<p>-1 -1 -1 0</p>
+<p>-1 -1 -1 0</p>
+<p>10 0 0 2</p>
+<p>答案是：</p>
+<p>8</p>
+<pre class="brush:cpp" name="code">#include &lt;iostream&gt;<br/>
+#include &lt;queue&gt;<br/>
+using namespace std;<br/>
+const int inf = 1000000000;<br/>
+struct Node<br/>
+{<br/>
+    int x, y;<br/>
+};<br/>
+int map[256][256], cost[256][256];<br/>
+int dir[4][2] = {0, 1, 0, -1, 1, 0, -1, 0};<br/>
+int n, m;<br/>
+Node fruit[18];<br/>
+int val[17], cunt;<br/>
+int dis[18][18];<br/>
+queue&lt;Node&gt; Q;<br/>
+int best[1&lt;&lt;17][17];<br/>
+bool Bound(int x, int y)<br/>
+{<br/>
+    return x &gt;= 0 &amp;&amp; x &lt; n &amp;&amp; y &gt;= 0 &amp;&amp; y &lt; m;<br/>
+}<br/>
+void BFS(Node start)<br/>
+{<br/>
+    int i, j;<br/>
+    Node now, nex;<br/>
+    for (i = 0; i &lt; n; i++)<br/>
+    {<br/>
+        for (j = 0; j &lt; m; j++)<br/>
+        {<br/>
+            cost[i][j] = inf;<br/>
+        }<br/>
+    }<br/>
+    cost[start.x][start.y] = 0;<br/>
+    Q.push(start);<br/>
+    while (!Q.empty())<br/>
+    {<br/>
+        now = Q.front();<br/>
+        Q.pop();<br/>
+        for (i = 0; i &lt; 4; i++)<br/>
+        {<br/>
+            nex.x = now.x + dir[i][0];<br/>
+            nex.y = now.y + dir[i][1];<br/>
+            if (Bound(nex.x, nex.y) &amp;&amp; map[nex.x][nex.y] != -1 &amp;&amp; cost[nex.x][nex.y] == inf)<br/>
+            {<br/>
+                cost[nex.x][nex.y] = cost[now.x][now.y] + 1;<br/>
+                Q.push(nex);<br/>
+            }<br/>
+        }<br/>
+    }<br/>
+}<br/>
+void DP()<br/>
+{<br/>
+    int i, j, v;<br/>
+    Node now, nex;<br/>
+    for (i = 1; i &lt; (1 &lt;&lt; cunt); i++)<br/>
+    {<br/>
+        for (j = 0; j &lt; cunt; j++)<br/>
+        {<br/>
+            best[i][j] = -1;<br/>
+        }<br/>
+    }<br/>
+    best[1][0] = val[0];<br/>
+    now.x = 1; now.y = 0;<br/>
+    Q.push(now);<br/>
+    while (!Q.empty())<br/>
+    {<br/>
+        now = Q.front();<br/>
+        Q.pop();<br/>
+        for (i = 1; i &lt; cunt; i++)<br/>
+        {<br/>
+            if ((now.x &amp; (1 &lt;&lt; i)) == 0)<br/>
+            {<br/>
+                nex.x = (now.x | (1 &lt;&lt; i));<br/>
+                nex.y = i;<br/>
+                v = best[now.x][now.y] - dis[now.y][nex.y];<br/>
+                if (v &lt; 0)<br/>
+                {<br/>
+                    continue;<br/>
+                }<br/>
+                v = v + val[nex.y];<br/>
+                if (v &gt; best[nex.x][nex.y])<br/>
+                {<br/>
+                    best[nex.x][nex.y] = v;<br/>
+                    Q.push(nex);<br/>
+                }<br/>
+            }<br/>
+        }<br/>
+    }<br/>
+}<br/>
+int main()<br/>
+{<br/>
+    int i, j, ans;<br/>
+    while (scanf("%d %d", &amp;n, &amp;m) != EOF)<br/>
+    {<br/>
+        cunt = 0;<br/>
+        for (i = 0; i &lt; n; i++)<br/>
+        {<br/>
+            for (j = 0; j &lt; m; j++)<br/>
+            {<br/>
+                scanf("%d", &amp;map[i][j]);<br/>
+                if (map[i][j] &gt; 0)<br/>
+                {<br/>
+                    fruit[cunt].x = i;<br/>
+                    fruit[cunt].y = j;<br/>
+                    val[cunt++] = map[i][j];<br/>
+                }<br/>
+            }<br/>
+        }<br/>
+        if (n == 1 &amp;&amp; m == 1)<br/>
+        {<br/>
+            printf("%d/n", map[0][0]);<br/>
+            continue;<br/>
+        }<br/>
+        if (map[0][0] == 0)<br/>
+        {<br/>
+            printf("you loss!/n");<br/>
+            continue;<br/>
+        }<br/>
+        // 把终点也加入进去计算距离<br/>
+        fruit[cunt].x = n - 1;<br/>
+        fruit[cunt].y = m - 1;<br/>
+        for (i = 0; i &lt;= cunt; i++)<br/>
+        {<br/>
+            BFS(fruit[i]);<br/>
+            for (j = 0; j &lt;= cunt; j++)<br/>
+            {<br/>
+                dis[i][j] = cost[fruit[j].x][fruit[j].y];<br/>
+            }<br/>
+        }<br/>
+        DP();<br/>
+        ans = -1;<br/>
+        for (i = 1; i &lt; (1 &lt;&lt; cunt); i++)<br/>
+        {<br/>
+            for (j = 0; j &lt; cunt; j++)<br/>
+            {<br/>
+                if (ans &lt; best[i][j] - dis[j][cunt])<br/>
+                {<br/>
+                    ans = best[i][j] - dis[j][cunt];<br/>
+                }<br/>
+            }<br/>
+        }<br/>
+        if (ans &gt;= 0)<br/>
+        {<br/>
+            printf("%d/n", ans);<br/>
+        }<br/>
+        else<br/>
+        {<br/>
+            printf("you loss!/n");<br/>
+        }<br/>
+    }<br/>
+    return 0;<br/>
+} 
+<p>参考：<a href="#respond">http://blog.csdn.net/racebug2010/article/details/6177834</a></p>
+						                        
+<div>
+
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+ </div>
+
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+
+					</pre></div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75981">
+<article class="comment" id="comment-75981">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529381" rel="external nofollow">新用户229976</a></span> on <a href="http://www.acmerblog.com/hdu-3502-husons-adventure-island-5702.html#comment-75981" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>支持本地文化</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49263">
+<article class="comment" id="comment-49263">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ForgetVay</a></span> on <a href="http://www.acmerblog.com/hdu-3502-husons-adventure-island-5702.html#comment-49263" rel="nofollow"><time datetime="2015-05-27T06:40:32+00:00" pubdate="">2015年5月27日 at 上午6:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这道题目虽然简单，但是小编做的很到位，应该会给很多人启发吧！对于面试当中不给开辟额外空间的问题不是绝对的，实际上至少是允许少数变量存在的。之前遇到相似的问题也是恍然大悟，今天看到小编这篇文章相见恨晚。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30177">
+<article class="comment" id="comment-30177">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sgx_go</a></span> on <a href="http://www.acmerblog.com/hdu-3502-husons-adventure-island-5702.html#comment-30177" rel="nofollow"><time datetime="2015-04-02T17:22:26+00:00" pubdate="">2015年4月2日 at 下午5:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为要修改链表头(指针)，所以要用指针的指针</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63555">
+<article class="comment" id="comment-63555">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jintianya</a></span> on <a href="http://www.acmerblog.com/hdu-3502-husons-adventure-island-5702.html#comment-63555" rel="nofollow"><time datetime="2015-03-31T11:35:19+00:00" pubdate="">2015年3月31日 at 上午11:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我又来学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30183">
+<article class="comment" id="comment-30183">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">21435048</a></span> on <a href="http://www.acmerblog.com/hdu-3502-husons-adventure-island-5702.html#comment-30183" rel="nofollow"><time datetime="2015-02-20T01:59:56+00:00" pubdate="">2015年2月20日 at 上午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>修改一下吧 …</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30180">
+<article class="comment" id="comment-30180">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sgx_go</a></span> on <a href="http://www.acmerblog.com/hdu-3502-husons-adventure-island-5702.html#comment-30180" rel="nofollow"><time datetime="2015-02-06T05:18:23+00:00" pubdate="">2015年2月6日 at 上午5:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我想整理一下leetcode的题解，站长能不能给权限</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30178">
+<article class="comment" id="comment-30178">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">g29tony</a></span> on <a href="http://www.acmerblog.com/hdu-3502-husons-adventure-island-5702.html#comment-30178" rel="nofollow"><time datetime="2015-01-21T22:01:52+00:00" pubdate="">2015年1月21日 at 下午10:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>居然是机试，还和13年重复。题目不难</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49265">
+<article class="comment" id="comment-49265">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">vintion</a></span> on <a href="http://www.acmerblog.com/hdu-3502-husons-adventure-island-5702.html#comment-49265" rel="nofollow"><time datetime="2014-11-27T03:42:48+00:00" pubdate="">2014年11月27日 at 上午3:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>纠正一个错误，二分查找树的中序遍历获得元素的升序排列。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30185">
+<article class="comment" id="comment-30185">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xin</a></span> on <a href="http://www.acmerblog.com/hdu-3502-husons-adventure-island-5702.html#comment-30185" rel="nofollow"><time datetime="2014-11-19T22:44:45+00:00" pubdate="">2014年11月19日 at 下午10:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好，找的就是这一题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49264">
+<article class="comment" id="comment-49264">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yelawolf</a></span> on <a href="http://www.acmerblog.com/hdu-3502-husons-adventure-island-5702.html#comment-49264" rel="nofollow"><time datetime="2014-11-17T19:29:48+00:00" pubdate="">2014年11月17日 at 下午7:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为是要把从字符串s的start位到当前位在hash中重置，修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30184">
+<article class="comment" id="comment-30184">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">cherry_odd</a></span> on <a href="http://www.acmerblog.com/hdu-3502-husons-adventure-island-5702.html#comment-30184" rel="nofollow"><time datetime="2014-10-19T14:37:49+00:00" pubdate="">2014年10月19日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>太变态了。我用hash居然超时了。这样break掉居然都行啊。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30179">
+<article class="comment" id="comment-30179">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fastislow</a></span> on <a href="http://www.acmerblog.com/hdu-3502-husons-adventure-island-5702.html#comment-30179" rel="nofollow"><time datetime="2014-08-25T06:17:23+00:00" pubdate="">2014年8月25日 at 上午6:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30181">
+<article class="comment" id="comment-30181">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">753951</a></span> on <a href="http://www.acmerblog.com/hdu-3502-husons-adventure-island-5702.html#comment-30181" rel="nofollow"><time datetime="2014-05-11T20:36:51+00:00" pubdate="">2014年5月11日 at 下午8:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没有对题目进行一番分析，真是美中不足啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49262">
+<article class="comment" id="comment-49262">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rtaxa</a></span> on <a href="http://www.acmerblog.com/hdu-3502-husons-adventure-island-5702.html#comment-49262" rel="nofollow"><time datetime="2014-04-23T13:29:36+00:00" pubdate="">2014年4月23日 at 下午1:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好的，多谢指出</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30182">
+<article class="comment" id="comment-30182">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">becool456</a></span> on <a href="http://www.acmerblog.com/hdu-3502-husons-adventure-island-5702.html#comment-30182" rel="nofollow"><time datetime="2014-04-16T16:22:01+00:00" pubdate="">2014年4月16日 at 下午4:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>失误失误，转载错了。已经改正，抱歉。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,774 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-23</div>
+<div class="tit"><h1 class="entry-title">HDU 3436-Queue-jumpers -计算几何-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/geometry/analytic-geometry" rel="category tag" title="查看解析几何中的全部文章">解析几何</a>, <a href="http://www.acmerblog.com/category/basis/recursion" rel="category tag" title="查看递归和分治中的全部文章">递归和分治</a></span><span class="i4">围观598次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5462" href="http://www.acmerblog.com/hdu-3436-queue-jumpers-5462.html#comments" title="《HDU 3436-Queue-jumpers -计算几何-[解题报告]HOJ》上的评论">28 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Queue-jumpers </h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Ponyo and Garfield are waiting outside the box-office for their favorite movie. Because queuing is so boring, that they want to play a game to kill the time. The game is called “Queue-jumpers”. Suppose that there are N people numbered from 1 to N stand in a line initially. Each time you should simulate one of the following operations:<br/>1.  Top x :Take person x to the front of the queue<br/>2.  Query x: calculate the current position of person x<br/>3.  Rank x: calculate the current person at position x<br/>Where x is in [1, N].<br/>Ponyo is so clever that she plays the game very well while Garfield has no idea. Garfield is now turning to you for help. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+In the first line there is an integer T, indicates the number of test cases.(T&lt;=50)<br/>In each case, the first line contains two integers N(1&lt;=N&lt;=10^8), Q(1&lt;=Q&lt;=10^5). Then there are Q lines, each line contain an operation as said above.  </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+In the first line there is an integer T, indicates the number of test cases.(T&lt;=50)<br/>In each case, the first line contains two integers N(1&lt;=N&lt;=10^8), Q(1&lt;=Q&lt;=10^5). Then there are Q lines, each line contain an operation as said above. </div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3
+9 5
+Top 1
+Rank 3
+Top 7
+Rank 6
+Rank 8
+6 2
+Top 4
+Top 5
+7 4
+Top 5
+Top 2
+Query 1
+Rank 6</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case 1:
+3
+5
+8
+Case 2:
+Case 3:
+3
+6</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include&lt;iostream&gt;
+#include&lt;cstring&gt;
+#include&lt;cstdio&gt;
+#include&lt;algorithm&gt;
+#define N 100015
+#define inf 1&lt;&lt;29
+#define LL long long
+#define Key_value ch[ch[root][1]][0]
+using namespace std;
+int n,q,p[N],cnt,s[2*N],e[2*N],ope[N];
+int node[2*N];
+char str[N][10];
+int root,tot,size[2*N],key[2*N],pre[2*N],ch[2*N][2],num[2*N];
+//debug部分COPY自HH
+void Treaval(int x) {  
+    if(x) {  
+        Treaval(ch[x][0]);  
+        printf("结点%2d:左儿子 %2d 右儿子 %2d 父结点 %2d size = %2d ,key = %2d   num= %2d \n",x,ch[x][0],ch[x][1],pre[x],size[x],key[x],num[x]);  
+        Treaval(ch[x][1]);  
+    }  
+}  
+void debug() {printf("%d\n",root);Treaval(root);}   
+void Push_Up(int r){
+	size[r]=size[ch[r][0]]+size[ch[r][1]]+num[r];
+}
+void NewNode(int &amp;r,int father,int k){
+	r=++tot;
+	pre[r]=father;
+	size[r]=e[k]-s[k]+1;
+	num[r]=e[k]-s[k]+1;
+	key[r]=k;
+	node[k]=r;
+	ch[r][0]=ch[r][1]=0;
+}
+void Bulid(int &amp;x,int l,int r,int father){
+	if(l&gt;r)
+		return;
+	int mid=(l+r)/2;
+	NewNode(x,father,mid);
+	Bulid(ch[x][0],l,mid-1,x);
+	Bulid(ch[x][1],mid+1,r,x);
+	Push_Up(x);
+}
+void Rotate(int x,int kind){  
+	int y=pre[x];    
+	ch[y][!kind]=ch[x][kind];   
+	pre[ch[x][kind]]=y;  
+	if(pre[y])  
+		ch[pre[y]][ch[pre[y]][1]==y]=x;  
+	pre[x]=pre[y];  
+	ch[x][kind]=y;  
+	pre[y]=x;  
+	Push_Up(y);  
+}   
+void Splay(int r,int goal){  
+	while(pre[r]!=goal){  
+		if(pre[pre[r]]==goal)  
+			Rotate(r,ch[pre[r]][0]==r);  
+		else{  
+			int y=pre[r];  
+			int kind=(ch[pre[y]][0]==y);  
+			if(ch[y][kind]==r){  
+				Rotate(r,!kind);  
+				Rotate(r,kind);  
+			}  
+			else{  
+				Rotate(y,kind);  
+				Rotate(r,kind);  
+			}  
+		}  
+	}  
+	Push_Up(r);  
+	if(goal==0) root=r;  
+} 
+int Bin(int x){   //离散化中，二分查找
+	int low=0,high=cnt-1,mid;
+	while(low&lt;=high){
+		mid=(low+high)&gt;&gt;1;
+		if(s[mid]&lt;=x&amp;&amp;e[mid]&gt;=x)
+			return mid;
+		if(e[mid]&lt;x)
+			low=mid+1;
+		else
+			high=mid-1;
+	}
+}
+int Get_Min(int r){
+	while(ch[r][0]){
+		r=ch[r][0];
+	}
+	return r;
+}
+void Delete(){
+	int k=Get_Min(ch[root][1]);  //找到右孩子中最小的
+	Splay(k,root);   //旋转过来，使得右子树没有左孩子
+	ch[ch[root][1]][0]=ch[root][0];   //将原来的左孩子给右子树作为左孩子
+	root=ch[root][1];   //让右孩子为根
+	pre[ch[root][0]]=root;   
+	pre[root]=0;
+	Push_Up(root);
+}
+void Insert(int &amp;r,int k,int father){
+	if(r==0){
+		NewNode(r,father,k);
+		return;
+	}
+	Insert(ch[r][0],k,r);  //因为是插入到队首，担心一直往左子树找
+	Push_Up(r);
+}
+void Top(int x){
+	int k=Bin(x);
+	int y=node[k];  //找到这个人所在区间的标号
+	Splay(y,0);   //旋转至根部
+	if(!ch[root][0]||!ch[root][1]){   //左右孩子不完整，直接将孩子拉到根部
+		root=ch[root][0]+ch[root][1];
+		pre[root]=0;
+	}
+	else
+		Delete();  //删除节点
+	Insert(root,k,0);  //再插入
+	Splay(tot,0);   //旋转至根部,这步不加会TLE
+}
+int Get_Rank(int x){
+	int k=Bin(x);
+	int y=node[k];
+	Splay(y,0);
+	return size[ch[root][0]]+1;
+}
+int Get_Kth(int r,int k){
+	int t=size[ch[r][0]];
+	if(k&lt;=t)
+		return Get_Kth(ch[r][0],k);
+	else if(k&lt;=t+num[r])
+		return s[key[r]]+(k-t)-1;
+	else
+		return Get_Kth(ch[r][1],k-t-num[r]);
+}
+void slove(){
+	for(int i=0;i&lt;q;i++){
+		if(str[i][0]=='T')
+			Top(ope[i]);
+		else if(str[i][0]=='Q')
+			printf("%d\n",Get_Rank(ope[i]));
+		else
+			printf("%d\n",Get_Kth(root,ope[i]));
+	}
+}
+int main(){
+	int t,cas=0;
+	scanf("%d",&amp;t);
+	while(t--){
+		scanf("%d%d",&amp;n,&amp;q);
+		//将所有TOP和QUERY操作的点进行离散化，将中间不变的区间缩成点
+		int total=0;
+		p[total++]=0;
+		for(int i=0;i&lt;q;i++){
+			scanf("%s%d",str[i],&amp;ope[i]);
+			if(str[i][0]=='T'||str[i][0]=='Q')
+				p[total++]=ope[i];
+		}
+		p[total++]=n;
+		sort(p,p+total);
+		cnt=0;
+		//进行离散化，s[i]表示区间起点，e[i]表示区间终点
+		for(int i=1;i&lt;total;i++)
+			if(p[i]!=p[i-1]){
+				if(p[i]-p[i-1]&gt;1){   //中间的区间
+					s[cnt]=p[i-1]+1;
+					e[cnt]=p[i]-1;
+					cnt++;
+				}
+				s[cnt]=p[i];   //端点
+				e[cnt]=p[i];
+				cnt++;
+			}
+		root=tot=0;	
+		ch[root][0]=ch[root][1]=pre[root]=size[root]=num[root]=key[root]=0;
+		Bulid(root,0,cnt-1,0);  //建树
+		printf("Case %d:\n",++cas);
+		slove();
+	}
+	return 0;
+}</pre>
+<p>
+</p>
+<p>
+</p>
+<p>风格更新后：</p>
+<pre class="brush:cpp ">#include &lt;iostream&gt;
+#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+#include &lt;algorithm&gt;
+using namespace std;
+#define inf 0x3f3f3f3f
+#define maxn 200010
+#define LL long long int
+#define Key_value ch[ch[root][1]][0]
+char str[maxn][10];
+int ope[maxn],ccnt;
+
+struct SplayTree
+{
+	int pre[maxn],ch[maxn][2],size[maxn],key[maxn],num[maxn],e[maxn],s[maxn],p[maxn],node[maxn],root,cnt;
+	
+	void init(int n,int q)
+	{
+		int total = 0;
+		p[total++] = 0;
+		for(int i = 0;i &lt; q;i++)
+		{
+			scanf("%s%d",str[i],&amp;ope[i]);
+			if(str[i][0] == 'T' || str[i][0] == 'Q')
+				p[total++] = ope[i];
+		}
+		p[total++] = n;
+		sort(p,p+total);
+		ccnt = 0;
+		for(int i = 1;i &lt; total;i++)
+		{
+			if(p[i] != p[i-1])
+			{
+				if(p[i] - p[i-1] &gt; 1)
+				{
+					s[ccnt] = p[i-1] + 1;
+					e[ccnt] = p[i] - 1;
+					ccnt++;
+				}
+				s[ccnt] = p[i];
+				e[ccnt] = p[i];
+				ccnt++;
+			}
+		}
+
+		root = cnt = 0;
+		pre[0] = ch[0][0] = ch[0][1] = 0;
+		size[0] = key[0] = num[0] = 0;
+		BuildTree(root,0,ccnt-1,0);
+	}
+	
+	void BuildTree(int &amp; x,int l,int r,int father)
+	{
+		if(l &gt; r)	return;
+		int mid = (l+r) &gt;&gt; 1;
+		NewNode(x,father,mid);
+		if(l &lt; mid)
+			BuildTree(ch[x][0],l,mid-1,x);
+		if(r &gt; mid)
+			BuildTree(ch[x][1],mid+1,r,x);
+		PushUp(x);
+	}
+
+	void NewNode(int &amp; r,int father,int k)
+	{
+		r = ++cnt;
+		pre[r] = father;
+		ch[r][0] = ch[r][1] = 0;
+		size[r] = e[k] - s[k] + 1;
+		num[r] = e[k] - s[k] + 1;
+		key[r] = k;
+		node[k] = r;
+	}
+
+	void PushUp(int r)
+	{
+		size[r] = size[ch[r][0]] + size[ch[r][1]] + num[r];
+	}
+
+	void Rotate(int x,int kind)
+	{
+		int y = pre[x];
+		ch[y][!kind] = ch[x][kind];
+		pre[ch[x][kind]] = y;
+		if(pre[y])
+			ch[pre[y]][ch[pre[y]][1]==y] = x;
+		pre[x] = pre[y];
+		ch[x][kind] = y;
+		pre[y] = x;
+		PushUp(y);
+	}
+
+	void Splay(int r,int goal)
+	{
+		while(pre[r] != goal)
+		{
+			int y = pre[r],z = pre[y];
+			if(pre[pre[r]] == goal)
+			{
+				Rotate(r,ch[pre[r]][0] == r);
+			}
+			else
+			{
+				int kind = ch[pre[y]][0] == y;
+				if(ch[y][kind] == r)
+				{
+					Rotate(r,!kind);
+					Rotate(r,kind);
+				}
+				else
+				{
+					Rotate(y,kind);
+					Rotate(r,kind);
+				}
+			}
+		}
+		PushUp(r);
+		if(goal == 0)	root = r;
+	}
+
+	int Bin(int x)
+	{
+		int low = 0,high = ccnt - 1,mid;
+		while(low &lt;= high)
+		{
+			mid = (low + high) &gt;&gt; 1;
+			if(s[mid] &lt;= x &amp;&amp; e[mid] &gt;= x)
+				return mid;
+			if(e[mid] &lt; x)
+				low = mid + 1;
+			else high = mid - 1;
+		}
+	}
+
+	void RotateTo(int k,int goal)
+	{
+		int r = root;
+		while(1)
+		{
+			if(k == size[ch[r][0]] + 1)
+				break;
+			if(k &lt;= size[ch[r][0]])
+				r = ch[r][0];
+			else
+			{
+				k -= size[ch[r][0]] + 1;
+				r = ch[r][1];
+			}
+		}
+		Splay(r,goal);
+	}
+
+	void del_root()
+	{
+		int t = root;
+		if(ch[root][1])
+		{
+			root = ch[root][1];
+			RotateTo(1,0);
+			ch[root][0] = ch[t][0];
+			if(ch[t][0])	pre[ch[t][0]] = root;
+		}
+		else root = ch[root][0];
+		pre[root] = 0;
+		PushUp(root);
+	}
+
+	void Insert(int &amp; r,int k,int father)
+	{
+		if(r == 0)
+		{
+			NewNode(r,father,k);
+			return;
+		}
+		Insert(ch[r][0],k,r);
+		PushUp(r);
+	}
+
+	void Top(int x)
+	{
+		int k = Bin(x);
+		int y = node[k];
+		Splay(y,0);
+		del_root();
+		Insert(root,k,0);
+		Splay(cnt,0);
+	}
+
+	int Get_Rank(int x)
+	{
+		int k = Bin(x);
+		int y = node[k];
+		Splay(y,0);
+		return size[ch[root][0]] + 1;
+	}
+	
+	int Get_Kth(int r,int k)
+	{
+		int t = size[ch[r][0]];
+		if(k &lt;= t)
+			return Get_Kth(ch[r][0],k);
+		else if(k &lt;= t + num[r])
+			return s[key[r]] + (k-t) - 1;
+		else return Get_Kth(ch[r][1],k-t-num[r]);
+	}
+
+	void solve(int n,int q)
+	{
+		init(n,q);
+		for(int i = 0;i &lt; q;i++)
+		{
+			if(str[i][0] == 'T')
+				Top(ope[i]);
+			else if(str[i][0] == 'Q')
+				printf("%d\n",Get_Rank(ope[i]));
+			else printf("%d\n",Get_Kth(root,ope[i]));
+		}
+	}
+}spt;
+
+int main()
+{
+	//freopen("in.txt","r",stdin);
+	int t,cas = 0;
+	scanf("%d",&amp;t);
+	while(t--)
+	{
+		int n,q;
+		scanf("%d%d",&amp;n,&amp;q);
+		printf("Case %d:\n",++cas);
+		spt.solve(n,q);
+	}
+	return 0;
+}</pre>
+<p>参考：http://blog.csdn.net/scut_pein/article/details/18961423</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-76712">
+<article class="comment" id="comment-76712">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533119" rel="external nofollow">新用户039427</a></span> on <a href="http://www.acmerblog.com/hdu-3436-queue-jumpers-5462.html#comment-76712" rel="nofollow"><time datetime="2017-04-12T07:34:17+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跳伞成功怎么继续飞行？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76711">
+<article class="comment" id="comment-76711">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533119" rel="external nofollow">新用户039427</a></span> on <a href="http://www.acmerblog.com/hdu-3436-queue-jumpers-5462.html#comment-76711" rel="nofollow"><time datetime="2017-04-12T07:34:17+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跳伞成功怎么继续飞行？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76710">
+<article class="comment" id="comment-76710">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533119" rel="external nofollow">新用户039427</a></span> on <a href="http://www.acmerblog.com/hdu-3436-queue-jumpers-5462.html#comment-76710" rel="nofollow"><time datetime="2017-04-12T07:34:17+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跳伞成功怎么继续飞行？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76709">
+<article class="comment" id="comment-76709">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533119" rel="external nofollow">新用户039427</a></span> on <a href="http://www.acmerblog.com/hdu-3436-queue-jumpers-5462.html#comment-76709" rel="nofollow"><time datetime="2017-04-12T07:34:17+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跳伞成功怎么继续飞行？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76708">
+<article class="comment" id="comment-76708">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533119" rel="external nofollow">新用户039427</a></span> on <a href="http://www.acmerblog.com/hdu-3436-queue-jumpers-5462.html#comment-76708" rel="nofollow"><time datetime="2017-04-12T07:34:17+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跳伞成功怎么继续飞行？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76707">
+<article class="comment" id="comment-76707">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533119" rel="external nofollow">新用户039427</a></span> on <a href="http://www.acmerblog.com/hdu-3436-queue-jumpers-5462.html#comment-76707" rel="nofollow"><time datetime="2017-04-12T07:34:17+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跳伞成功怎么继续飞行？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76706">
+<article class="comment" id="comment-76706">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533119" rel="external nofollow">新用户039427</a></span> on <a href="http://www.acmerblog.com/hdu-3436-queue-jumpers-5462.html#comment-76706" rel="nofollow"><time datetime="2017-04-12T07:34:17+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跳伞成功怎么继续飞行？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76705">
+<article class="comment" id="comment-76705">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533119" rel="external nofollow">新用户039427</a></span> on <a href="http://www.acmerblog.com/hdu-3436-queue-jumpers-5462.html#comment-76705" rel="nofollow"><time datetime="2017-04-12T07:34:17+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跳伞成功怎么继续飞行？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76704">
+<article class="comment" id="comment-76704">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533119" rel="external nofollow">新用户039427</a></span> on <a href="http://www.acmerblog.com/hdu-3436-queue-jumpers-5462.html#comment-76704" rel="nofollow"><time datetime="2017-04-12T07:34:17+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跳伞成功怎么继续飞行？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76703">
+<article class="comment" id="comment-76703">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533119" rel="external nofollow">新用户039427</a></span> on <a href="http://www.acmerblog.com/hdu-3436-queue-jumpers-5462.html#comment-76703" rel="nofollow"><time datetime="2017-04-12T07:34:17+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跳伞成功怎么继续飞行？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76702">
+<article class="comment" id="comment-76702">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533119" rel="external nofollow">新用户039427</a></span> on <a href="http://www.acmerblog.com/hdu-3436-queue-jumpers-5462.html#comment-76702" rel="nofollow"><time datetime="2017-04-12T07:34:17+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跳伞成功怎么继续飞行？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76701">
+<article class="comment" id="comment-76701">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533119" rel="external nofollow">新用户039427</a></span> on <a href="http://www.acmerblog.com/hdu-3436-queue-jumpers-5462.html#comment-76701" rel="nofollow"><time datetime="2017-04-12T07:34:17+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跳伞成功怎么继续飞行？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76700">
+<article class="comment" id="comment-76700">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533119" rel="external nofollow">新用户039427</a></span> on <a href="http://www.acmerblog.com/hdu-3436-queue-jumpers-5462.html#comment-76700" rel="nofollow"><time datetime="2017-04-12T07:34:17+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跳伞成功怎么继续飞行？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76699">
+<article class="comment" id="comment-76699">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533119" rel="external nofollow">新用户039427</a></span> on <a href="http://www.acmerblog.com/hdu-3436-queue-jumpers-5462.html#comment-76699" rel="nofollow"><time datetime="2017-04-12T07:34:17+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跳伞成功怎么继续飞行？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58557">
+<article class="comment" id="comment-58557">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">2013283119</a></span> on <a href="http://www.acmerblog.com/hdu-3436-queue-jumpers-5462.html#comment-58557" rel="nofollow"><time datetime="2015-07-11T17:40:15+00:00" pubdate="">2015年7月11日 at 下午5:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一题是不是可以这样想，生了n孩子的家庭等价于n个家庭各生了一个1个孩子，这样最后男女的比例还是1:1</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58553">
+<article class="comment" id="comment-58553">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">YangXiaoZhong</a></span> on <a href="http://www.acmerblog.com/hdu-3436-queue-jumpers-5462.html#comment-58553" rel="nofollow"><time datetime="2015-05-01T08:16:09+00:00" pubdate="">2015年5月1日 at 上午8:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好，注释很详细啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58550">
+<article class="comment" id="comment-58550">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zhenghao</a></span> on <a href="http://www.acmerblog.com/hdu-3436-queue-jumpers-5462.html#comment-58550" rel="nofollow"><time datetime="2015-04-27T04:49:11+00:00" pubdate="">2015年4月27日 at 上午4:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很棒的网站，加油！⛽️</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58548">
+<article class="comment" id="comment-58548">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">CCat</a></span> on <a href="http://www.acmerblog.com/hdu-3436-queue-jumpers-5462.html#comment-58548" rel="nofollow"><time datetime="2015-01-02T20:45:49+00:00" pubdate="">2015年1月2日 at 下午8:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>通不过。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58556">
+<article class="comment" id="comment-58556">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mysteriousAngel_love</a></span> on <a href="http://www.acmerblog.com/hdu-3436-queue-jumpers-5462.html#comment-58556" rel="nofollow"><time datetime="2014-12-03T08:27:42+00:00" pubdate="">2014年12月3日 at 上午8:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>88行是多余的，可以删除</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48949">
+<article class="comment" id="comment-48949">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Aifan</a></span> on <a href="http://www.acmerblog.com/hdu-3436-queue-jumpers-5462.html#comment-48949" rel="nofollow"><time datetime="2014-11-08T11:11:30+00:00" pubdate="">2014年11月8日 at 上午11:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈呀！这个Dijkstra模板好长OwQ！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58552">
+<article class="comment" id="comment-58552">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mechine</a></span> on <a href="http://www.acmerblog.com/hdu-3436-queue-jumpers-5462.html#comment-58552" rel="nofollow"><time datetime="2014-10-28T11:15:22+00:00" pubdate="">2014年10月28日 at 上午11:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正在学习搜索，很好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63482">
+<article class="comment" id="comment-63482">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mcitdkj</a></span> on <a href="http://www.acmerblog.com/hdu-3436-queue-jumpers-5462.html#comment-63482" rel="nofollow"><time datetime="2014-10-16T21:00:04+00:00" pubdate="">2014年10月16日 at 下午9:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个系列很不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58558">
+<article class="comment" id="comment-58558">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sharp</a></span> on <a href="http://www.acmerblog.com/hdu-3436-queue-jumpers-5462.html#comment-58558" rel="nofollow"><time datetime="2014-09-29T12:45:00+00:00" pubdate="">2014年9月29日 at 下午12:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二种想法，我想来好久，为啥需要一个newhead，发现是把最后一个节点一直返回到嘴上面这层函数。厉害，这道题之前没样子想过。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48950">
+<article class="comment" id="comment-48950">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">HenrryCheng</a></span> on <a href="http://www.acmerblog.com/hdu-3436-queue-jumpers-5462.html#comment-48950" rel="nofollow"><time datetime="2014-09-12T17:49:29+00:00" pubdate="">2014年9月12日 at 下午5:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已更正。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58551">
+<article class="comment" id="comment-58551">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">AC_Grazy</a></span> on <a href="http://www.acmerblog.com/hdu-3436-queue-jumpers-5462.html#comment-58551" rel="nofollow"><time datetime="2014-07-25T10:22:05+00:00" pubdate="">2014年7月25日 at 上午10:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Dijkstra 不适合有负权值的边吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58554">
+<article class="comment" id="comment-58554">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wuzirui</a></span> on <a href="http://www.acmerblog.com/hdu-3436-queue-jumpers-5462.html#comment-58554" rel="nofollow"><time datetime="2014-06-19T15:35:08+00:00" pubdate="">2014年6月19日 at 下午3:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给力！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58555">
+<article class="comment" id="comment-58555">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">BGPY243956</a></span> on <a href="http://www.acmerblog.com/hdu-3436-queue-jumpers-5462.html#comment-58555" rel="nofollow"><time datetime="2014-04-27T19:49:14+00:00" pubdate="">2014年4月27日 at 下午7:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一个真的要比较两次吗，换成else if 不可以吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58549">
+<article class="comment" id="comment-58549">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">21435048</a></span> on <a href="http://www.acmerblog.com/hdu-3436-queue-jumpers-5462.html#comment-58549" rel="nofollow"><time datetime="2014-04-27T13:56:54+00:00" pubdate="">2014年4月27日 at 下午1:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>remove没有实现</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

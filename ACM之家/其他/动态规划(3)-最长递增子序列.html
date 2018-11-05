@@ -1,0 +1,453 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>02-26</div>
+<div class="tit"><h1 class="entry-title">动态规划(3)-最长递增子序列</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/zhuanti/algorithm" rel="category tag" title="查看算法分析中的全部文章">算法分析</a>, <a href="http://www.acmerblog.com/category/zhuanti/classic" rel="category tag" title="查看经典问题中的全部文章">经典问题</a></span><span class="i4">围观3622次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4640" href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comments" title="《动态规划(3)-最长递增子序列》上的评论">31 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p>前面两讲：<a href="http://www.acmerblog.com/dynamic-programming-4577.html" rel="bookmark" title="链向 动态规划(1)-重叠子问题的性质 的固定链接">动态规划(1)-重叠子问题的性质</a> 和 <a href="http://www.acmerblog.com/optimal-substructure-property-4581.html" rel="bookmark" title="链向 动态规划(2)-最优子结构的性质 的固定链接">动态规划(2)-最优子结构的性质</a> 我们已经讨论了重叠子问题和最优子结构性质。</p>
+<p><span><span>现在我们讨论最长递增子序列（LIS）的问题，可以使用动态规划要解决的问题，例如，</span></span><br/>
+<span><span>最长递增子序列（LIS）的问题是要找到一个给定序列的最长子序列的长度，使得子序列中的所有元素被排序的顺序增加。</span></span></p>
+<p><span>例如，{10，22，9，33，21，50，41，60，80}  LIS的长度是6和 LIS为{10，22，33，50，60，80}。</span></p>
+<p><em><strong>最优子结构：</strong></em></p>
+<p>对于长度为N的数组A[N] = {a0, a1, a2, …, an-1}，假设假设我们想求以aj结尾的最大递增子序列长度，设为L[j]，那么L[j] = max(L[i]) + 1, where i &lt; j &amp;&amp; a[i] &lt; a[j], 也就是i的范围是0到j – 1。这样，想求aj结尾的最大递增子序列的长度，我们就需要遍历j之前的所有位置i（0到j-1），找出a[i] &lt; a[j]，计算这些i中，能产生最大L[i]的i，之后就可以求出L[j]。之后我对每一个A[N]中的元素都计算以他们各自结尾的最大递增子序列的长度，这些长度的最大值，就是我们要求的问题——数组A的最大递增子序列。</p>
+<p><em><strong>重叠子问题：</strong></em></p>
+<p><span>以下是简单的递归实现LIS问题(先不说性能和好坏，后面讨论)。这个实现我们</span><span>遵循上面提到的递归结构。</span><span>使用 max_ending_here 返回 每一个LIS结尾的元素，结果</span><span>LIS是使用指针变量返回。</span></p>
+<pre class="brush:cpp">/* LIS 简单的递归实现 */
+#include&lt;stdio.h&gt;
+#include&lt;stdlib.h&gt;
+
+/* 要利用递归调用，此函数必须返回两件事情：
+   1) Length of LIS ending with element arr[n-1]. We use max_ending_here for this purpose
+   2) Overall maximum as the LIS may end with an element before arr[n-1]  max_ref is used this purpose.
+The value of LIS of full array of size n is stored in *max_ref which is our final result
+*/
+int _lis( int arr[], int n, int *max_ref)
+{
+    /* Base case */
+    if(n == 1)
+        return 1;
+
+    int res, max_ending_here = 1; // 以arr[n-1]结尾的 LIS的长度
+
+    /* Recursively get all LIS ending with arr[0], arr[1] ... ar[n-2]. If 
+       arr[i-1] is smaller than arr[n-1], and max ending with arr[n-1] needs
+       to be updated, then update it */
+    for(int i = 1; i &lt; n; i++)
+    {
+        res = _lis(arr, i, max_ref);
+        if (arr[i-1] &lt; arr[n-1] &amp;&amp; res + 1 &gt; max_ending_here)
+            max_ending_here = res + 1;
+    }
+
+    // Compare max_ending_here with the overall max. And update the
+    // overall max if needed
+    if (*max_ref &lt; max_ending_here)
+       *max_ref = max_ending_here;
+
+    // Return length of LIS ending with arr[n-1]
+    return max_ending_here;
+}
+
+// The wrapper function for _lis()
+int lis(int arr[], int n)
+{
+    // The max variable holds the result
+    int max = 1;
+
+    // The function _lis() stores its result in max
+    _lis( arr, n, &amp;max );
+
+    // returns max
+    return max;
+}
+
+/* 测试上面的函数 */
+int main()
+{
+    int arr[] = { 10, 22, 9, 33, 21, 50, 41, 60 };
+    int n = sizeof(arr)/sizeof(arr[0]);
+    printf("Length of LIS is %d\n",  lis( arr, n ));
+    getchar();
+    return 0;
+}</pre>
+<p><span>根据上面的实现方式，以下是递归树大小4的调用。</span><span>LIS（N）为我们返回arr[]数组的LIS长度。</span></p>
+<pre class="brush:other">    
+                     lis(4)           
+                 /       |      \
+         lis(3)      lis(2)    lis(1)  
+        /     \        /         
+  lis(2)  lis(1)   lis(1) 
+  /    
+lis(1)</pre>
+<p><span>我们可以看到，有些重复的子问题被多次计算。</span><span>所以我们可以使用memoization (记忆化存储)的或打表 来避免同一子问题的重新计算。</span><span>以下是打表方式实现的LIS。</span></p>
+<pre class="brush:cpp">/* LIS 的动态规划方式实现*/
+#include&lt;stdio.h&gt;
+#include&lt;stdlib.h&gt;
+/* lis() returns the length of the longest increasing subsequence in 
+    arr[] of size n */
+int lis( int arr[], int n )
+{
+   int *lis, i, j, max = 0;
+   lis = (int*) malloc ( sizeof( int ) * n );
+
+   /* Initialize LIS values for all indexes */
+   for ( i = 0; i &lt; n; i++ )
+      lis[i] = 1;
+
+   /* Compute optimized LIS values in bottom up manner */
+   for ( i = 1; i &lt; n; i++ )
+      for ( j = 0; j &lt; i; j++ )
+         if ( arr[i] &gt; arr[j] &amp;&amp; lis[i] &lt; lis[j] + 1)
+            lis[i] = lis[j] + 1;
+
+   /* Pick maximum of all LIS values */
+   for ( i = 0; i &lt; n; i++ )
+      if ( max &lt; lis[i] )
+         max = lis[i];
+
+   /* Free memory to avoid memory leak */
+   free( lis );
+
+   return max;
+}
+
+/* 测试程序 */
+int main()
+{
+  int arr[] = { 10, 22, 9, 33, 21, 50, 41, 60 };
+  int n = sizeof(arr)/sizeof(arr[0]);
+  printf("Length of LIS is %d\n", lis( arr, n ) );
+
+  getchar();
+  return 0;
+}</pre>
+<p>注意，<span><span>上面动态的DP解决方案的时间复杂度为O（n ^ 2），其实较好的解决方案是 O(nlogn)，</span></span><span><span>这篇文章的目的是解释DP一个简单的例子，不做介绍了。</span></span></p>
+<p>ACM之家原创：链接：</p>
+<p>参考：http://www.geeksforgeeks.org/dynamic-programming-set-3-longest-increasing-subsequence/</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-80122">
+<article class="comment" id="comment-80122">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518029" rel="external nofollow">新用户166894</a></span> on <a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comment-80122" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>佟家念雪王八蛋，活着是污染空气，死了是污染土地，不穿衣服是禽兽，穿上衣服是衣冠禽兽！顶起来！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80121">
+<article class="comment" id="comment-80121">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518029" rel="external nofollow">新用户166894</a></span> on <a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comment-80121" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>佟家念雪王八蛋，活着是污染空气，死了是污染土地，不穿衣服是禽兽，穿上衣服是衣冠禽兽！顶起来！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80120">
+<article class="comment" id="comment-80120">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518029" rel="external nofollow">新用户166894</a></span> on <a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comment-80120" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>佟家念雪王八蛋，活着是污染空气，死了是污染土地，不穿衣服是禽兽，穿上衣服是衣冠禽兽！顶起来！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80119">
+<article class="comment" id="comment-80119">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518029" rel="external nofollow">新用户166894</a></span> on <a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comment-80119" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>佟家念雪王八蛋，活着是污染空气，死了是污染土地，不穿衣服是禽兽，穿上衣服是衣冠禽兽！顶起来！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80118">
+<article class="comment" id="comment-80118">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518029" rel="external nofollow">新用户166894</a></span> on <a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comment-80118" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>佟家念雪王八蛋，活着是污染空气，死了是污染土地，不穿衣服是禽兽，穿上衣服是衣冠禽兽！顶起来！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80117">
+<article class="comment" id="comment-80117">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518029" rel="external nofollow">新用户166894</a></span> on <a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comment-80117" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>佟家念雪王八蛋，活着是污染空气，死了是污染土地，不穿衣服是禽兽，穿上衣服是衣冠禽兽！顶起来！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80116">
+<article class="comment" id="comment-80116">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518029" rel="external nofollow">新用户166894</a></span> on <a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comment-80116" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>佟家念雪王八蛋，活着是污染空气，死了是污染土地，不穿衣服是禽兽，穿上衣服是衣冠禽兽！顶起来！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80115">
+<article class="comment" id="comment-80115">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518029" rel="external nofollow">新用户166894</a></span> on <a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comment-80115" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>佟家念雪王八蛋，活着是污染空气，死了是污染土地，不穿衣服是禽兽，穿上衣服是衣冠禽兽！顶起来！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80114">
+<article class="comment" id="comment-80114">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518029" rel="external nofollow">新用户166894</a></span> on <a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comment-80114" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>佟家念雪王八蛋，活着是污染空气，死了是污染土地，不穿衣服是禽兽，穿上衣服是衣冠禽兽！顶起来！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80113">
+<article class="comment" id="comment-80113">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518029" rel="external nofollow">新用户166894</a></span> on <a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comment-80113" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>佟家念雪王八蛋，活着是污染空气，死了是污染土地，不穿衣服是禽兽，穿上衣服是衣冠禽兽！顶起来！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80112">
+<article class="comment" id="comment-80112">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518029" rel="external nofollow">新用户166894</a></span> on <a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comment-80112" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>佟家念雪王八蛋，活着是污染空气，死了是污染土地，不穿衣服是禽兽，穿上衣服是衣冠禽兽！顶起来！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80111">
+<article class="comment" id="comment-80111">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518029" rel="external nofollow">新用户166894</a></span> on <a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comment-80111" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>佟家念雪王八蛋，活着是污染空气，死了是污染土地，不穿衣服是禽兽，穿上衣服是衣冠禽兽！顶起来！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80110">
+<article class="comment" id="comment-80110">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518029" rel="external nofollow">新用户166894</a></span> on <a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comment-80110" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>佟家念雪王八蛋，活着是污染空气，死了是污染土地，不穿衣服是禽兽，穿上衣服是衣冠禽兽！顶起来！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80109">
+<article class="comment" id="comment-80109">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518029" rel="external nofollow">新用户166894</a></span> on <a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comment-80109" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>佟家念雪王八蛋，活着是污染空气，死了是污染土地，不穿衣服是禽兽，穿上衣服是衣冠禽兽！顶起来！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80108">
+<article class="comment" id="comment-80108">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518029" rel="external nofollow">新用户166894</a></span> on <a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comment-80108" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>佟家念雪王八蛋，活着是污染空气，死了是污染土地，不穿衣服是禽兽，穿上衣服是衣冠禽兽！顶起来！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80107">
+<article class="comment" id="comment-80107">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518029" rel="external nofollow">新用户166894</a></span> on <a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comment-80107" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>佟家念雪王八蛋，活着是污染空气，死了是污染土地，不穿衣服是禽兽，穿上衣服是衣冠禽兽！顶起来！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80106">
+<article class="comment" id="comment-80106">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518029" rel="external nofollow">新用户166894</a></span> on <a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comment-80106" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>佟家念雪王八蛋，活着是污染空气，死了是污染土地，不穿衣服是禽兽，穿上衣服是衣冠禽兽！顶起来！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63066">
+<article class="comment" id="comment-63066">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">BGPY243956</a></span> on <a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comment-63066" rel="nofollow"><time datetime="2015-04-22T02:21:11+00:00" pubdate="">2015年4月22日 at 上午2:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感觉我好像很多都不会做。。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47341">
+<article class="comment" id="comment-47341">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">linzzzz</a></span> on <a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comment-47341" rel="nofollow"><time datetime="2014-12-17T12:05:03+00:00" pubdate="">2014年12月17日 at 下午12:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题应该是有一般性的解决方法</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-47340">
+<article class="comment" id="comment-47340">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiao1108</a></span> on <a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comment-47340" rel="nofollow"><time datetime="2014-11-28T06:36:10+00:00" pubdate="">2014年11月28日 at 上午6:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>写的很好~~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47344">
+<article class="comment" id="comment-47344">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">anshansh</a></span> on <a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comment-47344" rel="nofollow"><time datetime="2014-11-15T14:17:36+00:00" pubdate="">2014年11月15日 at 下午2:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>站长，你好！<br/>
+         你创办的的网站非常好，为我们学习算法练习编程提供了一个很好的平台，我想给你提个小建议，就是要能把每道题目的难度标出来就好了，这样我们学习起来会有一个循序渐进的过程！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-47343">
+<article class="comment" id="comment-47343">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Trenson</a></span> on <a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comment-47343" rel="nofollow"><time datetime="2014-10-25T15:45:28+00:00" pubdate="">2014年10月25日 at 下午3:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这怎么用Catalan数啊？求解答！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47342">
+<article class="comment" id="comment-47342">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Dwayne</a></span> on <a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comment-47342" rel="nofollow"><time datetime="2014-09-30T04:29:21+00:00" pubdate="">2014年9月30日 at 上午4:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢支持！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26399">
+<article class="comment" id="comment-26399">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">litao</a></span> on <a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comment-26399" rel="nofollow"><time datetime="2014-09-24T18:46:55+00:00" pubdate="">2014年9月24日 at 下午6:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有意思，有难度</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47345">
+<article class="comment" id="comment-47345">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tangzhihua</a></span> on <a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comment-47345" rel="nofollow"><time datetime="2014-09-23T10:17:08+00:00" pubdate="">2014年9月23日 at 上午10:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>顶一个 赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63067">
+<article class="comment" id="comment-63067">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lin</a></span> on <a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comment-63067" rel="nofollow"><time datetime="2014-09-12T21:53:20+00:00" pubdate="">2014年9月12日 at 下午9:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>博主，你这个是wordpress哪个主题啊，不错哦~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47338">
+<article class="comment" id="comment-47338">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">acmer29</a></span> on <a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comment-47338" rel="nofollow"><time datetime="2014-08-06T15:34:13+00:00" pubdate="">2014年8月6日 at 下午3:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>递归实现的代码部分<br/>
+14句和18句的 wt[n - 1]是不是应该改为 wt[ n ] ?</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26400">
+<article class="comment" id="comment-26400">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">digiworm</a></span> on <a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comment-26400" rel="nofollow"><time datetime="2014-08-03T08:42:11+00:00" pubdate="">2014年8月3日 at 上午8:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Often We don’t set up on weblogs, but I would like to condition that this established up really forced me individually to do this! considerably outstanding publish</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47339">
+<article class="comment" id="comment-47339">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">reking</a></span> on <a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comment-47339" rel="nofollow"><time datetime="2014-06-30T13:00:29+00:00" pubdate="">2014年6月30日 at 下午1:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不考虑最后将结果排序的话，快排的时间复杂度是O(N) ，而堆排的是O(N*logK),这样比较看，快排快</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26401">
+<article class="comment" id="comment-26401">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rick</a></span> on <a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comment-26401" rel="nofollow"><time datetime="2014-04-29T07:56:12+00:00" pubdate="">2014年4月29日 at 上午7:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嗯   分析得很到位，确实用模板编程能让面试官对你的印象更好。在设置辅助栈的时候可以这样：push时，比较要push的elem和辅助栈的栈顶，elem&lt;=min.top()，则min.push(elem).否则只要push（elem）就好。在pop的时候，比较stack.top()与min.top(),if(stack.top()&lt;=min.top()),则{stack.pop();min.pop();}，否则{stack.pop();}.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-179">
+<article class="comment" id="comment-179">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">parcel</span> on <a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html#comment-179" rel="nofollow"><time datetime="2014-02-27T20:17:49+00:00" pubdate="">2014年2月27日 at 下午8:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，感谢分享。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

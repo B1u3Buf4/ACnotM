@@ -1,0 +1,440 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-30</div>
+<div class="tit"><h1 class="entry-title">HDU 3459-Rubik 2×2×2-DFS-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/dfs" rel="category tag" title="查看DFS搜索中的全部文章">DFS搜索</a>, <a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/search" rel="category tag" title="查看搜索中的全部文章">搜索</a></span><span class="i4">围观692次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5560" href="http://www.acmerblog.com/hdu-3459-rubik-222-5560.html#comments" title="《HDU 3459-Rubik 2×2×2-DFS-[解题报告]HOJ》上的评论">22 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Rubik 2×2×2</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Sonny is probably the only computer science Ph.D. student who cannot solve a Rubik’s cube. One day, he came across a neat little 2×2×2 Rubik’s cube, and thought, "Finally, here’s a cube that’s easy enough for me to do!" Nope, wrong! He got pwned, hardcore. How embarrassing.To ensure that this does not happen again, he decides to write a computer program to solve the cube.<br/>Then he had this brilliant idea: Why not have the students at the programming contest do the work instead? So, given an initial conguration of the 2×2×2 Rubik’s cube, your task for this problem is to write a program that solves it.<br/>The mini-cube has 6 faces, each with 4 painted tiles on it. The faces are labeled Front (F), Back (B),Up (U), Down (D), Left (L), and Right (R), according to the diagram below. Each of the tiles on the faces can be colored Red (R), Green (G), Blue (B), Yellow (Y), Orange (O), or White (W), and there are exactly<br/>4 instances of each color. The cube is considered solved when the colors of all tiles on each distinct face of the cube match.<center><img src="http://www.acmerblog.com/img/1396616408123.jpg"/></center> You may use any combination of three distinct moves to transform the cube: a turn about the X-axis,a turn about the Y-axis, or a turn about the Z-axis. Each turn is exactly 90 degrees of all tiles on half the<br/>cube, in the directions illustrated below. Note that the back-down-left corner is fixed with respect to all valid transforms.<center><img src="http://www.acmerblog.com/img/1396616408290.jpg"/></center> Can you come up with a sequence of moves that will solve a given conguration of the Rubik’s cube? </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+You will be given maps of an "unwrapped" cubes showing colors on each of the faces, in the following format:<center><img src="http://www.acmerblog.com/img/1396616408486.jpg"/></center> The letters in the above diagram shows you where to find the colors on each face (as shown in the first diagram) from the map only { it is not valid input! The front face is oriented as in the diagram, with the other faces on the map attached to it so that it wraps to cover the cube. The letters on the faces may be any of R, G, B, Y, O, or W to indicate the color. Dot (.) characters serve to pad the map to a 6 × 8 grid,and are of no other signicance.The input consists of several conguration maps in the format described, separated by blank lines. You may assume that each conguration is both valid and solvable. The end of input is denoted by an "empty" conguration consisting solely of `.’ characters; do not process this map. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+You will be given maps of an "unwrapped" cubes showing colors on each of the faces, in the following format:<center><img src="http://www.acmerblog.com/img/1396616408549.jpg"/></center> The letters in the above diagram shows you where to find the colors on each face (as shown in the first diagram) from the map only { it is not valid input! The front face is oriented as in the diagram, with the other faces on the map attached to it so that it wraps to cover the cube. The letters on the faces may be any of R, G, B, Y, O, or W to indicate the color. Dot (.) characters serve to pad the map to a 6 × 8 grid,and are of no other signicance.The input consists of several conguration maps in the format described, separated by blank lines. You may assume that each conguration is both valid and solvable. The end of input is denoted by an "empty" conguration consisting solely of `.’ characters; do not process this map.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+..WO....
+..WO....
+BBOYGGWR
+BBOYGGWR
+..YR....
+..YR....
+
+..GY....
+..BY....
+ROYWRRBB
+GWOWRBOW
+..YG....
+..OG....
+
+........
+........
+........
+........
+........
+........</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+X
+YZXXXZYZXYXYZZYZZYZXYY</pre>
+<p> <!-- problem end --></p>
+<p>IDA*   </p>
+<p>AC代码如下：</p>
+<pre class="brush:cpp ">#include &lt;iostream&gt;
+#include &lt;cstring&gt;
+#include &lt;cstdio&gt;
+#include &lt;algorithm&gt;
+using namespace std;
+
+char maps[10][10];
+int maxdeep;
+char ans[100];
+
+int get_h(){
+    int cnt = 0;
+    if( maps[2][0] != maps[3][0] || maps[2][7] != maps[3][7] )  cnt++;
+    if( maps[3][6] != maps[3][7] || maps[5][2] != maps[5][3] )  cnt++;
+    if( maps[4][2] != maps[5][2] || maps[3][0] != maps[3][1] )  cnt++;
+    return cnt;
+}
+
+bool check(){
+    if( !( maps[0][2] == maps[0][3] &amp;&amp; maps[0][3] == maps[1][2] &amp;&amp; maps[1][2] == maps[1][3] ) ) return false;
+    if( !( maps[2][2] == maps[2][3] &amp;&amp; maps[2][3] == maps[3][2] &amp;&amp; maps[3][2] == maps[3][3] ) ) return false;
+    if( !( maps[4][2] == maps[4][3] &amp;&amp; maps[4][3] == maps[5][2] &amp;&amp; maps[5][2] == maps[5][3] ) ) return false;
+    if( !( maps[2][0] == maps[2][1] &amp;&amp; maps[2][1] == maps[3][0] &amp;&amp; maps[3][0] == maps[3][1] ) ) return false;
+    if( !( maps[2][4] == maps[2][5] &amp;&amp; maps[2][5] == maps[3][4] &amp;&amp; maps[3][4] == maps[3][5] ) ) return false;
+    if( !( maps[2][6] == maps[2][7] &amp;&amp; maps[2][7] == maps[3][6] &amp;&amp; maps[3][6] == maps[3][7] ) ) return false;
+    return true;
+}
+
+void rotation_x(){
+    char temp1 = maps[5][3];
+    char temp2 = maps[4][3];
+    maps[5][3] = maps[3][3];
+    maps[4][3] = maps[2][3];
+    maps[3][3] = maps[1][3];
+    maps[2][3] = maps[0][3];
+    maps[1][3] = maps[2][6];
+    maps[0][3] = maps[3][6];
+    maps[2][6] = temp1;
+    maps[3][6] = temp2;
+    temp1 = maps[2][4];
+    maps[2][4] = maps[2][5];
+    maps[2][5] = maps[3][5];
+    maps[3][5] = maps[3][4];
+    maps[3][4] = temp1;
+}
+
+void rotation_y(){
+    char temp1 = maps[2][7];
+    char temp2 = maps[2][6];
+    for( int i = 7; i &gt;= 3; i -= 2 ){
+        maps[2][i] = maps[2][i-2];
+        maps[2][i-1] = maps[2][i-3];
+    }
+    maps[2][1] = temp1;
+    maps[2][0] = temp2;
+    char temp = maps[1][2];
+    maps[1][2] = maps[0][2];
+    maps[0][2] = maps[0][3];
+    maps[0][3] = maps[1][3];
+    maps[1][3] = temp;
+}
+
+void rotation_z(){
+    char temp1 = maps[1][2];
+    char temp2 = maps[1][3];
+    maps[1][2] = maps[2][4];
+    maps[1][3] = maps[3][4];
+    maps[2][4] = maps[4][3];
+    maps[3][4] = maps[4][2];
+    maps[4][3] = maps[3][1];
+    maps[4][2] = maps[2][1];
+    maps[3][1] = temp1;
+    maps[2][1] = temp2;
+    char temp = maps[2][2];
+    maps[2][2] = maps[2][3];
+    maps[2][3] = maps[3][3];
+    maps[3][3] = maps[3][2];
+    maps[3][2] = temp;
+}
+
+void pf(){
+    cout &lt;&lt; endl;
+    for( int i = 0; i &lt; 6; i++ ){
+        for( int j = 0; j &lt; 8; j++ ){
+            cout &lt;&lt; maps[i][j];
+        }
+        cout &lt;&lt; endl;
+    }
+    cout &lt;&lt; endl;
+}
+
+bool DFS( int deep ){
+    if( deep + get_h() &gt; maxdeep )  return false;
+    if( deep == maxdeep )   return check();
+
+    rotation_x();
+  //  pf();
+    ans[deep] = 'X';
+    if( DFS( deep + 1 ) )   return true;
+    rotation_x();rotation_x();rotation_x();
+
+    rotation_y();
+    ans[deep] = 'Y';
+    if( DFS( deep + 1 ) )   return true;
+    rotation_y();rotation_y();rotation_y();
+
+    rotation_z();
+    ans[deep] = 'Z';
+    if( DFS( deep + 1 ) )   return true;
+    rotation_z();rotation_z();rotation_z();
+
+    return false;
+}
+
+int main(){
+    while( 1 ){
+        for( int i = 0; i &lt; 6; i++ ){
+            scanf( "%s", maps[i] );
+        }
+        if( maps[0][2] == '.' ){
+            break;
+        }
+        maxdeep = 0;
+        while( true ){
+            maxdeep++;
+            if( DFS( 0 ) ){
+                break;
+            }
+        }
+        for( int i = 0; i &lt; maxdeep; i++ ){
+            cout &lt;&lt; ans[i];
+        }
+        cout &lt;&lt; endl;
+    }
+    return 0;
+}</pre>
+<p>参考：<a href="#respond">http://blog.csdn.net/hzh_0000/article/details/21990291</a></p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-76440">
+<article class="comment" id="comment-76440">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528787" rel="external nofollow">新用户051817</a></span> on <a href="http://www.acmerblog.com/hdu-3459-rubik-222-5560.html#comment-76440" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你确定C17能干的活伊尔76干得了，C141跟伊尔76是同行吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76439">
+<article class="comment" id="comment-76439">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528787" rel="external nofollow">新用户051817</a></span> on <a href="http://www.acmerblog.com/hdu-3459-rubik-222-5560.html#comment-76439" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你确定C17能干的活伊尔76干得了，C141跟伊尔76是同行吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76438">
+<article class="comment" id="comment-76438">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528787" rel="external nofollow">新用户051817</a></span> on <a href="http://www.acmerblog.com/hdu-3459-rubik-222-5560.html#comment-76438" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你确定C17能干的活伊尔76干得了，C141跟伊尔76是同行吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76437">
+<article class="comment" id="comment-76437">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528787" rel="external nofollow">新用户051817</a></span> on <a href="http://www.acmerblog.com/hdu-3459-rubik-222-5560.html#comment-76437" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你确定C17能干的活伊尔76干得了，C141跟伊尔76是同行吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76436">
+<article class="comment" id="comment-76436">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528787" rel="external nofollow">新用户051817</a></span> on <a href="http://www.acmerblog.com/hdu-3459-rubik-222-5560.html#comment-76436" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你确定C17能干的活伊尔76干得了，C141跟伊尔76是同行吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76435">
+<article class="comment" id="comment-76435">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528787" rel="external nofollow">新用户051817</a></span> on <a href="http://www.acmerblog.com/hdu-3459-rubik-222-5560.html#comment-76435" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你确定C17能干的活伊尔76干得了，C141跟伊尔76是同行吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76434">
+<article class="comment" id="comment-76434">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528787" rel="external nofollow">新用户051817</a></span> on <a href="http://www.acmerblog.com/hdu-3459-rubik-222-5560.html#comment-76434" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你确定C17能干的活伊尔76干得了，C141跟伊尔76是同行吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76433">
+<article class="comment" id="comment-76433">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528787" rel="external nofollow">新用户051817</a></span> on <a href="http://www.acmerblog.com/hdu-3459-rubik-222-5560.html#comment-76433" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你确定C17能干的活伊尔76干得了，C141跟伊尔76是同行吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29836">
+<article class="comment" id="comment-29836">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">starcuan</a></span> on <a href="http://www.acmerblog.com/hdu-3459-rubik-222-5560.html#comment-29836" rel="nofollow"><time datetime="2015-06-28T14:07:28+00:00" pubdate="">2015年6月28日 at 下午2:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29829">
+<article class="comment" id="comment-29829">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jandk</a></span> on <a href="http://www.acmerblog.com/hdu-3459-rubik-222-5560.html#comment-29829" rel="nofollow"><time datetime="2015-06-21T17:44:23+00:00" pubdate="">2015年6月21日 at 下午5:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>使用代码高亮的插件，再修改下css</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29830">
+<article class="comment" id="comment-29830">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ozhfo</a></span> on <a href="http://www.acmerblog.com/hdu-3459-rubik-222-5560.html#comment-29830" rel="nofollow"><time datetime="2015-04-23T04:09:57+00:00" pubdate="">2015年4月23日 at 上午4:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>辛苦了，顶</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29838">
+<article class="comment" id="comment-29838">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">crazymage</a></span> on <a href="http://www.acmerblog.com/hdu-3459-rubik-222-5560.html#comment-29838" rel="nofollow"><time datetime="2015-04-16T20:23:29+00:00" pubdate="">2015年4月16日 at 下午8:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>大致看了下，算法的时间复杂度没有很本性的提升，算不上高效。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29833">
+<article class="comment" id="comment-29833">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NiKaWaLi</a></span> on <a href="http://www.acmerblog.com/hdu-3459-rubik-222-5560.html#comment-29833" rel="nofollow"><time datetime="2015-04-13T00:49:17+00:00" pubdate="">2015年4月13日 at 上午12:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个也是算法导论的习题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58641">
+<article class="comment" id="comment-58641">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ycaxgjd</a></span> on <a href="http://www.acmerblog.com/hdu-3459-rubik-222-5560.html#comment-58641" rel="nofollow"><time datetime="2015-04-07T20:40:57+00:00" pubdate="">2015年4月7日 at 下午8:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这代码的输出格式不对阿，else语句的low=p移动一下位置，增加可读性</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29832">
+<article class="comment" id="comment-29832">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tangzhihua</a></span> on <a href="http://www.acmerblog.com/hdu-3459-rubik-222-5560.html#comment-29832" rel="nofollow"><time datetime="2015-03-27T09:29:05+00:00" pubdate="">2015年3月27日 at 上午9:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可以根据二叉排序树的定义进行严格的排序树创建和后序遍历操作。如果形成的排序树相同，其树的前、中、后序遍历是相同的，但在此处不能使用中序遍历，因为，中序遍历的结果就是排序的结果。经在九度测试，运行时间90ms，比楼主的要快。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58639">
+<article class="comment" id="comment-58639">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">actlea</a></span> on <a href="http://www.acmerblog.com/hdu-3459-rubik-222-5560.html#comment-58639" rel="nofollow"><time datetime="2015-03-10T03:59:34+00:00" pubdate="">2015年3月10日 at 上午3:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不太懂呀，乡亲们。原理知道代码不会</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29834">
+<article class="comment" id="comment-29834">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaotong2055</a></span> on <a href="http://www.acmerblog.com/hdu-3459-rubik-222-5560.html#comment-29834" rel="nofollow"><time datetime="2015-02-19T05:49:37+00:00" pubdate="">2015年2月19日 at 上午5:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>代码不对，仔细对比一下输入输出， 怎么会有‘‘printf("The winning moves are:");’’这种输出呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29835">
+<article class="comment" id="comment-29835">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">anthozoan77</a></span> on <a href="http://www.acmerblog.com/hdu-3459-rubik-222-5560.html#comment-29835" rel="nofollow"><time datetime="2014-12-25T22:30:01+00:00" pubdate="">2014年12月25日 at 下午10:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>在方法1里面：</p>
+<p>    //遍历所有的边，计算入度<br/>
+    for(int i=0; i&lt;V; i++)<br/>
+  {<br/>
+        degree <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/>  = 0;<br/>
+        for (j = adj <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .begin(); j != adj <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .end(); ++j)<br/>
+       {<br/>
+            degree[*j]++;<br/>
+        }<br/>
+    }</p>
+<p>为什么每遍历一条链表，要首先将每个链表头的顶点的入度置为0呢？<br/>
+比如顶点5，若在顶点1、2、3、4的链表中出现过顶点5，那么要增加顶点5的入度，但是在遍历顶点5的链表时，又将顶点5的入度置为0了，那之前的从顶点1234到顶点5的边不是都没了吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58640">
+<article class="comment" id="comment-58640">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">magichu</a></span> on <a href="http://www.acmerblog.com/hdu-3459-rubik-222-5560.html#comment-58640" rel="nofollow"><time datetime="2014-10-30T07:04:04+00:00" pubdate="">2014年10月30日 at 上午7:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>辛苦了，顶</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29839">
+<article class="comment" id="comment-29839">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">20134055016</a></span> on <a href="http://www.acmerblog.com/hdu-3459-rubik-222-5560.html#comment-29839" rel="nofollow"><time datetime="2014-10-15T22:49:57+00:00" pubdate="">2014年10月15日 at 下午10:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>网站不错，支持一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29837">
+<article class="comment" id="comment-29837">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">youpushipop</a></span> on <a href="http://www.acmerblog.com/hdu-3459-rubik-222-5560.html#comment-29837" rel="nofollow"><time datetime="2014-09-12T07:53:15+00:00" pubdate="">2014年9月12日 at 上午7:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的模板</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29831">
+<article class="comment" id="comment-29831">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">anthozoan77</a></span> on <a href="http://www.acmerblog.com/hdu-3459-rubik-222-5560.html#comment-29831" rel="nofollow"><time datetime="2014-09-10T10:39:25+00:00" pubdate="">2014年9月10日 at 上午10:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嗯，是写错了，文中以更改。MAX ( L(X[0..m-2], Y[0..n-1]), L(X[0..m-1], Y[0..n-2])</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

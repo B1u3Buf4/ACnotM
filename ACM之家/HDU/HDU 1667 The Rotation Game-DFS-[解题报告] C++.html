@@ -1,0 +1,230 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-21</div>
+<div class="tit"><h1 class="entry-title">HDU 1667 The Rotation Game-DFS-[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/dfs" rel="category tag" title="查看DFS搜索中的全部文章">DFS搜索</a>, <a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/search/backtracking" rel="category tag" title="查看回溯和剪枝中的全部文章">回溯和剪枝</a>, <a href="http://www.acmerblog.com/category/search" rel="category tag" title="查看搜索中的全部文章">搜索</a></span><span class="i4">围观579次</span><span class="i3"><a class="ds-thread-count" data-thread-key="2614" href="http://www.acmerblog.com/hdu-1667-the-rotation-game-2614.html#comments" title="《HDU 1667 The Rotation Game-DFS-[解题报告] C++》上的评论">8 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">The Rotation Game</h1>
+</div>
+<div>
+<p class="mytitle">问题描述 :</p>
+</div>
+<div class="mypanel">The rotation game uses a # shaped board, which can hold 24 pieces of square blocks (see Fig.1). The blocks are marked with symbols 1, 2 and 3, with exactly 8 pieces of each kind.<br/>
+<center><img alt="" src="http://acm.hdu.edu.cn/data/images/1667-1.jpg"/></center><br/>
+Initially, the blocks are placed on the board randomly. Your task is to move the blocks so that the eight blocks placed in the center square have the same symbol marked. There is only one type of valid move, which is to rotate one of the four lines, each consisting of seven blocks. That is, six blocks in the line are moved towards the head by one block and the head block is moved to the end of the line. The eight possible moves are marked with capital letters A to H. Figure 1 illustrates two consecutive moves, move A and move C from some initial configuration.</div>
+<div>
+<p class="mytitle">输入:</p>
+</div>
+<div class="mypanel">The input consists of no more than 30 test cases. Each test case has only one line that contains 24 numbers, which are the symbols of the blocks in the initial configuration. The rows of blocks are listed from top to bottom. For each row the blocks are listed from left to right. The numbers are separated by spaces. For example, the first test case in the sample input corresponds to the initial configuration in Fig.1. There are no blank lines between cases. There is a line containing a single `0′ after the last test case that ends the input.</div>
+<div>
+<p class="mytitle">输出:</p>
+</div>
+<div class="mypanel">For each test case, you must output two lines. The first line contains all the moves needed to reach the final configuration. Each move is a letter, ranging from `A’ to `H’, and there should not be any spaces between the letters in the line. If no moves are needed, output `No moves needed’ instead. In the second line, you must output the symbol of the blocks in the center square after these moves. If there are several possible solutions, you must output the one that uses the least number of moves. If there is still more than one possible solution, you must output the solution that is smallest in dictionary order for the letters of the moves. There is no need to output blank lines between cases.</div>
+<div>
+<p class="mytitle">样例输入:</p>
+</div>
+<pre class="mypanel iopanel">1 1 1 1 3 2 3 2 3 1 3 2 2 3 1 2 2 2 3 1 2 1 3 3
+1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 3 3 3 3 3 3 3 3
+0</pre>
+<div>
+<p class="mytitle">样例输出:</p>
+</div>
+<pre class="mypanel iopanel">AC
+2
+DDHH
+2</pre>
+<p><!-- problem end --></p>
+<p>转载请注明出处，谢谢<a href="http://blog.csdn.net/ACM_cxlove?viewmode=contents">http://blog.csdn.net/ACM_cxlove?viewmode=contents</a>           by—cxlove</p>
+<p>第一个IDA*搜索。</p>
+<p>迭代加深搜索是逐渐加深搜深度，和BFS比较，不需要大量内存存取状态，但是耗时增加，因为好多都是重复搜索。</p>
+<p>因为迭代加深搜索适用于对内存要求高，但是对时限要求不太高的题目。</p>
+<p>而IDA*就是在在迭代加深搜索中加入估价函数，就是DFS中的剪枝。</p>
+<p>对于这题来说算不上IDA*，就是迭代深搜加了个剪枝。</p>
+<p>由于 每做一步，8个位置只变了一个，估价函数就是至少有几个位置不满足。</p>
+<p> </p>
+<pre class="brush:cpp ">#include&lt;iostream&gt;
+#include&lt;cstdio&gt;
+#include&lt;cstring&gt;
+#include&lt;algorithm&gt;
+#include&lt;queue&gt;
+#include&lt;vector&gt;
+#include&lt;cmath&gt;
+#include&lt;map&gt;
+#include&lt;string&gt;
+#define inf 1&lt;&lt;30
+#define eps 1e-7
+#define LD long double
+#define LL long long
+#define maxn 1005
+using namespace std;
+int central[8]={6,7,8,11,12,15,16,17};  //中间8个方格的位置
+int rotation[4][7]={{0,2,6,11,15,20,22},{1,3,8,12,17,21,23},{10,9,8,7,6,5,4},{19,18,17,16,15,14,13}};//分别是每7个按顺序列好
+int to[8]={0,1,2,3,1,0,3,2};    //8种转换分别对应于哪7个方块
+int rev[8]={5,4,7,6,1,0,3,2};   //每一种转换的相反转换是哪个
+int ope[maxn];    //存储转换操作
+int a[24];    //原始序列
+bool flag;  //是否有解
+int depth;    //当前搜索深度
+int get_h(int *m){   //得到估价函数h
+	int a=0,b=0,c=0; 
+	for(int i=0;i&lt;8;i++)
+		if(m[central[i]]==1)
+			a++;
+		else if(m[central[i]]==2)
+			b++;
+		else if(m[central[i]]==3)
+			c++;
+	return 8-max(a,max(b,c));
+}
+void change(int *b,int kind){
+	if(kind&lt;4){
+		int tmp=b[rotation[to[kind]][0]];
+		for(int i=0;i&lt;6;i++)
+			b[rotation[to[kind]][i]]=b[rotation[to[kind]][i+1]];
+		b[rotation[to[kind]][6]]=tmp;
+	}
+	else{
+		int tmp=b[rotation[to[kind]][6]];
+		for(int i=6;i&gt;0;i--)
+			b[rotation[to[kind]][i]]=b[rotation[to[kind]][i-1]];
+		b[rotation[to[kind]][0]]=tmp;
+	}
+}
+void IDAstar(int *b,int tmp_depth,int father){   //当前序列，当前深度，父节点
+	if(get_h(b)&gt;tmp_depth)    //这就是利用估价函数的剪枝，h的值表示至少还需要多少步，如果在当前深度完成不了就剪掉
+		return;
+	if(flag)    //如果已经有解就退出
+		return;
+	if(tmp_depth==0&amp;&amp;get_h(b)==0){   //深度为0，且为目标状态
+		flag=true;
+		for(int j=depth;j&gt;0;j--)
+			printf("%c",ope[j]+'A');
+		printf("\n%d\n",b[6]);
+		return;
+	}
+	for(int i=0;i&lt;8;i++){
+		int tmp[24];
+		if(rev[i]==father)   //避免死循环，相反操作两次则抵消
+			continue;
+		for(int i=0;i&lt;24;i++)
+			tmp[i]=b[i];
+		change(tmp,i);
+		ope[tmp_depth]=i;
+		dfs(tmp,tmp_depth-1,i);
+	}
+}
+int main(){
+	while(scanf("%d",&amp;a[0])!=EOF&amp;&amp;a[0]){
+		for(int i=1;i&lt;24;i++)
+			scanf("%d",&amp;a[i]);
+		if(get_h(a)==0){    
+			printf("No moves needed\n%d\n",a[6]);  //wa两次，不需要操作也需要输出中心数字
+			continue;
+		}
+		flag=false;
+		for(depth=get_h(a);;depth++){   //迭代加深，至少需要h(a)步，很好理解
+			dfs(a,depth,-1);
+			if(flag)   //有解则退出
+				break;
+		}
+	}
+	return 0;
+}</pre>
+<p> </p>
+<p>解题报告转自：http://blog.csdn.net/acm_cxlove/article/details/7745575</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-89982">
+<article class="comment" id="comment-89982">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512904" rel="external nofollow">新用户804700</a></span> on <a href="http://www.acmerblog.com/hdu-1667-the-rotation-game-2614.html#comment-89982" rel="nofollow"><time datetime="2017-04-13T11:22:37+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>GT是讲什么的啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-42541">
+<article class="comment" id="comment-42541">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">didiaozuoren</a></span> on <a href="http://www.acmerblog.com/hdu-1667-the-rotation-game-2614.html#comment-42541" rel="nofollow"><time datetime="2014-12-25T02:11:23+00:00" pubdate="">2014年12月25日 at 上午2:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我得邮箱cwqbupt@qq.com</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-61948">
+<article class="comment" id="comment-61948">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bluesky</a></span> on <a href="http://www.acmerblog.com/hdu-1667-the-rotation-game-2614.html#comment-61948" rel="nofollow"><time datetime="2014-12-17T04:43:11+00:00" pubdate="">2014年12月17日 at 上午4:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>gcc环境</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-16485">
+<article class="comment" id="comment-16485">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1193658339</a></span> on <a href="http://www.acmerblog.com/hdu-1667-the-rotation-game-2614.html#comment-16485" rel="nofollow"><time datetime="2014-11-01T16:21:46+00:00" pubdate="">2014年11月1日 at 下午4:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这一题的代码这样提交时错误的~少考虑了很多情况</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-61949">
+<article class="comment" id="comment-61949">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">qq1005873807</a></span> on <a href="http://www.acmerblog.com/hdu-1667-the-rotation-game-2614.html#comment-61949" rel="nofollow"><time datetime="2014-07-09T18:45:02+00:00" pubdate="">2014年7月9日 at 下午6:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序只能输出一个子序列</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-61946">
+<article class="comment" id="comment-61946">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">haojunyu</a></span> on <a href="http://www.acmerblog.com/hdu-1667-the-rotation-game-2614.html#comment-61946" rel="nofollow"><time datetime="2014-06-22T19:28:02+00:00" pubdate="">2014年6月22日 at 下午7:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-42542">
+<article class="comment" id="comment-42542">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">melody12ab</a></span> on <a href="http://www.acmerblog.com/hdu-1667-the-rotation-game-2614.html#comment-42542" rel="nofollow"><time datetime="2014-05-01T19:18:45+00:00" pubdate="">2014年5月1日 at 下午7:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正在练习，很有帮助</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-61947">
+<article class="comment" id="comment-61947">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Snarl_jsb</a></span> on <a href="http://www.acmerblog.com/hdu-1667-the-rotation-game-2614.html#comment-61947" rel="nofollow"><time datetime="2014-01-09T23:44:41+00:00" pubdate="">2014年1月9日 at 下午11:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>加了星号 (*) 表示跳过此数据不读入. 因为scanf是不读取本行回车的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

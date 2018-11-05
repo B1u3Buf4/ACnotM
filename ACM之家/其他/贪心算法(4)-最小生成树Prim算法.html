@@ -1,0 +1,364 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>05-15</div>
+<div class="tit"><h1 class="entry-title">贪心算法(4)-最小生成树Prim算法</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/graph/mst" rel="category tag" title="查看最小生成树中的全部文章">最小生成树</a>, <a href="http://www.acmerblog.com/category/basis/tanxin" rel="category tag" title="查看贪心中的全部文章">贪心</a></span><span class="i4">围观2108次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5786" href="http://www.acmerblog.com/prims-minimum-spanning-tree-mst-5786.html#comments" title="《贪心算法(4)-最小生成树Prim算法》上的评论">23 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p>一个连通图的生成树是一个极小的连通子图，它含有图中全部的顶点，但只有足以构成一棵树的n-1条边。所谓的最小成本，就是n个顶点，用n-1条边把一个连通图连接起来，并且使得权值的和最小。综合以上两个概念，我们可以得出：构造连通网的最小代价生成树，即最小生成树（Minimum Cost Spanning Tree）。找连通图的最小生成树，经典的有两种算法，普里姆算法和<a href="http://www.acmerblog.com/greedy-kruskal-spanning-tree-mst-5326.html">克鲁斯卡尔算法</a>，这里介绍普里姆算法。在前面一讲<a href="http://www.acmerblog.com/greedy-kruskal-spanning-tree-mst-5326.html"><strong>Kruskal最小生成树</strong></a> 中已经介绍了最小生成树的算法。和Kruskal算法类似，Prim算法也是利用贪心算法来解决最小生成树。</p>
+<p>最小生成树MST性质：假设N=（V,{E}）是一个连通网，U是顶点集V的一个非空子集。若（u,v）是一条具有最小权值（代价）的边，</p>
+<p>其中u∈U，v∈V-U，则必存在一颗包含边（u,v）的最小生成树。</p>
+<p>prim算法过程为：</p>
+<p>假设N=（V,{E}）是连通图，TE是N上最小生成树中边的集合。算法从U={u0}（u0∈V），TE={}开始，</p>
+<p>重复执行下述操作：</p>
+<p>在所有u∈U，v∈V-U的边（u，v）∈E中找一条代价最小的边（u0，v0）并入集合TE，同时v0 并入U，直至U=V为止。</p>
+<p>此时TE中必有n-1条边，则T=（V，{TE}）为N的最小生成树。</p>
+<p>具体描述如下：</p>
+<pre class="brush:other">1） 创建一个集合mstSet记录已经包含在MST中的顶点
+2）对图中的所有顶点设置一个key值，代表代价，并初始化无穷大。第一个点设置为0，以便总是能第一个取到第一个点
+3） While( mstSet没有包含所有的顶点 )
+     a) 从mstSet集合中剩下的顶点中，选取一个最小key的顶点u
+     b) 把u加入到mstSet
+     c) 更新所有的和u相连的那些顶点的key值。</pre>
+<p>如果大家熟悉迪杰斯特拉算法，会发现他们是很相似的。</p>
+<p>我以图为例，看看算法过程。</p>
+<p><img alt="" height="221" src="http://d2o58evtke57tz.cloudfront.net/wp-content/uploads/Fig-11.jpg" width="475"/></p>
+<p>初始的mstSet为空，keys（各个点击的代价）为{0, INF, INF, INF, INF, INF, INF, INF}</p>
+<p>找到其中最小的，并加入mstSet，mstSet变为： {0}. 然后更新和0相邻的那些顶点的key值。相邻的顶点为1和7. 更新后为 {0, 4, INF, INF, INF, INF, INF, 8}</p>
+<p>下图中绿色表示 mstSet.</p>
+<p><img alt="" src="http://d2o58evtke57tz.cloudfront.net/wp-content/uploads/MST1.jpg"/></p>
+<p>重复上面的过程</p>
+<p><img alt="" src="http://d2o58evtke57tz.cloudfront.net/wp-content/uploads/MST2.jpg"/>   <img alt="" src="http://d2o58evtke57tz.cloudfront.net/wp-content/uploads/MST3.jpg"/>     <img alt="" src="http://d2o58evtke57tz.cloudfront.net/wp-content/uploads/MST4.jpg"/></p>
+<p>……….  最终为  <img alt="" src="http://d2o58evtke57tz.cloudfront.net/wp-content/uploads/MST5.jpg"/></p>
+<p>C++实现如下：</p>
+<pre class="brush:cpp">#include &lt;stdio.h&gt;
+#include &lt;limits.h&gt;
+
+//图中顶点个数
+#define V 5
+
+//未在mstSet中的点的集合中，找出最小key的点
+int minKey(int key[], bool mstSet[])
+{
+   int min = INT_MAX, min_index;
+
+   for (int v = 0; v &lt; V; v++)
+     if (mstSet[v] == false &amp;&amp; key[v] &lt; min)
+         min = key[v], min_index = v;
+
+   return min_index;
+}
+
+// 打印MST
+int printMST(int parent[], int n, int graph[V][V])
+{
+   printf("Edge   Weight\n");
+   for (int i = 1; i &lt; V; i++)
+      printf("%d - %d    %d \n", parent[i], i, graph[i][parent[i]]);
+}
+
+// Prim算法
+void primMST(int graph[V][V])
+{
+     int parent[V]; // 保持MST信息
+     int key[V];   // 所有顶点的代价值
+     bool mstSet[V];  //当前包含在MST中点的集合
+
+     // 初始为无穷大
+     for (int i = 0; i &lt; V; i++)
+        key[i] = INT_MAX, mstSet[i] = false;
+
+     key[0] = 0;     //
+     parent[0] = -1; // 第一个作为树的根。
+
+     //  MST 有V的顶点
+     for (int count = 0; count &lt; V-1; count++)
+     {
+        int u = minKey(key, mstSet);
+        // 添加u到 MST Set
+        mstSet[u] = true;
+        //更新和u相连的顶点的代价
+        for (int v = 0; v &lt; V; v++)
+          if (graph[u][v] &amp;&amp; mstSet[v] == false &amp;&amp; graph[u][v] &lt;  key[v])
+             parent[v]  = u, key[v] = graph[u][v];
+     }
+
+     // 打印生成的MST
+     printMST(parent, V, graph);
+}
+
+int main()
+{
+   /* 创建以下的图
+          2    3
+      (0)--(1)--(2)
+       |   / \   |
+      6| 8/   \5 |7
+       | /     \ |
+      (3)-------(4)
+            9          */
+   int graph[V][V] = {{0, 2, 0, 6, 0},
+                      {2, 0, 3, 8, 5},
+                      {0, 3, 0, 0, 7},
+                      {6, 8, 0, 0, 9},
+                      {0, 5, 7, 9, 0},
+                     };
+
+    // Print the solution
+    primMST(graph);
+
+    return 0;
+}</pre>
+<p>输出：</p>
+<pre class="brush:cpp">Edge   Weight
+0 - 1    2
+1 - 2    3
+0 - 3    6
+1 - 4    5</pre>
+<p>时间复杂度：O(V^2).  如果使用 链接表存储的方式并使用堆，复杂度可以为 O(E log V) ，后面会讨论这个算法。</p>
+<p>参考：http://www.geeksforgeeks.org/greedy-algorithms-set-5-prims-minimum-spanning-tree-mst-2/</p>
+<p>http://www.cnblogs.com/jsgnadsj/p/3421288.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75644">
+<article class="comment" id="comment-75644">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524988" rel="external nofollow">新用户948637</a></span> on <a href="http://www.acmerblog.com/prims-minimum-spanning-tree-mst-5786.html#comment-75644" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>滚到三生池里洗，百分百爽到你哭╮(╯▽╰)╭</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75643">
+<article class="comment" id="comment-75643">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524988" rel="external nofollow">新用户948637</a></span> on <a href="http://www.acmerblog.com/prims-minimum-spanning-tree-mst-5786.html#comment-75643" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>滚到三生池里洗，百分百爽到你哭╮(╯▽╰)╭</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75642">
+<article class="comment" id="comment-75642">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524988" rel="external nofollow">新用户948637</a></span> on <a href="http://www.acmerblog.com/prims-minimum-spanning-tree-mst-5786.html#comment-75642" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>滚到三生池里洗，百分百爽到你哭╮(╯▽╰)╭</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75641">
+<article class="comment" id="comment-75641">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524988" rel="external nofollow">新用户948637</a></span> on <a href="http://www.acmerblog.com/prims-minimum-spanning-tree-mst-5786.html#comment-75641" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>滚到三生池里洗，百分百爽到你哭╮(╯▽╰)╭</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75640">
+<article class="comment" id="comment-75640">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524988" rel="external nofollow">新用户948637</a></span> on <a href="http://www.acmerblog.com/prims-minimum-spanning-tree-mst-5786.html#comment-75640" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>滚到三生池里洗，百分百爽到你哭╮(╯▽╰)╭</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75639">
+<article class="comment" id="comment-75639">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524988" rel="external nofollow">新用户948637</a></span> on <a href="http://www.acmerblog.com/prims-minimum-spanning-tree-mst-5786.html#comment-75639" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>滚到三生池里洗，百分百爽到你哭╮(╯▽╰)╭</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75638">
+<article class="comment" id="comment-75638">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524988" rel="external nofollow">新用户948637</a></span> on <a href="http://www.acmerblog.com/prims-minimum-spanning-tree-mst-5786.html#comment-75638" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>滚到三生池里洗，百分百爽到你哭╮(╯▽╰)╭</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75637">
+<article class="comment" id="comment-75637">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524988" rel="external nofollow">新用户948637</a></span> on <a href="http://www.acmerblog.com/prims-minimum-spanning-tree-mst-5786.html#comment-75637" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>滚到三生池里洗，百分百爽到你哭╮(╯▽╰)╭</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75636">
+<article class="comment" id="comment-75636">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524988" rel="external nofollow">新用户948637</a></span> on <a href="http://www.acmerblog.com/prims-minimum-spanning-tree-mst-5786.html#comment-75636" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>滚到三生池里洗，百分百爽到你哭╮(╯▽╰)╭</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75635">
+<article class="comment" id="comment-75635">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524988" rel="external nofollow">新用户948637</a></span> on <a href="http://www.acmerblog.com/prims-minimum-spanning-tree-mst-5786.html#comment-75635" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>滚到三生池里洗，百分百爽到你哭╮(╯▽╰)╭</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75634">
+<article class="comment" id="comment-75634">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524988" rel="external nofollow">新用户948637</a></span> on <a href="http://www.acmerblog.com/prims-minimum-spanning-tree-mst-5786.html#comment-75634" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>滚到三生池里洗，百分百爽到你哭╮(╯▽╰)╭</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75633">
+<article class="comment" id="comment-75633">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524988" rel="external nofollow">新用户948637</a></span> on <a href="http://www.acmerblog.com/prims-minimum-spanning-tree-mst-5786.html#comment-75633" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>滚到三生池里洗，百分百爽到你哭╮(╯▽╰)╭</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75632">
+<article class="comment" id="comment-75632">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524988" rel="external nofollow">新用户948637</a></span> on <a href="http://www.acmerblog.com/prims-minimum-spanning-tree-mst-5786.html#comment-75632" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>滚到三生池里洗，百分百爽到你哭╮(╯▽╰)╭</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75631">
+<article class="comment" id="comment-75631">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524988" rel="external nofollow">新用户948637</a></span> on <a href="http://www.acmerblog.com/prims-minimum-spanning-tree-mst-5786.html#comment-75631" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>滚到三生池里洗，百分百爽到你哭╮(╯▽╰)╭</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64879">
+<article class="comment" id="comment-64879">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">lingyue</span> on <a href="http://www.acmerblog.com/prims-minimum-spanning-tree-mst-5786.html#comment-64879" rel="nofollow"><time datetime="2016-11-18T14:39:01+00:00" pubdate="">2016年11月18日 at 下午2:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>图片加载不出来啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64569">
+<article class="comment" id="comment-64569">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">学习</span> on <a href="http://www.acmerblog.com/prims-minimum-spanning-tree-mst-5786.html#comment-64569" rel="nofollow"><time datetime="2016-03-19T22:19:00+00:00" pubdate="">2016年3月19日 at 下午10:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>在适合无向图吗？为什么换个例子就不行了？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30348">
+<article class="comment" id="comment-30348">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">BGPY</a></span> on <a href="http://www.acmerblog.com/prims-minimum-spanning-tree-mst-5786.html#comment-30348" rel="nofollow"><time datetime="2015-06-21T13:00:29+00:00" pubdate="">2015年6月21日 at 下午1:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>good !</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30346">
+<article class="comment" id="comment-30346">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Christmas</a></span> on <a href="http://www.acmerblog.com/prims-minimum-spanning-tree-mst-5786.html#comment-30346" rel="nofollow"><time datetime="2015-05-17T13:07:43+00:00" pubdate="">2015年5月17日 at 下午1:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49354">
+<article class="comment" id="comment-49354">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zwj0571</a></span> on <a href="http://www.acmerblog.com/prims-minimum-spanning-tree-mst-5786.html#comment-49354" rel="nofollow"><time datetime="2015-04-19T12:44:38+00:00" pubdate="">2015年4月19日 at 下午12:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚开始学习，为啥会报错了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30347">
+<article class="comment" id="comment-30347">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hsp_77_abc</a></span> on <a href="http://www.acmerblog.com/prims-minimum-spanning-tree-mst-5786.html#comment-30347" rel="nofollow"><time datetime="2015-04-15T17:27:21+00:00" pubdate="">2015年4月15日 at 下午5:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>终于明白了递归和dp的关系，多谢分享！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30345">
+<article class="comment" id="comment-30345">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1520006273</a></span> on <a href="http://www.acmerblog.com/prims-minimum-spanning-tree-mst-5786.html#comment-30345" rel="nofollow"><time datetime="2014-11-21T09:59:50+00:00" pubdate="">2014年11月21日 at 上午9:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正在练习，很有帮助</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30344">
+<article class="comment" id="comment-30344">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">21435048</a></span> on <a href="http://www.acmerblog.com/prims-minimum-spanning-tree-mst-5786.html#comment-30344" rel="nofollow"><time datetime="2014-11-13T07:35:33+00:00" pubdate="">2014年11月13日 at 上午7:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有限自动机在ACM中是必须掌握的算法，实际上在面试当中几乎不可能让你单独的去实现这个算法，如果有题目要用到有限自动机来降低时间复杂度，那么这种面试题应该属于很难的级别了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49353">
+<article class="comment" id="comment-49353">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ygxqqx</a></span> on <a href="http://www.acmerblog.com/prims-minimum-spanning-tree-mst-5786.html#comment-49353" rel="nofollow"><time datetime="2014-07-28T06:43:02+00:00" pubdate="">2014年7月28日 at 上午6:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二种解法如果数组有重复元素 就不正确</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

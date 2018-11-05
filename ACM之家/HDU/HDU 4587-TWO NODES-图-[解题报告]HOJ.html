@@ -1,0 +1,180 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>09-17</div>
+<div class="tit"><h1 class="entry-title">HDU 4587-TWO NODES-图-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/dfs" rel="category tag" title="查看DFS搜索中的全部文章">DFS搜索</a>, <a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph" rel="category tag" title="查看图论中的全部文章">图论</a></span><span class="i4">围观85次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7631" href="http://www.acmerblog.com/hdu-4587-two-nodes-7631.html#comments" title="《HDU 4587-TWO NODES-图-[解题报告]HOJ》上的评论">一条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">TWO NODES</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Suppose that G is an undirected graph, and the value of <strong>stab</strong> is defined as follows:<br/><center><img alt="Play the Dice" src="http://www.acmerblog.com/img/1447825602410.jpg" style="max-width:100%;"/></center><br/>Among the expression,G<sub>-i, -j</sub> is the remainder after removing node i, node j and all edges that are directly relevant to the previous two nodes. <strong>cntCompent</strong> is the number of connected components of X independently.<br/>Thus, given a certain undirected graph G, you are supposed to calculating the value of <strong>stab</strong>. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input will contain the description of several graphs. For each graph, the description consist of an integer N for the number of nodes, an integer M for the number of edges, and M pairs of integers for edges (3&lt;=N,M&lt;=5000).<br/>Please note that the endpoints of edge is marked in the range of [0,N-1], and input cases ends with EOF. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input will contain the description of several graphs. For each graph, the description consist of an integer N for the number of nodes, an integer M for the number of edges, and M pairs of integers for edges (3&lt;=N,M&lt;=5000).<br/>Please note that the endpoints of edge is marked in the range of [0,N-1], and input cases ends with EOF.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+4 5
+0 1
+1 2
+2 3
+3 0
+0 2</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+2</pre>
+<p> <!-- problem end --></p>
+<p>题意：给出一个无向图，删除两个点让剩余的图的连通分量的数量最大。</p>
+<p>思路：考虑每一个点，尝试将其删除，然后计算剩余的连通分量的个数，对于每个连通分量，再求删除某一个点所能增加的最多的连通分量的数量。对于第一步，直接标记一下要删除的点，然后dfs计算一下连通分量的个数即可，对于第二歩，如果再一个一个删肯定要超时了，由于要在一个连通分支中删除一个点，那么这个点要尽可能是割点，可以考虑一下求割点的过程，用tarjan求割点的时候，当lowv&gt;=pre[u]的时候，则说明u是割点，画个图的话应该能理解好一些，没当遇到这种情况，那么删除u的时候，就会增加一个连通分量，这样的话就可以在求割点的时候计算出删除这个割点会增加多少连通分量了，这样的话，答案就能计算出来了，另外还有一些特殊情况需要特判，比如一个连通分支中没有割点的情况。</p>
+<p> </p>
+<p>代码：</p>
+<pre class="brush:cpp" name="code">#include &lt;iostream&gt;
+#include&lt;cstdio&gt;
+#include&lt;cstring&gt;
+#include&lt;string&gt;
+#include&lt;algorithm&gt;
+#include&lt;map&gt;
+#include&lt;queue&gt;
+#include&lt;stack&gt;
+#include&lt;cmath&gt;
+#include&lt;vector&gt;
+#define inf 0x3f3f3f3f
+#define Inf 0x3FFFFFFFFFFFFFFFLL
+#define eps 1e-9
+#define pi acos(-1.0)
+using namespace std;
+typedef long long ll;
+const int maxn=5000+10;
+int pre[maxn],vis[maxn],dfs_clock;
+int ans,ban,total,step,n,m,temp;
+vector&lt;int&gt;G[maxn];
+int tarjan(int u,int fa)
+{
+    bool iscut=false;
+    int child=0,cutnum=0;
+    int lowu=pre[u]=++dfs_clock;
+    for(int i=0;i&lt;G[u].size();++i)
+    {
+        int v=G[u][i];
+        if(v==ban) continue;
+        if(!pre[v])
+        {
+            child++;
+            int lowv=tarjan(v,u);
+            lowu=min(lowu,lowv);
+            if(lowv&gt;=pre[u])
+            {
+                iscut=true;
+                cutnum++;
+            }
+        }
+        else if(pre[v]&lt;pre[u]&amp;&amp;v!=fa)
+           lowu=min(lowu,pre[v]);
+    }
+    if(fa&lt;0&amp;&amp;child==1) iscut=false;
+    if(child==0&amp;&amp;fa==-1) ans=max(ans,total-1);
+    if(iscut)
+      ans=max(ans,total+cutnum-(int)(fa==-1));
+    return lowu;
+}
+void dfs(int u)
+{
+    temp++;
+    vis[u]=step;
+    for(int i=0;i&lt;G[u].size();++i)
+    {
+        int v=G[u][i];
+        if(vis[v]!=step&amp;&amp;v!=ban)
+           dfs(v);
+    }
+}
+void find_conn(int x)
+{
+    step++;
+    total=0;
+    ban=x;
+    bool flag=false;
+    for(int i=0;i&lt;n;++i)
+    {
+        if(vis[i]!=step&amp;&amp;i!=ban)
+        {
+            temp=0;
+            dfs(i);
+            total++;
+            if(temp&gt;=2) flag=true;
+        }
+    }
+    if(flag) ans=max(ans,total);
+    memset(pre,0,sizeof(pre));
+    dfs_clock=0;
+    for(int i=0;i&lt;n;++i)
+      if(!pre[i]&amp;&amp;i!=ban) tarjan(i,-1);
+}
+int main()
+{
+    //freopen("in.txt","r",stdin);
+    //freopen("out.txt","w",stdout);
+    while(~scanf("%d%d",&amp;n,&amp;m))
+    {
+        int a,b;
+        for(int i=0;i&lt;n;++i) G[i].clear();
+        for(int i=0;i&lt;m;++i)
+        {
+            scanf("%d%d",&amp;a,&amp;b);
+            G[a].push_back(b);
+            G[b].push_back(a);
+        }
+        memset(vis,0,sizeof(vis));
+        ans=0;step=0;
+        for(int i=0;i&lt;n;++i)
+           find_conn(i);
+        printf("%d\n",ans);
+    }
+    return 0;
+}
+</pre>
+<p>
+ </p>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/qian99/article/details/10034775</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-97545">
+<article class="comment" id="comment-97545">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515430" rel="external nofollow">新用户860391</a></span> on <a href="http://www.acmerblog.com/hdu-4587-two-nodes-7631.html#comment-97545" rel="nofollow"><time datetime="2017-04-20T05:15:17+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>每次看电影都有这样的人，我都轻轻说一句，麻烦请您出去一下，我们在看电影</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

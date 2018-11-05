@@ -1,0 +1,403 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>02-24</div>
+<div class="tit"><h1 class="entry-title">HDU 2935-Hidden Music Score[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观333次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4660" href="http://www.acmerblog.com/hdu-2935-hidden-music-score-4660.html#comments" title="《HDU 2935-Hidden Music Score[解题报告]HOJ》上的评论">22 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Hidden Music Score</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Do you like music? Let’s play a game. I wrote down some notes on a piece of staff paper, then erase every other thing and leave only the notes. Can you guess what I wrote?<br/><center><img src="http://www.acmerblog.com/img/1393504909621.jpg"/> </center><br/><center>Fig 1. Names of Notes</center><br/>If you’re not familiar with music, take a look at the picture above. The vertical position of a note determines its name,<br/>which is one of C, D, E, F, G, A and B, in this problem (yes, you don’t have to consider notes in other octaves).<br/>Consecutive lines in the staff have the same vertical distances. We call it one standard distance (sd), which is always between 1.0 and 5.0. For example, C and E are 1sd apart, and D and B are 2.5sd. The horizontal order of the notes<br/>determines how the sequence is played (or sung). The exact horizontal positions do not matter, as long as the relative order is preserved. But since I never write down ugly scores, you can safely assume that the horizontal distance of an arbitrary pair of neighboring notes is at least 1sd and at most 5sd.<br/><center><img src="http://www.acmerblog.com/img/1393504909759.jpg"/> </center><br/><center>(a) Everything                                          (b) The Notes                                (c) Note positions only</center><br/><center>Fig 2. Transforming the original score into a hidden form</center>
+<p>Figure 2(a) corresponds to the sequence EEECEG. Figure 2(b) shows the notes when other stuffs have been erased. Then, I rotate the paper and tell you the positions of the notes, shown in figure 2(c). Write a program to find my original music score, given the rotated positions of the notes. To make your life a little bit easier, I can tell you the name of the first and last note, and I promise that the answer could be uniquely determined. The rotation angle is an integer between -60 and 60 degrees (inclusive). </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input consists of several test cases. The first line of each case contains one integer n (3 ≤ n ≤ 20) and two different capital letters from ‘A’ to ‘G’. This is followed by n lines each containing two real numbers to eight decimal places, the rotated positions of each note. The notes can appear in any order. All the real numbers have absolute values not greater than 1000. The last test case is followed by a single zero, which should not be processed. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input consists of several test cases. The first line of each case contains one integer n (3 ≤ n ≤ 20) and two different capital letters from ‘A’ to ‘G’. This is followed by n lines each containing two real numbers to eight decimal places, the rotated positions of each note. The notes can appear in any order. All the real numbers have absolute values not greater than 1000. The last test case is followed by a single zero, which should not be processed.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+6 E G
+0.00000000 1.00000000
+1.00000000 1.00000000
+2.00000000 1.00000000
+4.00000000 0.00000000
+5.00000000 1.00000000
+8.00000000 2.00000000
+4 A C
+0.00000000 15.62499286
+11.28111236 5.80618831
+20.63744497 6.54957842
+37.94846083 0.00000000
+7 B F
+0.00000000 0.00000000
+15.14798698 18.22443643
+25.04608611 30.65582149
+19.58478851 24.56084570
+23.09216832 27.86533768
+11.29672536 9.31513384
+8.65999632 3.84492903
+0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case 1: EEECEG
+Case 2: ADEC
+Case 3: BDEGGFF</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include &lt;stdio.h&gt;
+#include &lt;string&gt;
+#include &lt;cmath&gt;
+#include &lt;algorithm&gt;
+using namespace std;
+
+struct P
+{
+	double x,y;
+}c[25],d[25];
+int ans[25];
+
+bool operator&lt;(P a,P b)
+{
+	if(a.x!=b.x)return a.x&lt;b.x;
+	return a.y&lt;b.y;
+}
+
+int ctd[255];
+
+int main()
+{
+	int n;
+	int T=0;
+	//printf("%d ",int(-.2));
+	char a,b;
+	double pi=acos(-1.0);
+	double eps=1e-7;
+	ctd['C']=0,ctd['D']=1,ctd['E']=2;
+	ctd['F']=3,ctd['G']=4,ctd['A']=5;
+	ctd['B']=6;
+	char dtc[10];
+	dtc[0]='C',dtc[1]='D',dtc[2]='E';
+	dtc[3]='F',dtc[4]='G',dtc[5]='A';
+	dtc[6]='B';
+
+	while(scanf("%d",&amp;n),n)
+	{
+		
+		scanf(" %c %c",&amp;a,&amp;b);
+		int i,j;
+		for(i=0;i&lt;n;i++)
+			scanf("%lf %lf",&amp;c[i].x,&amp;c[i].y);
+
+		for(double i=-60.0;i&lt;61.0;i+=0.005)
+		{
+			double ang;
+			ang=i*pi/180.0;
+			for(j=0;j&lt;n;j++)
+			{
+				d[j].x=c[j].x*cos(ang)+c[j].y*sin(ang);
+				d[j].y=-c[j].x*sin(ang)+c[j].y*cos(ang);
+			}
+			sort(d,d+n);
+
+			double sd=(d[n-1].y-d[0].y)/(ctd[b]-ctd[a]);
+		//	if(sd&lt;0)sd=-sd;
+			double ssd=sd*2;
+		//	printf("%lf\n ",sd);
+			if(ssd+eps&lt;1.0 || ssd&gt;5.0+eps)
+				continue;
+			ans[0]=ctd[a];
+			
+			for(j=1;j&lt;n;j++)
+			{
+				if(d[j].x-d[j-1].x&gt;5*ssd+eps || d[j].x-d[j-1].x+eps&lt;ssd)
+					break;
+				if(d[j].y-d[j-1].y&gt;(6-ans[j-1])*sd+eps)
+					break;
+				if(d[j-1].y-d[j].y&gt;ans[j-1]*sd+eps)
+					break;
+				double dis=d[j].y-d[j-1].y;
+				int tmp=(int)(dis/sd);
+			//	if(tmp*sd&lt;dis)
+		//			tmp++;
+			//	printf("%d ",tmp);
+			if(dis&gt;=0)
+				{
+				if(tmp*sd-dis+eps&lt;0)
+					tmp++;
+				if(tmp*sd-dis&gt;0+eps)
+					break;
+				}
+				else 
+				{
+				 if(tmp*sd-dis&gt;0+eps)
+					tmp--;
+				 if(tmp*sd-dis+eps&lt;0)
+					 break;
+				}
+				ans[j]=tmp+ans[j-1];
+			}
+		//	printf("\n");
+			if(j==n)
+			{//printf(" %lf\n",sd);
+				break;
+			}
+		}
+		
+		printf("Case %d: ",++T);
+		for(i=0;i&lt;n;i++)
+		{
+			//printf("%lf %lf ",d[i].x,d[i].y);
+			printf("%c",dtc[ans[i]]);
+		}
+		printf("\n");
+	}
+	return 0;
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-81123">
+<article class="comment" id="comment-81123">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512868" rel="external nofollow">新用户940332</a></span> on <a href="http://www.acmerblog.com/hdu-2935-hidden-music-score-4660.html#comment-81123" rel="nofollow"><time datetime="2017-04-12T18:13:48+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>bing确实不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-81122">
+<article class="comment" id="comment-81122">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512868" rel="external nofollow">新用户940332</a></span> on <a href="http://www.acmerblog.com/hdu-2935-hidden-music-score-4660.html#comment-81122" rel="nofollow"><time datetime="2017-04-12T18:13:48+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>bing确实不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-81121">
+<article class="comment" id="comment-81121">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512868" rel="external nofollow">新用户940332</a></span> on <a href="http://www.acmerblog.com/hdu-2935-hidden-music-score-4660.html#comment-81121" rel="nofollow"><time datetime="2017-04-12T18:13:48+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>bing确实不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-81120">
+<article class="comment" id="comment-81120">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512868" rel="external nofollow">新用户940332</a></span> on <a href="http://www.acmerblog.com/hdu-2935-hidden-music-score-4660.html#comment-81120" rel="nofollow"><time datetime="2017-04-12T18:13:48+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>bing确实不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-81119">
+<article class="comment" id="comment-81119">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512868" rel="external nofollow">新用户940332</a></span> on <a href="http://www.acmerblog.com/hdu-2935-hidden-music-score-4660.html#comment-81119" rel="nofollow"><time datetime="2017-04-12T18:13:48+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>bing确实不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-81118">
+<article class="comment" id="comment-81118">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512868" rel="external nofollow">新用户940332</a></span> on <a href="http://www.acmerblog.com/hdu-2935-hidden-music-score-4660.html#comment-81118" rel="nofollow"><time datetime="2017-04-12T18:13:48+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>bing确实不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-81117">
+<article class="comment" id="comment-81117">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512868" rel="external nofollow">新用户940332</a></span> on <a href="http://www.acmerblog.com/hdu-2935-hidden-music-score-4660.html#comment-81117" rel="nofollow"><time datetime="2017-04-12T18:13:48+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>bing确实不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-81116">
+<article class="comment" id="comment-81116">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512868" rel="external nofollow">新用户940332</a></span> on <a href="http://www.acmerblog.com/hdu-2935-hidden-music-score-4660.html#comment-81116" rel="nofollow"><time datetime="2017-04-12T18:13:48+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>bing确实不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-25853">
+<article class="comment" id="comment-25853">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ygxqqx</a></span> on <a href="http://www.acmerblog.com/hdu-2935-hidden-music-score-4660.html#comment-25853" rel="nofollow"><time datetime="2015-06-20T19:53:06+00:00" pubdate="">2015年6月20日 at 下午7:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这道题目的核心一句话是：取还是不取。<br/>
+如果当前取，则index+1作为参数。如果当前不取，则任用index作为参数。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-25846">
+<article class="comment" id="comment-25846">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">a997930294</a></span> on <a href="http://www.acmerblog.com/hdu-2935-hidden-music-score-4660.html#comment-25846" rel="nofollow"><time datetime="2015-06-20T13:47:59+00:00" pubdate="">2015年6月20日 at 下午1:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>约瑟夫也用说这么长……很成熟的一个问题了，分治的方法解起来o(n)就可以了，有兴趣可以看看具体数学的第一章，关于约瑟夫问题推导出了一系列的结论，很漂亮</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-25849">
+<article class="comment" id="comment-25849">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">becool456</a></span> on <a href="http://www.acmerblog.com/hdu-2935-hidden-music-score-4660.html#comment-25849" rel="nofollow"><time datetime="2015-06-13T05:17:32+00:00" pubdate="">2015年6月13日 at 上午5:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>[…] 如果此题没有要求 相对位置不变，可以参考文章：http://www.acmerblog.com/interview-9-2427/ […]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-25854">
+<article class="comment" id="comment-25854">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">TimeFight</a></span> on <a href="http://www.acmerblog.com/hdu-2935-hidden-music-score-4660.html#comment-25854" rel="nofollow"><time datetime="2015-05-24T04:11:26+00:00" pubdate="">2015年5月24日 at 上午4:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>[…] 如果此题没有要求 相对位置不变，可以参考文章：http://www.acmerblog.com/interview-9-2427/ […]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-25852">
+<article class="comment" id="comment-25852">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zjd1988</a></span> on <a href="http://www.acmerblog.com/hdu-2935-hidden-music-score-4660.html#comment-25852" rel="nofollow"><time datetime="2015-05-17T16:30:04+00:00" pubdate="">2015年5月17日 at 下午4:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>大哥，你复制也看看是不是这题的答案才复制吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-25844">
+<article class="comment" id="comment-25844">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1173954900</a></span> on <a href="http://www.acmerblog.com/hdu-2935-hidden-music-score-4660.html#comment-25844" rel="nofollow"><time datetime="2015-03-26T06:07:33+00:00" pubdate="">2015年3月26日 at 上午6:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法好！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-25856">
+<article class="comment" id="comment-25856">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tangxiansheng</a></span> on <a href="http://www.acmerblog.com/hdu-2935-hidden-music-score-4660.html#comment-25856" rel="nofollow"><time datetime="2014-12-30T05:12:22+00:00" pubdate="">2014年12月30日 at 上午5:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p><a href="http://beeder.me" rel="nofollow">http://beeder.me</a> 这个网站上有很多poj和hihoCoder的题解，质量不错，欢迎转载。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-25845">
+<article class="comment" id="comment-25845">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangdilj</a></span> on <a href="http://www.acmerblog.com/hdu-2935-hidden-music-score-4660.html#comment-25845" rel="nofollow"><time datetime="2014-12-25T10:41:33+00:00" pubdate="">2014年12月25日 at 上午10:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>样例输出和程序输出不吻合，修改一下样例输出吧。我用的是VC编译器，会提示我的i和j变量重复定义</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-25855">
+<article class="comment" id="comment-25855">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">magicSky</a></span> on <a href="http://www.acmerblog.com/hdu-2935-hidden-music-score-4660.html#comment-25855" rel="nofollow"><time datetime="2014-11-10T04:59:25+00:00" pubdate="">2014年11月10日 at 上午4:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>居然是机试，还和13年重复。题目不难</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-25851">
+<article class="comment" id="comment-25851">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">digiworm</a></span> on <a href="http://www.acmerblog.com/hdu-2935-hidden-music-score-4660.html#comment-25851" rel="nofollow"><time datetime="2014-11-06T17:06:48+00:00" pubdate="">2014年11月6日 at 下午5:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，感谢分享。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-25847">
+<article class="comment" id="comment-25847">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zhuliyan</a></span> on <a href="http://www.acmerblog.com/hdu-2935-hidden-music-score-4660.html#comment-25847" rel="nofollow"><time datetime="2014-09-19T19:04:11+00:00" pubdate="">2014年9月19日 at 下午7:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为\n\n</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-25848">
+<article class="comment" id="comment-25848">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">congve1</a></span> on <a href="http://www.acmerblog.com/hdu-2935-hidden-music-score-4660.html#comment-25848" rel="nofollow"><time datetime="2014-09-14T21:21:32+00:00" pubdate="">2014年9月14日 at 下午9:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个应该是比较简单的解法了，如果有更好的办法可以告诉我</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-25857">
+<article class="comment" id="comment-25857">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jinxiang23</a></span> on <a href="http://www.acmerblog.com/hdu-2935-hidden-music-score-4660.html#comment-25857" rel="nofollow"><time datetime="2014-07-14T05:55:09+00:00" pubdate="">2014年7月14日 at 上午5:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>问题3中，GetRightPosition()和GetLeftPosition()与STL中的upper_bound()和lower_boune()的代码实现一样吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-25850">
+<article class="comment" id="comment-25850">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jixiangniao993</a></span> on <a href="http://www.acmerblog.com/hdu-2935-hidden-music-score-4660.html#comment-25850" rel="nofollow"><time datetime="2014-03-08T09:18:01+00:00" pubdate="">2014年3月8日 at 上午9:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>此题的样例描述不正确</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

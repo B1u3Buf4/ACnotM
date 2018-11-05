@@ -1,0 +1,331 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>08-20</div>
+<div class="tit"><h1 class="entry-title">二分图判断-Problem A.Bad Horse(codejam)</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/graph/bipartite-graph" rel="category tag" title="查看二分图中的全部文章">二分图</a></span><span class="i4">围观2221次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6078" href="http://www.acmerblog.com/bad-horse-codejam-6078.html#comments" title="《二分图判断-Problem A.Bad Horse(codejam)》上的评论">22 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p><strong>题目</strong></p>
+<p>链接：<a href="http://gcj-prod.appspot.com/codejam/contest/2933486/dashboard">http://gcj-prod.appspot.com/codejam/contest/2933486/dashboard</a></p>
+<p>题目来自 Google codejam ：Practice Round China New Grad Test 2014 <strong>Problem A. Bad Horse</strong></p>
+<p>此题其实就是一个判断一个图是否是二分图。</p>
+<p><strong>二分图的定义  </strong></p>
+<p>设G=(V,E)是一个无向图。如顶点集V可分割为两个互不相交的子集，并且图中每条边依附的两个顶点都分属两个不同的子集。则称图G为二分图。也就是说在二分图中，顶点可以分为两个集合X和Y，每一条边的两个顶点都分别位于X和Y集合中。如下图所示：</p>
+<p><a href="http://cdn.acmerblog.com/wp-content/uploads/2014/08/Bipartite1.png"><img alt="Bipartite1" class="alignnone wp-image-6079" height="302" src="http://cdn.acmerblog.com/wp-content/uploads/2014/08/Bipartite1.png" width="350"/></a></p>
+<p>无向图G为二分图的充分必要条件是，G至少有两个顶点，且其所有回路的长度均为偶数。可以将<img alt="U" src="http://upload.wikimedia.org/math/4/c/6/4c614360da93c0a041b22e537de151eb.png"/> 和 <img alt="V" src="http://upload.wikimedia.org/math/5/2/0/5206560a306a2e085a437fd258eb57ce.png"/>当做 <a href="http://zh.wikipedia.org/w/index.php?title=%E7%9D%80%E8%89%B2%E5%9B%BE&amp;action=edit&amp;redlink=1" title="着色图（页面不存在）">着色图</a>：<img alt="U" src="http://upload.wikimedia.org/math/4/c/6/4c614360da93c0a041b22e537de151eb.png"/>中所有节点为蓝色，<img alt="V" src="http://upload.wikimedia.org/math/5/2/0/5206560a306a2e085a437fd258eb57ce.png"/>中所有节点着绿色，每条边的两个端点的颜色不同，符合<a href="http://zh.wikipedia.org/wiki/%E5%9B%BE%E7%9D%80%E8%89%B2%E9%97%AE%E9%A2%98" title="图着色问题">图着色问题</a>的要求。相反，用这样的着色方式对非二分图是行不通的，根据<a href="http://zh.wikipedia.org/w/index.php?title=Gallery_of_named_graphs&amp;action=edit&amp;redlink=1" title="Gallery of named graphs（页面不存在）">triangle</a>：其中一个顶点着蓝色并且另一个着绿色后，三角形的第三个顶点与上述具有两个颜色的顶点相连，无法再对其着蓝色或绿色。</p>
+<p>例如对于下面的图，可以用两种颜色进行着色。</p>
+<p> </p>
+<p><a href="http://cdn.acmerblog.com/wp-content/uploads/2014/08/Bipartite2.png"><img alt="Bipartite2" class="alignnone size-full wp-image-6080" height="195" src="http://cdn.acmerblog.com/wp-content/uploads/2014/08/Bipartite2.png" width="196"/></a></p>
+<p>下面的图则不可以：</p>
+<p><a href="http://cdn.acmerblog.com/wp-content/uploads/2014/08/Bipartite3.png"><img alt="Bipartite3" class="alignnone size-full wp-image-6081" height="195" src="http://cdn.acmerblog.com/wp-content/uploads/2014/08/Bipartite3.png" width="200"/></a></p>
+<p>可以使用回溯法解决图的M着色问题，但是对个这个特殊的问题，可以使用 BFS解决。算法过程为：借助队列，进行宽度优先遍历，先对一个起点着色RED，然后将其所有相邻的节点着色为BLUE，并加入队列。只要能保证相邻的节点是不同的颜色即可。</p>
+<p>下面的Java代码是针对 <strong>Bad Horse </strong>的题解，大家可以只关注isBipartite函数</p>
+<pre class="brush:java">public class BasHorse {
+	static int n;
+	static int T, index, cnt;
+	static int map[][];
+
+	public static void main(String[] args) {
+		try {
+			String path = "D:\\CPP\\code-jam\\A-small-practice-2.in";
+			Scanner scan = new Scanner(new File(path));
+			String outputPath = path.replace(".in", "out.txt");
+			File file = new File(outputPath);
+			FileOutputStream fos = new FileOutputStream(file);
+			T = scan.nextInt();
+			Map&lt;String,Integer&gt; mapSet = new HashMap&lt;String,Integer&gt;();
+			for(int i=0; i&lt;T; i++){
+				mapSet.clear();
+				n = scan.nextInt();
+				index = 0;
+				map = new int[n*2][n*2];//最多会有2n个
+				for(int j =0; j&lt;n; j++){
+					String str1 = scan.next();
+					Integer a ;
+					if( (a = mapSet.get(str1)) == null){
+						a = index;
+						mapSet.put(str1, index);
+						index++;
+					}
+					String str2 = scan.next();
+					Integer b ;
+					if( (b = mapSet.get(str2)) == null){
+						b = index;
+						mapSet.put(str2, index);
+						index++;
+					}
+					map[a][b] = 1;
+					map[b][a] = 1;
+
+				}
+				boolean isbit = isBipartite(map,index);
+				String output = "Case #" + (i+1) + ": ";
+				if(isbit) output += "Yes\r\n";
+				else output += "No\r\n";
+				try {
+					fos.write(output.getBytes());
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				System.out.println(isbit);
+			}
+
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	private static boolean isBipartite(int[][] map,int n) {
+		//colorArr[i] 代表第i个结点的颜色
+		int colorArr[] = new int[n];
+		colorArr[0] = 1;
+		Queue&lt;Integer&gt; queue = new LinkedList&lt;Integer&gt;();
+		queue.add(0);
+		while(!queue.isEmpty()){
+			int top = queue.poll();
+			for(int i=0; i&lt;n; i++){
+				if(map[top][i] == 1 &amp;&amp; colorArr[i] == 0){
+					colorArr[i] = 3 - colorArr[top];//两种颜色 1和2 交替着色
+					queue.add(i);
+				}else if(map[top][i] == 1 &amp;&amp;  colorArr[i] == colorArr[top] ){
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+}</pre>
+<p>上面代码的复杂度为 O(V^2), V是图的顶点的个数。代码可以优化为使用邻接表存储图。</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75102">
+<article class="comment" id="comment-75102">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522943" rel="external nofollow">新用户471474</a></span> on <a href="http://www.acmerblog.com/bad-horse-codejam-6078.html#comment-75102" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75101">
+<article class="comment" id="comment-75101">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522943" rel="external nofollow">新用户471474</a></span> on <a href="http://www.acmerblog.com/bad-horse-codejam-6078.html#comment-75101" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75100">
+<article class="comment" id="comment-75100">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522943" rel="external nofollow">新用户471474</a></span> on <a href="http://www.acmerblog.com/bad-horse-codejam-6078.html#comment-75100" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75099">
+<article class="comment" id="comment-75099">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522943" rel="external nofollow">新用户471474</a></span> on <a href="http://www.acmerblog.com/bad-horse-codejam-6078.html#comment-75099" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75098">
+<article class="comment" id="comment-75098">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522943" rel="external nofollow">新用户471474</a></span> on <a href="http://www.acmerblog.com/bad-horse-codejam-6078.html#comment-75098" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75097">
+<article class="comment" id="comment-75097">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522943" rel="external nofollow">新用户471474</a></span> on <a href="http://www.acmerblog.com/bad-horse-codejam-6078.html#comment-75097" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75096">
+<article class="comment" id="comment-75096">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522943" rel="external nofollow">新用户471474</a></span> on <a href="http://www.acmerblog.com/bad-horse-codejam-6078.html#comment-75096" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75095">
+<article class="comment" id="comment-75095">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522943" rel="external nofollow">新用户471474</a></span> on <a href="http://www.acmerblog.com/bad-horse-codejam-6078.html#comment-75095" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49535">
+<article class="comment" id="comment-49535">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NextLife</a></span> on <a href="http://www.acmerblog.com/bad-horse-codejam-6078.html#comment-49535" rel="nofollow"><time datetime="2015-06-25T12:55:09+00:00" pubdate="">2015年6月25日 at 下午12:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我想整理一下leetcode的题解，站长能不能给权限</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30679">
+<article class="comment" id="comment-30679">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mr-zhang2011</a></span> on <a href="http://www.acmerblog.com/bad-horse-codejam-6078.html#comment-30679" rel="nofollow"><time datetime="2015-04-10T08:44:03+00:00" pubdate="">2015年4月10日 at 上午8:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30681">
+<article class="comment" id="comment-30681">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gnipuohz</a></span> on <a href="http://www.acmerblog.com/bad-horse-codejam-6078.html#comment-30681" rel="nofollow"><time datetime="2015-03-18T13:15:21+00:00" pubdate="">2015年3月18日 at 下午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正确性是关键，冲突是都会有的，主要是那种算法冲突的概率低</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30678">
+<article class="comment" id="comment-30678">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">April</a></span> on <a href="http://www.acmerblog.com/bad-horse-codejam-6078.html#comment-30678" rel="nofollow"><time datetime="2015-03-03T21:35:43+00:00" pubdate="">2015年3月3日 at 下午9:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>样例输出和程序输出不吻合，修改一下样例输出吧。我用的是VC编译器，会提示我的i和j变量重复定义</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49534">
+<article class="comment" id="comment-49534">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">spiderMan</a></span> on <a href="http://www.acmerblog.com/bad-horse-codejam-6078.html#comment-49534" rel="nofollow"><time datetime="2015-02-18T20:45:06+00:00" pubdate="">2015年2月18日 at 下午8:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>[…] 如果此题没有要求 相对位置不变，可以参考文章：http://www.acmerblog.com/interview-9-2427/ […]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49537">
+<article class="comment" id="comment-49537">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">vintion</a></span> on <a href="http://www.acmerblog.com/bad-horse-codejam-6078.html#comment-49537" rel="nofollow"><time datetime="2015-02-05T03:04:40+00:00" pubdate="">2015年2月5日 at 上午3:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30676">
+<article class="comment" id="comment-30676">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">123zxc</a></span> on <a href="http://www.acmerblog.com/bad-horse-codejam-6078.html#comment-30676" rel="nofollow"><time datetime="2015-01-09T01:51:44+00:00" pubdate="">2015年1月9日 at 上午1:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我得邮箱cwqbupt@qq.com</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30677">
+<article class="comment" id="comment-30677">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">magicSky</a></span> on <a href="http://www.acmerblog.com/bad-horse-codejam-6078.html#comment-30677" rel="nofollow"><time datetime="2014-12-27T04:39:51+00:00" pubdate="">2014年12月27日 at 上午4:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我没看懂题目<br/>
+2<br/>
+5 6 -1 5 4 -7<br/>
+7 0 6 -1 1 -6 7 -5<br/>
+我觉得第一个应该是5 6 -1 5 4 输出是19 5 4<br/>
+第二个是7 0 6 -1 1 -6 7输出是14 7 7<br/>
+不知道题目例子是怎么得出来的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49538">
+<article class="comment" id="comment-49538">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bluesky</a></span> on <a href="http://www.acmerblog.com/bad-horse-codejam-6078.html#comment-49538" rel="nofollow"><time datetime="2014-10-24T13:43:40+00:00" pubdate="">2014年10月24日 at 下午1:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题别太纠结了，不同的编译器结果不一</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30680">
+<article class="comment" id="comment-30680">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ygxqqx</a></span> on <a href="http://www.acmerblog.com/bad-horse-codejam-6078.html#comment-30680" rel="nofollow"><time datetime="2014-10-21T22:46:40+00:00" pubdate="">2014年10月21日 at 下午10:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很强大啊，佩服</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49539">
+<article class="comment" id="comment-49539">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mazilian</a></span> on <a href="http://www.acmerblog.com/bad-horse-codejam-6078.html#comment-49539" rel="nofollow"><time datetime="2014-09-29T02:55:55+00:00" pubdate="">2014年9月29日 at 上午2:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>您没有考虑 树的根节点是负数的情况， 若树的根节点是个很大的负数，那么就要考虑过不过另外一边子树了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30675">
+<article class="comment" id="comment-30675">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">kate19930802</a></span> on <a href="http://www.acmerblog.com/bad-horse-codejam-6078.html#comment-30675" rel="nofollow"><time datetime="2014-09-02T19:40:52+00:00" pubdate="">2014年9月2日 at 下午7:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嗯，尽量吧。题目太多了，很多解题报告是用程序自动发布的，所以就只有代码了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49536">
+<article class="comment" id="comment-49536">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">123zxc</a></span> on <a href="http://www.acmerblog.com/bad-horse-codejam-6078.html#comment-49536" rel="nofollow"><time datetime="2014-08-28T11:18:33+00:00" pubdate="">2014年8月28日 at 上午11:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>原来欧几里德定理应用这么多</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30682">
+<article class="comment" id="comment-30682">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">liuyuedeyu</a></span> on <a href="http://www.acmerblog.com/bad-horse-codejam-6078.html#comment-30682" rel="nofollow"><time datetime="2014-08-25T00:06:34+00:00" pubdate="">2014年8月25日 at 上午12:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，赞一个！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,404 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>01-04</div>
+<div class="tit"><h1 class="entry-title">hdu 2243 考研路茫茫――单词情结-BFS-[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/bfs" rel="category tag" title="查看BFS搜索中的全部文章">BFS搜索</a>, <a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/basis/string" rel="category tag" title="查看字符串处理中的全部文章">字符串处理</a></span><span class="i4">围观1094次</span><span class="i3"><a class="ds-thread-count" data-thread-key="3473" href="http://www.acmerblog.com/hdu-2243-3473.html#comments" title="《hdu 2243 考研路茫茫――单词情结-BFS-[解题报告]C++》上的评论">17 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">考研路茫茫――单词情结</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+背单词，始终是复习英语的重要环节。在荒废了3年大学生涯后，Lele也终于要开始背单词了。<br/>一天，Lele在某本单词书上看到了一个根据词根来背单词的方法。比如"ab",放在单词前一般表示"相反，变坏，离去"等。
+<p>于是Lele想，如果背了N个词根，那这些词根到底会不会在单词里出现呢。更确切的描述是：长度不超过L，只由小写字母组成的，至少包含一个词根的单词，一共可能有多少个呢？这里就不考虑单词是否有实际意义。</p>
+<p>比如一共有2个词根 aa 和 ab ，则可能存在104个长度不超过3的单词，分别为<br/>(2个) aa,ab,<br/>(26个)aaa,aab,aac…aaz,<br/>(26个)aba,abb,abc…abz,<br/>(25个)baa,caa,daa…zaa,<br/>(25个)bab,cab,dab…zab。</p>
+<p>这个只是很小的情况。而对于其他复杂点的情况，Lele实在是数不出来了，现在就请你帮帮他。 </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+本题目包含多组数据，请处理到文件结束。<br/>每组数据占两行。<br/>第一行有两个正整数N和L。(0&lt;N&lt;6,0&lt;L&lt;2^31)<br/>第二行有N个词根，每个词根仅由小写字母组成，长度不超过5。两个词根中间用一个空格分隔开。 </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+本题目包含多组数据，请处理到文件结束。<br/>每组数据占两行。<br/>第一行有两个正整数N和L。(0&lt;N&lt;6,0&lt;L&lt;2^31)<br/>第二行有N个词根，每个词根仅由小写字母组成，长度不超过5。两个词根中间用一个空格分隔开。</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2 3
+aa ab
+1 2
+a</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+104
+52</pre>
+<p> <!-- problem end --></p>
+<p>题目链接：<a href="http://acm.hdu.edu.cn/showproblem.php?pid=2243">http://acm.hdu.edu.cn/showproblem.php?pid=2243</a></p>
+<p>题目大意：问长度为1~N的串中包含了模式串的串总共有几个。</p>
+<p>题目思路：求出长度不大于l的包含模式串的字符串数，方法是改求不包含模式串的字符串总数，当然先要处理出总的字符串个数，可以用矩阵也可以用二分幂和的方法。而求不包含模式串的字符串数同样是构造矩阵，同时还要建立一个虚结点，储存长度小于l的不包含模式串的字符串总数。</p>
+<pre class="brush:cpp ">#include&lt;stdio.h&gt;
+#include&lt;stdlib.h&gt;
+#include&lt;string.h&gt;
+#include&lt;string&gt;
+#include&lt;queue&gt;
+#include&lt;algorithm&gt;
+#include&lt;vector&gt;
+#include&lt;stack&gt;
+#include&lt;list&gt;
+#include&lt;iostream&gt;
+#include&lt;map&gt;
+using namespace std;
+#define inf 0x3f3f3f3f
+#define uint unsigned __int64
+#define Max 110
+int max(int a,int b)
+{
+	return a&gt;b?a:b;
+}
+int min(int a,int b)
+{
+	return a&lt;b?a:b;
+}
+int q[6*6],cnt;
+int hash[36];
+uint a[25][25],b[25][25],c[25][25],ans;
+struct node
+{
+    int cnt,fail;
+    int next[26];
+    void init()
+    {
+        cnt=fail=0;
+        memset(next,0,sizeof(next));
+    }
+}tri[6*6];
+void insert(char *s)
+{
+    int i,p,x;
+    p=0;
+    for(i=0;s[i];i++)
+    {
+        x=s[i]-'a';
+        if(!tri[p].next[x])
+        {
+            tri[++cnt].init();
+            tri[p].next[x]=cnt;
+        }
+        p=tri[p].next[x];
+    }
+    tri[p].cnt++;
+}
+void bfs()
+{
+    int i,p=0,suf,head=0,tail=0;
+    for(i=0;i&lt;26;i++)
+    {
+        if(tri[0].next[i])
+        {
+            q[tail++]=tri[0].next[i];
+            tri[q[tail-1]].fail=0;
+        }
+    }
+    while(head&lt;tail)
+    {
+        p=q[head++];suf=tri[p].fail;
+        tri[p].cnt+=tri[suf].cnt;
+        for(i=0;i&lt;26;i++)
+        {
+            if(tri[p].next[i])
+            {
+                q[tail++]=tri[p].next[i];
+                tri[q[tail-1]].fail=tri[suf].next[i];
+            }
+            else
+                tri[p].next[i]=tri[suf].next[i];
+        }
+    }
+    tri[cnt+1].cnt=0;
+    memset(b,0,sizeof(b));
+    int tmp=0;
+    for(i=0;i&lt;=cnt+1;i++)
+    {
+        if(!tri[i].cnt)
+        {
+            hash[i]=tmp++;
+        }
+    }
+    for(i=0;i&lt;=cnt;i++)
+    {
+        if(tri[i].cnt)
+            continue;
+        else
+        {
+            b[hash[i]][hash[cnt+1]]++;
+            for(int j=0;j&lt;26;j++)
+            {
+                int tmp=tri[i].next[j];
+                if(!tri[tmp].cnt)
+                    b[hash[i]][hash[tmp]]++;
+            }
+        }
+    }
+    cnt++;
+    b[hash[cnt]][hash[cnt]]=1;
+    cnt=tmp-1;
+}
+void run(uint a[][25],uint b[][25],uint c[][25],int cnt)
+{
+    int i,j,k;
+    for(i=0;i&lt;=cnt;i++)
+        for(j=0;j&lt;=cnt;j++)
+        {
+            c[i][j]=0;
+            for(k=0;k&lt;=cnt;k++)
+                c[i][j]+=a[i][k]*b[k][j];
+        }
+    for(i=0;i&lt;=cnt;i++)
+        for(j=0;j&lt;=cnt;j++)
+            a[i][j]=c[i][j];
+}
+void getsum(int n)
+{
+    a[0][0]=0;a[0][1]=26;
+    a[1][0]=0;a[1][1]=0;
+    b[0][0]=26;b[0][1]=0;
+    b[1][0]=1;b[1][1]=1;
+    ans=0;
+    while(n)
+    {
+        if(n&amp;1)
+            run(a,b,c,1);
+        n&gt;&gt;=1;
+        run(b,b,c,1);
+    }
+    ans=a[0][0];
+}
+void solve(int n)
+{
+    memset(a,0,sizeof(a));
+    a[0][0]=1;
+    while(n)
+    {
+        if(n&amp;1)
+            run(a,b,c,cnt);
+        n&gt;&gt;=1;
+        run(b,b,c,cnt);
+    }
+    for(int i=0;i&lt;=cnt;i++)
+        ans-=a[0][i];
+}
+int main()
+{
+    int n,l;
+    char s[10];
+    while(scanf("%d%d",&amp;n,&amp;l)!=EOF)
+    {
+        cnt=0;
+        tri[0].init();
+        while(n--)
+        {
+            scanf("%s",s);
+            insert(s);
+        }
+        getsum(l);
+        bfs();
+        solve(l);
+        printf("%I64u\n",ans+1);
+    }
+}</pre>
+<p>
+ </p>
+<p>解题转自：http://blog.csdn.net/wings_of_liberty/article/details/7600610</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-86416">
+<article class="comment" id="comment-86416">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519582" rel="external nofollow">新用户833826</a></span> on <a href="http://www.acmerblog.com/hdu-2243-3473.html#comment-86416" rel="nofollow"><time datetime="2017-04-13T04:24:35+00:00" pubdate="">2017年4月13日 at 上午4:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是谁把这三人的肚子搞大了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-86415">
+<article class="comment" id="comment-86415">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519582" rel="external nofollow">新用户833826</a></span> on <a href="http://www.acmerblog.com/hdu-2243-3473.html#comment-86415" rel="nofollow"><time datetime="2017-04-13T04:24:35+00:00" pubdate="">2017年4月13日 at 上午4:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是谁把这三人的肚子搞大了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-86414">
+<article class="comment" id="comment-86414">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519582" rel="external nofollow">新用户833826</a></span> on <a href="http://www.acmerblog.com/hdu-2243-3473.html#comment-86414" rel="nofollow"><time datetime="2017-04-13T04:24:35+00:00" pubdate="">2017年4月13日 at 上午4:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是谁把这三人的肚子搞大了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-20337">
+<article class="comment" id="comment-20337">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">final</a></span> on <a href="http://www.acmerblog.com/hdu-2243-3473.html#comment-20337" rel="nofollow"><time datetime="2015-05-15T20:34:22+00:00" pubdate="">2015年5月15日 at 下午8:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>厉害啊，我遇见数学问题就头疼！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-20340">
+<article class="comment" id="comment-20340">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1520006273</a></span> on <a href="http://www.acmerblog.com/hdu-2243-3473.html#comment-20340" rel="nofollow"><time datetime="2015-05-12T08:21:18+00:00" pubdate="">2015年5月12日 at 上午8:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法挺不错。NewHead代表新的头节点，通过递归找到最后一个节点之后，就把这个节点赋给NewHead，然后一直返回返回，中途这个值是没有变化的，一边返回一边把相应的指针方向颠倒，最后结束时返回新的头节点到主函数。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-20342">
+<article class="comment" id="comment-20342">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">changjf</a></span> on <a href="http://www.acmerblog.com/hdu-2243-3473.html#comment-20342" rel="nofollow"><time datetime="2015-02-01T08:42:01+00:00" pubdate="">2015年2月1日 at 上午8:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的题，还是能做出几道的，嘿嘿</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-20334">
+<article class="comment" id="comment-20334">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">anthozoan77</a></span> on <a href="http://www.acmerblog.com/hdu-2243-3473.html#comment-20334" rel="nofollow"><time datetime="2015-01-11T22:34:34+00:00" pubdate="">2015年1月11日 at 下午10:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>哇，算法有这么多呢！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-20343">
+<article class="comment" id="comment-20343">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">H.Watson</a></span> on <a href="http://www.acmerblog.com/hdu-2243-3473.html#comment-20343" rel="nofollow"><time datetime="2015-01-03T21:10:45+00:00" pubdate="">2015年1月3日 at 下午9:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给你一组数据吧：29 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 1000。此时的数据量还是很小的，耗时却不短。这种方法确实可以，当然或许还有其他的优化方案，但是优化只能针对某些数据，不太可能在所有情况下都能在可接受的时间内求解出答案。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-20335">
+<article class="comment" id="comment-20335">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jhxxszy</a></span> on <a href="http://www.acmerblog.com/hdu-2243-3473.html#comment-20335" rel="nofollow"><time datetime="2014-10-28T10:59:15+00:00" pubdate="">2014年10月28日 at 上午10:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>老实说，这种方法就是穷举，复杂度是2^n，之所以能够AC是应为题目的测试数据有问题，要么数据量很小，要么能够得到k == t，否则即使n = 30，也要很久才能得出结果，本人亲测</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-20333">
+<article class="comment" id="comment-20333">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sum_tsai</a></span> on <a href="http://www.acmerblog.com/hdu-2243-3473.html#comment-20333" rel="nofollow"><time datetime="2014-06-24T21:28:40+00:00" pubdate="">2014年6月24日 at 下午9:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>看似简单，还是不少坑的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-20338">
+<article class="comment" id="comment-20338">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">crazymage</a></span> on <a href="http://www.acmerblog.com/hdu-2243-3473.html#comment-20338" rel="nofollow"><time datetime="2014-06-20T16:24:20+00:00" pubdate="">2014年6月20日 at 下午4:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个还不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-20339">
+<article class="comment" id="comment-20339">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ruoshui</a></span> on <a href="http://www.acmerblog.com/hdu-2243-3473.html#comment-20339" rel="nofollow"><time datetime="2014-06-04T23:00:21+00:00" pubdate="">2014年6月4日 at 下午11:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>红绯鱼：<br/>
+这模板神了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-20336">
+<article class="comment" id="comment-20336">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Snarl_jsb</a></span> on <a href="http://www.acmerblog.com/hdu-2243-3473.html#comment-20336" rel="nofollow"><time datetime="2014-05-22T01:33:57+00:00" pubdate="">2014年5月22日 at 上午1:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-20344">
+<article class="comment" id="comment-20344">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">BGPY</a></span> on <a href="http://www.acmerblog.com/hdu-2243-3473.html#comment-20344" rel="nofollow"><time datetime="2014-04-11T14:31:24+00:00" pubdate="">2014年4月11日 at 下午2:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>具体实现上有所差别，但思路是一样的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-20331">
+<article class="comment" id="comment-20331">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">2013283119</a></span> on <a href="http://www.acmerblog.com/hdu-2243-3473.html#comment-20331" rel="nofollow"><time datetime="2014-04-01T18:37:23+00:00" pubdate="">2014年4月1日 at 下午6:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>涨姿势了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-20341">
+<article class="comment" id="comment-20341">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">acmer29</a></span> on <a href="http://www.acmerblog.com/hdu-2243-3473.html#comment-20341" rel="nofollow"><time datetime="2014-03-01T23:07:58+00:00" pubdate="">2014年3月1日 at 下午11:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>先从简单的做起，归并排序，二叉树相关的遍历等</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-20332">
+<article class="comment" id="comment-20332">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1173954900</a></span> on <a href="http://www.acmerblog.com/hdu-2243-3473.html#comment-20332" rel="nofollow"><time datetime="2014-02-20T07:12:03+00:00" pubdate="">2014年2月20日 at 上午7:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，再多来的CF上面的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

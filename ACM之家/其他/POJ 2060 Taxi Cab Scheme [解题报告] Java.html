@@ -1,0 +1,277 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>11-10</div>
+<div class="tit"><h1 class="entry-title">POJ 2060 Taxi Cab Scheme [解题报告] Java</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/zhuanti/java-poj" rel="category tag" title="查看Java解POJ中的全部文章">Java解POJ</a>, <a href="http://www.acmerblog.com/category/problemset/poj2" rel="category tag" title="查看POJ-北大中的全部文章">POJ-北大</a>, <a href="http://www.acmerblog.com/category/data-struct/linear" rel="category tag" title="查看线性结构中的全部文章">线性结构</a></span><span class="i4">围观784次</span><span class="i3"><a class="ds-thread-count" data-thread-key="600" href="http://www.acmerblog.com/POJ-2060-Taxi-Cab-Scheme-blog-600.html#comments" title="《POJ 2060 Taxi Cab Scheme [解题报告] Java》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Taxi Cab Scheme</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Running a taxi station is not all that simple. Apart from the obvious demand for a centralised coordination of the cabs in order to pick up the customers calling to get a cab as soon as possible,there is also a need to schedule all the taxi rides which have been booked in advance.Given a list of all booked taxi rides for the next day, you want to minimise the number of cabs needed to carry out all of the rides.<br/>
+<br/>For the sake of simplicity, we model a city as a rectangular grid. An address in the city is denoted by two integers: the street and avenue number. The time needed to get from the address a, b to c, d by taxi is |a – c| + |b – d| minutes. A cab may carry out a booked ride if it is its first ride of the day, or if it can get to the source address of the new ride from its latest,at least one minute before the new ride’s scheduled departure. Note that some rides may end after midnight. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+On the first line of the input is a single positive integer N, telling the number of test scenarios to follow. Each scenario begins with a line containing an integer M, 0 &lt; M &lt; 500, being the number of booked taxi rides. The following M lines contain the rides. Each ride is described by a departure time on the format hh:mm (ranging from 00:00 to 23:59), two integers a b that are the coordinates of the source address and two integers c d that are the coordinates of the destination address. All coordinates are at least 0 and strictly smaller than 200. The booked rides in each scenario are sorted in order of increasing departure time. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+For each scenario, output one line containing the minimum number of cabs required to carry out all the booked taxi rides.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+2
+08:00 10 11 9 16
+08:07 9 16 10 11
+2
+08:00 10 11 9 16
+08:06 9 16 10 11</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+2</pre>
+<div class="mybigtile mysubmit"> <a href="http://poj.org/submit?problem_id=2060">提交代码</a>   <a href="http://poj.org/bbs?problem_id=2060">问题讨论</a>   <a href="http://poj.org/problemstatus?problem_id=2060">数据统计</a> </div>
+<div>
+<p class="mytitle"> 解题代码:</p>
+</div>
+<pre class="brush:java ">import java.util.Arrays;
+import java.util.Scanner;
+
+public class Main{
+	static int n = 0;//提前预定的taxi总数
+	static final int MAX = 500;//最大容量
+	static Booked[] booked = new Booked[MAX];//taxi对象数组
+	static boolean[][] graph = new boolean[MAX * 2][MAX * 2];//建图
+	static boolean[] visit = new boolean[MAX * 2];//访问标记
+	static int[] link = new int[MAX * 2];//记录前节点
+ public static void main(String[] args) {
+   Scanner cin = new Scanner(System.in);
+   int t = cin.nextInt();
+   while (t-- != 0) {
+    n = cin.nextInt();
+    for (int i = 0; i &lt; n; i++) {
+     String[] ss = cin.next().split(":");
+     int time = Integer.parseInt(ss[0]) * 60 + Integer.parseInt(ss[1]);//计算出发时间
+     booked[i] = new Booked(time, cin.nextInt(), cin.nextInt(), cin.nextInt(), cin.nextInt());//读入起始坐标
+    }
+    init();
+    System.out.println(n - hungray());//节点数 - 最大二分匹配
+   }
+  }
+	
+  static void init() {//构建图
+   for (int i = 0; i &lt; MAX * 2; i++)
+    Arrays.fill(graph[i], false);
+    for (int i = 0; i &lt; n; i++) {
+     for (int j = 0; j &lt; n; j++) {
+      if (booked[i].reachable(booked[j]))
+       graph[i][j + n] = true;
+	 }
+    }
+  }
+	
+  static boolean find(int x) {//寻找可增广路
+   for (int i = 0; i &lt; n * 2; i++) {
+    if (graph[x][i] &amp;&amp; !visit[i]) {
+      visit[i] = true;
+      if (link[i] == -1 || find(link[i])) {
+        link[i] = x;
+        return true;
+      }
+     }
+   }
+   return false;
+  }
+	
+  static int hungray() {//匈牙利求最大匹配
+    int ans = 0;
+		Arrays.fill(link, -1);
+		for (int i = 0; i &lt; n; i++) {
+			Arrays.fill(visit, false);
+			if (find(i))
+				ans++;
+		}
+		return ans;
+	}
+}
+class Booked {//预计的taxi类
+	int time, a, b, c, d;
+	public Booked(int time, int a, int b, int c, int d) {
+		this.time = time;//出发时间
+		this.a = a;//起点坐标
+		this.b = b;
+		this.c = c;//终点坐标
+		this.d = d;
+	}
+	boolean reachable(Booked bo) {//两条路线能否用一辆taxi来代替
+		return this.time + Math.abs(this.a - this.c) + Math.abs(this.b - this.d) 
+		+ Math.abs(bo.a - this.c) + Math.abs(bo.b - this.d) &lt; bo.time;
+	}
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-6550">
+<article class="comment" id="comment-6550">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mnmlist</a></span> on <a href="http://www.acmerblog.com/POJ-2060-Taxi-Cab-Scheme-blog-600.html#comment-6550" rel="nofollow"><time datetime="2015-06-20T16:51:24+00:00" pubdate="">2015年6月20日 at 下午4:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个也是算法导论的习题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-6544">
+<article class="comment" id="comment-6544">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">la0bei</a></span> on <a href="http://www.acmerblog.com/POJ-2060-Taxi-Cab-Scheme-blog-600.html#comment-6544" rel="nofollow"><time datetime="2015-04-01T15:32:20+00:00" pubdate="">2015年4月1日 at 下午3:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-37544">
+<article class="comment" id="comment-37544">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">beizhiwu</a></span> on <a href="http://www.acmerblog.com/POJ-2060-Taxi-Cab-Scheme-blog-600.html#comment-37544" rel="nofollow"><time datetime="2015-02-01T22:51:04+00:00" pubdate="">2015年2月1日 at 下午10:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一个数表示数列的个数，5表示之后有5个数</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-37543">
+<article class="comment" id="comment-37543">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">magichu</a></span> on <a href="http://www.acmerblog.com/POJ-2060-Taxi-Cab-Scheme-blog-600.html#comment-37543" rel="nofollow"><time datetime="2015-01-20T02:40:06+00:00" pubdate="">2015年1月20日 at 上午2:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>赞一个！权限已更新:）</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-6543">
+<article class="comment" id="comment-6543">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">09291010</a></span> on <a href="http://www.acmerblog.com/POJ-2060-Taxi-Cab-Scheme-blog-600.html#comment-6543" rel="nofollow"><time datetime="2014-12-16T12:57:10+00:00" pubdate="">2014年12月16日 at 下午12:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>秒！~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-37545">
+<article class="comment" id="comment-37545">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Spike</a></span> on <a href="http://www.acmerblog.com/POJ-2060-Taxi-Cab-Scheme-blog-600.html#comment-37545" rel="nofollow"><time datetime="2014-08-29T14:05:25+00:00" pubdate="">2014年8月29日 at 下午2:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我想整理一下leetcode的题解，站长能不能给权限</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-37540">
+<article class="comment" id="comment-37540">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">crazymage</a></span> on <a href="http://www.acmerblog.com/POJ-2060-Taxi-Cab-Scheme-blog-600.html#comment-37540" rel="nofollow"><time datetime="2014-07-22T11:47:04+00:00" pubdate="">2014年7月22日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是往年的笔试题，非在线，主要考察基础，Java会在面试时问到</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-6546">
+<article class="comment" id="comment-6546">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">helloacm</a></span> on <a href="http://www.acmerblog.com/POJ-2060-Taxi-Cab-Scheme-blog-600.html#comment-6546" rel="nofollow"><time datetime="2014-07-16T22:17:58+00:00" pubdate="">2014年7月16日 at 下午10:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>remove没有实现</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-37542">
+<article class="comment" id="comment-37542">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">pain</a></span> on <a href="http://www.acmerblog.com/POJ-2060-Taxi-Cab-Scheme-blog-600.html#comment-37542" rel="nofollow"><time datetime="2014-06-16T01:53:30+00:00" pubdate="">2014年6月16日 at 上午1:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>3，求得所有的为的总和sum—-&gt;所有数的总和<br/>
+printf( "Not Possible" );—-&gt;printf("impossible");<br/>
+对吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-6547">
+<article class="comment" id="comment-6547">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Monkey_Sun</a></span> on <a href="http://www.acmerblog.com/POJ-2060-Taxi-Cab-Scheme-blog-600.html#comment-6547" rel="nofollow"><time datetime="2014-04-06T22:43:01+00:00" pubdate="">2014年4月6日 at 下午10:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真心不错，力顶作者</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-37541">
+<article class="comment" id="comment-37541">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">congve1</a></span> on <a href="http://www.acmerblog.com/POJ-2060-Taxi-Cab-Scheme-blog-600.html#comment-37541" rel="nofollow"><time datetime="2014-03-22T13:49:32+00:00" pubdate="">2014年3月22日 at 下午1:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有限自动机在ACM中是必须掌握的算法，实际上在面试当中几乎不可能让你单独的去实现这个算法，如果有题目要用到有限自动机来降低时间复杂度，那么这种面试题应该属于很难的级别了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-6549">
+<article class="comment" id="comment-6549">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">haojunyu</a></span> on <a href="http://www.acmerblog.com/POJ-2060-Taxi-Cab-Scheme-blog-600.html#comment-6549" rel="nofollow"><time datetime="2014-03-06T00:56:58+00:00" pubdate="">2014年3月6日 at 上午12:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第36行，struct node **head_ref，怎么理解，那个函数感觉不是很懂啊！？？弱渣求助</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-6548">
+<article class="comment" id="comment-6548">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">130920099</a></span> on <a href="http://www.acmerblog.com/POJ-2060-Taxi-Cab-Scheme-blog-600.html#comment-6548" rel="nofollow"><time datetime="2014-02-27T19:08:12+00:00" pubdate="">2014年2月27日 at 下午7:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，就是把这32位当成一个长度为32的数</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-6545">
+<article class="comment" id="comment-6545">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Christmas</a></span> on <a href="http://www.acmerblog.com/POJ-2060-Taxi-Cab-Scheme-blog-600.html#comment-6545" rel="nofollow"><time datetime="2014-01-26T01:05:54+00:00" pubdate="">2014年1月26日 at 上午1:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算法还停留在大学的知识中</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

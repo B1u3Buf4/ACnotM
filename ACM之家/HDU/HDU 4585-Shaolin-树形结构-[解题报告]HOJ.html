@@ -1,0 +1,306 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>09-17</div>
+<div class="tit"><h1 class="entry-title">HDU 4585-Shaolin-树形结构-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/data-struct/trees" rel="category tag" title="查看树形结构中的全部文章">树形结构</a>, <a href="http://www.acmerblog.com/category/geometry/analytic-geometry" rel="category tag" title="查看解析几何中的全部文章">解析几何</a></span><span class="i4">围观78次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7629" href="http://www.acmerblog.com/hdu-4585-shaolin-7629.html#comments" title="《HDU 4585-Shaolin-树形结构-[解题报告]HOJ》上的评论">9 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<h1 style="color:#1A5CC8">Shaolin</h1>
+<p><strong><span style="font-family:Arial; font-size:12px; color:green; font-weight:bold">Time Limit: 3000/1000 MS (Java/Others)    Memory Limit: 65535/32768 K (Java/Others)<br/>
+Total Submission(s): 1945    Accepted Submission(s): 836<br/>
+</span></strong></p>
+<div align="left" class="panel_title">Problem Description</div>
+<div class="panel_content">Shaolin temple is very famous for its Kongfu monks.A lot of young men go to Shaolin temple every year, trying to be a monk there. The master of Shaolin evaluates a young man mainly by his talent on understanding the Buddism scripture,<br/>
+ but fighting skill is also taken into account.<br/>
+When a young man passes all the tests and is declared a new monk of Shaolin, there will be a fight , as a part of the welcome party. Every monk has an unique id and a unique fighting grade, which are all integers. The new monk must fight with a old monk whose<br/>
+ fighting grade is closest to his fighting grade. If there are two old monks satisfying that condition, the new monk will take the one whose fighting grade is less than his.<br/>
+The master is the first monk in Shaolin, his id is 1，and his fighting grade is 1,000,000,000.He just lost the fighting records. But he still remembers who joined Shaolin earlier, who joined later. Please recover the fighting records for him.
+</div>
+<div class="panel_bottom"> </div>
+<p></p>
+<div align="left" class="panel_title">Input</div>
+<div class="panel_content">There are several test cases.<br/>
+In each test case:<br/>
+The first line is a integer n (0 &lt;n &lt;=100,000),meaning the number of monks who joined Shaolin after the master did.(The master is not included).Then n lines follow. Each line has two integer k and g, meaning a monk’s id and his fighting grade.( 0&lt;= k ,g&lt;=5,000,000)<br/>
+The monks are listed by ascending order of jointing time.In other words, monks who joined Shaolin earlier come first.<br/>
+The input ends with n = 0.
+</div>
+<div class="panel_bottom"> </div>
+<p></p>
+<div align="left" class="panel_title">Output</div>
+<div class="panel_content">A fight can be described as two ids of the monks who make that fight. For each test case, output all fights by the ascending order of happening time. Each fight in a line. For each fight, print the new monk’s id first ,then the old<br/>
+ monk’s id.</div>
+<div class="panel_bottom"> </div>
+<p></p>
+<div align="left" class="panel_title">Sample Input</div>
+<div class="panel_content">
+<pre><div style="font-family:Courier New,Courier,monospace">3
+2 1
+3 3
+4 2
+0</div></pre>
+</div>
+<div class="panel_bottom"> </div>
+<p></p>
+<div align="left" class="panel_title">Sample Output</div>
+<div class="panel_content">
+<pre><div style="font-family:Courier New,Courier,monospace">2 1
+3 2
+4 2</div></pre>
+</div>
+<div class="panel_bottom"> </div>
+<p>
+</p>
+<p>这是一道平衡树的模板题，直接贴代码就行</p>
+<pre class="brush:cpp" name="code">#include&lt;iostream&gt;
+#include&lt;cmath&gt;
+#include&lt;cstring&gt;
+#include&lt;ctime&gt;
+#include&lt;cstdlib&gt;
+#include&lt;cstdio&gt;
+using namespace std;
+struct Node
+{
+    Node* son[2];
+    int rank;
+    int size;
+    int key;
+    bool operator&lt;(const Node &amp;a)const
+    {
+        return rank&lt;a.rank;   //重载小于好，用于维护堆的性质
+    }
+    int cmp(int x)const
+    {
+        if(x==key) return -1;    //比较函数，用于确定寻找的值的位置，0表示左儿子，1表示右儿子，-1代表当前节点
+        return x&lt;key?0:1;
+    }
+    void maintain()//这里仅仅需要维护size
+    {
+        size = 1 + son[0]-&gt;size + son[1]-&gt;size;
+    }
+};
+struct Treap
+{
+    Node * root;
+    Node *null = new Node();//定义空结点，可以有效避免NULL带来的问题
+    //初始化Treap
+    void initial()
+    {
+        srand(time(NULL));
+        root = null;
+    }
+    //旋转操作，d=0时代表左旋，d=1时代表右旋
+    void rotate(Node* &amp;o,int d)
+    {
+        Node*  k = o-&gt;son[d^1];
+        o-&gt;son[d^1] = k -&gt; son[d];
+        k-&gt;son[d] = o;
+        o-&gt;maintain();//注意，必须先维护o再维护k，因为o是子节点，不优先维护，会导致父节点出错
+        k-&gt;maintain();
+        o = k;
+    }
+    void ins(Node*  &amp;o,int x)
+    {
+        if(o==null)
+        {
+            o = new Node();
+            o-&gt;son[0] = o-&gt;son[1] = null;
+            o-&gt;rank = rand();
+            o-&gt;key = x;
+            o-&gt;size = 1;
+        }
+        else
+        {
+            int d = o-&gt;cmp(x);
+            ins(o-&gt;son[d],x);
+            o-&gt;maintain();
+            if(o &lt; o-&gt;son[d])
+                rotate(o,d^1);//当位于左儿子时，需要进行的是右旋，当位于右儿子时应当进行左旋，因此通项为rotate(o,d^1)
+        }
+    }
+    void del(Node* &amp;o,int x)
+    {
+        int d = o-&gt;cmp(x);
+        if(d==-1)//已经找到待删除节点，将会有两种情况
+        {
+            if(o-&gt;son[0] == null) o = o-&gt;son[1];//左儿子为空，直接连接父节点和右儿子
+            else if(o-&gt;son[1] == null) o= o-&gt;son[0];//右儿子为空，同上
+            else
+            {
+                d = o-&gt;son[0] &lt; o-&gt;son[1] ? 0:1;//在子节点中找到一个rank大的节点，将其旋转到当前节点，那么当前节点应当位于相反的子节点
+                rotate(o,d);
+                del(o-&gt;son[d],x);
+            }
+        }
+        else
+            del(o-&gt;son[d],x);
+        if(o!=null) o-&gt;maintain();//删除节点后，需要对size进行维护。需要注意的是，如果节点为空时，就不需要维护了
+    }
+    int kth(Node* o,int k)//寻找第k大数
+    {
+        if(o == null || k&lt;=0 || k&gt;o-&gt;size) return -1;//k过大或者过小都不能找到，Treap中没有节点也无需找
+        int s = (o-&gt;son[1] == null?0:o-&gt;son[1]-&gt;size);//获得右儿子的size
+        if(k == s+1) return o-&gt;key;//当k为 s + 1时，说明当前节点就是答案
+        else
+            if(k&lt;=s) return kth(o-&gt;son[1],k);//当k&lt;s时，说明第k大数在右子树，k值无需更改
+        else
+            return kth(o-&gt;son[0],k-s-1);//当k&gt;s+1时，第k大数在左子树，需要减去右子树的值和节点本身
+    }
+    int find(Node* o,int k)//返回该数是第几大
+    {
+        if(o == null) return -1;
+        int d = o-&gt;cmp(k);
+        if(d == -1) return 1 + o-&gt;son[1]-&gt;size;
+        else if(d == 1) return find(o-&gt;son[d],k);
+        else
+        {
+            int tmp = find(o-&gt;son[d],k);
+            if(tmp == -1) return -1;
+            else
+                return tmp + 1 + o-&gt;son[1]-&gt;size;
+        }
+    }
+} treap;
+int id[5000005];
+int main()
+{
+    int n;
+    while(scanf("%d",&amp;n)&amp;&amp;n)
+    {
+        treap.initial();
+        int x,y;
+        scanf("%d%d",&amp;x,&amp;y);
+        treap.ins(treap.root,y);
+        id[y] = x;
+        printf("%d %d\n",x,1);
+        for(int i =2;i&lt;=n;i++)
+        {
+            scanf("%d%d",&amp;x,&amp;y);
+            id[y] = x;
+            treap.ins(treap.root,y);
+            int t = treap.find(treap.root,y);
+            int ans1,ans2,ans;
+            ans1 = treap.kth(treap.root,t-1);
+            ans2 = treap.kth(treap.root,t+1);
+            if(ans1 != -1)
+                {
+                    if(ans2==-1) ans = ans1;
+                    else
+                        if(ans1 - y &gt;= y-ans2) ans = ans2; else ans = ans1;
+                }
+            else
+                ans =ans2;
+            printf("%d %d\n",x,id[ans]);
+        }
+    }
+    return 0;
+}
+</pre>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/noip_2009/article/details/47259951</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-97547">
+<article class="comment" id="comment-97547">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513652" rel="external nofollow">新用户828016</a></span> on <a href="http://www.acmerblog.com/hdu-4585-shaolin-7629.html#comment-97547" rel="nofollow"><time datetime="2017-04-20T05:15:17+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>本来你用的就会盗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-66803">
+<article class="comment" id="comment-66803">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460821" rel="external nofollow">新用户867065</a></span> on <a href="http://www.acmerblog.com/hdu-4585-shaolin-7629.html#comment-66803" rel="nofollow"><time datetime="2017-04-10T22:27:50+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把三嫂当成网名了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-66802">
+<article class="comment" id="comment-66802">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460821" rel="external nofollow">新用户867065</a></span> on <a href="http://www.acmerblog.com/hdu-4585-shaolin-7629.html#comment-66802" rel="nofollow"><time datetime="2017-04-10T22:27:50+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把三嫂当成网名了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-66801">
+<article class="comment" id="comment-66801">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460821" rel="external nofollow">新用户867065</a></span> on <a href="http://www.acmerblog.com/hdu-4585-shaolin-7629.html#comment-66801" rel="nofollow"><time datetime="2017-04-10T22:27:50+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把三嫂当成网名了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-66800">
+<article class="comment" id="comment-66800">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460821" rel="external nofollow">新用户867065</a></span> on <a href="http://www.acmerblog.com/hdu-4585-shaolin-7629.html#comment-66800" rel="nofollow"><time datetime="2017-04-10T22:27:50+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把三嫂当成网名了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-66799">
+<article class="comment" id="comment-66799">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460821" rel="external nofollow">新用户867065</a></span> on <a href="http://www.acmerblog.com/hdu-4585-shaolin-7629.html#comment-66799" rel="nofollow"><time datetime="2017-04-10T22:27:50+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把三嫂当成网名了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-66798">
+<article class="comment" id="comment-66798">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460821" rel="external nofollow">新用户867065</a></span> on <a href="http://www.acmerblog.com/hdu-4585-shaolin-7629.html#comment-66798" rel="nofollow"><time datetime="2017-04-10T22:27:50+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把三嫂当成网名了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-66797">
+<article class="comment" id="comment-66797">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460821" rel="external nofollow">新用户867065</a></span> on <a href="http://www.acmerblog.com/hdu-4585-shaolin-7629.html#comment-66797" rel="nofollow"><time datetime="2017-04-10T22:27:50+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把三嫂当成网名了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-66796">
+<article class="comment" id="comment-66796">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460821" rel="external nofollow">新用户867065</a></span> on <a href="http://www.acmerblog.com/hdu-4585-shaolin-7629.html#comment-66796" rel="nofollow"><time datetime="2017-04-10T22:27:50+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把三嫂当成网名了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

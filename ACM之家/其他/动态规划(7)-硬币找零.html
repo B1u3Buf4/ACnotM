@@ -1,0 +1,298 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-10</div>
+<div class="tit"><h1 class="entry-title">动态规划(7)-硬币找零</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/gaotong2055" rel="author" title="由dragon发布">dragon</a></span><span class="i1"><a href="http://www.acmerblog.com/category/zhuanti/algorithm" rel="category tag" title="查看算法分析中的全部文章">算法分析</a>, <a href="http://www.acmerblog.com/category/zhuanti/classic" rel="category tag" title="查看经典问题中的全部文章">经典问题</a></span><span class="i4">围观3906次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4973" href="http://www.acmerblog.com/dp6-coin-change-4973.html#comments" title="《动态规划(7)-硬币找零》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p><strong>问题：</strong></p>
+<p>假设有m种面值不同的硬币，个个面值存于数组S ={S1，S2，… Sm}中，现在用这些硬币来找钱，各种硬币的使用个数不限。 求对于给定的钱数N，我们最多有几种不同的找钱方式。硬币的顺序并不重要。</p>
+<p><span>例如，对于N = 4，S = {1,2,3}，有四种方案：{1,1,1,1}，{1,1,2}，{2,2}，{1， 3}。</span><span>所以输出应该是4。</span><span>对于N = 10，S = {2,5, 3,6}，有五种解决办法：{2,2,2,2,2}，{2,2,3,3}，{2,2,6 }，{2,3,5}和{5,5}。</span><span>所以输出应该是5。</span></p>
+<p><strong><span><span>1）最优子结构</span></span></strong><br/>
+<span><span>要算总数的解决方案，我们可以把所有的一整套解决方案在两组 (其实这个方法在组合数学中经常用到，要么包含某个元素要么不包含，用于递推公式等等，)。</span></span><br/>
+<span><span>1）解决方案不包含 第m种硬币（或Sm）。</span></span><br/>
+<span><span>2）解决方案包含至少一个 第m种硬币。</span></span><br/>
+<span><span>让数（S [] , M, N）是该函数来计算解的数目，则它可以表示为计数的总和（S [], M-1, N）和计数（S []，M，N-Sm）。</span></span></p>
+<p><span><span>因此，这个问题具有最优子结构性质的问题。</span></span></p>
+<p><strong>2) 重叠子问题</strong></p>
+<p><span>下面是一个简单的递归实现硬币找零问题。</span><span>遵循上面提到的递归结构。</span></p>
+<pre class="brush:cpp">#include&lt;stdio.h&gt;
+int count( int S[], int m, int n )
+{
+    // 如果n为0，就找到了一个方案
+    if (n == 0)
+        return 1;
+    if (n &lt; 0)
+        return 0;
+    // 没有硬币可用了，也返回0
+    if (m &lt;=0 )
+        return 0;
+    // 按照上面的递归函数
+    return count( S, m - 1, n ) + count( S, m, n-S[m-1] );
+}
+
+// 测试
+int main()
+{
+    int i, j;
+    int arr[] = {1, 2, 3};
+    int m = sizeof(arr)/sizeof(arr[0]);
+    printf("%d ", count(arr, m, 4));
+    getchar();
+    return 0;
+}</pre>
+<p><span><span>应当指出的是，上述函数反复计算相同的子问题。</span><span>见下面的递归树为S = {1，2，3}，且n = 5。</span></span><br/>
+<span><span>的函数C（{1}，3）被调用两次。</span><span>如果我们绘制完整的树，那么我们可以看到，有许多子问题被多次调用。</span></span></p>
+<pre class="brush:other">C() --&gt; count()
+                              C({1,2,3}, 5)                     
+                           /                \
+                         /                   \              
+             C({1,2,3}, 2)                 C({1,2}, 5)
+            /     \                        /         \
+           /        \                     /           \
+C({1,2,3}, -1)  C({1,2}, 2)        C({1,2}, 3)    C({1}, 5)
+               /     \            /    \            /     \
+             /        \          /      \          /       \
+    C({1,2},0)  C({1},2)   C({1,2},1) C({1},3)    C({1}, 4)  C({}, 5)
+                   / \      / \       / \        /     \    
+                  /   \    /   \     /   \      /       \ 
+                .      .  .     .   .     .   C({1}, 3) C({}, 4)
+                                               /  \
+                                              /    \  
+                                             .      .</pre>
+<p><span><span>所以，硬币找零问题具有符合动态规划的两个重要属性</span></span><span><span>。</span><span>像其他典型的</span></span><span><span>动态规划（DP）的问题</span></span><span><span>，可通过自下而上的方式打表，存储相同的子问题。当然上面的递归程序也可以改写成记忆化存储的方式来提高效率。</span></span></p>
+<p>下面是动态规划的程序：</p>
+<pre class="brush:cpp">#include&lt;stdio.h&gt;
+
+int count( int S[], int m, int n )
+{
+    int i, j, x, y;
+
+    // 通过自下而上的方式打表我们需要n+1行
+    // 最基本的情况是n=0
+    int table[n+1][m];
+
+    // 初始化n=0的情况 (参考上面的递归程序)
+    for (i=0; i&lt;m; i++)
+        table[0][i] = 1;
+
+    for (i = 1; i &lt; n+1; i++)
+    {
+        for (j = 0; j &lt; m; j++)
+        {
+            // 包括 S[j] 的方案数
+            x = (i-S[j] &gt;= 0)? table[i - S[j]][j]: 0;
+
+            // 不包括 S[j] 的方案数
+            y = (j &gt;= 1)? table[i][j-1]: 0;
+
+            table[i][j] = x + y;
+        }
+    }
+    return table[n][m-1];
+}
+
+// 测试
+int main()
+{
+    int arr[] = {1, 2, 3};
+    int m = sizeof(arr)/sizeof(arr[0]);
+    int n = 4;
+    printf(" %d ", count(arr, m, n));
+    return 0;
+}</pre>
+<p><span><span>时间复杂度：O(mn)</span></span></p>
+<p><span><span>以下为上面程序的优化版本。</span><span>这里所需要的辅助空间为O(n)。因为我们在打表时，本行只和上一行有关，类似01背包问题。</span></span></p>
+<pre class="brush:cpp">int count( int S[], int m, int n )
+{
+    int table[n+1];
+    memset(table, 0, sizeof(table));
+    //初始化基本情况
+    table[0] = 1;
+
+    for(int i=0; i&lt;m; i++)
+        for(int j=S[i]; j&lt;=n; j++)
+            table[j] += table[j-S[i]];
+
+    return table[n];
+}</pre>
+<p><span>参考：http://www.geeksforgeeks.org/dynamic-programming-set-7-coin-change/</span></p>
+<p><span>http://www.algorithmist.com/index.php/Coin_Change</span></p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-78314">
+<article class="comment" id="comment-78314">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514086" rel="external nofollow">新用户468271</a></span> on <a href="http://www.acmerblog.com/dp6-coin-change-4973.html#comment-78314" rel="nofollow"><time datetime="2017-04-12T10:53:29+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>也就西方人喜欢这样的房子吧，背后黑漆漆的一片树林感觉还真是不安全。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28239">
+<article class="comment" id="comment-28239">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wawa_zmt</a></span> on <a href="http://www.acmerblog.com/dp6-coin-change-4973.html#comment-28239" rel="nofollow"><time datetime="2015-05-20T01:57:11+00:00" pubdate="">2015年5月20日 at 上午1:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63290">
+<article class="comment" id="comment-63290">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">spiderMan</a></span> on <a href="http://www.acmerblog.com/dp6-coin-change-4973.html#comment-63290" rel="nofollow"><time datetime="2015-04-22T10:18:13+00:00" pubdate="">2015年4月22日 at 上午10:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为避免精度问题，PI值请使用arccos(-1)。应该是acos</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48165">
+<article class="comment" id="comment-48165">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">123456789_xd</a></span> on <a href="http://www.acmerblog.com/dp6-coin-change-4973.html#comment-48165" rel="nofollow"><time datetime="2015-04-20T21:12:21+00:00" pubdate="">2015年4月20日 at 下午9:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>漂亮。佩服。<br/>
+P.S.  unsigned 应该去掉。换行符是n 不是/n<br/>
+还可以稍微优化一下，<br/>
+int main() {<br/>
+	int m,n,ai,aj,bi,bj,ak,bk;<br/>
+	while (scanf("%d%d",&amp;m,&amp;n)!=EOF) {<br/>
+		ai = sqrt(m-1);<br/>
+		bi = sqrt(n-1);<br/>
+		aj = (m-ai*ai-1)&gt;&gt;1;<br/>
+		bj = (n-bi*bi-1)&gt;&gt;1;<br/>
+		ak = ((ai+1)*(ai+1)-m)&gt;&gt;1;<br/>
+		bk = ((bi+1)*(bi+1)-n)&gt;&gt;1;<br/>
+		printf("%dn",abs(ai-bi)+abs(aj-bj)+abs(ak-bk));<br/>
+	}<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48166">
+<article class="comment" id="comment-48166">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jxfactor</a></span> on <a href="http://www.acmerblog.com/dp6-coin-change-4973.html#comment-48166" rel="nofollow"><time datetime="2015-03-06T13:17:21+00:00" pubdate="">2015年3月6日 at 下午1:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>此题答案确实应该是A。文中已修改，感谢一楼的提醒！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28235">
+<article class="comment" id="comment-28235">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gnipuohz</a></span> on <a href="http://www.acmerblog.com/dp6-coin-change-4973.html#comment-28235" rel="nofollow"><time datetime="2015-02-24T16:11:20+00:00" pubdate="">2015年2月24日 at 下午4:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>递归还真是一门学问，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28237">
+<article class="comment" id="comment-28237">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">warriorbrant</a></span> on <a href="http://www.acmerblog.com/dp6-coin-change-4973.html#comment-28237" rel="nofollow"><time datetime="2015-02-24T11:09:54+00:00" pubdate="">2015年2月24日 at 上午11:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>厉害啊，我遇见数学问题就头疼！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28236">
+<article class="comment" id="comment-28236">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hsp_77_abc</a></span> on <a href="http://www.acmerblog.com/dp6-coin-change-4973.html#comment-28236" rel="nofollow"><time datetime="2014-12-28T00:37:13+00:00" pubdate="">2014年12月28日 at 上午12:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48164">
+<article class="comment" id="comment-48164">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mechine</a></span> on <a href="http://www.acmerblog.com/dp6-coin-change-4973.html#comment-48164" rel="nofollow"><time datetime="2014-11-14T07:09:57+00:00" pubdate="">2014年11月14日 at 上午7:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嗯   分析得很到位，确实用模板编程能让面试官对你的印象更好。在设置辅助栈的时候可以这样：push时，比较要push的elem和辅助栈的栈顶，elem&lt;=min.top()，则min.push(elem).否则只要push（elem）就好。在pop的时候，比较stack.top()与min.top(),if(stack.top()&lt;=min.top()),则{stack.pop();min.pop();}，否则{stack.pop();}.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48169">
+<article class="comment" id="comment-48169">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bluesky</a></span> on <a href="http://www.acmerblog.com/dp6-coin-change-4973.html#comment-48169" rel="nofollow"><time datetime="2014-11-08T04:43:32+00:00" pubdate="">2014年11月8日 at 上午4:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>想问下computeLSPArray那里，if(len!=0) len=lps[len-1]是什么意思</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48163">
+<article class="comment" id="comment-48163">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tkdzyl2013</a></span> on <a href="http://www.acmerblog.com/dp6-coin-change-4973.html#comment-48163" rel="nofollow"><time datetime="2014-07-31T16:19:06+00:00" pubdate="">2014年7月31日 at 下午4:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>wt[n - 1]没错，因为下标是[0...n-1]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58192">
+<article class="comment" id="comment-58192">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">489365227</a></span> on <a href="http://www.acmerblog.com/dp6-coin-change-4973.html#comment-58192" rel="nofollow"><time datetime="2014-06-30T09:02:35+00:00" pubdate="">2014年6月30日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>int L[m+1][n+1];这样定义出错，这个在gcc上可以编译通过 在VS上不行 应该改为new 或者vector</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28238">
+<article class="comment" id="comment-28238">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">anthozoan77</a></span> on <a href="http://www.acmerblog.com/dp6-coin-change-4973.html#comment-28238" rel="nofollow"><time datetime="2014-05-25T08:48:15+00:00" pubdate="">2014年5月25日 at 上午8:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>看似简单，还是不少坑的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48167">
+<article class="comment" id="comment-48167">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">siaswj</a></span> on <a href="http://www.acmerblog.com/dp6-coin-change-4973.html#comment-48167" rel="nofollow"><time datetime="2014-05-23T17:22:14+00:00" pubdate="">2014年5月23日 at 下午5:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>A猴子认识的所有猴子和B猴子认识的所有猴子都能认识，这句话用《爱屋及乌》描述比较容易理解……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48168">
+<article class="comment" id="comment-48168">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tangxiansheng</a></span> on <a href="http://www.acmerblog.com/dp6-coin-change-4973.html#comment-48168" rel="nofollow"><time datetime="2014-05-17T09:28:46+00:00" pubdate="">2014年5月17日 at 上午9:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>能不能说下这个是用的什么算法策略？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,442 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>01-05</div>
+<div class="tit"><h1 class="entry-title">hdu 2286 God and Devil-状态压缩[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/dp2/state-dp" rel="category tag" title="查看状态DP中的全部文章">状态DP</a></span><span class="i4">围观1134次</span><span class="i3"><a class="ds-thread-count" data-thread-key="3516" href="http://www.acmerblog.com/hdu-2286-god-and-devil-3516.html#comments" title="《hdu 2286 God and Devil-状态压缩[解题报告]C++》上的评论">22 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">God and Devil </h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+There are many gods and devils living on HDU Island, and echo is one of them. Gods always tell the truth whereas devils sometimes tell the truth but sometimes not. What’s more, every god and devil knows all the others are a god or a devil. <br/>One day, an accident unfortunately happened which made echo lose her memory. She was so despairing and determined to turn to others for help. She asked all the residents a question, but all of the answers were merely "Be careful! X is a devil!". As a result she failed to arouse her memory. However, she has to find out a method to calculate the minimum number of devils on the island. Could you help echo to manage it well? </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+There are multi-cases (The total number of cases won’t exceed 20). First line is an integer N(1&lt;=N&lt;=15000), the total number of gods and devils. Then N lines follow, each line includes a name, and the length of each name won’t exceed 30. The first name is "echo". The next N-1 lines will be as the formation "A says: Be careful! B is a devil!"(A is different from B), and you can assume that at least one of them will consider echo is a devil and says "Be careful! echo is a devil!". </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+There are multi-cases (The total number of cases won’t exceed 20). First line is an integer N(1&lt;=N&lt;=15000), the total number of gods and devils. Then N lines follow, each line includes a name, and the length of each name won’t exceed 30. The first name is "echo". The next N-1 lines will be as the formation "A says: Be careful! B is a devil!"(A is different from B), and you can assume that at least one of them will consider echo is a devil and says "Be careful! echo is a devil!".</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3
+echo
+bigdog
+smalldog
+smalldog says: Be careful! bigdog is a devil!
+bigdog says: Be careful! echo is a devil!
+4
+echo
+Lethe
+bigdog
+smalldog
+Lethe says: Be careful! bigdog is a devil!
+smalldog says: Be careful! echo is a devil!
+bigdog says: Be careful! smalldog is a devil!</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+2</pre>
+<p> <!-- problem end --><br/>
+船过河问题<br/>
+题意：有n样东西，有m种情况不可以合并过河，一次船可以载t样东西<br/>
+求最少多少次可以把所有的东西载到河对面 ，不可能的话输出 -1<br/>
+思路：三层DP i，j是最终岸的状态 L是起始岸的状态<br/>
+对于每一个i，遍历所有可能转换到i的状态j，对于每一个j遍历 起始岸L ，<br/>
+表示东西在转移的途中，起始岸的状态是L，终岸的状态是j<br/>
+转移到终岸之后，再从终岸向起始岸转移，此时终岸的状态是i</p>
+<pre class="brush:cpp">#include &lt;iostream&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;math.h&gt;
+#include &lt;string&gt;
+#include &lt;algorithm&gt;
+#include &lt;map&gt;
+using namespace std;
+#define Maxn 1&lt;&lt;12
+int Ddc[110];
+int n, m, t;
+int M, N;
+int dp[Maxn];
+int pp[Maxn];
+bool hash[Maxn];
+int co;
+int num[Maxn];
+//制作Ddc数组，将所有的不可以共存状态存成一个数字
+void getmap() {
+    char str[1000];
+    char st[1000];
+    map&lt;string,int&gt;to;
+    for (int i = 0 ; i &lt; n; i ++) {
+        scanf("%s", st);
+        if(to.count(st)) continue;
+        to[st] = i;
+    }
+    getchar();
+    memset(Ddc, 0, sizeof(Ddc));
+    for (int k = 0; k &lt; m; k ++) {
+        gets(st);
+        int tm = -1;
+        int len = strlen(st);
+        for (int i = 0; i &lt;= len; i ++) {
+            if(st[i] == ' ' || st[i] == '\0') {
+                if(tm != -1) {
+                    str[++tm] = '\0';
+                    if(to.count(str)) {
+                        int a = to[str];
+                        Ddc[k] += (1&lt;&lt;a);
+                    }
+                }
+                tm = -1;
+            }else {
+                str[++tm] = st[i];
+            }
+        }
+    }
+}
+//获取n里面有多少个1
+int getnum(int n)
+{
+     n = (0x55555555UL&amp;n)+((n&gt;&gt;1)&amp;0x55555555UL);
+     n = (0x33333333UL&amp;n)+((n&gt;&gt;2)&amp;0x33333333UL);
+     n = (0x0f0f0f0fUL&amp;n)+((n&gt;&gt;4)&amp;0x0f0f0f0fUL);
+     n = (0x00ff00ffUL&amp;n)+((n&gt;&gt;8)&amp;0x00ff00ffUL);
+     n = (0x0000ffffUL&amp;n)+((n&gt;&gt;16)&amp;0x0000ffffUL);
+    return n;
+}
+//y内是否有x，有返回true
+bool Judge(int y, int x) {
+    if ((x&amp;y) == x) return true;
+    return false;
+}
+
+void pri() {
+    memset(dp, -1, sizeof(dp));
+    memset(hash, 0, sizeof(hash));
+    M = 1&lt;&lt;n;
+    N = M - 1;
+    co = -1;
+    pp[++co] = 0;
+    for (int i = 1; i &lt; M; i ++) {
+        bool mark = true;
+        for (int j = 0; j &lt; m; j ++) {
+            if(Judge(i,Ddc[j])) {
+                mark = false;
+                break;
+            }
+        }
+        if(mark) {
+            pp[++co] = i;
+            hash[i] = true;
+        }
+    }
+    hash[0] = true;
+    pp[++co] = N;
+}
+int Min(int x, int y) {
+    return x &gt; y ? y : x;
+}
+int getans() {
+    dp[0] = 0;
+    for (int i = 1; i &lt;= co; i ++) {
+        for (int j = 0; j &lt; co; j++) {
+            if(i == j) continue;
+            if(!(dp[j]+1)) continue;
+            for (int L = 0; L &lt; co; L ++) {
+                if(pp[j]&amp;pp[L]) continue; //i和L中存在相同的东西
+                if(pp[i]&amp;pp[L]) continue; //j和L中存在相同的东西
+                if((n- num[pp[j]] - num[pp[L]])&gt;t) continue; //从起始岸到终岸的船上的东西超过了t件
+                if((n- num[pp[i]] - num[pp[L]])&gt;t) continue; //从终岸到的起始岸船上的东西超过了t件
+                if(dp[i]+1) {
+                    dp[i] = Min(dp[i], dp[j]+1);
+                }else {
+                    dp[i] = dp[j]+1;
+                }
+            }
+        }
+    }
+    return dp[co];
+}
+void init() {
+    memset(num, 0, sizeof(num));
+    M = 1&lt;&lt;12;
+    for (int i = 0; i &lt; M; i ++) {
+        num[i] = getnum(i);
+    }
+}
+//注意要先处理掉没有限制条件的，不然L的范围不只到co-1
+int main()
+{
+    init();
+    while(scanf("%d%d%d", &amp;n, &amp;m, &amp;t) != EOF) {
+        getmap();
+        if(!m) {
+            int tmp = n/t;
+            if(t*tmp &lt; n) tmp ++;
+            printf("%d\n", tmp*2-1);
+            continue;
+        }
+        pri();
+        int ans = getans();
+        if(ans+1) {
+            ans = ans*2 - 1;
+            printf("%d\n", ans);
+        }else {
+            printf("-1\n");
+        }
+    }
+    return 0;
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-86030">
+<article class="comment" id="comment-86030">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525570" rel="external nofollow">新用户042655</a></span> on <a href="http://www.acmerblog.com/hdu-2286-god-and-devil-3516.html#comment-86030" rel="nofollow"><time datetime="2017-04-13T04:24:33+00:00" pubdate="">2017年4月13日 at 上午4:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你们去某宝搜伊达政宗鼠标垫试试</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-86029">
+<article class="comment" id="comment-86029">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525570" rel="external nofollow">新用户042655</a></span> on <a href="http://www.acmerblog.com/hdu-2286-god-and-devil-3516.html#comment-86029" rel="nofollow"><time datetime="2017-04-13T04:24:33+00:00" pubdate="">2017年4月13日 at 上午4:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你们去某宝搜伊达政宗鼠标垫试试</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-86028">
+<article class="comment" id="comment-86028">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525570" rel="external nofollow">新用户042655</a></span> on <a href="http://www.acmerblog.com/hdu-2286-god-and-devil-3516.html#comment-86028" rel="nofollow"><time datetime="2017-04-13T04:24:33+00:00" pubdate="">2017年4月13日 at 上午4:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你们去某宝搜伊达政宗鼠标垫试试</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-86027">
+<article class="comment" id="comment-86027">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525570" rel="external nofollow">新用户042655</a></span> on <a href="http://www.acmerblog.com/hdu-2286-god-and-devil-3516.html#comment-86027" rel="nofollow"><time datetime="2017-04-13T04:24:33+00:00" pubdate="">2017年4月13日 at 上午4:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你们去某宝搜伊达政宗鼠标垫试试</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-86026">
+<article class="comment" id="comment-86026">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525570" rel="external nofollow">新用户042655</a></span> on <a href="http://www.acmerblog.com/hdu-2286-god-and-devil-3516.html#comment-86026" rel="nofollow"><time datetime="2017-04-13T04:24:33+00:00" pubdate="">2017年4月13日 at 上午4:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你们去某宝搜伊达政宗鼠标垫试试</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-86025">
+<article class="comment" id="comment-86025">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525570" rel="external nofollow">新用户042655</a></span> on <a href="http://www.acmerblog.com/hdu-2286-god-and-devil-3516.html#comment-86025" rel="nofollow"><time datetime="2017-04-13T04:24:33+00:00" pubdate="">2017年4月13日 at 上午4:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你们去某宝搜伊达政宗鼠标垫试试</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-86024">
+<article class="comment" id="comment-86024">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525570" rel="external nofollow">新用户042655</a></span> on <a href="http://www.acmerblog.com/hdu-2286-god-and-devil-3516.html#comment-86024" rel="nofollow"><time datetime="2017-04-13T04:24:33+00:00" pubdate="">2017年4月13日 at 上午4:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你们去某宝搜伊达政宗鼠标垫试试</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-86023">
+<article class="comment" id="comment-86023">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919525570" rel="external nofollow">新用户042655</a></span> on <a href="http://www.acmerblog.com/hdu-2286-god-and-devil-3516.html#comment-86023" rel="nofollow"><time datetime="2017-04-13T04:24:33+00:00" pubdate="">2017年4月13日 at 上午4:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你们去某宝搜伊达政宗鼠标垫试试</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-20663">
+<article class="comment" id="comment-20663">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">20122256</a></span> on <a href="http://www.acmerblog.com/hdu-2286-god-and-devil-3516.html#comment-20663" rel="nofollow"><time datetime="2015-07-01T06:33:38+00:00" pubdate="">2015年7月1日 at 上午6:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嗯，是写错了，文中以更改。MAX ( L(X[0..m-2], Y[0..n-1]), L(X[0..m-1], Y[0..n-2])</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-20654">
+<article class="comment" id="comment-20654">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">2013283119</a></span> on <a href="http://www.acmerblog.com/hdu-2286-god-and-devil-3516.html#comment-20654" rel="nofollow"><time datetime="2015-06-19T03:09:17+00:00" pubdate="">2015年6月19日 at 上午3:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给力，赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-20656">
+<article class="comment" id="comment-20656">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">895350909</a></span> on <a href="http://www.acmerblog.com/hdu-2286-god-and-devil-3516.html#comment-20656" rel="nofollow"><time datetime="2015-05-15T04:53:54+00:00" pubdate="">2015年5月15日 at 上午4:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢指出，已改正</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-20658">
+<article class="comment" id="comment-20658">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">missliuxin</a></span> on <a href="http://www.acmerblog.com/hdu-2286-god-and-devil-3516.html#comment-20658" rel="nofollow"><time datetime="2015-03-10T05:43:19+00:00" pubdate="">2015年3月10日 at 上午5:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>比较基础，找些自信</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-20664">
+<article class="comment" id="comment-20664">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hehe_snail</a></span> on <a href="http://www.acmerblog.com/hdu-2286-god-and-devil-3516.html#comment-20664" rel="nofollow"><time datetime="2015-01-28T12:49:45+00:00" pubdate="">2015年1月28日 at 下午12:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，就是把这32位当成一个长度为32的数</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-20657">
+<article class="comment" id="comment-20657">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hongfieyu</a></span> on <a href="http://www.acmerblog.com/hdu-2286-god-and-devil-3516.html#comment-20657" rel="nofollow"><time datetime="2014-11-29T01:50:17+00:00" pubdate="">2014年11月29日 at 上午1:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个应该是比较简单的解法了，如果有更好的办法可以告诉我</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-20660">
+<article class="comment" id="comment-20660">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">congve1</a></span> on <a href="http://www.acmerblog.com/hdu-2286-god-and-devil-3516.html#comment-20660" rel="nofollow"><time datetime="2014-11-22T19:56:40+00:00" pubdate="">2014年11月22日 at 下午7:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#include &lt;stdio.h&gt;<br/>
+int main(void)<br/>
+{<br/>
+int arr[] = {10,20,30,40,50,60};<br/>
+int *p=arr;<br/>
+printf("%d,%d,",*p++,*++p);<br/>
+printf("%d,%d,%d",*p,*p++,*++p);<br/>
+return 0;<br/>
+}</p>
+<p>为什么是 20,20,50,40,50. 我觉得的应该是 20,20,40,40,50 . 谁能解释下？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-20667">
+<article class="comment" id="comment-20667">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">vincent_ynh</a></span> on <a href="http://www.acmerblog.com/hdu-2286-god-and-devil-3516.html#comment-20667" rel="nofollow"><time datetime="2014-09-03T01:41:18+00:00" pubdate="">2014年9月3日 at 上午1:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>必须试过啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-20661">
+<article class="comment" id="comment-20661">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zzzzzz</a></span> on <a href="http://www.acmerblog.com/hdu-2286-god-and-devil-3516.html#comment-20661" rel="nofollow"><time datetime="2014-08-18T15:03:31+00:00" pubdate="">2014年8月18日 at 下午3:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>能不能说下这个是用的什么算法策略？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-20659">
+<article class="comment" id="comment-20659">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">CCCat</a></span> on <a href="http://www.acmerblog.com/hdu-2286-god-and-devil-3516.html#comment-20659" rel="nofollow"><time datetime="2014-08-03T05:49:17+00:00" pubdate="">2014年8月3日 at 上午5:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这一题的代码这样提交时错误的~少考虑了很多情况</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-20662">
+<article class="comment" id="comment-20662">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jintianya</a></span> on <a href="http://www.acmerblog.com/hdu-2286-god-and-devil-3516.html#comment-20662" rel="nofollow"><time datetime="2014-07-11T08:09:14+00:00" pubdate="">2014年7月11日 at 上午8:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个还不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-20655">
+<article class="comment" id="comment-20655">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">liuyuedeyu</a></span> on <a href="http://www.acmerblog.com/hdu-2286-god-and-devil-3516.html#comment-20655" rel="nofollow"><time datetime="2014-02-15T17:31:27+00:00" pubdate="">2014年2月15日 at 下午5:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真心不错，力顶作者</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-20665">
+<article class="comment" id="comment-20665">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">becool456</a></span> on <a href="http://www.acmerblog.com/hdu-2286-god-and-devil-3516.html#comment-20665" rel="nofollow"><time datetime="2014-02-09T21:56:03+00:00" pubdate="">2014年2月9日 at 下午9:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>终于找到一篇能看懂的，mark</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-20666">
+<article class="comment" id="comment-20666">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">3136869079</a></span> on <a href="http://www.acmerblog.com/hdu-2286-god-and-devil-3516.html#comment-20666" rel="nofollow"><time datetime="2014-01-25T00:52:11+00:00" pubdate="">2014年1月25日 at 上午12:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>值得分享！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

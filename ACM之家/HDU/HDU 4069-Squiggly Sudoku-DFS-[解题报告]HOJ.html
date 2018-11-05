@@ -1,0 +1,648 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>04-16</div>
+<div class="tit"><h1 class="entry-title">HDU 4069-Squiggly Sudoku-DFS-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/dfs" rel="category tag" title="查看DFS搜索中的全部文章">DFS搜索</a>, <a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/data-struct" rel="category tag" title="查看数据结构中的全部文章">数据结构</a></span><span class="i4">围观338次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7072" href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comments" title="《HDU 4069-Squiggly Sudoku-DFS-[解题报告]HOJ》上的评论">33 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Squiggly Sudoku</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Today we play a squiggly <a href="http://en.wikipedia.org/wiki/Sudoku">sudoku</a>, The objective is to fill a 9*9 grid with digits so that each column, each row, and each of the nine Connecting-sub-grids that compose the grid  contains all of the digits from 1 to 9.<br/>Left figure is the puzzle and right figure is one solution.<br/><center><img alt="SanguoSHA" src="http://www.acmerblog.com/img/1436367092212.jpg"/></center> <br/>Now, give you the information of the puzzle, please tell me is there no solution or multiple solution or one solution. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line is a number T(1&lt;=T&lt;=2500), represents the number of case. The next T blocks follow each indicates a case.<br/>Each case contains nine lines, Each line contains nine integers.<br/>Each module number tells the information of the gird and is the sum of up to five integers:<br/>0~9: ’0′ means this gird is empty, ’1′ – ’9′ means the gird is already filled in.<br/>16: wall to the up<br/>32: wall to the right<br/>64: wall to the down<br/>128: wall to the left<br/>I promise there must be nine Connecting-sub-grids, and each contains nine girds. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The first line is a number T(1&lt;=T&lt;=2500), represents the number of case. The next T blocks follow each indicates a case.<br/>Each case contains nine lines, Each line contains nine integers.<br/>Each module number tells the information of the gird and is the sum of up to five integers:<br/>0~9: ’0′ means this gird is empty, ’1′ – ’9′ means the gird is already filled in.<br/>16: wall to the up<br/>32: wall to the right<br/>64: wall to the down<br/>128: wall to the left<br/>I promise there must be nine Connecting-sub-grids, and each contains nine girds.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3
+144 18 112 208 80 25 54 144 48
+135 38 147 80 121 128 97 130 32
+137 32 160 144 114 167 208 0 32
+192 100 160 160 208 96 183 192 101
+209 80 39 192 86 48 136 80 114
+152 48 226 144 112 160 160 149 48
+128 0 112 166 215 96 160 128 41
+128 39 153 32 209 80 101 136 35
+192 96 200 67 80 112 208 68 96 
+
+144 48 144 81 81 16 53 144 48
+128 96 224 144 48 128 103 128 38
+163 208 80 0 37 224 209 0 32
+135 48 176 192 64 112 176 192 104
+192 101 128 89 80 82 32 150 48
+149 48 224 208 16 48 224 192 33
+128 0 114 176 135 0 80 112 169
+137 32 148 32 192 96 176 144 32
+192 96 193 64 80 80 96 192 96
+
+144 88 48 217 16 16 80 112 176
+224 176 129 48 128 40 208 16 37
+145 32 128 96 196 96 176 136 32
+192 32 227 176 144 80 96 192 32
+176 192 80 98 160 145 80 48 224
+128 48 144 80 96 224 183 128 48
+128 36 224 144 51 144 32 128 105
+131 64 112 136 32 192 36 224 176
+224 208 80 64 64 116 192 83 96</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case 1:
+521439678
+763895124
+984527361
+346182795
+157964832
+812743956
+235678419
+479216583
+698351247
+Case 2:
+No solution
+Case 3:
+Multiple Solutions</pre>
+<p> <!-- problem end --></p>
+<p><span style="font-size:18px">跟普通的数独有一点点不同，先预处理一下再用Dancing Links进行精确覆盖即可。</span></p>
+<p><span style="font-size:18px"></span></p>
+<pre class="brush:cpp" name="code">#include &lt;iostream&gt;
+#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+#include &lt;algorithm&gt;
+
+using namespace std;
+
+const int maxn = 9*9*9*9*9*4 + 10;
+const int oo = 1 &lt;&lt; 30;
+const int maxrow = 9*9*9 + 10;
+const int maxcol = 9*9*4 + 10;
+int mtx[maxrow][maxcol];
+int sub[10][10];
+int map[10][10];
+int ansMap[10][10];
+
+int totRow, totCol, head, idx;
+int L[maxn], R[maxn], U[maxn], D[maxn];
+int RH[maxn], CH[maxn], S[maxn];
+int t, ans;
+
+void initMtx()
+{
+    memset(mtx, 0, sizeof(mtx));
+    for (int i = 0; i &lt; 9; ++i) {
+        for (int j = 0; j &lt; 9; ++j) {
+            int t = i * 9 + j;
+            if (map[i][j] == 0) {
+                for (int k = 0; k &lt; 9; ++k) {
+                    int row = t * 9 + k;
+                    mtx[row][t] = 1;
+                    mtx[row][i*9+k+81] = 1;
+                    mtx[row][j*9+k+162] = 1;
+                    mtx[row][sub[i][j]*9+k+243] = 1;
+                }
+            } else {
+                int k = map[i][j] - 1;
+                int row = t * 9 + k;
+                mtx[row][t] = 1;
+                mtx[row][i*9+k+81] = 1;
+                mtx[row][j*9+k+162] = 1;
+                mtx[row][sub[i][j]*9+k+243] = 1;
+            }
+        }
+    }
+}
+
+int newNode(int up, int down, int left, int right)
+{
+    U[idx] = up;    D[idx] = down;
+    L[idx] = left;  R[idx] = right;
+    U[down] = D[up] = L[right] = R[left] = idx;
+    return idx++;
+}
+
+void build()
+{
+    idx = maxn - 1;
+    head = newNode(idx, idx, idx, idx);
+    idx = 0;
+    for (int j = 0; j &lt; totCol; ++j) {
+        newNode(idx, idx, L[head], head);
+        CH[j] = j;  S[j] = 0;
+    }
+    for (int i = 0; i &lt; totRow; ++i) {
+        int k = -1;
+        for (int j = 0; j &lt; totCol; ++j) {
+            if (!mtx[i][j]) continue;
+            if (-1 == k) {
+                k = newNode(U[CH[j]], CH[j], idx, idx);
+                RH[k] = i;  CH[k] = j;  S[j]++;
+            } else {
+                k = newNode(U[CH[j]], CH[j], k, R[k]);
+                RH[k] = i;  CH[k] = j;  S[j]++;
+            }
+        }
+    }
+}
+
+inline void remove(int c)
+{
+    L[R[c]] = L[c];
+    R[L[c]] = R[c];
+    for (int i = D[c]; i != c; i = D[i]) {
+        for (int j = R[i]; j != i; j = R[j]) {
+            U[D[j]] = U[j];  D[U[j]] = D[j];  S[CH[j]]--;
+        }
+    }
+}
+
+inline void resume(int c)
+{
+    L[R[c]] = c;
+    R[L[c]] = c;
+    for (int i = U[c]; i != c; i = U[i]) {
+        for (int j = L[i]; j != i; j = L[j]) {
+            U[D[j]] = j;  D[U[j]] = j;  S[CH[j]]++;
+        }
+    }
+}
+
+int dance()
+{
+    if (R[head] == head) {
+        if (ans == 0) {
+            for (int i = 0; i &lt; 9; ++i) {
+                for (int j = 0; j &lt; 9; ++j) {
+                    ansMap[i][j] = map[i][j];
+                }
+            } 
+        }
+        return ++ans;
+    }
+    int i, j, k, c, min = oo;
+    for (j = R[head]; j != head; j = R[j]) {
+        if (S[j] &lt; min) {
+            min = S[j];  c = j;
+        }
+    }
+    remove(c);
+    for (i = D[c]; i != c; i = D[i]) {
+        k = RH[i];
+        map[k/9/9][(k/9)%9] = (k % 9) + 1;
+        for (j = R[i]; j != i; j = R[j]) {
+            remove(CH[j]);
+        }
+        if (dance() &gt;= 2) {
+            return 2;
+        }
+        for (j = L[i]; j != i; j = L[j]) {
+            resume(CH[j]);
+        }
+        map[k/9/9][(k/9)%9] = 0;
+    }
+    resume(c);
+    return 0;
+}
+
+inline bool hasWall(int x, int y, int d)
+{
+    int tmp = map[x][y] / 16;
+    return tmp &amp; (1 &lt;&lt; d);
+}
+
+void dfs(int x, int y, int id)
+{
+    if (sub[x][y] != -1) {
+        return ;
+    }
+    sub[x][y] = id;
+    if (!hasWall(x, y, 0)) {
+        dfs(x - 1, y, id);
+    }
+    if (!hasWall(x, y, 1)) {
+        dfs(x, y + 1, id); 
+    }
+    if (!hasWall(x, y, 2)) {
+        dfs(x + 1, y, id);
+    }
+    if (!hasWall(x, y, 3)) {
+        dfs(x, y - 1, id);
+    }
+}
+
+int main()
+{
+    totRow = 9*9*9, totCol = 9*9*4;
+    scanf("%d", &amp;t);
+    for (int cas = 1; cas &lt;= t; ++cas) {
+        for (int i = 0; i &lt; 9; ++i) {
+            for (int j = 0; j &lt; 9; ++j) {
+                scanf("%d", &amp;map[i][j]);
+            } 
+        }
+        memset(sub, -1, sizeof(sub));
+        int id = 0;
+        for (int i = 0; i &lt; 9; ++i) {
+            for (int j = 0; j &lt; 9; ++j) {
+                if (sub[i][j] == -1) {
+                    dfs(i, j, id);
+                    id++;
+                }
+            }
+        }
+        for (int i = 0; i &lt; 9; ++i) {
+            for (int j = 0; j &lt; 9; ++j) {
+                map[i][j] %= 16;
+            }
+        }
+        initMtx();
+        build();
+        ans = 0;
+        dance();
+        
+        printf("Case %d:\n", cas);
+        if (ans == 0) {
+            printf("No solution\n");
+        } else if (ans &gt; 1) {
+            printf("Multiple Solutions\n");
+        } else {
+            for (int i = 0; i &lt; 9; ++i) {
+                for (int j = 0; j &lt; 9; ++j) {
+                    printf("%d", ansMap[i][j]);
+                }
+                printf("\n");
+            } 
+        }
+    }
+    return 0;
+}
+</pre>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/ahfywff/article/details/7940402</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-99776">
+<article class="comment" id="comment-99776">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515561" rel="external nofollow">新用户440398</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-99776" rel="nofollow"><time datetime="2017-04-20T19:26:57+00:00" pubdate="">2017年4月20日 at 下午7:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算盘珠子是比喻</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-99775">
+<article class="comment" id="comment-99775">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515561" rel="external nofollow">新用户440398</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-99775" rel="nofollow"><time datetime="2017-04-20T19:26:57+00:00" pubdate="">2017年4月20日 at 下午7:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算盘珠子是比喻</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-99774">
+<article class="comment" id="comment-99774">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515561" rel="external nofollow">新用户440398</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-99774" rel="nofollow"><time datetime="2017-04-20T19:26:57+00:00" pubdate="">2017年4月20日 at 下午7:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算盘珠子是比喻</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-99773">
+<article class="comment" id="comment-99773">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515561" rel="external nofollow">新用户440398</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-99773" rel="nofollow"><time datetime="2017-04-20T19:26:57+00:00" pubdate="">2017年4月20日 at 下午7:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算盘珠子是比喻</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-99772">
+<article class="comment" id="comment-99772">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515561" rel="external nofollow">新用户440398</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-99772" rel="nofollow"><time datetime="2017-04-20T19:26:57+00:00" pubdate="">2017年4月20日 at 下午7:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算盘珠子是比喻</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-99771">
+<article class="comment" id="comment-99771">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515561" rel="external nofollow">新用户440398</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-99771" rel="nofollow"><time datetime="2017-04-20T19:26:57+00:00" pubdate="">2017年4月20日 at 下午7:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算盘珠子是比喻</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-99770">
+<article class="comment" id="comment-99770">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515561" rel="external nofollow">新用户440398</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-99770" rel="nofollow"><time datetime="2017-04-20T19:26:57+00:00" pubdate="">2017年4月20日 at 下午7:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算盘珠子是比喻</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70413">
+<article class="comment" id="comment-70413">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516326" rel="external nofollow">新用户982100</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-70413" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个对于热门博主挺给力的，咱小门小户的就不必了吧。。  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70412">
+<article class="comment" id="comment-70412">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516326" rel="external nofollow">新用户982100</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-70412" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个对于热门博主挺给力的，咱小门小户的就不必了吧。。  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70411">
+<article class="comment" id="comment-70411">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516326" rel="external nofollow">新用户982100</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-70411" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个对于热门博主挺给力的，咱小门小户的就不必了吧。。  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70410">
+<article class="comment" id="comment-70410">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516326" rel="external nofollow">新用户982100</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-70410" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个对于热门博主挺给力的，咱小门小户的就不必了吧。。  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70409">
+<article class="comment" id="comment-70409">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516326" rel="external nofollow">新用户982100</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-70409" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个对于热门博主挺给力的，咱小门小户的就不必了吧。。  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70408">
+<article class="comment" id="comment-70408">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516326" rel="external nofollow">新用户982100</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-70408" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个对于热门博主挺给力的，咱小门小户的就不必了吧。。  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70407">
+<article class="comment" id="comment-70407">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516326" rel="external nofollow">新用户982100</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-70407" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个对于热门博主挺给力的，咱小门小户的就不必了吧。。  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70406">
+<article class="comment" id="comment-70406">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516326" rel="external nofollow">新用户982100</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-70406" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个对于热门博主挺给力的，咱小门小户的就不必了吧。。  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70405">
+<article class="comment" id="comment-70405">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516326" rel="external nofollow">新用户982100</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-70405" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个对于热门博主挺给力的，咱小门小户的就不必了吧。。  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70404">
+<article class="comment" id="comment-70404">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516326" rel="external nofollow">新用户982100</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-70404" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个对于热门博主挺给力的，咱小门小户的就不必了吧。。  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70403">
+<article class="comment" id="comment-70403">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516326" rel="external nofollow">新用户982100</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-70403" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个对于热门博主挺给力的，咱小门小户的就不必了吧。。  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70402">
+<article class="comment" id="comment-70402">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516326" rel="external nofollow">新用户982100</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-70402" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个对于热门博主挺给力的，咱小门小户的就不必了吧。。  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-52058">
+<article class="comment" id="comment-52058">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">liluvu</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-52058" rel="nofollow"><time datetime="2015-07-12T17:09:24+00:00" pubdate="">2015年7月12日 at 下午5:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感谢~速度真快，我很喜欢这个网站，从基础看起。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35705">
+<article class="comment" id="comment-35705">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">489365227</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-35705" rel="nofollow"><time datetime="2015-06-29T15:16:12+00:00" pubdate="">2015年6月29日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很强大啊，佩服</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35710">
+<article class="comment" id="comment-35710">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lint</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-35710" rel="nofollow"><time datetime="2015-06-28T11:34:51+00:00" pubdate="">2015年6月28日 at 上午11:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你这个代码显示风格很给你啊，怎么做出来的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35703">
+<article class="comment" id="comment-35703">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fiftyonejiao</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-35703" rel="nofollow"><time datetime="2015-06-27T16:55:30+00:00" pubdate="">2015年6月27日 at 下午4:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>aha, welcome!</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35707">
+<article class="comment" id="comment-35707">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mr_zhang2011</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-35707" rel="nofollow"><time datetime="2015-06-25T11:54:55+00:00" pubdate="">2015年6月25日 at 上午11:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>终于找到一篇能看懂的，mark</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35709">
+<article class="comment" id="comment-35709">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">YangXiaoZhong</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-35709" rel="nofollow"><time datetime="2015-06-17T08:27:30+00:00" pubdate="">2015年6月17日 at 上午8:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>神奇的网站</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35711">
+<article class="comment" id="comment-35711">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lint</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-35711" rel="nofollow"><time datetime="2015-06-13T11:30:35+00:00" pubdate="">2015年6月13日 at 上午11:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第36行，struct node **head_ref，怎么理解，那个函数感觉不是很懂啊！？？弱渣求助</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35704">
+<article class="comment" id="comment-35704">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zrw</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-35704" rel="nofollow"><time datetime="2015-06-12T23:49:20+00:00" pubdate="">2015年6月12日 at 下午11:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>for(int i=1; i&lt;=m; i++){<br/>
+            for(int j=1; j&lt;=n; j++){<br/>
+                    dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> [j-1] + 1;<br/>
+                if(s1.charAt(i-1) == s3.charAt(i+j-1))<br/>
+                    dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = dp[i-1] <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  + 1;<br/>
+                if(s2.charAt(j-1) == s3.charAt(i+j-1))<br/>
+                    dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = Math.max(dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> [j - 1] + 1, dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> );<br/>
+            }<br/>
+        }<br/>
+这里的代码似乎有点问题？ dp(i)(j) = dp(i)(j-1) + 1;这个例子System.out.println(ils.isInterleave("aa","dbbca", "aadbbcb"));返回的应该是false</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-52057">
+<article class="comment" id="comment-52057">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">haojunyu</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-52057" rel="nofollow"><time datetime="2015-06-10T09:29:21+00:00" pubdate="">2015年6月10日 at 上午9:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>和编译器有关吧，我用的g++正常。头文件可能还需要一个&lt;string.h&gt;</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35706">
+<article class="comment" id="comment-35706">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">digiworm</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-35706" rel="nofollow"><time datetime="2015-05-28T05:13:01+00:00" pubdate="">2015年5月28日 at 上午5:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>额，不对应吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35708">
+<article class="comment" id="comment-35708">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">litao</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-35708" rel="nofollow"><time datetime="2015-05-24T23:20:09+00:00" pubdate="">2015年5月24日 at 下午11:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的方法，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35712">
+<article class="comment" id="comment-35712">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jlucky</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-35712" rel="nofollow"><time datetime="2015-05-11T15:49:24+00:00" pubdate="">2015年5月11日 at 下午3:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>隐藏最深的bug是(start+end)/2有可能上溢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35713">
+<article class="comment" id="comment-35713">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">895350909</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-35713" rel="nofollow"><time datetime="2015-05-05T09:06:41+00:00" pubdate="">2015年5月5日 at 上午9:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的题，还是能做出几道的，嘿嘿</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35702">
+<article class="comment" id="comment-35702">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">chengleisheng</a></span> on <a href="http://www.acmerblog.com/hdu-4069-squiggly-sudoku-7072.html#comment-35702" rel="nofollow"><time datetime="2015-05-02T15:22:18+00:00" pubdate="">2015年5月2日 at 下午3:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>[…] 如果此题没有要求 相对位置不变，可以参考文章：http://www.acmerblog.com/interview-9-2427/ […]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

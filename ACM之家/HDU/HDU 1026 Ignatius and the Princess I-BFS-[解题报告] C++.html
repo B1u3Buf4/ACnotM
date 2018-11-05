@@ -1,0 +1,336 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>11-26</div>
+<div class="tit"><h1 class="entry-title">HDU 1026 Ignatius and the Princess I-BFS-[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph/graph-visit" rel="category tag" title="查看图的遍历中的全部文章">图的遍历</a>, <a href="http://www.acmerblog.com/category/data-struct/linear" rel="category tag" title="查看线性结构中的全部文章">线性结构</a></span><span class="i4">围观818次</span><span class="i3"><a class="ds-thread-count" data-thread-key="1278" href="http://www.acmerblog.com/hdu-1026-Ignatius-and-the-Princess-I-1278.html#comments" title="《HDU 1026 Ignatius and the Princess I-BFS-[解题报告] C++》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Ignatius and the Princess I</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+The Princess has been abducted by the BEelzebub feng5166, our hero Ignatius has to rescue our pretty Princess. Now he gets into feng5166′s castle. The castle is a large labyrinth. To make the problem simply, we assume the labyrinth is a N*M two-dimensional array which left-top corner is (0,0) and right-bottom corner is (N-1,M-1). Ignatius enters at (0,0), and the door to feng5166′s room is at (N-1,M-1), that is our target. There are some monsters in the castle, if Ignatius meet them, he has to kill them. Here is some rules:
+<p>1.Ignatius can only move in four directions(up, down, left, right), one step per second. A step is defined as follow: if current position is (x,y), after a step, Ignatius can only stand on (x-1,y), (x+1,y), (x,y-1) or (x,y+1).<br/>2.The array is marked with some characters and numbers. We define them like this:<br/> . : The place where Ignatius can walk on.<br/> X : The place is a trap, Ignatius should not walk on it.<br/> n : Here is a monster with n HP(1&lt;=n&lt;=9), if Ignatius walk on it, it takes him n seconds to kill the monster.</p>
+<p>Your task is to give out the path which costs minimum seconds for Ignatius to reach target position. You may assume that the start position and the target position will never be a trap, and there will never be a monster at the start position. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input contains several test cases. Each test case starts with a line contains two numbers N and M(2&lt;=N&lt;=100,2&lt;=M&lt;=100) which indicate the size of the labyrinth. Then a N*M two-dimensional array follows, which describe the whole labyrinth. The input is terminated by the end of file. More details in the Sample Input. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+For each test case, you should output "God please help our poor hero." if Ignatius can’t reach the target position, or you should output "It takes n seconds to reach the target position, let me show you the way."(n is the minimum seconds), and tell our hero the whole path. Output a line contains "FINISH" after each test case. If there are more than one path, any one is OK in this problem. More details in the Sample Output.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+5 6
+.XX.1.
+..X.2.
+2...X.
+...XX.
+XXXXX.
+5 6
+.XX.1.
+..X.2.
+2...X.
+...XX.
+XXXXX1
+5 6
+.XX...
+..XX1.
+2...X.
+...XX.
+XXXXX.</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+It takes 13 seconds to reach the target position, let me show you the way.
+1s:(0,0)-&gt;(1,0)
+2s:(1,0)-&gt;(1,1)
+3s:(1,1)-&gt;(2,1)
+4s:(2,1)-&gt;(2,2)
+5s:(2,2)-&gt;(2,3)
+6s:(2,3)-&gt;(1,3)
+7s:(1,3)-&gt;(1,4)
+8s:FIGHT AT (1,4)
+9s:FIGHT AT (1,4)
+10s:(1,4)-&gt;(1,5)
+11s:(1,5)-&gt;(2,5)
+12s:(2,5)-&gt;(3,5)
+13s:(3,5)-&gt;(4,5)
+FINISH
+It takes 14 seconds to reach the target position, let me show you the way.
+1s:(0,0)-&gt;(1,0)
+2s:(1,0)-&gt;(1,1)
+3s:(1,1)-&gt;(2,1)
+4s:(2,1)-&gt;(2,2)
+5s:(2,2)-&gt;(2,3)
+6s:(2,3)-&gt;(1,3)
+7s:(1,3)-&gt;(1,4)
+8s:FIGHT AT (1,4)
+9s:FIGHT AT (1,4)
+10s:(1,4)-&gt;(1,5)
+11s:(1,5)-&gt;(2,5)
+12s:(2,5)-&gt;(3,5)
+13s:(3,5)-&gt;(4,5)
+14s:FIGHT AT (4,5)
+FINISH
+God please help our poor hero.
+FINISH</pre>
+<p><!-- problem end --></p>
+<pre class="brush:cpp ">#include &lt;iostream&gt;
+#include &lt;queue&gt;
+using namespace std;
+const int MAX = 99999999;
+int n,m;
+struct st
+{
+	char cc;
+	int num,x,y,prex,prey;
+}map[105][105];
+int dir[4][2]={{-1,0},{0,-1},{1,0},{0,1}};
+void outPut()
+{
+	int x=0,y=0,a,b,num=1,i;
+	if(map[0][0].num!= MAX)
+	{
+		printf("It takes %d seconds to reach the target position, let me show you the way.\n",map[0][0].num);
+		while(x!= n-1| y!=m-1)
+		{
+			a=map[x][y].prex; 
+			b=map[x][y].prey;
+			if(map[x][y].cc!='.')
+				for(i=0;i&lt;map[x][y].cc - '0';i++)
+					printf("%ds:FIGHT AT (%d,%d)\n",num++,x,y);
+			printf("%ds:(%d,%d)-&gt;(%d,%d)\n",num++,x,y,a,b);
+			x=a; y=b;
+		}
+		if(map[x][y].cc!='.')
+		{
+			for(i=0;i&lt;map[x][y].cc - '0';i++)
+				printf("%ds:FIGHT AT (%d,%d)\n",num++,x,y);
+		}
+		printf("FINISH\n");
+	}
+	else
+	{
+		printf("God please help our poor hero.\nFINISH\n");
+	}
+}
+
+void bfs()
+{
+	int temp;
+	struct st fir;
+	queue&lt;st&gt; qu;
+	map[n-1][m-1].num=0;
+	if(map[n-1][m-1].cc&gt;='1'&amp;&amp;map[n-1][m-1].cc&lt;='9')
+		map[n-1][m-1].num=map[n-1][m-1].cc - '0';
+	qu.push(map[n-1][m-1]);
+	while(!qu.empty())
+	{
+		fir=qu.front();
+		for(int i=0;i&lt;4;i++)
+		{
+			int tx=fir.x+dir[i][0],ty=fir.y+dir[i][1];
+			if(tx&lt;0||ty&lt;0||tx&gt;=n||ty&gt;=m||map[tx][ty].cc=='X') continue;
+			if(map[tx][ty].cc!='.')       
+				temp=fir.num + map[tx][ty].cc-'0';
+			else  
+				temp=fir.num;  
+			if(temp+1&lt;map[tx][ty].num)
+			{
+				map[tx][ty].num=temp+1;
+				map[tx][ty].prex=fir.x;
+				map[tx][ty].prey=fir.y;
+				qu.push(map[tx][ty]);                    
+			}
+		}
+		qu.pop();
+	}
+	outPut();
+}
+int main()
+{
+	while(scanf("%d%d",&amp;n,&amp;m)!=EOF)
+	{
+		getchar();
+		for(int i=0;i&lt;n;i++)
+		{
+			for(int j=0;j&lt;m;j++)
+			{
+				scanf("%c",&amp;map[i][j].cc);
+				map[i][j].num = MAX;
+				map[i][j].x=i;
+				map[i][j].y=j;
+				map[i][j].prey=map[i][j].prex=-1;
+			}
+			getchar();
+		}
+		bfs();
+	}
+}</pre>
+<pre><ol><li>
+</li></ol></pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-10525">
+<article class="comment" id="comment-10525">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wuzirui</a></span> on <a href="http://www.acmerblog.com/hdu-1026-Ignatius-and-the-Princess-I-1278.html#comment-10525" rel="nofollow"><time datetime="2015-07-13T17:38:26+00:00" pubdate="">2015年7月13日 at 下午5:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>文章写得挺好，就是最后的斐波那契那个没有看明白</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-10527">
+<article class="comment" id="comment-10527">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tkdzyl2013</a></span> on <a href="http://www.acmerblog.com/hdu-1026-Ignatius-and-the-Princess-I-1278.html#comment-10527" rel="nofollow"><time datetime="2015-04-15T16:53:25+00:00" pubdate="">2015年4月15日 at 下午4:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>失误失误，转载错了。已经改正，抱歉。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-10533">
+<article class="comment" id="comment-10533">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">we</a></span> on <a href="http://www.acmerblog.com/hdu-1026-Ignatius-and-the-Princess-I-1278.html#comment-10533" rel="nofollow"><time datetime="2015-03-26T22:40:43+00:00" pubdate="">2015年3月26日 at 下午10:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的方法，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-10531">
+<article class="comment" id="comment-10531">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jixiangniao993</a></span> on <a href="http://www.acmerblog.com/hdu-1026-Ignatius-and-the-Princess-I-1278.html#comment-10531" rel="nofollow"><time datetime="2015-03-20T04:42:55+00:00" pubdate="">2015年3月20日 at 上午4:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>神奇的网站</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-10532">
+<article class="comment" id="comment-10532">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">binqi_ren</a></span> on <a href="http://www.acmerblog.com/hdu-1026-Ignatius-and-the-Princess-I-1278.html#comment-10532" rel="nofollow"><time datetime="2015-03-19T02:26:01+00:00" pubdate="">2015年3月19日 at 上午2:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢支持！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-10521">
+<article class="comment" id="comment-10521">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">congve1</a></span> on <a href="http://www.acmerblog.com/hdu-1026-Ignatius-and-the-Princess-I-1278.html#comment-10521" rel="nofollow"><time datetime="2015-03-14T19:53:00+00:00" pubdate="">2015年3月14日 at 下午7:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正是我要找的，适合新手</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-10526">
+<article class="comment" id="comment-10526">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tangxiansheng</a></span> on <a href="http://www.acmerblog.com/hdu-1026-Ignatius-and-the-Princess-I-1278.html#comment-10526" rel="nofollow"><time datetime="2015-02-27T05:57:39+00:00" pubdate="">2015年2月27日 at 上午5:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p><strong>Gucci New Fall Arrivals</strong></p>
+<p>This is really nice to know. I hope it will be successful in the future. Good job on this and keep up the good work.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-10520">
+<article class="comment" id="comment-10520">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jupiterhyun</a></span> on <a href="http://www.acmerblog.com/hdu-1026-Ignatius-and-the-Princess-I-1278.html#comment-10520" rel="nofollow"><time datetime="2015-01-15T18:47:45+00:00" pubdate="">2015年1月15日 at 下午6:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没有对题目进行一番分析，真是美中不足啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-10523">
+<article class="comment" id="comment-10523">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">H.Watson</a></span> on <a href="http://www.acmerblog.com/hdu-1026-Ignatius-and-the-Princess-I-1278.html#comment-10523" rel="nofollow"><time datetime="2014-09-17T07:45:22+00:00" pubdate="">2014年9月17日 at 上午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>清华也会出这么无聊的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-10529">
+<article class="comment" id="comment-10529">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Snarl_jsb</a></span> on <a href="http://www.acmerblog.com/hdu-1026-Ignatius-and-the-Princess-I-1278.html#comment-10529" rel="nofollow"><time datetime="2014-09-13T09:41:02+00:00" pubdate="">2014年9月13日 at 上午9:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很棒的网站，加油！⛽️</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-10528">
+<article class="comment" id="comment-10528">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">haojunyu</a></span> on <a href="http://www.acmerblog.com/hdu-1026-Ignatius-and-the-Princess-I-1278.html#comment-10528" rel="nofollow"><time datetime="2014-06-20T14:04:01+00:00" pubdate="">2014年6月20日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢提醒，是漏掉了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-10524">
+<article class="comment" id="comment-10524">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">warriorbrant</a></span> on <a href="http://www.acmerblog.com/hdu-1026-Ignatius-and-the-Princess-I-1278.html#comment-10524" rel="nofollow"><time datetime="2014-03-07T10:44:45+00:00" pubdate="">2014年3月7日 at 上午10:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可以根据二叉排序树的定义进行严格的排序树创建和后序遍历操作。如果形成的排序树相同，其树的前、中、后序遍历是相同的，但在此处不能使用中序遍历，因为，中序遍历的结果就是排序的结果。经在九度测试，运行时间90ms，比楼主的要快。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-10530">
+<article class="comment" id="comment-10530">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">piaoyi</a></span> on <a href="http://www.acmerblog.com/hdu-1026-Ignatius-and-the-Princess-I-1278.html#comment-10530" rel="nofollow"><time datetime="2013-12-29T08:01:47+00:00" pubdate="">2013年12月29日 at 上午8:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>原来如此 了解了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-10522">
+<article class="comment" id="comment-10522">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">everos</a></span> on <a href="http://www.acmerblog.com/hdu-1026-Ignatius-and-the-Princess-I-1278.html#comment-10522" rel="nofollow"><time datetime="2013-12-13T20:58:39+00:00" pubdate="">2013年12月13日 at 下午8:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>博主的C++功底真是好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

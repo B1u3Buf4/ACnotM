@@ -1,0 +1,574 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>04-16</div>
+<div class="tit"><h1 class="entry-title">HDU 4092-Yummy Triangular Pizza-线段树-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/data-struct" rel="category tag" title="查看数据结构中的全部文章">数据结构</a>, <a href="http://www.acmerblog.com/category/basis/enumeration" rel="category tag" title="查看枚举中的全部文章">枚举</a></span><span class="i4">围观385次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7095" href="http://www.acmerblog.com/hdu-4092-yummy-triangular-pizza-7095.html#comments" title="《HDU 4092-Yummy Triangular Pizza-线段树-[解题报告]HOJ》上的评论">26 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Yummy Triangular Pizza</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+  Pizzahat has released a new pizza with triangular shaped pieces. This pizza is composed of some equal-sized equilateral triangle. Moreover, all the triangles are connected. Also, if two triangles are directly connected, they must share a common edge.<br/>  How many different shapes of this kind of N-pieces pizza are there? Two patterns are considered as same if they can completely overlap after rotation and shifting (note that flipping is not included). </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+  There are multiple test cases. The first line of input contains a single integer denoting the number of test cases.<br/>  For each test case, there is only one line with only one integer N denoting the number of pieces that can be used. (1 &lt;= N &lt;= 16) </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+  There are multiple test cases. The first line of input contains a single integer denoting the number of test cases.<br/>  For each test case, there is only one line with only one integer N denoting the number of pieces that can be used. (1 &lt;= N &lt;= 16)</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3
+2
+4
+10</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case #1: 1
+Case #2: 4
+Case #3: 866
+
+<div style="font-family:Times New Roman;font-size:14px;background-color:F4FBFF;border:#B7CBFF 1px dashed;padding:6px"><div style="font-family:Arial;font-weight:bold;color:#7CA9ED;border-bottom:#B7CBFF 1px dashed"><i>Hint</i></div>
+Case2：
+<img alt="Zombie’s Treasure Chest" src="http://cdn.acmerblog.com/img/1436381868945.jpg"/>
+</div><i style="font-size:1px"> </i></pre>
+<p> <!-- problem end --></p>
+<p>这道题有人说可以直接1e9的时间复杂度暴力，但是我不会。</p>
+<p>一眼看上去就是标准的线段树题。</p>
+<p>题意是：</p>
+<p>初始给n个数，有q个操作。</p>
+<p>操作1，把区间[l，r]的数ai改成x</p>
+<p>操作2，区间[l，r]中的数ai，如果ai&gt;x，则把ai改成gcd(ai, x)</p>
+<p>
+</p>
+<p>结点保存的信息是左右子树的最大值。</p>
+<p>对于操作1，进行成段更新。</p>
+<p>对于操作2，判断结点的值是否大于x，如果大于x，则该子段存在要更新的数，否则不存在要更新的数。</p>
+<p>还应该进行一个延时标记，对操作1的区间进行标记，如果某段已经标记，那么如果进行操作2时就不用更新到单点，直接当成操作1来进行，不过x＝gcd（a，x）。</p>
+<p>
+</p>
+<pre class="brush:cpp" name="code">#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+#include &lt;algorithm&gt;
+#include &lt;queue&gt;
+#include &lt;stack&gt;
+#include &lt;cmath&gt;
+#include &lt;cstdlib&gt;
+#include &lt;vector&gt;
+#include &lt;map&gt;
+#include &lt;iostream&gt;
+
+#define lson l, m, rt &lt;&lt; 1
+#define rson m+1, r, rt&lt;&lt;1|1
+using namespace std;
+
+const int maxn = 100010;
+int tree[maxn &lt;&lt; 2];
+int CLF[maxn&lt;&lt;2];
+void PushUp(int rt){
+    tree[rt] = max(tree[rt&lt;&lt;1], tree[rt&lt;&lt;1|1]);
+}
+void PushDown(int rt){
+    if(!CLF[rt]) return;
+    tree[rt&lt;&lt;1] = tree[rt&lt;&lt;1|1] = tree[rt];
+    CLF[rt] = 0;
+    CLF[rt&lt;&lt;1|1] = CLF[rt&lt;&lt;1] = 1;
+}
+
+void Build(int l, int r, int rt){
+    CLF[rt] = 0;
+    if(l == r){
+        int tmp;
+        scanf("%d", &amp;tmp);
+        tree[rt] = tmp;
+        return;
+    }
+    int m = (l + r)&gt;&gt;1;
+    Build(lson);
+    Build(rson);
+    PushUp(rt);
+}
+
+void Change1(int l, int r, int rt, int L, int R, int x){
+    if(L &lt;= l &amp;&amp; r &lt;= R){
+        tree[rt] = x;
+        CLF[rt] = 1;
+        return ;
+    }
+    int m = (l + r) &gt;&gt; 1;
+    PushDown(rt);
+    if(L &lt;= m)
+        Change1(lson, L, R, x);
+    if(m &lt; R)
+        Change1(rson, L, R, x);
+    PushUp(rt);
+}
+int gcd(int a, int b){
+    while(b){
+        int tmp = a % b;
+        a = b;
+        b = tmp;
+    }
+    return a;
+}
+void Change2(int l, int r, int rt, int L, int R, int x){
+    if(L &lt;= l &amp;&amp; r &lt;= R &amp;&amp; CLF[rt] &amp;&amp; tree[rt] &gt; x){
+        tree[rt] = gcd(tree[rt], x);
+        return;
+    }
+    if(l == r){
+        tree[rt] = gcd(tree[rt], x);
+        return ;
+    }
+    PushDown(rt);
+    int m = (l + r) &gt;&gt; 1;
+    if(L &lt;= m &amp;&amp; tree[rt&lt;&lt;1] &gt; x)
+        Change2(lson, L, R, x);
+    if(m &lt; R &amp;&amp; tree[rt&lt;&lt;1|1] &gt; x)
+        Change2(rson, L, R, x);
+    PushUp(rt);
+}
+void Query(int l, int r, int rt){
+    if(CLF[rt]){
+        for(int i = r - l + 1; i; i--){
+            printf("%d ", tree[rt]);
+        }
+        return;
+    }
+    if(l == r){
+        printf("%d ", tree[rt]);
+        return;
+    }
+    int m = (l + r) &gt;&gt; 1;
+    Query(lson);
+    Query(rson);
+}
+int main()
+{
+    int n, t;
+    scanf("%d", &amp;t);
+    while(t--){
+        scanf("%d", &amp;n);
+        Build(1, n, 1);
+        int q;
+        scanf("%d", &amp;q);
+        while(q--){
+            int c, l, r, num;
+            scanf("%d%d%d%d", &amp;c, &amp;l, &amp;r, &amp;num);
+            if(c == 1){
+                Change1(1, n, 1, l, r, num);
+            }
+            if(c == 2)
+                Change2(1, n, 1, l, r, num);
+        }
+        Query(1, n, 1);
+        printf("\n");
+    }
+    return 0;
+}</pre>
+<p>试试用java写了一发，输出不能用System.out.printf。<br/>
+import java.util.*;<br/>
+public class  Main<br/>
+{  <br/>
+    final int maxn = 100010;<br/>
+    Scanner cin = new Scanner(System.in);<br/>
+    int[] tree = new int[maxn &lt;&lt; 2];<br/>
+    int[] flag = new int[maxn &lt;&lt; 2];<br/>
+    void PushUp(int rt){<br/>
+        tree[rt] = Math.max(tree[rt &lt;&lt; 1], tree[rt&lt;&lt;1|1]);<br/>
+    }<br/>
+    void PushDown(int rt){<br/>
+        if(0 == flag[rt])<br/>
+            return;<br/>
+        tree[rt&lt;&lt;1] = tree[rt&lt;&lt;1|1] = tree[rt];<br/>
+        flag[rt&lt;&lt;1] = flag[rt&lt;&lt;1|1] = 1;<br/>
+        flag[rt] = 0;<br/>
+    }<br/>
+    void Build(int l, int r, int rt){<br/>
+        flag[rt] = 0;<br/>
+        tree[rt] = 0;<br/>
+        if(l == r){<br/>
+            tree[rt] = cin.nextInt();<br/>
+            flag[rt] = 1;<br/>
+            return;<br/>
+        }<br/>
+        int m = (l + r) &gt;&gt; 1;<br/>
+        Build(l, m, rt &lt;&lt; 1);<br/>
+        Build(m + 1, r, rt&lt;&lt;1|1);<br/>
+        PushUp(rt);<br/>
+    }<br/>
+    void Change1(int l, int r, int rt, int L, int R, int x){<br/>
+        if(L &lt;= l &amp;&amp; r &lt;= R){<br/>
+            tree[rt] = x;<br/>
+            flag[rt] = 1;<br/>
+            return;<br/>
+        }<br/>
+        PushDown(rt);<br/>
+        int m = (l + r)&gt;&gt;1;<br/>
+        if(L &lt;= m)<br/>
+            Change1(l, m, rt &lt;&lt; 1, L, R, x);<br/>
+        if(m &lt; R)<br/>
+            Change1(m + 1, r, rt &lt;&lt; 1|1, L, R, x);<br/>
+        PushUp(rt);<br/>
+    }<br/>
+    int gcd(int a, int b){<br/>
+        while(b != 0){<br/>
+            int tmp = a % b;<br/>
+            a = b;<br/>
+            b = tmp;<br/>
+        }<br/>
+        return a;<br/>
+    }<br/>
+    void Change2(int l, int r, int rt, int L, int R, int x){<br/>
+        if(L &lt;= l &amp;&amp; r &lt;= R &amp;&amp; flag[rt] == 1){<br/>
+            if(tree[rt] &gt; x)<br/>
+                tree[rt] = gcd(tree[rt], x);<br/>
+            return;<br/>
+        }<br/>
+        PushDown(rt);<br/>
+        int m = (l + r) &gt;&gt; 1;<br/>
+        if(L &lt;= m &amp;&amp; tree[rt&lt;&lt;1] &gt; x)<br/>
+            Change2(l, m, rt &lt;&lt; 1, L, R, x);<br/>
+        if(m &lt; R &amp;&amp; tree[rt &lt;&lt; 1|1] &gt;  x)<br/>
+            Change2(m + 1, r, rt &lt;&lt; 1|1, L, R, x);<br/>
+        PushUp(rt);<br/>
+    }<br/>
+    int fl = 0;<br/>
+    void Query(int l, int r, int rt){<br/>
+        if(1 == flag[rt]){<br/>
+            for(int i = r – l; i &gt;= 0; i–)<br/>
+            {<br/>
+                System.out.print(tree[rt]);<br/>
+                System.out.print(‘ ‘);<br/>
+            } <br/>
+            return;<br/>
+        }<br/>
+        int m = (l + r) &gt;&gt; 1;<br/>
+        Query(l, m, rt&lt;&lt;1);<br/>
+        Query(m + 1, r, rt &lt;&lt; 1|1);<br/>
+        return ;<br/>
+    }<br/>
+    void go()<br/>
+    {  <br/>
+        int t = 0;<br/>
+        t = cin.nextInt();<br/>
+        while(t != 0){<br/>
+            t–;<br/>
+            fl = 0;<br/>
+            int n = cin.nextInt();<br/>
+            Build(1, n, 1);<br/>
+            int q = cin.nextInt();<br/>
+            int c, l, r, x;<br/>
+            for(int i = 0; i &lt; q; i++){<br/>
+                c = cin.nextInt();<br/>
+                l = cin.nextInt();<br/>
+                r = cin.nextInt();<br/>
+                x = cin.nextInt();<br/>
+                if(c == 1)<br/>
+                    Change1(1, n, 1, l, r, x);<br/>
+                if(c == 2)<br/>
+                    Change2(1, n, 1, l, r, x);<br/>
+            }<br/>
+            Query(1, n, 1);<br/>
+            System.out.println("");<br/>
+        }<br/>
+        cin.close();<br/>
+        return;<br/>
+    }  <br/>
+    public static void main(String[] args){<br/>
+        Main ma = new Main();<br/>
+        ma.go();<br/>
+    }</p>
+<p>
+</p>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/gikieng/article/details/38347415</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-99657">
+<article class="comment" id="comment-99657">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529016" rel="external nofollow">新用户757982</a></span> on <a href="http://www.acmerblog.com/hdu-4092-yummy-triangular-pizza-7095.html#comment-99657" rel="nofollow"><time datetime="2017-04-20T19:26:56+00:00" pubdate="">2017年4月20日 at 下午7:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我就买过一个，剩下的都是捡别人的二手机</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70105">
+<article class="comment" id="comment-70105">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512633" rel="external nofollow">新用户372376</a></span> on <a href="http://www.acmerblog.com/hdu-4092-yummy-triangular-pizza-7095.html#comment-70105" rel="nofollow"><time datetime="2017-04-11T12:43:25+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>干的比狗多，活的比狗累！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70104">
+<article class="comment" id="comment-70104">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512633" rel="external nofollow">新用户372376</a></span> on <a href="http://www.acmerblog.com/hdu-4092-yummy-triangular-pizza-7095.html#comment-70104" rel="nofollow"><time datetime="2017-04-11T12:43:25+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>干的比狗多，活的比狗累！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70103">
+<article class="comment" id="comment-70103">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512633" rel="external nofollow">新用户372376</a></span> on <a href="http://www.acmerblog.com/hdu-4092-yummy-triangular-pizza-7095.html#comment-70103" rel="nofollow"><time datetime="2017-04-11T12:43:25+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>干的比狗多，活的比狗累！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70102">
+<article class="comment" id="comment-70102">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512633" rel="external nofollow">新用户372376</a></span> on <a href="http://www.acmerblog.com/hdu-4092-yummy-triangular-pizza-7095.html#comment-70102" rel="nofollow"><time datetime="2017-04-11T12:43:25+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>干的比狗多，活的比狗累！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70101">
+<article class="comment" id="comment-70101">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512633" rel="external nofollow">新用户372376</a></span> on <a href="http://www.acmerblog.com/hdu-4092-yummy-triangular-pizza-7095.html#comment-70101" rel="nofollow"><time datetime="2017-04-11T12:43:25+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>干的比狗多，活的比狗累！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70100">
+<article class="comment" id="comment-70100">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512633" rel="external nofollow">新用户372376</a></span> on <a href="http://www.acmerblog.com/hdu-4092-yummy-triangular-pizza-7095.html#comment-70100" rel="nofollow"><time datetime="2017-04-11T12:43:25+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>干的比狗多，活的比狗累！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70099">
+<article class="comment" id="comment-70099">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512633" rel="external nofollow">新用户372376</a></span> on <a href="http://www.acmerblog.com/hdu-4092-yummy-triangular-pizza-7095.html#comment-70099" rel="nofollow"><time datetime="2017-04-11T12:43:25+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>干的比狗多，活的比狗累！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70098">
+<article class="comment" id="comment-70098">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512633" rel="external nofollow">新用户372376</a></span> on <a href="http://www.acmerblog.com/hdu-4092-yummy-triangular-pizza-7095.html#comment-70098" rel="nofollow"><time datetime="2017-04-11T12:43:25+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>干的比狗多，活的比狗累！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70097">
+<article class="comment" id="comment-70097">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512633" rel="external nofollow">新用户372376</a></span> on <a href="http://www.acmerblog.com/hdu-4092-yummy-triangular-pizza-7095.html#comment-70097" rel="nofollow"><time datetime="2017-04-11T12:43:25+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>干的比狗多，活的比狗累！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70096">
+<article class="comment" id="comment-70096">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512633" rel="external nofollow">新用户372376</a></span> on <a href="http://www.acmerblog.com/hdu-4092-yummy-triangular-pizza-7095.html#comment-70096" rel="nofollow"><time datetime="2017-04-11T12:43:25+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>干的比狗多，活的比狗累！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70095">
+<article class="comment" id="comment-70095">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512633" rel="external nofollow">新用户372376</a></span> on <a href="http://www.acmerblog.com/hdu-4092-yummy-triangular-pizza-7095.html#comment-70095" rel="nofollow"><time datetime="2017-04-11T12:43:25+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>干的比狗多，活的比狗累！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-52132">
+<article class="comment" id="comment-52132">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiaoliubuer</a></span> on <a href="http://www.acmerblog.com/hdu-4092-yummy-triangular-pizza-7095.html#comment-52132" rel="nofollow"><time datetime="2015-07-13T11:00:39+00:00" pubdate="">2015年7月13日 at 上午11:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很有意思，可惜我很菜啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-52136">
+<article class="comment" id="comment-52136">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">cherry_odd</a></span> on <a href="http://www.acmerblog.com/hdu-4092-yummy-triangular-pizza-7095.html#comment-52136" rel="nofollow"><time datetime="2015-07-09T22:14:56+00:00" pubdate="">2015年7月9日 at 下午10:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真考人啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-52129">
+<article class="comment" id="comment-52129">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">3136869079</a></span> on <a href="http://www.acmerblog.com/hdu-4092-yummy-triangular-pizza-7095.html#comment-52129" rel="nofollow"><time datetime="2015-07-05T19:12:01+00:00" pubdate="">2015年7月5日 at 下午7:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢支持！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-52133">
+<article class="comment" id="comment-52133">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1173954900</a></span> on <a href="http://www.acmerblog.com/hdu-4092-yummy-triangular-pizza-7095.html#comment-52133" rel="nofollow"><time datetime="2015-07-04T07:00:11+00:00" pubdate="">2015年7月4日 at 上午7:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，就是把这32位当成一个长度为32的数组</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35877">
+<article class="comment" id="comment-35877">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xuelanghu</a></span> on <a href="http://www.acmerblog.com/hdu-4092-yummy-triangular-pizza-7095.html#comment-35877" rel="nofollow"><time datetime="2015-07-02T11:04:48+00:00" pubdate="">2015年7月2日 at 上午11:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>&amp;amp;这是C语言？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35878">
+<article class="comment" id="comment-35878">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">changjf</a></span> on <a href="http://www.acmerblog.com/hdu-4092-yummy-triangular-pizza-7095.html#comment-35878" rel="nofollow"><time datetime="2015-06-24T12:03:55+00:00" pubdate="">2015年6月24日 at 下午12:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好，解决了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-60214">
+<article class="comment" id="comment-60214">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jintianya</a></span> on <a href="http://www.acmerblog.com/hdu-4092-yummy-triangular-pizza-7095.html#comment-60214" rel="nofollow"><time datetime="2015-06-14T05:49:57+00:00" pubdate="">2015年6月14日 at 上午5:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个 。。。。不是动态规划吧？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-52134">
+<article class="comment" id="comment-52134">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jupiterhyun</a></span> on <a href="http://www.acmerblog.com/hdu-4092-yummy-triangular-pizza-7095.html#comment-52134" rel="nofollow"><time datetime="2015-06-13T02:07:46+00:00" pubdate="">2015年6月13日 at 上午2:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>赞一个！权限已更新:）</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-52130">
+<article class="comment" id="comment-52130">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mnmlist</a></span> on <a href="http://www.acmerblog.com/hdu-4092-yummy-triangular-pizza-7095.html#comment-52130" rel="nofollow"><time datetime="2015-05-20T06:24:49+00:00" pubdate="">2015年5月20日 at 上午6:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很强大啊，佩服</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-52131">
+<article class="comment" id="comment-52131">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tzf888888</a></span> on <a href="http://www.acmerblog.com/hdu-4092-yummy-triangular-pizza-7095.html#comment-52131" rel="nofollow"><time datetime="2015-05-16T08:10:34+00:00" pubdate="">2015年5月16日 at 上午8:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>额楼主能否在发布代码的同时对解题思路做个讲解呢？这样大家在学习的时候就方便多了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-60215">
+<article class="comment" id="comment-60215">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tonight</a></span> on <a href="http://www.acmerblog.com/hdu-4092-yummy-triangular-pizza-7095.html#comment-60215" rel="nofollow"><time datetime="2015-04-29T12:40:48+00:00" pubdate="">2015年4月29日 at 下午12:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一个真的要比较两次吗，换成else if 不可以吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-52135">
+<article class="comment" id="comment-52135">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Watson</a></span> on <a href="http://www.acmerblog.com/hdu-4092-yummy-triangular-pizza-7095.html#comment-52135" rel="nofollow"><time datetime="2015-04-25T11:56:59+00:00" pubdate="">2015年4月25日 at 上午11:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>3，求得所有的为的总和sum—-&gt;所有数的总和<br/>
+printf( "Not Possible" );—-&gt;printf("impossible");<br/>
+对吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-60213">
+<article class="comment" id="comment-60213">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">helloacm</a></span> on <a href="http://www.acmerblog.com/hdu-4092-yummy-triangular-pizza-7095.html#comment-60213" rel="nofollow"><time datetime="2015-04-21T08:32:39+00:00" pubdate="">2015年4月21日 at 上午8:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>文章写得挺好，就是最后的斐波那契那个没有看明白</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35879">
+<article class="comment" id="comment-35879">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jintianya</a></span> on <a href="http://www.acmerblog.com/hdu-4092-yummy-triangular-pizza-7095.html#comment-35879" rel="nofollow"><time datetime="2015-04-17T21:27:53+00:00" pubdate="">2015年4月17日 at 下午9:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还是有些难度的！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

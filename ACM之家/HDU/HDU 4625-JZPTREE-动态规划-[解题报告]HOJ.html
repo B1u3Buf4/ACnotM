@@ -1,0 +1,329 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>09-17</div>
+<div class="tit"><h1 class="entry-title">HDU 4625-JZPTREE-动态规划-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a>, <a href="http://www.acmerblog.com/category/math/combination" rel="category tag" title="查看组合数学中的全部文章">组合数学</a></span><span class="i4">围观116次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7670" href="http://www.acmerblog.com/hdu-4625-jzptree-7670.html#comments" title="《HDU 4625-JZPTREE-动态规划-[解题报告]HOJ》上的评论">16 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">JZPTREE</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+There is a tree,there is a life.Can you solve this problem about tree?<br/>     Here we have a tree which has n vertices.<br/>     We define dist(u, v) as the number of edges on the path from u to v.<br/>     And for each vertices u , define E<sub>u</sub> =<img alt="Endless Spin" src="http://www.acmerblog.com/img/1447850479281.jpg" style="max-width:100%;"/><br/>     Give you the tree and k.<br/>     Print E<sub>i</sub> for every vertices(from 1 to n).(mod 10007 for convenience). </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line contains integer T(1  T  5),denote the number of the test cases.<br/>     For each test cases,the first line contains two integers n,k(1&lt;=n&lt;=50000, 1&lt;=k&lt;=500).<br/>     Then next n-1 lines,each lines contains two integer a,b(1&lt;=a, b&lt;=n),denote there is an edge between a, b. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The first line contains integer T(1  T  5),denote the number of the test cases.<br/>     For each test cases,the first line contains two integers n,k(1&lt;=n&lt;=50000, 1&lt;=k&lt;=500).<br/>     Then next n-1 lines,each lines contains two integer a,b(1&lt;=a, b&lt;=n),denote there is an edge between a, b.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+5 3
+1 2
+2 3
+3 4
+4 5</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+100
+37
+18
+37
+100
+<div style="font-family:Times New Roman;font-size:14px;background-color:F4FBFF;border:#B7CBFF 1px dashed;padding:6px"><div style="font-family:Arial;font-weight:bold;color:#7CA9ED;border-bottom:#B7CBFF 1px dashed"><i>Hint</i></div>
+Thank oimaster for this problem :).
+</div><i style="font-size:1px"> </i></pre>
+<p> <!-- problem end --></p>
+<p><img alt="JZPTREE" src="http://cdn.acmerblog.com/img/1447850509726.png"/>
+</p><pre class="brush:cpp" name="code">#include &lt;cstdio&gt;
+#include &lt;cstdlib&gt;
+#include &lt;cstring&gt;
+#include &lt;iostream&gt;
+#include &lt;vector&gt;
+using namespace std;
+const int maxn = 5e4 + 10;
+const int maxk = 5e2 + 10;
+const int mod = 10007;
+typedef long long LL;
+
+struct edge {
+  int v, to;
+};
+vector&lt;edge&gt; E;
+int L[maxn];
+void graph_init()
+{
+  E.clear();
+  memset(L, -1, sizeof(L));
+}
+void graph_add(int u, int v)
+{
+  edge t = {v, L[u]};
+  L[u] = E.size();
+  E.push_back(t);
+}
+
+int s[maxk][maxk];  // stirling
+int f[maxk];        // factorial
+int c[maxk][maxk];  // pascal
+
+void init()
+{
+  s[0][0] = f[0] = c[0][0] = 1;
+  for (int i = 1; i &lt; maxk; i++) {
+    f[i] = f[i-1] * i % mod;
+    c[i][0] = 1;
+    for (int j = 1; j &lt; maxk; j++) {
+      s[i][j] = (j * s[i-1][j] % mod + s[i-1][j-1]) % mod;
+      c[i][j] = (c[i-1][j] + c[i-1][j-1]) % mod;
+    }
+  }
+}
+
+int n, k;
+
+int d[maxn][maxk];
+void dp_son(int u = 0, int p = -1)
+{
+  memset(d[u], 0, sizeof(d[u]));
+  for (int i = L[u]; i != -1; i = E[i].to)
+    if (i != p) {
+      int v = E[i].v;
+      dp_son(v, i^1);
+      for (int j = 0; j &lt;= k; j++)
+        d[u][j] = (d[u][j] + d[v][j] + (j? d[v][j-1]: 0) + c[1][j]) % mod;
+    }
+}
+int tmp[maxk];
+void dp_father(int u = 0, int p = -1)
+{
+  if (p != -1) {
+    int v = E[p].v;
+    memcpy(tmp, d[v], sizeof(d[v]));
+    for (int j = 0; j &lt;= k; j++)
+      tmp[j] = (tmp[j] - (d[u][j] + (j? d[u][j-1]: 0) + c[1][j]) % mod + mod) % mod;
+    for (int j = 0; j &lt;= k; j++)
+      d[u][j] = (d[u][j] + tmp[j] + (j? tmp[j-1]: 0) + c[1][j]) % mod;
+  }
+  for (int i = L[u]; i != -1; i = E[i].to)
+    if (i != p) dp_father(E[i].v, i^1);
+}
+
+int main()
+{
+  init();
+  int T;
+  scanf("%d", &amp;T);
+  for ( ; T--; ) {
+    graph_init();
+    scanf("%d%d", &amp;n, &amp;k);
+    for (int i = 0; i &lt; n-1; i++) {
+      int u, v;
+      scanf("%d%d", &amp;u, &amp;v);
+      u--, v--;
+      graph_add(u, v);
+      graph_add(v, u);
+    }
+    dp_son();
+    dp_father();
+    for (int u = 0; u &lt; n; u++) {
+      int sum = 0;
+      for (int i = 0; i &lt;= k; i++)
+        sum = (sum + s[k][i]*f[i]%mod*d[u][i]%mod) % mod;
+      printf("%d\n", sum);
+    }
+  }
+  return 0;
+}
+</pre>
+<p></p>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/dwylkz/article/details/9749827</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-97330">
+<article class="comment" id="comment-97330">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526503" rel="external nofollow">新用户384636</a></span> on <a href="http://www.acmerblog.com/hdu-4625-jzptree-7670.html#comment-97330" rel="nofollow"><time datetime="2017-04-20T05:15:15+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>周三晚间~周四早晨更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-97329">
+<article class="comment" id="comment-97329">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526503" rel="external nofollow">新用户384636</a></span> on <a href="http://www.acmerblog.com/hdu-4625-jzptree-7670.html#comment-97329" rel="nofollow"><time datetime="2017-04-20T05:15:15+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>周三晚间~周四早晨更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-97328">
+<article class="comment" id="comment-97328">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526503" rel="external nofollow">新用户384636</a></span> on <a href="http://www.acmerblog.com/hdu-4625-jzptree-7670.html#comment-97328" rel="nofollow"><time datetime="2017-04-20T05:15:15+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>周三晚间~周四早晨更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-97327">
+<article class="comment" id="comment-97327">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526503" rel="external nofollow">新用户384636</a></span> on <a href="http://www.acmerblog.com/hdu-4625-jzptree-7670.html#comment-97327" rel="nofollow"><time datetime="2017-04-20T05:15:15+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>周三晚间~周四早晨更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-97326">
+<article class="comment" id="comment-97326">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526503" rel="external nofollow">新用户384636</a></span> on <a href="http://www.acmerblog.com/hdu-4625-jzptree-7670.html#comment-97326" rel="nofollow"><time datetime="2017-04-20T05:15:15+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>周三晚间~周四早晨更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-97325">
+<article class="comment" id="comment-97325">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526503" rel="external nofollow">新用户384636</a></span> on <a href="http://www.acmerblog.com/hdu-4625-jzptree-7670.html#comment-97325" rel="nofollow"><time datetime="2017-04-20T05:15:15+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>周三晚间~周四早晨更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-97324">
+<article class="comment" id="comment-97324">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526503" rel="external nofollow">新用户384636</a></span> on <a href="http://www.acmerblog.com/hdu-4625-jzptree-7670.html#comment-97324" rel="nofollow"><time datetime="2017-04-20T05:15:15+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>周三晚间~周四早晨更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-97323">
+<article class="comment" id="comment-97323">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526503" rel="external nofollow">新用户384636</a></span> on <a href="http://www.acmerblog.com/hdu-4625-jzptree-7670.html#comment-97323" rel="nofollow"><time datetime="2017-04-20T05:15:15+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>周三晚间~周四早晨更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-66444">
+<article class="comment" id="comment-66444">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515430" rel="external nofollow">新用户860391</a></span> on <a href="http://www.acmerblog.com/hdu-4625-jzptree-7670.html#comment-66444" rel="nofollow"><time datetime="2017-04-10T22:27:49+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>恩，我暂时也用上了这个插件，确实不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-66443">
+<article class="comment" id="comment-66443">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515430" rel="external nofollow">新用户860391</a></span> on <a href="http://www.acmerblog.com/hdu-4625-jzptree-7670.html#comment-66443" rel="nofollow"><time datetime="2017-04-10T22:27:49+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>恩，我暂时也用上了这个插件，确实不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-66442">
+<article class="comment" id="comment-66442">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515430" rel="external nofollow">新用户860391</a></span> on <a href="http://www.acmerblog.com/hdu-4625-jzptree-7670.html#comment-66442" rel="nofollow"><time datetime="2017-04-10T22:27:49+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>恩，我暂时也用上了这个插件，确实不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-66441">
+<article class="comment" id="comment-66441">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515430" rel="external nofollow">新用户860391</a></span> on <a href="http://www.acmerblog.com/hdu-4625-jzptree-7670.html#comment-66441" rel="nofollow"><time datetime="2017-04-10T22:27:49+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>恩，我暂时也用上了这个插件，确实不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-66440">
+<article class="comment" id="comment-66440">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515430" rel="external nofollow">新用户860391</a></span> on <a href="http://www.acmerblog.com/hdu-4625-jzptree-7670.html#comment-66440" rel="nofollow"><time datetime="2017-04-10T22:27:49+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>恩，我暂时也用上了这个插件，确实不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-66439">
+<article class="comment" id="comment-66439">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515430" rel="external nofollow">新用户860391</a></span> on <a href="http://www.acmerblog.com/hdu-4625-jzptree-7670.html#comment-66439" rel="nofollow"><time datetime="2017-04-10T22:27:49+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>恩，我暂时也用上了这个插件，确实不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-66438">
+<article class="comment" id="comment-66438">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515430" rel="external nofollow">新用户860391</a></span> on <a href="http://www.acmerblog.com/hdu-4625-jzptree-7670.html#comment-66438" rel="nofollow"><time datetime="2017-04-10T22:27:49+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>恩，我暂时也用上了这个插件，确实不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-66437">
+<article class="comment" id="comment-66437">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515430" rel="external nofollow">新用户860391</a></span> on <a href="http://www.acmerblog.com/hdu-4625-jzptree-7670.html#comment-66437" rel="nofollow"><time datetime="2017-04-10T22:27:49+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>恩，我暂时也用上了这个插件，确实不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

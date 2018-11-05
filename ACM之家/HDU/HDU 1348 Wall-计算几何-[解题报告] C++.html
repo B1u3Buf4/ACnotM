@@ -1,0 +1,326 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-09</div>
+<div class="tit"><h1 class="entry-title">HDU 1348 Wall-计算几何-[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/geometry/convex" rel="category tag" title="查看凸包问题中的全部文章">凸包问题</a>, <a href="http://www.acmerblog.com/category/basis/sort" rel="category tag" title="查看排序中的全部文章">排序</a>, <a href="http://www.acmerblog.com/category/data-struct/linear" rel="category tag" title="查看线性结构中的全部文章">线性结构</a></span><span class="i4">围观900次</span><span class="i3"><a class="ds-thread-count" data-thread-key="1773" href="http://www.acmerblog.com/hdu-1348-Wall-1773.html#comments" title="《HDU 1348 Wall-计算几何-[解题报告] C++》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Wall</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Once upon a time there was a greedy King who ordered his chief Architect to build a wall around the King’s castle. The King was so greedy, that he would not listen to his Architect’s proposals to build a beautiful brick wall with a perfect shape and nice tall towers. Instead, he ordered to build the wall around the whole castle using the least amount of stone and labor, but demanded that the wall should not come closer to the castle than a certain distance. If the King finds that the Architect has used more resources to build the wall than it was absolutely necessary to satisfy those requirements, then the Architect will loose his head. Moreover, he demanded Architect to introduce at once a plan of the wall listing the exact amount of resources that are needed to build the wall.<br/>Your task is to help poor Architect to save his head, by writing a program that will find the minimum possible length of the wall that he could build around the castle to satisfy King’s requirements.
+<p></p><center><img src="http://acm.hdu.edu.cn/data/images/1348-1.gif"/></center>
+<p>The task is somewhat simplified by the fact, that the King’s castle has a polygonal shape and is situated on a flat ground. The Architect has already established a Cartesian coordinate system and has precisely measured the coordinates of all castle’s vertices in feet. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line of the input file contains two integer numbers N and L separated by a space. N (3 &lt;= N &lt;= 1000) is the number of vertices in the King’s castle, and L (1 &lt;= L &lt;= 1000) is the minimal number of feet that King allows for the wall to come close to the castle.
+<p>Next N lines describe coordinates of castle’s vertices in a clockwise order. Each line contains two integer numbers Xi and Yi separated by a space (-10000 &lt;= Xi, Yi &lt;= 10000) that represent the coordinates of ith vertex. All vertices are different and the sides of the castle do not intersect anywhere except for vertices. </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+Write to the output file the single number that represents the minimal possible length of the wall in feet that could be built around the castle to satisfy King’s requirements. You must present the integer number of feet to the King, because the floating numbers are not invented yet. However, you must round the result in such a way, that it is accurate to 8 inches (1 foot is equal to 12 inches), since the King will not tolerate larger error in the estimates.
+<p>This problem contains multiple test cases!</p>
+<p>The first line of a multiple input is an integer N, then a blank line followed by N input blocks. Each input block is in the format indicated in the problem description. There is a blank line between input blocks.</p>
+<p>The output format consists of N output blocks. There is a blank line between output blocks.</p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+
+9 100
+200 400
+300 400
+300 300
+400 300
+400 400
+500 400
+500 200
+350 200
+200 200</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+1628</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">/*
+ *  凸包
+ *  注意：给出的点为整点数，不要设某一精度值！ 
+ */
+ 
+ #include &lt;cmath&gt;
+ #include &lt;cstdio&gt;
+ #include &lt;cstdlib&gt;
+ #include &lt;iostream&gt;
+ 
+ using namespace std;
+ 
+ const int N = 1005;
+ const double PI = 3.1415927;
+ 
+ struct point {
+     double x;
+     double y;
+ }p[N], stack[N];
+ 
+ double dis(point A, point B) {
+     return sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y));
+ }
+ 
+ double crossProd(point A, point B, point C) {
+     return (B.x-A.x)*(C.y-A.y) - (B.y-A.y)*(C.x-A.x);
+ }
+ 
+ //以最左下的点为基准点，其他各点（逆时针方向）以极角从小到大的排序规则
+ int cmp(const void *a, const void *b) {
+     point *c = (point *)a;
+     point *d = (point *)b;
+     double k = crossProd(p[0], *c, *d);//极角大小转化为求叉乘
+     if (k&lt;0 || !k &amp;&amp; dis(p[0], *c)&gt;dis(p[0], *d)) return 1;
+     return -1;
+ }
+ 
+ double Graham(int n) {
+     double x = p[0].x;
+     double y = p[0].y;
+     int mi = 0;
+     for (int i=1; i&lt;n; ++i) {//找到最左下的一个点
+         if (p[i].x&lt;x || (p[i].x==x &amp;&amp; p[i].y&lt;y)) {
+             x = p[i].x;
+             y = p[i].y;
+             mi = i;
+         }
+     }
+     point tmp = p[mi];
+     p[mi] = p[0];
+     p[0] = tmp;
+     qsort(p+1, n-1, sizeof(point), cmp);
+     p[n] = p[0];
+     stack[0] = p[0];
+     stack[1] = p[1];
+     stack[2] = p[2];
+     int top = 2;
+     for (int i=3; i&lt;=n; ++i) {//加入一个点后,向右偏拐或共线，则上一个点不在凸包内，则--top，该过程直到不向右偏拐或没有三点共线的点 
+         while (crossProd(stack[top-1], stack[top], p[i])&lt;=0 &amp;&amp; top&gt;=2) --top;
+         stack[++top] = p[i];//在当前情况下符合凸包的点，入栈
+     }
+     double len = 0;
+     for (int i=0; i&lt;top; ++i) len += dis(stack[i], stack[i+1]);
+     return len;
+ }
+ 
+ int main() {
+     int t;
+     while (scanf("%d", &amp;t) != EOF) {
+         while (t--) {
+             int n, l;
+             scanf ("%d%d", &amp;n, &amp;l);
+             for (int i=0; i&lt;n; ++i) scanf ("%lf%lf", &amp;p[i].x, &amp;p[i].y);
+             double ans = Graham(n);
+             ans += PI * (l + l);
+             printf ("%.0lf\n", ans);
+             if (t) printf ("\n");
+         }
+     }
+     return 0;
+ }</pre>
+<p> </p>
+<p>解题报告转自：http://www.cnblogs.com/try86/archive/2012/04/24/2469008.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-40697">
+<article class="comment" id="comment-40697">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">kate19930802</a></span> on <a href="http://www.acmerblog.com/hdu-1348-Wall-1773.html#comment-40697" rel="nofollow"><time datetime="2015-06-30T11:49:55+00:00" pubdate="">2015年6月30日 at 上午11:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，算是枚举吧，已修正</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-40699">
+<article class="comment" id="comment-40699">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Spike</a></span> on <a href="http://www.acmerblog.com/hdu-1348-Wall-1773.html#comment-40699" rel="nofollow"><time datetime="2015-06-10T20:39:10+00:00" pubdate="">2015年6月10日 at 下午8:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>map[nodes <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .index][nodes <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> .index] == 0 就是判断不相邻的。这个是可以证明的。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-40700">
+<article class="comment" id="comment-40700">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">raymanshf</a></span> on <a href="http://www.acmerblog.com/hdu-1348-Wall-1773.html#comment-40700" rel="nofollow"><time datetime="2015-03-04T08:20:09+00:00" pubdate="">2015年3月4日 at 上午8:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#include &lt;stdio.h&gt;<br/>
+int main()<br/>
+{<br/>
+    int n,p,t[100]={1};<br/>
+    for(int i=1;i&lt;100;i++)<br/>
+        t <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> =i;<br/>
+    while(scanf("%d",&amp;n)&amp;&amp;n!=0){<br/>
+        if(n==1)<br/>
+        printf("Printing order for 1 pages:nSheet 1, front: Blank, 1n");<br/>
+        else {<br/>
+        if(n%4) p=n/4+1;<br/>
+        else p=n/4;<br/>
+        int q=4*p;<br/>
+        printf("Printing order for %d pages:n",n);<br/>
+        for(int i=0;i&lt;p;i++){<br/>
+            printf("Sheet %d, front: ",i+1);<br/>
+            if(q&gt;n) {printf("Blank, %dn",t[2*i+1]);}<br/>
+            else {printf("%d, %dn",q,t[2*i+1]);}<br/>
+            q–;//打印表前<br/>
+            printf("Sheet %d, back : ",i+1);<br/>
+            if(q&gt;n) {printf("%d, Blankn",t[2*i+2]);}<br/>
+            else {printf("%d, %dn",t[2*i+2],q);}<br/>
+            q–;//打印表后<br/>
+           }<br/>
+        }<br/>
+    }<br/>
+    return 0;<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-40694">
+<article class="comment" id="comment-40694">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">chengleisheng</a></span> on <a href="http://www.acmerblog.com/hdu-1348-Wall-1773.html#comment-40694" rel="nofollow"><time datetime="2015-03-01T17:04:35+00:00" pubdate="">2015年3月1日 at 下午5:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>说的就是无向图啊，有向图的算法也是类似的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-40696">
+<article class="comment" id="comment-40696">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Aifan</a></span> on <a href="http://www.acmerblog.com/hdu-1348-Wall-1773.html#comment-40696" rel="nofollow"><time datetime="2015-01-28T23:32:11+00:00" pubdate="">2015年1月28日 at 下午11:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>题目需要求解的是最小值，而且没有考虑可能存在环</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-12683">
+<article class="comment" id="comment-12683">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">windy</a></span> on <a href="http://www.acmerblog.com/hdu-1348-Wall-1773.html#comment-12683" rel="nofollow"><time datetime="2014-09-09T17:28:32+00:00" pubdate="">2014年9月9日 at 下午5:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>L（X [0 .. M-1]，Y [0 .. N-1]）= 1 + L（X [0 .. M-2]，Y [0 .. N-1]）这个地方也也有笔误<br/>
+应改为L（X [0 .. M-1]，Y [0 .. N-1]）= 1 + L（X [0 .. M-2]，Y [0 .. N-2]）</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-40698">
+<article class="comment" id="comment-40698">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sheyty</a></span> on <a href="http://www.acmerblog.com/hdu-1348-Wall-1773.html#comment-40698" rel="nofollow"><time datetime="2014-08-21T12:40:41+00:00" pubdate="">2014年8月21日 at 下午12:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有一点问题。。后面动态规划的程序中<br/>
+int dp[n+1][W+1];<br/>
+会报错  提示表达式必须含有常量值。该怎么修改呢。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-40695">
+<article class="comment" id="comment-40695">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">changjf</a></span> on <a href="http://www.acmerblog.com/hdu-1348-Wall-1773.html#comment-40695" rel="nofollow"><time datetime="2014-08-08T21:49:59+00:00" pubdate="">2014年8月8日 at 下午9:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错的网站，建议添加些比赛信息</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-40693">
+<article class="comment" id="comment-40693">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bobo</a></span> on <a href="http://www.acmerblog.com/hdu-1348-Wall-1773.html#comment-40693" rel="nofollow"><time datetime="2014-07-06T15:07:13+00:00" pubdate="">2014年7月6日 at 下午3:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>和编译器有关吧，我用的g++正常。头文件可能还需要一个&lt;string.h&gt;</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-12686">
+<article class="comment" id="comment-12686">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jhxxszy</a></span> on <a href="http://www.acmerblog.com/hdu-1348-Wall-1773.html#comment-12686" rel="nofollow"><time datetime="2014-05-22T17:20:09+00:00" pubdate="">2014年5月22日 at 下午5:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚开始学习，为啥会报错了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-12688">
+<article class="comment" id="comment-12688">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Miracle-cc</a></span> on <a href="http://www.acmerblog.com/hdu-1348-Wall-1773.html#comment-12688" rel="nofollow"><time datetime="2014-03-26T23:24:00+00:00" pubdate="">2014年3月26日 at 下午11:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我没看懂题目<br/>
+2<br/>
+5 6 -1 5 4 -7<br/>
+7 0 6 -1 1 -6 7 -5<br/>
+我觉得第一个应该是5 6 -1 5 4 输出是19 5 4<br/>
+第二个是7 0 6 -1 1 -6 7输出是14 7 7<br/>
+不知道题目例子是怎么得出来的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-12684">
+<article class="comment" id="comment-12684">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">303589828</a></span> on <a href="http://www.acmerblog.com/hdu-1348-Wall-1773.html#comment-12684" rel="nofollow"><time datetime="2014-03-20T10:42:15+00:00" pubdate="">2014年3月20日 at 上午10:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-12685">
+<article class="comment" id="comment-12685">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Baifern</a></span> on <a href="http://www.acmerblog.com/hdu-1348-Wall-1773.html#comment-12685" rel="nofollow"><time datetime="2014-03-06T01:27:35+00:00" pubdate="">2014年3月6日 at 上午1:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>前排支持</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-12687">
+<article class="comment" id="comment-12687">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zrw</a></span> on <a href="http://www.acmerblog.com/hdu-1348-Wall-1773.html#comment-12687" rel="nofollow"><time datetime="2014-01-23T23:14:47+00:00" pubdate="">2014年1月23日 at 下午11:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这道题目虽然简单，但是小编做的很到位，应该会给很多人启发吧！对于面试当中不给开辟额外空间的问题不是绝对的，实际上至少是允许少数变量存在的。之前遇到相似的问题也是恍然大悟，今天看到小编这篇文章相见恨晚。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,384 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>07-10</div>
+<div class="tit"><h1 class="entry-title">九度1500-出操队形[微策略面试题]</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/jdoj" rel="category tag" title="查看九度OJ中的全部文章">九度OJ</a>, <a href="http://www.acmerblog.com/category/offer" rel="category tag" title="查看剑指offer中的全部文章">剑指offer</a></span><span class="i4">围观866次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5945" href="http://www.acmerblog.com/jiudu-1500-5945.html#comments" title="《九度1500-出操队形[微策略面试题]》上的评论">25 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<dl>
+<dt><b>题目描述：</b></dt>
+<dd>在读高中的时候，每天早上学校都要组织全校的师生进行跑步来锻炼身体，每当出操令吹响时，大家就开始往楼下跑了，然后身高矮的排在队伍的前面，身高较高的就要排在队尾。突然，有一天出操负责人想了一个主意，想要变换一下队形，就是当大家都从楼上跑下来后，所有的学生都随机地占在一排，然后出操负责人从队伍中抽取出一部分学生，使得队伍中剩余的学生的身高从前往后看，是一个先升高后下降的“山峰”形状。据说这样的形状能够给大家带来好运，祝愿大家在学习的道路上勇攀高峰。(注，山峰只有一边也符合条件，如1,1、2,2、1均符合条件)</dd>
+</dl>
+<dl>
+<dt><b>输入：</b></dt>
+<dd>输入可能包含多个测试样例。<br/>
+对于每个测试案例，输入的第一行是一个整数n(1&lt;=n&lt;=1000000)：代表将要输入的学生个数。<br/>
+输入的第二行包括n个整数：代表学生的身高（cm）(身高为不高于200的正整数)。</dd>
+</dl>
+<dl>
+<dt><b>输出：</b></dt>
+<dd>对应每个测试案例，输出需要抽出的最少学生人数。</dd>
+</dl>
+<dl>
+<dt><b>样例输入：</b></dt>
+<dd>
+<pre>6
+100 154 167 159 132 105
+5
+152 152 152 152 152</pre>
+</dd>
+</dl>
+<dl>
+<dt><b>样例输出：</b></dt>
+<dd>
+<pre>0
+4</pre>
+</dd>
+</dl>
+<dl>
+<dt><b>来源：</b></dt>
+<dd><a href="http://ac.jobdu.com/problemset.php?search=%E5%BE%AE%E7%AD%96%E7%95%A52013%E5%B9%B4%E6%A0%A1%E5%9B%AD%E6%8B%9B%E8%81%98%E9%9D%A2%E8%AF%95%E4%B8%80%E9%9D%A2%E8%AF%95%E9%A2%98">微策略2013年校园招聘面试一面试题</a></dd>
+</dl>
+<p><strong>分析：</strong></p>
+<p>这个是LIS（最长上升子序列长度）的变体。有动态规划解法<a href="http://www.acmerblog.com/dp-3-longest-increasing-subsequence-4640.html" rel="bookmark" title="链向 动态规划(3)-最长递增子序列 的固定链接">动态规划(3)-最长递增子序列</a>  和<a href="http://www.acmerblog.com/lis-nlogn-4730.html"> O(nlogn)算法</a> 的解法。</p>
+<p>这里时间卡的比较紧，应该用O(nlog n)的算法。先总体求递增子序列的长度，再求递减子序列的长度。这里为了复用LIS函数，把原来的数组逆序一下，再次调用LIS，就相当于求递减子序列的长度了。</p>
+<p>最后遍历一遍，找出在某一点可以达到的总和的最大长度。</p>
+<p>代码如下：</p>
+<pre class="brush:cpp">//============================================================================
+// Name        : 出操队形.cpp
+// Author      : Coder
+// Version     :
+// Copyright   : www.acmerblog.com
+// Description : http://ac.jobdu.com/problem.php?pid=1500
+//============================================================================
+
+#include &lt;iostream&gt;
+#include &lt;stdio.h&gt;
+#include &lt;algorithm&gt;
+using namespace std;
+
+//在arr中找到的大于等于key的第一个数。没有的话，返回n
+//此处也可以直接调用STL里面的lower_bound函数
+int lower_bound(int arr[],int n ,int key){
+	if(n == 0) return 0;
+	int low = 0;
+	int high = n-1;
+	while(low &lt;= high){
+		int mid = (low+high)/2;
+		if( arr[mid] &lt; key)
+			low = mid+1;
+		else
+			high = mid-1;
+	}
+	return low;
+}
+
+//结果存放在res中，res[i]表示 arr[0...i]的最大上升序列的长度。
+int lis(int arr[], int n, int res[]){
+	res[0] = 1;
+	int lisSize = 1;
+	int low;
+	for(int i=1; i&lt;n; i++){
+		//或调用系统 的lower_bound
+		/*int * p = lower_bound(arr, arr+lisSize, arr[i]);
+		low = p - arr;*/
+		low = lower_bound(arr, lisSize, arr[i]);
+		//如果超出，更新最大长度
+		if(low &gt;= lisSize) lisSize = low+1;
+		//用arr[i]更新较大的那个值
+		arr[low] = arr[i];
+		res[i] = lisSize;
+	}
+	return lisSize;
+}
+
+int main() {
+	//freopen("in.txt", "r", stdin);
+	int n;
+	int * arr, *reverseArr, *res, *reverRes;
+	while(scanf("%d",&amp;n) != EOF){
+		arr = new int[n+1];
+		reverseArr = new int[n+1];
+		res = new int[n+1];
+		for(int i=0; i&lt;n; i++) scanf("%d", &amp;arr[i]);
+		//反向的再计算一次
+		for(int i=0; i&lt;n; i++) reverseArr[i] = arr[n-i-1];
+		lis(arr, n, res);
+		free(arr);
+		reverRes = new int[n+1];
+		lis(reverseArr, n, reverRes);
+		free(reverseArr);
+		int ans = 0;
+		for (int i = 0; i &lt; n; i++) {
+			if (ans &lt; res[i] + reverRes[n - i - 1] - 1)
+				ans = res[i] + reverRes[n - i - 1] - 1;
+		}
+		printf("%d\n", n-ans);
+	}
+	return 0;
+}</pre>
+<p>ACM之家原创：<a href="http://www.acmerblog.com/jiudu-1500-5945.html">http://www.acmerblog.com/jiudu-1500-5945.html</a></p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75351">
+<article class="comment" id="comment-75351">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919531952" rel="external nofollow">新用户623348</a></span> on <a href="http://www.acmerblog.com/jiudu-1500-5945.html#comment-75351" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也洗做摸脚滴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75350">
+<article class="comment" id="comment-75350">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919531952" rel="external nofollow">新用户623348</a></span> on <a href="http://www.acmerblog.com/jiudu-1500-5945.html#comment-75350" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也洗做摸脚滴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75349">
+<article class="comment" id="comment-75349">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919531952" rel="external nofollow">新用户623348</a></span> on <a href="http://www.acmerblog.com/jiudu-1500-5945.html#comment-75349" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也洗做摸脚滴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75348">
+<article class="comment" id="comment-75348">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919531952" rel="external nofollow">新用户623348</a></span> on <a href="http://www.acmerblog.com/jiudu-1500-5945.html#comment-75348" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也洗做摸脚滴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75347">
+<article class="comment" id="comment-75347">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919531952" rel="external nofollow">新用户623348</a></span> on <a href="http://www.acmerblog.com/jiudu-1500-5945.html#comment-75347" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也洗做摸脚滴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75346">
+<article class="comment" id="comment-75346">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919531952" rel="external nofollow">新用户623348</a></span> on <a href="http://www.acmerblog.com/jiudu-1500-5945.html#comment-75346" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也洗做摸脚滴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75345">
+<article class="comment" id="comment-75345">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919531952" rel="external nofollow">新用户623348</a></span> on <a href="http://www.acmerblog.com/jiudu-1500-5945.html#comment-75345" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也洗做摸脚滴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75344">
+<article class="comment" id="comment-75344">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919531952" rel="external nofollow">新用户623348</a></span> on <a href="http://www.acmerblog.com/jiudu-1500-5945.html#comment-75344" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也洗做摸脚滴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75343">
+<article class="comment" id="comment-75343">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919531952" rel="external nofollow">新用户623348</a></span> on <a href="http://www.acmerblog.com/jiudu-1500-5945.html#comment-75343" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也洗做摸脚滴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75342">
+<article class="comment" id="comment-75342">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919531952" rel="external nofollow">新用户623348</a></span> on <a href="http://www.acmerblog.com/jiudu-1500-5945.html#comment-75342" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也洗做摸脚滴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75341">
+<article class="comment" id="comment-75341">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919531952" rel="external nofollow">新用户623348</a></span> on <a href="http://www.acmerblog.com/jiudu-1500-5945.html#comment-75341" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也洗做摸脚滴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65344">
+<article class="comment" id="comment-65344">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.wx31.com/" rel="external nofollow">货源网</a></span> on <a href="http://www.acmerblog.com/jiudu-1500-5945.html#comment-65344" rel="nofollow"><time datetime="2017-04-04T10:12:55+00:00" pubdate="">2017年4月4日 at 上午10:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>1:1复刻︊DIESEL(迪赛)TT Linshechipin.gq</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65332">
+<article class="comment" id="comment-65332">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">vhwh5437</span> on <a href="http://www.acmerblog.com/jiudu-1500-5945.html#comment-65332" rel="nofollow"><time datetime="2017-03-30T05:28:04+00:00" pubdate="">2017年3月30日 at 上午5:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> 办公室脱丝袜 <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> 中国丝袜 <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> 臭丝袜 <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> 美腿丝袜论坛 <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/27/lxhhongbao_org.gif"/> meitui1.com</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65285">
+<article class="comment" id="comment-65285">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">美腿秀</span> on <a href="http://www.acmerblog.com/jiudu-1500-5945.html#comment-65285" rel="nofollow"><time datetime="2017-03-25T17:04:08+00:00" pubdate="">2017年3月25日 at 下午5:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>ǖǖǖǖǖǖǖǖ操丝袜脚ǖǖǖǖǖǖǖǖǖǖǖǖǖǖǖǖ高跟皮靴ǖǖǖǖǖǖǖǖǖǖǖǖǖǖǖǖ二手丝袜ǖǖǖǖǖǖǖǖǖǖǖǖǖǖǖǖ北京丝袜会所ǖǖǖǖǖǖǖǖǖǖǖǖǖǖǖǖ丝袜mmǖǖǖǖǖǖǖǖǖǖǖǖǖǖǖǖ蓝色丝袜ǖǖǖǖǖǖǖǖǖǖǖǖǖǖǖǖ丝袜花牡丹ǖǖǖǖǖǖǖǖwww.518mei.com</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65267">
+<article class="comment" id="comment-65267">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">高跟视频</span> on <a href="http://www.acmerblog.com/jiudu-1500-5945.html#comment-65267" rel="nofollow"><time datetime="2017-03-24T09:31:47+00:00" pubdate="">2017年3月24日 at 上午9:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>ṓṓṓṓṓṓṓṓṓ9oal玉足网ṓṓṓṓṓṓṓṓṓṓṓṓṓṓṓṓṓṓ天鹅绒丝袜ṓṓṓṓṓṓṓṓṓṓṓṓṓṓṓṓṓṓ丝袜艺术ṓṓṓṓṓṓṓṓṓṓṓṓṓṓṓṓṓṓ美腿女侠ṓṓṓṓṓṓṓṓṓṓṓṓṓṓṓṓṓṓ隔着丝袜操ṓṓṓṓṓṓṓṓṓṓṓṓṓṓṓṓṓṓ董卿丝袜ṓṓṓṓṓṓṓṓṓṓṓṓṓṓṓṓṓṓ男人穿丝袜ṓṓṓṓṓṓṓṓṓx.meinv95.com</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65047">
+<article class="comment" id="comment-65047">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://weibo.com/1014882133" rel="external nofollow">沙碛中的云</a></span> on <a href="http://www.acmerblog.com/jiudu-1500-5945.html#comment-65047" rel="nofollow"><time datetime="2017-03-10T23:38:23+00:00" pubdate="">2017年3月10日 at 下午11:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>lower_bound函数不是用于有序数组么。。。是我理解有问题？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30541">
+<article class="comment" id="comment-30541">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">we</a></span> on <a href="http://www.acmerblog.com/jiudu-1500-5945.html#comment-30541" rel="nofollow"><time datetime="2015-07-01T01:02:35+00:00" pubdate="">2015年7月1日 at 上午1:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>great!</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30543">
+<article class="comment" id="comment-30543">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1193658339</a></span> on <a href="http://www.acmerblog.com/jiudu-1500-5945.html#comment-30543" rel="nofollow"><time datetime="2015-05-26T00:28:53+00:00" pubdate="">2015年5月26日 at 上午12:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢支持！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58827">
+<article class="comment" id="comment-58827">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tangzhihua</a></span> on <a href="http://www.acmerblog.com/jiudu-1500-5945.html#comment-58827" rel="nofollow"><time datetime="2015-05-23T06:52:38+00:00" pubdate="">2015年5月23日 at 上午6:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>顺利测试通过了，多谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30540">
+<article class="comment" id="comment-30540">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Aifan</a></span> on <a href="http://www.acmerblog.com/jiudu-1500-5945.html#comment-30540" rel="nofollow"><time datetime="2015-04-26T18:06:46+00:00" pubdate="">2015年4月26日 at 下午6:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>顺利测试通过了，多谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58828">
+<article class="comment" id="comment-58828">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">lsdtc1225</a></span> on <a href="http://www.acmerblog.com/jiudu-1500-5945.html#comment-58828" rel="nofollow"><time datetime="2015-03-06T00:36:23+00:00" pubdate="">2015年3月6日 at 上午12:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>88行是多余的，可以删除</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30544">
+<article class="comment" id="comment-30544">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Monkey_Sun</a></span> on <a href="http://www.acmerblog.com/jiudu-1500-5945.html#comment-30544" rel="nofollow"><time datetime="2014-12-20T11:33:03+00:00" pubdate="">2014年12月20日 at 上午11:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>修改一下吧 …</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30542">
+<article class="comment" id="comment-30542">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">biantiao</a></span> on <a href="http://www.acmerblog.com/jiudu-1500-5945.html#comment-30542" rel="nofollow"><time datetime="2014-10-25T16:59:20+00:00" pubdate="">2014年10月25日 at 下午4:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我是来看评论的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63619">
+<article class="comment" id="comment-63619">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Emlar</a></span> on <a href="http://www.acmerblog.com/jiudu-1500-5945.html#comment-63619" rel="nofollow"><time datetime="2014-10-15T18:16:19+00:00" pubdate="">2014年10月15日 at 下午6:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>原来欧几里德定理应用这么多</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63618">
+<article class="comment" id="comment-63618">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">woweizhineng</a></span> on <a href="http://www.acmerblog.com/jiudu-1500-5945.html#comment-63618" rel="nofollow"><time datetime="2014-09-21T14:43:53+00:00" pubdate="">2014年9月21日 at 下午2:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>分析的很专业！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,260 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>09-17</div>
+<div class="tit"><h1 class="entry-title">HDU 4691-Front compression-动态规划-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/basis/string" rel="category tag" title="查看字符串处理中的全部文章">字符串处理</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a></span><span class="i4">围观71次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7736" href="http://www.acmerblog.com/hdu-4691-front-compression-7736.html#comments" title="《HDU 4691-Front compression-动态规划-[解题报告]HOJ》上的评论">6 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Front compression</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Front compression is a type of delta encoding compression algorithm whereby common prefixes and their lengths are recorded so that they need not be duplicated. For example:<br/><center><img alt="EBCDIC" src="http://www.acmerblog.com/img/1447893420800.jpg" style="max-width:100%;"/></center><br/>The size of the input is 43 bytes, while the size of the compressed output is <strong>40</strong>. Here, every space and newline is also counted as 1 byte.<br/>Given the input, each line of which is a substring of a long string, what are sizes of it and corresponding compressed output? </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+There are multiple test cases. Process to the End of File.<br/>The first line of each test case is a long string S made up of lowercase letters, whose length doesn’t exceed 100,000. The second line contains a integer 1 ≤ N ≤ 100,000, which is the number of lines in the input. Each of the following N lines contains two integers 0 ≤ A &lt; B ≤ length(S), indicating that that line of the input is substring [A, B) of S. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+There are multiple test cases. Process to the End of File.<br/>The first line of each test case is a long string S made up of lowercase letters, whose length doesn't exceed 100,000. The second line contains a integer 1 ≤ N ≤ 100,000, which is the number of lines in the input. Each of the following N lines contains two integers 0 ≤ A &lt; B ≤ length(S), indicating that that line of the input is substring [A, B) of S.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+frcode
+2
+0 6
+0 6
+unitedstatesofamerica
+3
+0 6
+0 12
+0 21
+myxophytamyxopodnabnabbednabbingnabit
+6
+0 9
+9 16
+16 19
+19 25
+25 32
+32 37</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+14 12
+42 31
+43 40</pre>
+<p> <!-- problem end --></p>
+<p><span style="color:rgb(83,83,83); font-family:Helvetica,Arial,sans-serif,simsun; line-height:20px; white-space:nowrap">后缀数组：寻找前一个区间与当前区间的前缀字符数目最多为多少</span></p>
+<p><span style="color:rgb(83,83,83); font-family:Helvetica,Arial,sans-serif,simsun; line-height:20px; white-space:nowrap"></span></p>
+<pre class="brush:cpp" name="code">#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+#include &lt;algorithm&gt;
+using namespace std;
+#define LL long long
+#define N 100010
+char s[N];
+int m,n,len;
+int t[N],t2[N],c[N],height[N],sa[N],rank[N],dp[N][20],cnt[N];
+//sa   代表等级为i的下标
+//rank  代表下标为i的等级
+//height  代表字符串由最低位排序到最高位相邻两个字符串的前缀相同个数
+
+void build_sa()
+{
+    m=27;
+    int *x=t,*y=t2;
+    for(int i=0; i&lt;m; ++i) c[i]=0;
+    for(int i=0; i&lt;n; ++i) ++c[x[i]=cnt[i]];
+    for(int i=1; i&lt;m; ++i) c[i]+=c[i-1];
+    for(int i=n-1; i&gt;=0; –i) sa[--c[x[i]]]=i;
+    for(int k=1; k&lt;=n; k&lt;&lt;=1)
+    {
+        int p=0;
+        for(int i=n-k; i&lt;n; ++i) y[p++]=i;
+        for(int i=0; i&lt;n; ++i) if(k&lt;=sa[i]) y[p++]=sa[i]-k;
+
+        for(int i=0; i&lt;m; ++i) c[i]=0;
+        for(int i=0; i&lt;n; ++i) ++c[x[y[i]]];
+        for(int i=1; i&lt;m; ++i) c[i]+=c[i-1];
+        for(int i=n-1; i&gt;=0; –i) sa[--c[x[y[i]]]]=y[i];
+
+        swap(x,y);
+        p=1,x[sa[0]]=0;
+        for(int i=1; i&lt;n; ++i)
+            x[sa[i]]=y[sa[i]]==y[sa[i-1]]&amp;&amp;y[sa[i]+k]==y[sa[i-1]+k]?p-1:p++;
+        if(p&gt;=n) break;
+        m=p;
+    }
+}
+
+void get_height()
+{
+    for(int i=0; i&lt;=len; ++i) rank[sa[i]]=i;
+    for(int i=0,k=0; i&lt;len; ++i)
+    {
+        if(k) –k;
+        if(rank[i]-1&lt;0) continue;
+        int j=sa[rank[i]-1];
+        while(cnt[i+k]==cnt[j+k]) ++k;
+        height[rank[i]]=k;
+    }
+}
+
+void rmq_init()
+{
+    int i,j;
+    for(i=1;i&lt;=len;i++)dp[i][0]=height[i];
+    for(j=1;(1&lt;&lt;j)&lt;=len;j++){
+        for(i=1;i+(1&lt;&lt;j)-1&lt;=len;i++){
+            dp[i][j]=min(dp[i][j-1],dp[i+(1&lt;&lt;(j-1))][j-1]);
+        }
+    }
+}
+
+int RMQ(int L,int R)
+{
+    int k=0;
+    while((1&lt;&lt;(k+1))&lt;=R-L+1) ++k;
+    return  min(dp[L][k],dp[R-(1&lt;&lt;k)+1][k]);
+}
+
+void RMQ_init()
+{
+    for(int i=0; i&lt;=len; ++i)  dp[i][0]=height[i];
+    for(int j=1; (1&lt;&lt;j)&lt;=len; ++j)
+        for(int i=1; i+(1&lt;&lt;j)-1&lt;=len; ++i)
+            dp[i][j]=min(dp[i][j-1],dp[i+(1&lt;&lt;(j-1))][j-1]);
+}
+
+int lcp(int a,int l)
+{
+    if(a==l) return len-a;
+    int u=rank[a],v=rank[l];
+    if(u&gt;v) return RMQ(v+1,u);
+    else return RMQ(u+1,v);
+}
+
+int cal(int p)
+{
+    int v=p;
+    for(int i=1;; ++i)
+        if(v/10==0) return i;
+        else v/=10;
+}
+int main()
+{
+   // freopen("in.txt","r",stdin);
+    while(scanf("%s",s)!=EOF)
+    {
+        len=strlen(s);
+        for(int i=0; i&lt;len; ++i) cnt[i]=s[i]-’a'+1;
+        cnt[len]=0;
+        n=len+1;
+        build_sa();
+        get_height();
+        RMQ_init();
+        int t,a,b,l,r;
+        LL ans1,ans2;
+        scanf("%d",&amp;t);
+        scanf("%d %d",&amp;a,&amp;b);
+        ans1=b-a+1;
+        ans2=b-a+3;
+        –t;
+        while(t–)
+        {
+            scanf("%d %d",&amp;l,&amp;r);
+            ans1=ans1+r-l+1;
+            int p=min(lcp(a,l),min(b-a,r-l));
+            ans2=ans2+(r-l)-p+2+cal(p);
+            a=l,b=r;
+        }
+        printf("%I64d %I64d\n",ans1,ans2);
+    }
+    return 0;
+}</pre>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/moyan_min/article/details/12032835</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-97154">
+<article class="comment" id="comment-97154">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522149" rel="external nofollow">新用户765569</a></span> on <a href="http://www.acmerblog.com/hdu-4691-front-compression-7736.html#comment-97154" rel="nofollow"><time datetime="2017-04-20T00:52:31+00:00" pubdate="">2017年4月20日 at 上午12:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>习近平指出：“要转作风改文风，俯下身、沉下心，察实情、说实话、动真情，努力推出有思想、有温度、有品质的作品。要严格要求自己，加强道德修养，保持一身正气。要深化新闻单位干部人事制度改革，对新闻舆论工作者在政治上充分信任、工作上大胆使用、生活上真诚关心、待遇</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65299">
+<article class="comment" id="comment-65299">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.wx31.com/" rel="external nofollow">高仿手表</a></span> on <a href="http://www.acmerblog.com/hdu-4691-front-compression-7736.html#comment-65299" rel="nofollow"><time datetime="2017-03-26T08:06:08+00:00" pubdate="">2017年3月26日 at 上午8:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>超A Christian Dior(迪奥)Louis Vuitton(路易威登/LV)Elizabeth and JamesYIJIUJIUYI(壹玖玖壹)www.118v.net</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65278">
+<article class="comment" id="comment-65278">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">丝袜吧</span> on <a href="http://www.acmerblog.com/hdu-4691-front-compression-7736.html#comment-65278" rel="nofollow"><time datetime="2017-03-25T12:02:01+00:00" pubdate="">2017年3月25日 at 下午12:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>丝袜塞嘴ꁟ刘晓洁丝袜ꁟ2014cj开幕美腿林立ꁟ丝袜艺术ꁟ嫩白玉足ꁟwww.518mei.com</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65249">
+<article class="comment" id="comment-65249">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.kaixin001.com/home/?uid=179409535" rel="external nofollow">虞萍</a></span> on <a href="http://www.acmerblog.com/hdu-4691-front-compression-7736.html#comment-65249" rel="nofollow"><time datetime="2017-03-23T20:03:04+00:00" pubdate="">2017年3月23日 at 下午8:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>ো原单批发োZOUDEHONG(走得鸿)Vancleefarperl(梵克雅宝)THOM BROWNE(汤姆.布朗)g1f.ahuo.cf</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65202">
+<article class="comment" id="comment-65202">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://360meimei.com/" rel="external nofollow">妩媚图片</a></span> on <a href="http://www.acmerblog.com/hdu-4691-front-compression-7736.html#comment-65202" rel="nofollow"><time datetime="2017-03-22T11:29:32+00:00" pubdate="">2017年3月22日 at 上午11:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>ڳ制服美女 <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/06/chn_xiayan_org.gif"/> 韩国美女主播王李丹妮写真美女穿丝袜翘臀美女大胸人体艺术av天堂电影网www.mm88.ml</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65082">
+<article class="comment" id="comment-65082">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://360meimei.com/" rel="external nofollow">18禁</a></span> on <a href="http://www.acmerblog.com/hdu-4691-front-compression-7736.html#comment-65082" rel="nofollow"><time datetime="2017-03-18T21:44:08+00:00" pubdate="">2017年3月18日 at 下午9:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>美乳 av快播影院se妹妹hTtP://6697.mm88.gq</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

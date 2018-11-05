@@ -1,0 +1,615 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>06-09</div>
+<div class="tit"><h1 class="entry-title">模拟退火算法-TSP问题</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/zhuanti/algorithm" rel="category tag" title="查看算法分析中的全部文章">算法分析</a></span><span class="i4">围观4139次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5841" href="http://www.acmerblog.com/simulated-annealing-algorithm-tsp-5841.html#comments" title="《模拟退火算法-TSP问题》上的评论">30 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p>求某些最优化问题的最优解是一个极其困难的任务。这是因为当一个问题变得足够大时，我们需要搜索一个巨大数量的可能解，从而找到最优的解决方案。在这种情况下，就不能指望找到一个最优函数在一个合理的时间内解决问题，应该尝试找到一个近似解。</p>
+<p>一个经典的案例是：<a href="http://www.baidu.com/link?url=Se6-D1pWY__dIFSSKGlkZCjBDKGzMKnFhjtn-q2whuuU7SDyatmUdLwJnhcoQrarf7_nu0XdAs2wk4qyYKNhcg4XesynlUJpKWYUBC5SdbJYsjauTV6LHJwGZHnGwM49VEDrM3vDzBI9DXPFjhcWfq&amp;wd=%E6%97%85%E8%A1%8C%E5%95%86%E9%97%AE%E9%A2%98&amp;issp=1&amp;ie=utf-8&amp;tn=baiduhome_pg&amp;oq=%E6%97%85%E8%A1%8C%E5%95%86&amp;f=3&amp;rsp=0&amp;inputT=3655">旅行商问题 </a>( TSP , Traveling Salesman Problem ) ：有N个城市，要求从其中某个问题出发，唯一遍历所有城市，再回到出发的城市，求最短的路线。使用模拟退火算法可以比较快的求出TSP的一条近似最优路径。（和<a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html">遗传算法求解TSP</a>类似，前面的文章已做介绍）。</p>
+<p><strong>模拟退火是什么?</strong><br/>
+首先,让我们看看模拟退火是如何工作的,以及为什么它是善于解决旅行商问题。模拟退火（Simulated Annealing，简称SA）是一种通用概率算法，用来在一个大的搜寻空间内找寻命题的最优解。该算法是源于对热力学中退火过程的模拟，在某一给定初温下，通过缓慢下降温度参数，使算法能够在多项式时间内给出一个近似最优解。退火与冶金学上的‘退火’相似，而与冶金学的淬火有很大区别，前者是温度缓慢下降，后者是温度迅速下降。我们将热力学的理论套用到统计学上，将搜寻空间内每一点想像成空气内的分子；分子的能量，就是它本身的动能；而搜寻空间内的每一点，也像空气分子一样带有“能量”，以表示该点对命题的合适程度。算法先以搜寻空间内一个任意点作起始：每一步先选择一个“邻居”，然后再计算从现有位置到达“邻居”的概率。</p>
+<p><strong>模拟退火的优点</strong><br/>
+先来说下爬山算法(以下参考：<a href="http://www.cnblogs.com/heaad/archive/2010/12/20/1911614.html" id="cb_post_title_url">大白话解析模拟退火算法</a>)：爬山算法是一种简单的贪心搜索算法，该算法每次从当前解的临近解空间中选择一个最优解作为当前解，直到达到一个局部最优解。爬山算法实现很简单，其主要缺点是会陷入局部最优解，而不一定能搜索到全局最优解。如图1所示：假设C点为当前解，爬山算法搜索到A点这个局部最优解就会停止搜索，因为在A点无论向那个方向小幅度移动都不能得到更优的解。爬山法是完完全全的贪心法，每次都鼠目寸光的选择一个当前最优解，因此只能搜索到局部的最优值。</p>
+<p><img alt="" src="http://pic002.cnblogs.com/images/2010/63234/2010122016525713.png"/><br/>
+模拟退火其实也是一种贪心算法，但是它的搜索过程引入了随机因素。模拟退火算法以一定的概率来接受一个比当前解要差的解，因此有可能会跳出这个局部的最优解，达到全局的最优解。以图1为例，模拟退火算法在搜索到局部最优解A后，会以一定的概率接受到E的移动。<br/>
+也许经过几次这样的不是局部最优的移动后会到达D点，于是就跳出了局部最大值A。<br/>
+模拟退火算法描述：<br/>
+若J( Y(i+1) )&gt;= J( Y(i) )  (即移动后得到更优解)，则总是接受该移动<br/>
+若J( Y(i+1) )&lt; J( Y(i) )  (即移动后的解比当前解要差)，则以一定的概率接受移动，而且这个概率随着时间推移逐渐降低（逐渐降低才能趋向稳定）<br/>
+这里的“一定的概率”的计算参考了金属冶炼的退火过程，这也是模拟退火算法名称的由来。<br/>
+根据热力学的原理，在温度为T时，出现能量差为dE的降温的概率为P(dE)，表示为：<br/>
+<strong>　P(dE) = exp( dE/(kT) )</strong><br/>
+其中k是一个常数，exp表示自然指数，且dE&lt;0。这条公式说白了就是：温度越高，出现一次能量差为dE的降温的概率就越大；温度越低，则出现降温的概率就越小。<br/>
+又由于dE总是小于0（否则就不叫退火了），因此dE/kT &lt; 0 ，所以P(dE)的函数取值范围是(0,1) 。<br/>
+随着温度T的降低，P(dE)会逐渐降低。我们将一次向较差解的移动看做一次温度跳变过程，我们以概率P(dE)来接受这样的移动。<br/>
+关于爬山算法与模拟退火，有一个有趣的比喻：<br/>
+爬山算法：兔子朝着比现在高的地方跳去。它找到了不远处的最高山峰。但是这座山不一定是珠穆朗玛峰。这就是爬山算法，它不能保证局部最优值就是全局最优值。<br/>
+模拟退火：兔子喝醉了。它随机地跳了很长时间。这期间，它可能走向高处，也可能踏入平地。但是，它渐渐清醒了并朝最高方向跳去。这就是模拟退火。</p>
+<p><strong>接受函数</strong><br/>
+接受函数决定选择哪一个解决方案，从而可以避免掉一些局部最优解。<br/>
+首先我们检查如果相邻的解决方案是比我们目前的解决方案好，如果是，我们接受它。否则的话，我们需要考虑的几个因素：<br/>
+1) 相邻的解决方案有多不好; 2) 当前的温度有多高。在高温系统下更有可能接受较糟糕的解决方案。<br/>
+这里是简单的数学公式：exp( (solutionEnergy – neighbourEnergy) / temperature )，即上面的　P(dE) = exp( dE/(kT) )<br/>
+<strong>算法过程描述</strong><br/>
+1) 首先,需要设置初始温度和创建一个随机的初始解。<br/>
+2) 然后开始循环,直到满足停止条件。通常系统充分冷却,或找到一个足够好的解决方案。<br/>
+3) 把当前的解决方案做一些小的改变，然后选择一个新的相邻的方案。<br/>
+4) 决定是否移动到相邻的解决方案。<br/>
+5) 降低温度,继续循环<br/>
+<strong>样例代码</strong><br/>
+以TSP问题为例，城市坐标的分布如下所示：<br/>
+<img alt="" class="alignnone" height="320" src="http://www.theprojectspot.com/images/post-assets/sa_complete.jpg" width="331"/><br/>
+代码以用Java编写。首先创建一个城市类City.java</p>
+<p> </p>
+<pre class="brush:java">package sa;
+
+public class City {
+    int x;
+    int y;
+
+    // 生成一个随机的城市
+    public City(){
+        this.x = (int)(Math.random()*200);
+        this.y = (int)(Math.random()*200);
+    }
+
+    public City(int x, int y){
+        this.x = x;
+        this.y = y;
+    }
+
+    public int getX(){
+        return this.x;
+    }
+
+    public int getY(){
+        return this.y;
+    }
+
+    // 计算两个城市之间的距离
+    public double distanceTo(City city){
+        int xDistance = Math.abs(getX() - city.getX());
+        int yDistance = Math.abs(getY() - city.getY());
+        double distance = Math.sqrt( (xDistance*xDistance) + (yDistance*yDistance) );
+
+        return distance;
+    }
+
+    @Override
+    public String toString(){
+        return getX()+", "+getY();
+    }
+}</pre>
+<p>Tour类，代表一个解决方案，即旅行的路径。</p>
+<pre class="brush:java">package sa;
+
+import java.util.ArrayList;
+import java.util.Collections;
+
+public class Tour{
+
+    // 保持城市的列表
+    private ArrayList tour = new ArrayList&lt;City&gt;();
+    // 缓存距离
+    private int distance = 0;
+
+    // 生成一个空的路径
+    public Tour(){
+        for (int i = 0; i &lt; SimulatedAnnealing.allCitys.size(); i++) {
+            tour.add(null);
+        }
+    }
+
+    // 复杂路径
+    public Tour(ArrayList tour){
+        this.tour = (ArrayList) tour.clone();
+    }
+
+    public ArrayList getTour(){
+        return tour;
+    }
+
+    // Creates a random individual
+    public void generateIndividual() {
+        // Loop through all our destination cities and add them to our tour
+        for (int cityIndex = 0; cityIndex &lt; SimulatedAnnealing.allCitys.size(); cityIndex++) {
+          setCity(cityIndex, SimulatedAnnealing.allCitys.get(cityIndex));
+        }
+        // 随机的打乱
+        Collections.shuffle(tour);
+    }
+
+    // 获取一个城市
+    public City getCity(int tourPosition) {
+        return (City)tour.get(tourPosition);
+    }
+
+    public void setCity(int tourPosition, City city) {
+        tour.set(tourPosition, city);
+        // 重新计算距离
+        distance = 0;
+    }
+
+    // 获得当前距离的 总花费
+    public int getDistance(){
+        if (distance == 0) {
+            int tourDistance = 0;
+            for (int cityIndex=0; cityIndex &lt; tourSize(); cityIndex++) {
+                City fromCity = getCity(cityIndex);
+                City destinationCity;
+                if(cityIndex+1 &lt; tourSize()){
+                    destinationCity = getCity(cityIndex+1);
+                }
+                else{
+                    destinationCity = getCity(0);
+                }
+                tourDistance += fromCity.distanceTo(destinationCity);
+            }
+            distance = tourDistance;
+        }
+        return distance;
+    }
+
+    // 获得当前路径中城市的数量
+    public int tourSize() {
+        return tour.size();
+    }
+
+    @Override
+    public String toString() {
+        String geneString = "|";
+        for (int i = 0; i &lt; tourSize(); i++) {
+            geneString += getCity(i)+"|";
+        }
+        return geneString;
+    }
+}</pre>
+<p>最后是算法的实现类，和相应的测试</p>
+<pre class="brush:java">package sa;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class SimulatedAnnealing {
+
+	public static List&lt;City&gt; allCitys = new ArrayList&lt;City&gt;();
+
+    //计算 接受的概率
+    public static double acceptanceProbability(int energy, int newEnergy, double temperature) {
+        // 如果新的解决方案较优，就接受
+        if (newEnergy &lt; energy) {
+            return 1.0;
+        }
+        return Math.exp((energy - newEnergy) / temperature);
+    }
+
+    public static void main(String[] args) {
+        // 创建所有的城市城市列表
+        init();
+        Tour best = sa();
+        System.out.println("Final solution distance: " + best.getDistance());
+        System.out.println("Tour: " + best);
+    }
+
+	//返回近似的 最佳旅行路径
+	private static Tour sa() {
+		// 初始化温度
+        double temp = 10000;
+
+        // 冷却概率
+        double coolingRate = 0.003;
+
+        // 初始化的解决方案
+        Tour currentSolution = new Tour();
+        currentSolution.generateIndividual();
+
+        System.out.println("Initial solution distance: " + currentSolution.getDistance());
+
+        // 设置当前为最优的方案
+        Tour best = new Tour(currentSolution.getTour());
+
+        // 循环知道系统冷却
+        while (temp &gt; 1) {
+            // 生成一个邻居
+            Tour newSolution = new Tour(currentSolution.getTour());
+
+            // 获取随机位置
+            int tourPos1 = (int) (newSolution.tourSize() * Math.random());
+            int tourPos2 = (int) (newSolution.tourSize() * Math.random());
+
+            City citySwap1 = newSolution.getCity(tourPos1);
+            City citySwap2 = newSolution.getCity(tourPos2);
+
+            // 交换
+            newSolution.setCity(tourPos2, citySwap1);
+            newSolution.setCity(tourPos1, citySwap2);
+
+            // 获得新的解决方案的花费
+            int currentEnergy = currentSolution.getDistance();
+            int neighbourEnergy = newSolution.getDistance();
+
+            // 决定是否接受新的 方案
+            if (acceptanceProbability(currentEnergy, neighbourEnergy, temp) &gt; Math.random()) {
+                currentSolution = new Tour(newSolution.getTour());
+            }
+
+            // 记录找到的最优方案
+            if (currentSolution.getDistance() &lt; best.getDistance()) {
+                best = new Tour(currentSolution.getTour());
+            }
+
+            // 冷却
+            temp *= 1-coolingRate;
+        }
+		return best;
+	}
+
+	private static void init() {
+		City city = new City(60, 200);
+	    allCitys.add(city);
+	    City city2 = new City(180, 200);
+	    allCitys.add(city2);
+	    City city3 = new City(80, 180);
+	    allCitys.add(city3);
+	    City city4 = new City(140, 180);
+	    allCitys.add(city4);
+	    City city5 = new City(20, 160);
+	    allCitys.add(city5);
+	    City city6 = new City(100, 160);
+	    allCitys.add(city6);
+	    City city7 = new City(200, 160);
+	    allCitys.add(city7);
+	    City city8 = new City(140, 140);
+	    allCitys.add(city8);
+	    City city9 = new City(40, 120);
+	    allCitys.add(city9);
+	    City city10 = new City(100, 120);
+	    allCitys.add(city10);
+	    City city11 = new City(180, 100);
+	    allCitys.add(city11);
+	    City city12 = new City(60, 80);
+	    allCitys.add(city12);
+	    City city13 = new City(120, 80);
+	    allCitys.add(city13);
+	    City city14 = new City(180, 60);
+	    allCitys.add(city14);
+	    City city15 = new City(20, 40);
+	    allCitys.add(city15);
+	    City city16 = new City(100, 40);
+	    allCitys.add(city16);
+	    City city17 = new City(200, 40);
+	    allCitys.add(city17);
+	    City city18 = new City(20, 20);
+	    allCitys.add(city18);
+	    City city19 = new City(60, 20);
+	    allCitys.add(city19);
+	    City city20 = new City(160, 20);
+	    allCitys.add(city20);
+	}
+}</pre>
+<p>输出：</p>
+<pre class="brush:other">Initial solution distance: 2122
+Final solution distance: 981
+Tour: |180, 100|180, 60|200, 40|160, 20|100, 40|60, 20|20, 20|20, 40|60, 80|100, 160|80, 180|60, 200|20, 160|40, 120|100, 120|120, 80|200, 160|180, 200|140, 180|140, 140|</pre>
+<p>和遗传算法类似，该算法也是概率算法，结果为近似和不确定的。</p>
+<p>参考：http://www.theprojectspot.com/tutorial-post/simulated-annealing-algorithm-for-beginners/6</p>
+<p>http://www.cnblogs.com/heaad/archive/2010/12/20/1911614.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75494">
+<article class="comment" id="comment-75494">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520562" rel="external nofollow">新用户515127</a></span> on <a href="http://www.acmerblog.com/simulated-annealing-algorithm-tsp-5841.html#comment-75494" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>煞笔啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75493">
+<article class="comment" id="comment-75493">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520562" rel="external nofollow">新用户515127</a></span> on <a href="http://www.acmerblog.com/simulated-annealing-algorithm-tsp-5841.html#comment-75493" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>煞笔啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75492">
+<article class="comment" id="comment-75492">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520562" rel="external nofollow">新用户515127</a></span> on <a href="http://www.acmerblog.com/simulated-annealing-algorithm-tsp-5841.html#comment-75492" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>煞笔啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75491">
+<article class="comment" id="comment-75491">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520562" rel="external nofollow">新用户515127</a></span> on <a href="http://www.acmerblog.com/simulated-annealing-algorithm-tsp-5841.html#comment-75491" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>煞笔啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75490">
+<article class="comment" id="comment-75490">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520562" rel="external nofollow">新用户515127</a></span> on <a href="http://www.acmerblog.com/simulated-annealing-algorithm-tsp-5841.html#comment-75490" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>煞笔啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75489">
+<article class="comment" id="comment-75489">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520562" rel="external nofollow">新用户515127</a></span> on <a href="http://www.acmerblog.com/simulated-annealing-algorithm-tsp-5841.html#comment-75489" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>煞笔啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75488">
+<article class="comment" id="comment-75488">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520562" rel="external nofollow">新用户515127</a></span> on <a href="http://www.acmerblog.com/simulated-annealing-algorithm-tsp-5841.html#comment-75488" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>煞笔啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75487">
+<article class="comment" id="comment-75487">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520562" rel="external nofollow">新用户515127</a></span> on <a href="http://www.acmerblog.com/simulated-annealing-algorithm-tsp-5841.html#comment-75487" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>煞笔啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75486">
+<article class="comment" id="comment-75486">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520562" rel="external nofollow">新用户515127</a></span> on <a href="http://www.acmerblog.com/simulated-annealing-algorithm-tsp-5841.html#comment-75486" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>煞笔啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75485">
+<article class="comment" id="comment-75485">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520562" rel="external nofollow">新用户515127</a></span> on <a href="http://www.acmerblog.com/simulated-annealing-algorithm-tsp-5841.html#comment-75485" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>煞笔啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75484">
+<article class="comment" id="comment-75484">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520562" rel="external nofollow">新用户515127</a></span> on <a href="http://www.acmerblog.com/simulated-annealing-algorithm-tsp-5841.html#comment-75484" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>煞笔啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65142">
+<article class="comment" id="comment-65142">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">制服美腿</span> on <a href="http://www.acmerblog.com/simulated-annealing-algorithm-tsp-5841.html#comment-65142" rel="nofollow"><time datetime="2017-03-19T17:28:29+00:00" pubdate="">2017年3月19日 at 下午5:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>୧纤纤玉足୧୧丝袜高跟网站୧୧美腿丝袜视频୧୧高跟踩踏网站୧୧短裙黑丝袜୧୧干黑丝袜女୧୧高跟单鞋图片୧meizi1.com</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65104">
+<article class="comment" id="comment-65104">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.kaixin001.com/home/?uid=179216887" rel="external nofollow">颜梦</a></span> on <a href="http://www.acmerblog.com/simulated-annealing-algorithm-tsp-5841.html#comment-65104" rel="nofollow"><time datetime="2017-03-19T04:24:30+00:00" pubdate="">2017年3月19日 at 上午4:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>注册送58元 大总督企鹅3559782115</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64903">
+<article class="comment" id="comment-64903">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">matlab君</span> on <a href="http://www.acmerblog.com/simulated-annealing-algorithm-tsp-5841.html#comment-64903" rel="nofollow"><time datetime="2016-11-26T16:08:39+00:00" pubdate="">2016年11月26日 at 下午4:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我用得出了更优解855，城市顺序    12    18    15    19    16    13    10     9     5     1     3     6     4     2     7     8    11    14    17    20</p>
+</div>
+</article><!-- #comment-## -->
+<ul class="children">
+<li class="comment even depth-2" id="li-comment-64904">
+<article class="comment" id="comment-64904">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">matlab君</span> on <a href="http://www.acmerblog.com/simulated-annealing-algorithm-tsp-5841.html#comment-64904" rel="nofollow"><time datetime="2016-11-26T16:31:18+00:00" pubdate="">2016年11月26日 at 下午4:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>写错了不好意思，890，对应顺序：4     2     7     8    10    13    11    14    17    20    16    19    18    15    12     9     5     1     3     6</p>
+</div>
+</article><!-- #comment-## -->
+<ul class="children">
+<li class="comment odd alt depth-3" id="li-comment-64906">
+<article class="comment" id="comment-64906">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">matlab君</span> on <a href="http://www.acmerblog.com/simulated-annealing-algorithm-tsp-5841.html#comment-64906" rel="nofollow"><time datetime="2016-11-26T18:37:50+00:00" pubdate="">2016年11月26日 at 下午6:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>871 15    18    19    16    13    20    17    14    11     7     2     4     8    10     6     3     1     5     9    12</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ul><!-- .children -->
+</li><!-- #comment-## -->
+</ul><!-- .children -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63595">
+<article class="comment" id="comment-63595">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Yaunxi</a></span> on <a href="http://www.acmerblog.com/simulated-annealing-algorithm-tsp-5841.html#comment-63595" rel="nofollow"><time datetime="2015-06-26T11:52:54+00:00" pubdate="">2015年6月26日 at 上午11:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>约瑟夫也用说这么长……很成熟的一个问题了，分治的方法解起来o(n)就可以了，有兴趣可以看看具体数学的第一章，关于约瑟夫问题推导出了一系列的结论，很漂亮</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58789">
+<article class="comment" id="comment-58789">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Cloudy</a></span> on <a href="http://www.acmerblog.com/simulated-annealing-algorithm-tsp-5841.html#comment-58789" rel="nofollow"><time datetime="2015-05-27T16:30:26+00:00" pubdate="">2015年5月27日 at 下午4:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好，注释很详细啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30405">
+<article class="comment" id="comment-30405">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiaoliubuer</a></span> on <a href="http://www.acmerblog.com/simulated-annealing-algorithm-tsp-5841.html#comment-30405" rel="nofollow"><time datetime="2015-04-27T01:22:03+00:00" pubdate="">2015年4月27日 at 上午1:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>使用ListNodeWrapper很蹩脚的感觉，没有更好的解决办法？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-3206">
+<article class="comment" id="comment-3206">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">顶顶顶顶顶</span> on <a href="http://www.acmerblog.com/simulated-annealing-algorithm-tsp-5841.html#comment-3206" rel="nofollow"><time datetime="2015-04-10T11:22:47+00:00" pubdate="">2015年4月10日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给力！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49388">
+<article class="comment" id="comment-49388">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">woweizhineng</a></span> on <a href="http://www.acmerblog.com/simulated-annealing-algorithm-tsp-5841.html#comment-49388" rel="nofollow"><time datetime="2015-02-27T11:23:24+00:00" pubdate="">2015年2月27日 at 上午11:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很强大啊，佩服</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58787">
+<article class="comment" id="comment-58787">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">radish</a></span> on <a href="http://www.acmerblog.com/simulated-annealing-algorithm-tsp-5841.html#comment-58787" rel="nofollow"><time datetime="2015-02-20T02:50:48+00:00" pubdate="">2015年2月20日 at 上午2:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>具体实现上有所差别，但思路是一样的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30404">
+<article class="comment" id="comment-30404">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">BGPY</a></span> on <a href="http://www.acmerblog.com/simulated-annealing-algorithm-tsp-5841.html#comment-30404" rel="nofollow"><time datetime="2014-11-19T22:24:26+00:00" pubdate="">2014年11月19日 at 下午10:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>即为打印出的组合的个数C(n,r)，假设print函数复杂度为O(1)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58788">
+<article class="comment" id="comment-58788">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jixiangniao993</a></span> on <a href="http://www.acmerblog.com/simulated-annealing-algorithm-tsp-5841.html#comment-58788" rel="nofollow"><time datetime="2014-09-07T01:19:20+00:00" pubdate="">2014年9月7日 at 上午1:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>wt[n - 1]没错，因为下标是[0...n-1]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30406">
+<article class="comment" id="comment-30406">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">WalkCoder</a></span> on <a href="http://www.acmerblog.com/simulated-annealing-algorithm-tsp-5841.html#comment-30406" rel="nofollow"><time datetime="2014-08-07T03:00:41+00:00" pubdate="">2014年8月7日 at 上午3:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我还有个问题想请教一下，就是感觉对于新手来说，递归理解起来有些困难，不知有没有什么好的方法或者什么好的建议？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30407">
+<article class="comment" id="comment-30407">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Miracle-cc</a></span> on <a href="http://www.acmerblog.com/simulated-annealing-algorithm-tsp-5841.html#comment-30407" rel="nofollow"><time datetime="2014-07-29T01:18:31+00:00" pubdate="">2014年7月29日 at 上午1:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算法是程序的灵魂，算法分简单和复杂，如果不搞大数据类，程序员了解一下简单点的算法也是可以的，但是会算法的一定要会编程才行，程序员不一定要会算法，利于自己项目需要的可以简单了解。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58790">
+<article class="comment" id="comment-58790">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fwhappy</a></span> on <a href="http://www.acmerblog.com/simulated-annealing-algorithm-tsp-5841.html#comment-58790" rel="nofollow"><time datetime="2014-07-13T09:15:52+00:00" pubdate="">2014年7月13日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Often We don’t set up on weblogs, but I would like to condition that this established up really forced me individually to do this! considerably outstanding publish</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-569">
+<article class="comment" id="comment-569">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">hello</span> on <a href="http://www.acmerblog.com/simulated-annealing-algorithm-tsp-5841.html#comment-569" rel="nofollow"><time datetime="2014-07-12T09:31:05+00:00" pubdate="">2014年7月12日 at 上午9:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>总结的很全面，学习了！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-566">
+<article class="comment" id="comment-566">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://weibo.com/3016110060" rel="external nofollow">Qu__miko</a></span> on <a href="http://www.acmerblog.com/simulated-annealing-algorithm-tsp-5841.html#comment-566" rel="nofollow"><time datetime="2014-07-11T15:26:51+00:00" pubdate="">2014年7月11日 at 下午3:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给力的文章，例子也非常好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63594">
+<article class="comment" id="comment-63594">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dongxi</a></span> on <a href="http://www.acmerblog.com/simulated-annealing-algorithm-tsp-5841.html#comment-63594" rel="nofollow"><time datetime="2014-06-10T02:01:05+00:00" pubdate="">2014年6月10日 at 上午2:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是往年的笔试题，非在线，主要考察基础，Java会在面试时问到</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

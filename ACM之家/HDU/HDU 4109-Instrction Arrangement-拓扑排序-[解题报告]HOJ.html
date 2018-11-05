@@ -1,0 +1,411 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>04-16</div>
+<div class="tit"><h1 class="entry-title">HDU 4109-Instrction Arrangement-拓扑排序-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph/graph-visit" rel="category tag" title="查看图的遍历中的全部文章">图的遍历</a>, <a href="http://www.acmerblog.com/category/basis/sort" rel="category tag" title="查看排序中的全部文章">排序</a></span><span class="i4">围观505次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7112" href="http://www.acmerblog.com/hdu-4109-instrction-arrangement-7112.html#comments" title="《HDU 4109-Instrction Arrangement-拓扑排序-[解题报告]HOJ》上的评论">26 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Instrction Arrangement</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Ali has taken the Computer Organization and Architecture course this term. He learned that there may be dependence between instructions, like WAR (write after read), WAW, RAW.<br/>If the distance between two instructions is less than the Safe Distance, it will result in hazard, which may cause wrong result. So we need to design special circuit to eliminate hazard. However the most simple way to solve this problem is to add bubbles (useless operation), which means wasting time to ensure that the distance between two instructions is not smaller than the Safe Distance.<br/>The definition of the distance between two instructions is the difference between their beginning times.<br/>Now we have many instructions, and we know the dependent relations and Safe Distances between instructions. We also have a very strong CPU with infinite number of cores, so you can run as many instructions as you want simultaneity, and the CPU is so fast that it just cost 1ns to finish any instruction.<br/>Your job is to rearrange the instructions so that the CPU can finish all the instructions using minimum time. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input consists several testcases.<br/>The first line has two integers N, M (N &lt;= 1000, M &lt;= 10000), means that there are N instructions and M dependent relations.<br/>The following M lines, each contains three integers X, Y , Z, means the Safe Distance between X and Y is Z, and Y should run after X. The instructions are numbered from 0 to N – 1. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input consists several testcases.<br/>The first line has two integers N, M (N &lt;= 1000, M &lt;= 10000), means that there are N instructions and M dependent relations.<br/>The following M lines, each contains three integers X, Y , Z, means the Safe Distance between X and Y is Z, and Y should run after X. The instructions are numbered from 0 to N – 1.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+5 2
+1 2 1
+3 4 1</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+<div style="font-family:Times New Roman;font-size:14px;background-color:F4FBFF;border:#B7CBFF 1px dashed;padding:6px"><div style="font-family:Arial;font-weight:bold;color:#7CA9ED;border-bottom:#B7CBFF 1px dashed"><i>Hint</i></div>
+In the 1st ns, instruction 0, 1 and 3 are executed;
+In the 2nd ns, instruction 2 and 4 are executed.
+So the answer should be 2.
+</div><i style="font-size:1px"> </i></pre>
+<p> <!-- problem end --></p>
+<p>这个算是关键路径的模版题目了，解这个题目之前，首先说下关键路径的含义，传送门（<a>度娘</a>），个人的见解是，关键路径就是木桶的短板问题，比如有一群人约好去某个地方，大家从同一个地方同一时间开始出发，有些人选择骑车，有些人选择走路，有些选择公交。。。。。。那么最迟到达的那个人需要的时间就相当于关键路径。</p>
+<p>
+</p>
+<p>图可能不是连通的，但这个不影响，我们只需要计算最长的那段</p>
+<p>以下是代码，相当于在拓扑排序下求各个点到起点的最<span style="color:#ff0000">长</span>路径</p>
+<p>
+</p>
+<p>
+</p>
+<pre class="brush:cpp" name="code">#include&lt;stdio.h&gt;
+#include&lt;string.h&gt;
+#include&lt;stdlib.h&gt;
+#define val 1001
+struct link
+{
+	int v;
+	int cost;
+	struct link *next;
+};
+struct node
+{
+	struct link *next;
+}vode[val];
+int into[val],ee[val],n,m;//into表示入度，ee表示从最早完成该任务的时间，ee初始化为1
+void topsort();//拓扑排序，边拓扑边求最长路径
+void create_link();
+int main()
+{
+	int i,j,ans;
+	while(scanf("%d %d",&amp;n,&amp;m)!=EOF)
+	{
+		memset(into,0,sizeof(into));
+		for(i=0;i&lt;n;i++)
+			ee[i]=1;
+		create_link();
+		ans=0;
+		topsort();
+		for(i=0;i&lt;n;i++)
+			if(ee[i]&gt;ans) ans=ee[i];
+		printf("%d\n",ans);
+	}
+	return 0;
+}
+void create_link()
+{
+	int i,j,a,b,c;
+	struct link *s;
+	for(i=0;i&lt;n;i++)
+		vode[i].next=NULL;
+	for(i=0;i&lt;m;i++)
+	{
+		scanf("%d %d %d",&amp;a,&amp;b,&amp;c);
+		into[b]++;
+		s=(struct link*)malloc(sizeof(struct link));
+		s-&gt;v=b;
+		s-&gt;cost=c;
+		s-&gt;next=vode[a].next;
+		vode[a].next=s;
+	}
+}
+void topsort()
+{
+	int i,j,v;
+	struct link *p;
+	for(i=0;i&lt;n;i++)
+	{
+		for(j=0;j&lt;n;j++)
+			if(into[j]==0) 
+			{
+				v=j;
+				break;
+			}
+		into[v]=-1;
+		p=vode[v].next;
+		while(p!=NULL)
+		{
+			if(ee[p-&gt;v]&lt;ee[v]+p-&gt;cost)//如果权值和更大，则替换
+				ee[p-&gt;v]=ee[v]+p-&gt;cost;
+			into[p-&gt;v]--;
+			p=p-&gt;next;
+		}
+	}
+}
+</pre>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/yobobobo/article/details/7835970</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-99641">
+<article class="comment" id="comment-99641">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513205" rel="external nofollow">新用户259694</a></span> on <a href="http://www.acmerblog.com/hdu-4109-instrction-arrangement-7112.html#comment-99641" rel="nofollow"><time datetime="2017-04-20T19:26:55+00:00" pubdate="">2017年4月20日 at 下午7:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>额~阅片无数如小小叨，也只能想到他很久以前的一部作品——《放羊的星星》。李威在剧里饰演痴心悲剧男二，男一是林志颖演的哦~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-69984">
+<article class="comment" id="comment-69984">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515057" rel="external nofollow">新用户623986</a></span> on <a href="http://www.acmerblog.com/hdu-4109-instrction-arrangement-7112.html#comment-69984" rel="nofollow"><time datetime="2017-04-11T12:43:24+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>首先要有双女鞋</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-69983">
+<article class="comment" id="comment-69983">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515057" rel="external nofollow">新用户623986</a></span> on <a href="http://www.acmerblog.com/hdu-4109-instrction-arrangement-7112.html#comment-69983" rel="nofollow"><time datetime="2017-04-11T12:43:24+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>首先要有双女鞋</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-69982">
+<article class="comment" id="comment-69982">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515057" rel="external nofollow">新用户623986</a></span> on <a href="http://www.acmerblog.com/hdu-4109-instrction-arrangement-7112.html#comment-69982" rel="nofollow"><time datetime="2017-04-11T12:43:24+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>首先要有双女鞋</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-69981">
+<article class="comment" id="comment-69981">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515057" rel="external nofollow">新用户623986</a></span> on <a href="http://www.acmerblog.com/hdu-4109-instrction-arrangement-7112.html#comment-69981" rel="nofollow"><time datetime="2017-04-11T12:43:24+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>首先要有双女鞋</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-69980">
+<article class="comment" id="comment-69980">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515057" rel="external nofollow">新用户623986</a></span> on <a href="http://www.acmerblog.com/hdu-4109-instrction-arrangement-7112.html#comment-69980" rel="nofollow"><time datetime="2017-04-11T12:43:24+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>首先要有双女鞋</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-69979">
+<article class="comment" id="comment-69979">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515057" rel="external nofollow">新用户623986</a></span> on <a href="http://www.acmerblog.com/hdu-4109-instrction-arrangement-7112.html#comment-69979" rel="nofollow"><time datetime="2017-04-11T12:43:24+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>首先要有双女鞋</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-69978">
+<article class="comment" id="comment-69978">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515057" rel="external nofollow">新用户623986</a></span> on <a href="http://www.acmerblog.com/hdu-4109-instrction-arrangement-7112.html#comment-69978" rel="nofollow"><time datetime="2017-04-11T12:43:24+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>首先要有双女鞋</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-69977">
+<article class="comment" id="comment-69977">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515057" rel="external nofollow">新用户623986</a></span> on <a href="http://www.acmerblog.com/hdu-4109-instrction-arrangement-7112.html#comment-69977" rel="nofollow"><time datetime="2017-04-11T12:43:24+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>首先要有双女鞋</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-69976">
+<article class="comment" id="comment-69976">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515057" rel="external nofollow">新用户623986</a></span> on <a href="http://www.acmerblog.com/hdu-4109-instrction-arrangement-7112.html#comment-69976" rel="nofollow"><time datetime="2017-04-11T12:43:24+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>首先要有双女鞋</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-69975">
+<article class="comment" id="comment-69975">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515057" rel="external nofollow">新用户623986</a></span> on <a href="http://www.acmerblog.com/hdu-4109-instrction-arrangement-7112.html#comment-69975" rel="nofollow"><time datetime="2017-04-11T12:43:24+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>首先要有双女鞋</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-69974">
+<article class="comment" id="comment-69974">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515057" rel="external nofollow">新用户623986</a></span> on <a href="http://www.acmerblog.com/hdu-4109-instrction-arrangement-7112.html#comment-69974" rel="nofollow"><time datetime="2017-04-11T12:43:24+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>首先要有双女鞋</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-60248">
+<article class="comment" id="comment-60248">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Anne</a></span> on <a href="http://www.acmerblog.com/hdu-4109-instrction-arrangement-7112.html#comment-60248" rel="nofollow"><time datetime="2015-07-17T12:11:04+00:00" pubdate="">2015年7月17日 at 下午12:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>华为这题目略显简单啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-52192">
+<article class="comment" id="comment-52192">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">HDC</a></span> on <a href="http://www.acmerblog.com/hdu-4109-instrction-arrangement-7112.html#comment-52192" rel="nofollow"><time datetime="2015-06-30T15:10:44+00:00" pubdate="">2015年6月30日 at 下午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我没看懂题目<br/>
+2<br/>
+5 6 -1 5 4 -7<br/>
+7 0 6 -1 1 -6 7 -5<br/>
+我觉得第一个应该是5 6 -1 5 4 输出是19 5 4<br/>
+第二个是7 0 6 -1 1 -6 7输出是14 7 7<br/>
+不知道题目例子是怎么得出来的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35974">
+<article class="comment" id="comment-35974">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wuzirui</a></span> on <a href="http://www.acmerblog.com/hdu-4109-instrction-arrangement-7112.html#comment-35974" rel="nofollow"><time datetime="2015-06-28T16:55:51+00:00" pubdate="">2015年6月28日 at 下午4:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚开始学习，为啥会报错了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-52191">
+<article class="comment" id="comment-52191">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Cloudy</a></span> on <a href="http://www.acmerblog.com/hdu-4109-instrction-arrangement-7112.html#comment-52191" rel="nofollow"><time datetime="2015-06-26T20:58:52+00:00" pubdate="">2015年6月26日 at 下午8:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>18题的C也是错误的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35971">
+<article class="comment" id="comment-35971">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Anne</a></span> on <a href="http://www.acmerblog.com/hdu-4109-instrction-arrangement-7112.html#comment-35971" rel="nofollow"><time datetime="2015-06-24T13:22:37+00:00" pubdate="">2015年6月24日 at 下午1:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>后面的掩码变量部分乍一看比较难理解，其实就是把32位按照一个整体来看待。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35972">
+<article class="comment" id="comment-35972">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yueyanglou</a></span> on <a href="http://www.acmerblog.com/hdu-4109-instrction-arrangement-7112.html#comment-35972" rel="nofollow"><time datetime="2015-06-13T22:00:24+00:00" pubdate="">2015年6月13日 at 下午10:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>目前为止见过的最易懂的一个，多谢分享</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35969">
+<article class="comment" id="comment-35969">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tonight</a></span> on <a href="http://www.acmerblog.com/hdu-4109-instrction-arrangement-7112.html#comment-35969" rel="nofollow"><time datetime="2015-06-08T14:55:23+00:00" pubdate="">2015年6月8日 at 下午2:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>scanner改用StreamTokenizer就不超时了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35970">
+<article class="comment" id="comment-35970">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">GDUTtian</a></span> on <a href="http://www.acmerblog.com/hdu-4109-instrction-arrangement-7112.html#comment-35970" rel="nofollow"><time datetime="2015-06-03T01:54:54+00:00" pubdate="">2015年6月3日 at 上午1:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我得邮箱cwqbupt@qq.com</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-52194">
+<article class="comment" id="comment-52194">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zrw</a></span> on <a href="http://www.acmerblog.com/hdu-4109-instrction-arrangement-7112.html#comment-52194" rel="nofollow"><time datetime="2015-06-02T19:07:15+00:00" pubdate="">2015年6月2日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>无需用转移方程也可以解决，哈哈</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-52193">
+<article class="comment" id="comment-52193">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jinxiang23</a></span> on <a href="http://www.acmerblog.com/hdu-4109-instrction-arrangement-7112.html#comment-52193" rel="nofollow"><time datetime="2015-06-02T14:27:49+00:00" pubdate="">2015年6月2日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正确性是关键，冲突是都会有的，主要是那种算法冲突的概率低</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35975">
+<article class="comment" id="comment-35975">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Spike</a></span> on <a href="http://www.acmerblog.com/hdu-4109-instrction-arrangement-7112.html#comment-35975" rel="nofollow"><time datetime="2015-05-31T02:45:39+00:00" pubdate="">2015年5月31日 at 上午2:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的题，还是能做出几道的，嘿嘿</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35968">
+<article class="comment" id="comment-35968">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">daisyleedq</a></span> on <a href="http://www.acmerblog.com/hdu-4109-instrction-arrangement-7112.html#comment-35968" rel="nofollow"><time datetime="2015-05-11T14:38:59+00:00" pubdate="">2015年5月11日 at 下午2:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给力，赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35973">
+<article class="comment" id="comment-35973">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wawa</a></span> on <a href="http://www.acmerblog.com/hdu-4109-instrction-arrangement-7112.html#comment-35973" rel="nofollow"><time datetime="2015-04-28T13:34:17+00:00" pubdate="">2015年4月28日 at 下午1:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个后缀数组不是常用的那个.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-60247">
+<article class="comment" id="comment-60247">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">aaa</a></span> on <a href="http://www.acmerblog.com/hdu-4109-instrction-arrangement-7112.html#comment-60247" rel="nofollow"><time datetime="2015-04-22T04:55:36+00:00" pubdate="">2015年4月22日 at 上午4:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈呀！这个Dijkstra模板好长OwQ！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

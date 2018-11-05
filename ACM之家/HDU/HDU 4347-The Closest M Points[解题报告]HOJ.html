@@ -1,0 +1,341 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>05-23</div>
+<div class="tit"><h1 class="entry-title">HDU 4347-The Closest M Points[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观234次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7358" href="http://www.acmerblog.com/hdu-4347-the-closest-m-points-7358.html#comments" title="《HDU 4347-The Closest M Points[解题报告]HOJ》上的评论">21 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">The Closest M Points</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+The course of Software Design and Development Practice is objectionable. ZLC is facing a serious problem .There are many points in K-dimensional space .Given a point. ZLC need to find out the closest m points. Euclidean distance is used as the distance metric between two points. The Euclidean distance between points p and q is the length of the line segment connecting them.In Cartesian coordinates, if p = (p<sub>1</sub>, p<sub>2</sub>,…, p<sub>n</sub>) and q = (q<sub>1</sub>, q<sub>2</sub>,…, q<sub>n</sub>) are two points in Euclidean n-space, then the distance from p to q, or from q to p is given by:<br/><center><img alt="The Beautiful Road" src="http://www.acmerblog.com/img/1441077515271.jpg"/></center><br/>Can you help him solve this problem? </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+In the first line of the text file .there are two non-negative integers n and K. They denote respectively: the number of points, 1 &lt;= n &lt;= 50000, and the number of Dimensions,1 &lt;= K &lt;= 5. In each of the following n lines there is written k integers, representing the coordinates of a point. This followed by a line with one positive integer t, representing the number of queries,1 &lt;= t &lt;=10000.each query contains two lines. The k integers in the first line represent the given point. In the second line, there is one integer m, the number of closest points you should find,1 &lt;= m &lt;=10. The absolute value of all the coordinates will not be more than 10000.<br/>There are multiple test cases. Process to end of file. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+In the first line of the text file .there are two non-negative integers n and K. They denote respectively: the number of points, 1 &lt;= n &lt;= 50000, and the number of Dimensions,1 &lt;= K &lt;= 5. In each of the following n lines there is written k integers, representing the coordinates of a point. This followed by a line with one positive integer t, representing the number of queries,1 &lt;= t &lt;=10000.each query contains two lines. The k integers in the first line represent the given point. In the second line, there is one integer m, the number of closest points you should find,1 &lt;= m &lt;=10. The absolute value of all the coordinates will not be more than 10000.<br/>There are multiple test cases. Process to end of file.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3 2
+1 1
+1 3
+3 4
+2
+2 3
+2
+2 3
+1</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+the closest 2 points are:
+1 3
+3 4
+the closest 1 points are:
+1 3</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include&lt;queue&gt;
+#include&lt;cstdio&gt;
+#include&lt;cstring&gt;
+#include&lt;algorithm&gt;
+using namespace std;
+const int N=55555,K=5;
+const int inf=0x3f3f3f3f;
+
+#define sqr(x) (x)*(x)
+int k,n,idx;   //k涓虹淮鏁�,n涓虹偣鏁�
+struct point
+{
+    int x[K];
+    bool operator &lt; (const point &amp;u) const
+    {
+        return x[idx]&lt;u.x[idx];
+    }
+}po[N];
+
+typedef pair&lt;double,point&gt;tp;
+priority_queue&lt;tp&gt;nq;
+
+struct kdTree
+{
+    point pt[N&lt;&lt;2];
+    int son[N&lt;&lt;2];
+
+    void build(int l,int r,int rt=1,int dep=0)
+    {
+        if(l&gt;r) return;
+        son[rt]=r-l;
+        son[rt*2]=son[rt*2+1]=-1;
+        idx=dep%k;
+        int mid=(l+r)/2;
+        nth_element(po+l,po+mid,po+r+1);
+        pt[rt]=po[mid];
+        build(l,mid-1,rt*2,dep+1);
+        build(mid+1,r,rt*2+1,dep+1);
+    }
+    void query(point p,int m,int rt=1,int dep=0)
+    {
+        if(son[rt]==-1) return;
+        tp nd(0,pt[rt]);
+        for(int i=0;i&lt;k;i++) nd.first+=sqr(nd.second.x[i]-p.x[i]);
+        int dim=dep%k,x=rt*2,y=rt*2+1,fg=0;
+        if(p.x[dim]&gt;=pt[rt].x[dim]) swap(x,y);
+        if(~son[x]) query(p,m,x,dep+1);
+        if(nq.size()&lt;m) nq.push(nd),fg=1;
+        else
+        {
+            if(nd.first&lt;nq.top().first) nq.pop(),nq.push(nd);
+            if(sqr(p.x[dim]-pt[rt].x[dim])&lt;nq.top().first) fg=1;
+        }
+        if(~son[y]&amp;&amp;fg) query(p,m,y,dep+1);
+    }
+}kd;
+int main()
+{
+    while(scanf("%d%d",&amp;n,&amp;k)!=EOF)
+    {
+        for(int i=0;i&lt;n;i++)
+            for(int j=0;j&lt;k;j++)
+                scanf("%d",&amp;po[i].x[j]);
+        kd.build(0,n-1);
+        int t,m;
+        scanf("%d",&amp;t);
+        while(t--)
+        {
+            point ask;
+            for(int j=0;j&lt;k;j++) scanf("%d",&amp;ask.x[j]);
+            scanf("%d",&amp;m); kd.query(ask,m);
+            printf("the closest %d points are:\n", m);
+            point pt[20];
+            for(int j=0;!nq.empty();j++)
+                pt[j]=nq.top().second,nq.pop();
+            for(int j=m-1;j&gt;=0;j--,putchar(10))
+                for(int z=0;z&lt;k;z++)
+                    if(z) printf(" %d",pt[j].x[z]);
+                    else printf("%d",pt[j].x[z]);
+        }
+    }
+    return 0;
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-98418">
+<article class="comment" id="comment-98418">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522997" rel="external nofollow">新用户984951</a></span> on <a href="http://www.acmerblog.com/hdu-4347-the-closest-m-points-7358.html#comment-98418" rel="nofollow"><time datetime="2017-04-20T11:47:13+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98417">
+<article class="comment" id="comment-98417">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522997" rel="external nofollow">新用户984951</a></span> on <a href="http://www.acmerblog.com/hdu-4347-the-closest-m-points-7358.html#comment-98417" rel="nofollow"><time datetime="2017-04-20T11:47:13+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98416">
+<article class="comment" id="comment-98416">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522997" rel="external nofollow">新用户984951</a></span> on <a href="http://www.acmerblog.com/hdu-4347-the-closest-m-points-7358.html#comment-98416" rel="nofollow"><time datetime="2017-04-20T11:47:13+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98415">
+<article class="comment" id="comment-98415">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522997" rel="external nofollow">新用户984951</a></span> on <a href="http://www.acmerblog.com/hdu-4347-the-closest-m-points-7358.html#comment-98415" rel="nofollow"><time datetime="2017-04-20T11:47:13+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98414">
+<article class="comment" id="comment-98414">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522997" rel="external nofollow">新用户984951</a></span> on <a href="http://www.acmerblog.com/hdu-4347-the-closest-m-points-7358.html#comment-98414" rel="nofollow"><time datetime="2017-04-20T11:47:13+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98413">
+<article class="comment" id="comment-98413">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522997" rel="external nofollow">新用户984951</a></span> on <a href="http://www.acmerblog.com/hdu-4347-the-closest-m-points-7358.html#comment-98413" rel="nofollow"><time datetime="2017-04-20T11:47:13+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98412">
+<article class="comment" id="comment-98412">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522997" rel="external nofollow">新用户984951</a></span> on <a href="http://www.acmerblog.com/hdu-4347-the-closest-m-points-7358.html#comment-98412" rel="nofollow"><time datetime="2017-04-20T11:47:13+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98411">
+<article class="comment" id="comment-98411">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522997" rel="external nofollow">新用户984951</a></span> on <a href="http://www.acmerblog.com/hdu-4347-the-closest-m-points-7358.html#comment-98411" rel="nofollow"><time datetime="2017-04-20T11:47:13+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98410">
+<article class="comment" id="comment-98410">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522997" rel="external nofollow">新用户984951</a></span> on <a href="http://www.acmerblog.com/hdu-4347-the-closest-m-points-7358.html#comment-98410" rel="nofollow"><time datetime="2017-04-20T11:47:13+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98409">
+<article class="comment" id="comment-98409">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522997" rel="external nofollow">新用户984951</a></span> on <a href="http://www.acmerblog.com/hdu-4347-the-closest-m-points-7358.html#comment-98409" rel="nofollow"><time datetime="2017-04-20T11:47:13+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98408">
+<article class="comment" id="comment-98408">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522997" rel="external nofollow">新用户984951</a></span> on <a href="http://www.acmerblog.com/hdu-4347-the-closest-m-points-7358.html#comment-98408" rel="nofollow"><time datetime="2017-04-20T11:47:13+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98407">
+<article class="comment" id="comment-98407">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522997" rel="external nofollow">新用户984951</a></span> on <a href="http://www.acmerblog.com/hdu-4347-the-closest-m-points-7358.html#comment-98407" rel="nofollow"><time datetime="2017-04-20T11:47:13+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98406">
+<article class="comment" id="comment-98406">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522997" rel="external nofollow">新用户984951</a></span> on <a href="http://www.acmerblog.com/hdu-4347-the-closest-m-points-7358.html#comment-98406" rel="nofollow"><time datetime="2017-04-20T11:47:13+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98405">
+<article class="comment" id="comment-98405">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522997" rel="external nofollow">新用户984951</a></span> on <a href="http://www.acmerblog.com/hdu-4347-the-closest-m-points-7358.html#comment-98405" rel="nofollow"><time datetime="2017-04-20T11:47:13+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68396">
+<article class="comment" id="comment-68396">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512403" rel="external nofollow">新用户979303</a></span> on <a href="http://www.acmerblog.com/hdu-4347-the-closest-m-points-7358.html#comment-68396" rel="nofollow"><time datetime="2017-04-11T03:57:04+00:00" pubdate="">2017年4月11日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>就那一群西方被洗脑的冥煮奴隶向来不怀疑他们自己媒体，说洗脑，我们向来会思考。美国是不允许政府控制媒体，就你这句话，应该是你被他们洗脑了吧，说真的还是多看书吧，少翻墙以免头着地。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68395">
+<article class="comment" id="comment-68395">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512403" rel="external nofollow">新用户979303</a></span> on <a href="http://www.acmerblog.com/hdu-4347-the-closest-m-points-7358.html#comment-68395" rel="nofollow"><time datetime="2017-04-11T03:57:04+00:00" pubdate="">2017年4月11日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>就那一群西方被洗脑的冥煮奴隶向来不怀疑他们自己媒体，说洗脑，我们向来会思考。美国是不允许政府控制媒体，就你这句话，应该是你被他们洗脑了吧，说真的还是多看书吧，少翻墙以免头着地。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68394">
+<article class="comment" id="comment-68394">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512403" rel="external nofollow">新用户979303</a></span> on <a href="http://www.acmerblog.com/hdu-4347-the-closest-m-points-7358.html#comment-68394" rel="nofollow"><time datetime="2017-04-11T03:57:04+00:00" pubdate="">2017年4月11日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>就那一群西方被洗脑的冥煮奴隶向来不怀疑他们自己媒体，说洗脑，我们向来会思考。美国是不允许政府控制媒体，就你这句话，应该是你被他们洗脑了吧，说真的还是多看书吧，少翻墙以免头着地。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68393">
+<article class="comment" id="comment-68393">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512403" rel="external nofollow">新用户979303</a></span> on <a href="http://www.acmerblog.com/hdu-4347-the-closest-m-points-7358.html#comment-68393" rel="nofollow"><time datetime="2017-04-11T03:57:04+00:00" pubdate="">2017年4月11日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>就那一群西方被洗脑的冥煮奴隶向来不怀疑他们自己媒体，说洗脑，我们向来会思考。美国是不允许政府控制媒体，就你这句话，应该是你被他们洗脑了吧，说真的还是多看书吧，少翻墙以免头着地。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68392">
+<article class="comment" id="comment-68392">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512403" rel="external nofollow">新用户979303</a></span> on <a href="http://www.acmerblog.com/hdu-4347-the-closest-m-points-7358.html#comment-68392" rel="nofollow"><time datetime="2017-04-11T03:57:04+00:00" pubdate="">2017年4月11日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>就那一群西方被洗脑的冥煮奴隶向来不怀疑他们自己媒体，说洗脑，我们向来会思考。美国是不允许政府控制媒体，就你这句话，应该是你被他们洗脑了吧，说真的还是多看书吧，少翻墙以免头着地。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68391">
+<article class="comment" id="comment-68391">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512403" rel="external nofollow">新用户979303</a></span> on <a href="http://www.acmerblog.com/hdu-4347-the-closest-m-points-7358.html#comment-68391" rel="nofollow"><time datetime="2017-04-11T03:57:04+00:00" pubdate="">2017年4月11日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>就那一群西方被洗脑的冥煮奴隶向来不怀疑他们自己媒体，说洗脑，我们向来会思考。美国是不允许政府控制媒体，就你这句话，应该是你被他们洗脑了吧，说真的还是多看书吧，少翻墙以免头着地。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68390">
+<article class="comment" id="comment-68390">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512403" rel="external nofollow">新用户979303</a></span> on <a href="http://www.acmerblog.com/hdu-4347-the-closest-m-points-7358.html#comment-68390" rel="nofollow"><time datetime="2017-04-11T03:57:04+00:00" pubdate="">2017年4月11日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>就那一群西方被洗脑的冥煮奴隶向来不怀疑他们自己媒体，说洗脑，我们向来会思考。美国是不允许政府控制媒体，就你这句话，应该是你被他们洗脑了吧，说真的还是多看书吧，少翻墙以免头着地。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

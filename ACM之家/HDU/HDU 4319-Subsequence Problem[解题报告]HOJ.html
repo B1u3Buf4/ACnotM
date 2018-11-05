@@ -1,0 +1,320 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>05-23</div>
+<div class="tit"><h1 class="entry-title">HDU 4319-Subsequence Problem[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观164次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7330" href="http://www.acmerblog.com/hdu-4319-subsequence-problem-7330.html#comments" title="《HDU 4319-Subsequence Problem[解题报告]HOJ》上的评论">13 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Subsequence Problem</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+You must be very familiar with the classic maximum subsequence problem:
+<p>Given an integer sequence A<sub>1</sub>, A<sub>2</sub>, …, A<sub>n</sub>, Find a continuous subsequence A<sub>[i..j]</sub> with maximum sum: A<sub>i</sub> + A<sub>i+1</sub> + … + A<sub>j</sub>. (1 &lt;= i &lt;= j &lt;= n)</p>
+<p>As a talented ACMer, you can solve this problem in seconds. So here comes a harder version:</p>
+<p>Given an integer sequence A<sub>1</sub>, A<sub>2</sub>, …, A<sub>n</sub>, Find a continuous subsequence A<sub>[i..j]</sub> with maximum average value: (A<sub>i</sub> + A<sub>i+1</sub> + … + A<sub>j</sub>) / (j – i + 1). (1 &lt;= i &lt;= j &lt;= n)</p>
+<p>As a talented ACMer, you can solve this problem in minutes. So here comes a more harder version:</p>
+<p>Given an integer sequence A<sub>1</sub>, A<sub>2</sub>, …, A<sub>n</sub>, Find a continuous subsequence A<sub>[i..j]</sub> with maximum squared average value: (A<sub>i</sub> + A<sub>i+1</sub> + … + A<sub>j</sub>)^2 / (j – i + 1). (1 &lt;= i &lt;= j &lt;= n)</p>
+<p>As a talented ACMer, can you solve this problem? </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line of each test case contains one integer n (1 &lt;= n &lt;= 100,000), the length of the original sequence. The next line contains n integers A<sub>1</sub>, A<sub>2</sub>, …, A<sub>n</sub>. (-1,000 &lt;= A<sub>i</sub> &lt;= 1,000) </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The first line of each test case contains one integer n (1 &lt;= n &lt;= 100,000), the length of the original sequence. The next line contains n integers A<sub>1</sub>, A<sub>2</sub>, …, A<sub>n</sub>. (-1,000 &lt;= A<sub>i</sub> &lt;= 1,000)</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3
+1 5 4
+3
+3 5 4</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+40.500000
+48.000000</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include &lt;cstdio&gt;
+#include &lt;cassert&gt;
+#include &lt;cmath&gt;
+#include &lt;algorithm&gt;
+using namespace std;
+
+typedef __int64 LL;
+const int MAXN = 100010;
+int a[MAXN], n;
+
+struct Pt {int x, y;} pt[MAXN], up[2][MAXN], low[2][MAXN];
+Pt merged[MAXN*2];
+int stk[MAXN];
+
+inline bool check(int x1, int y1, int x2, int y2, bool is_up) {
+    if (is_up) {
+        return (LL)x1 * y2 - (LL)x2 * y1 &gt; 0;
+    } else {
+        return (LL)x1 * y2 - (LL)x2 * y1 &lt; 0;
+    }
+}
+
+inline Pt pt_add(const Pt &amp;a, const Pt &amp;b) {
+    Pt tmp;
+    tmp.x = a.x + b.x;
+    tmp.y = a.y + b.y;
+    return tmp;
+}
+
+int get_bound(Pt *pt, int len, Pt *out, bool is_up) {
+    assert(len &gt; 0);
+    if (len == 1) {out[0] = pt[0]; return 1;}
+    stk[0] = 0; stk[1] = 1;
+    int top = 2;
+    for (int i = 2 ; i &lt; len ; ++i) {
+        while (top &gt;= 2 &amp;&amp; check(pt[stk[top-1]].x - pt[stk[top-2]].x,
+            pt[stk[top-1]].y - pt[stk[top-2]].y,
+            pt[i].x - pt[stk[top-1]].x,
+            pt[i].y - pt[stk[top-1]].y, is_up)) --top;
+        stk[top++] = i;
+    }
+    for (int i = 0 ; i &lt; top ; ++i) {
+        out[i].x = pt[stk[i]].x;
+        out[i].y = pt[stk[i]].y;
+    }
+    return top;
+}
+
+int merge_bound(Pt *a0, int len0, Pt *a1, int len1, Pt *out, bool is_up) {
+    assert(len0 &gt; 0 &amp;&amp; len1 &gt; 0);
+    int p0 = 0, p1 = 0, p = 0;
+    out[p++] = pt_add(a0[0], a1[0]);
+    ++p0; ++p1;
+    while (p0 &lt; len0 || p1 &lt; len1) {
+        if (p0 == len0) {
+            out[p++] = pt_add(a0[p0-1], a1[p1++]);
+            continue;
+        }
+        if (p1 == len1) {
+            out[p++] = pt_add(a0[p0++], a1[p1-1]);
+            continue;
+        }
+        Pt tmp0 = pt_add(a0[p0-1], a1[p1-1]);
+        Pt tmp1 = pt_add(a0[p0], a1[p1-1]);
+        Pt tmp2 = pt_add(a0[p0-1], a1[p1]);
+        if (check(tmp1.x-tmp0.x, tmp1.y-tmp0.y,
+                    tmp2.x-tmp0.x, tmp2.y-tmp0.y, is_up)) {
+            out[p++] = tmp2;
+            ++p1;
+        } else {
+            out[p++] = tmp1;
+            ++p0;
+        }
+    }
+    return p;
+}
+
+void output(Pt *pt, int len, const char *str) {
+    printf("%s", str);
+    for (int i = 0 ; i &lt; len ; ++i)
+        printf("(%d,%d)",pt[i].x,pt[i].y);
+    printf("\n");
+}
+
+double solve(int lt, int rt) {
+    if (lt == rt) {
+        return abs(a[lt]);
+    }
+    int mid = (lt + rt) / 2;
+    double tmp_l = solve(lt, mid);
+    double tmp_r = solve(mid+1, rt);
+    double ans = max(tmp_l, tmp_r);
+    int np = 0, sum = 0;
+    for (int tmp = mid ; tmp &gt;= lt ; --tmp) {
+        sum += a[tmp];
+        pt[np].x = mid - tmp + 1;
+        pt[np].y = sum;
+        ++np;
+    }
+    int len_up0 = get_bound(pt, np, up[0], true);
+    int len_low0 = get_bound(pt, np, low[0], false);
+    np = 0; sum = 0;
+    for (int tmp = mid + 1 ; tmp &lt;= rt ; ++tmp) {
+        sum += a[tmp];
+        pt[np].x = tmp - mid;
+        pt[np].y = sum;
+        ++np;
+    }
+    int len_up1 = get_bound(pt, np, up[1], true);
+    int len_low1 = get_bound(pt, np, low[1], false);
+    int len_merged0 = merge_bound(up[0], len_up0, up[1], len_up1, merged, true);
+    int len_merged1 = merge_bound(low[0], len_low0, low[1], len_low1, merged+len_merged0, false);
+    for (int i = 0 ; i &lt; len_merged0 + len_merged1 ; ++i) {
+        double tmp = (double)abs(merged[i].y) / sqrt(merged[i].x+0.0);
+        if (tmp &gt; ans) ans = tmp;
+    }
+    return ans;
+}
+
+int main() {
+ //   freopen("1010.in","r",stdin);
+  //  freopen("data.out","w",stdout);
+    while (scanf("%d",&amp;n) != EOF) {
+        for (int i = 0 ; i &lt; n ; ++i)
+            scanf("%d",&amp;a[i]);
+        double ans = solve(0, n-1);
+        printf("%.6lf\n", ans*ans);
+    }
+    return 0;
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-98768">
+<article class="comment" id="comment-98768">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512384" rel="external nofollow">新用户005035</a></span> on <a href="http://www.acmerblog.com/hdu-4319-subsequence-problem-7330.html#comment-98768" rel="nofollow"><time datetime="2017-04-20T14:27:49+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>严重同意老杨的观点，让那些骨子里反普世价值却又在美国享受普世价值的好处的五毛们见鬼去吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98767">
+<article class="comment" id="comment-98767">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512384" rel="external nofollow">新用户005035</a></span> on <a href="http://www.acmerblog.com/hdu-4319-subsequence-problem-7330.html#comment-98767" rel="nofollow"><time datetime="2017-04-20T14:27:49+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>严重同意老杨的观点，让那些骨子里反普世价值却又在美国享受普世价值的好处的五毛们见鬼去吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98766">
+<article class="comment" id="comment-98766">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512384" rel="external nofollow">新用户005035</a></span> on <a href="http://www.acmerblog.com/hdu-4319-subsequence-problem-7330.html#comment-98766" rel="nofollow"><time datetime="2017-04-20T14:27:49+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>严重同意老杨的观点，让那些骨子里反普世价值却又在美国享受普世价值的好处的五毛们见鬼去吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98765">
+<article class="comment" id="comment-98765">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512384" rel="external nofollow">新用户005035</a></span> on <a href="http://www.acmerblog.com/hdu-4319-subsequence-problem-7330.html#comment-98765" rel="nofollow"><time datetime="2017-04-20T14:27:49+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>严重同意老杨的观点，让那些骨子里反普世价值却又在美国享受普世价值的好处的五毛们见鬼去吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98764">
+<article class="comment" id="comment-98764">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512384" rel="external nofollow">新用户005035</a></span> on <a href="http://www.acmerblog.com/hdu-4319-subsequence-problem-7330.html#comment-98764" rel="nofollow"><time datetime="2017-04-20T14:27:49+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>严重同意老杨的观点，让那些骨子里反普世价值却又在美国享受普世价值的好处的五毛们见鬼去吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98763">
+<article class="comment" id="comment-98763">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512384" rel="external nofollow">新用户005035</a></span> on <a href="http://www.acmerblog.com/hdu-4319-subsequence-problem-7330.html#comment-98763" rel="nofollow"><time datetime="2017-04-20T14:27:49+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>严重同意老杨的观点，让那些骨子里反普世价值却又在美国享受普世价值的好处的五毛们见鬼去吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98762">
+<article class="comment" id="comment-98762">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512384" rel="external nofollow">新用户005035</a></span> on <a href="http://www.acmerblog.com/hdu-4319-subsequence-problem-7330.html#comment-98762" rel="nofollow"><time datetime="2017-04-20T14:27:49+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>严重同意老杨的观点，让那些骨子里反普世价值却又在美国享受普世价值的好处的五毛们见鬼去吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98761">
+<article class="comment" id="comment-98761">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512384" rel="external nofollow">新用户005035</a></span> on <a href="http://www.acmerblog.com/hdu-4319-subsequence-problem-7330.html#comment-98761" rel="nofollow"><time datetime="2017-04-20T14:27:49+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>严重同意老杨的观点，让那些骨子里反普世价值却又在美国享受普世价值的好处的五毛们见鬼去吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98760">
+<article class="comment" id="comment-98760">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512384" rel="external nofollow">新用户005035</a></span> on <a href="http://www.acmerblog.com/hdu-4319-subsequence-problem-7330.html#comment-98760" rel="nofollow"><time datetime="2017-04-20T14:27:49+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>严重同意老杨的观点，让那些骨子里反普世价值却又在美国享受普世价值的好处的五毛们见鬼去吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98759">
+<article class="comment" id="comment-98759">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512384" rel="external nofollow">新用户005035</a></span> on <a href="http://www.acmerblog.com/hdu-4319-subsequence-problem-7330.html#comment-98759" rel="nofollow"><time datetime="2017-04-20T14:27:49+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>严重同意老杨的观点，让那些骨子里反普世价值却又在美国享受普世价值的好处的五毛们见鬼去吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98758">
+<article class="comment" id="comment-98758">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512384" rel="external nofollow">新用户005035</a></span> on <a href="http://www.acmerblog.com/hdu-4319-subsequence-problem-7330.html#comment-98758" rel="nofollow"><time datetime="2017-04-20T14:27:49+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>严重同意老杨的观点，让那些骨子里反普世价值却又在美国享受普世价值的好处的五毛们见鬼去吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68544">
+<article class="comment" id="comment-68544">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522071" rel="external nofollow">新用户411453</a></span> on <a href="http://www.acmerblog.com/hdu-4319-subsequence-problem-7330.html#comment-68544" rel="nofollow"><time datetime="2017-04-11T07:10:15+00:00" pubdate="">2017年4月11日 at 上午7:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你他妈这是讨论漫画的你还问喜不喜欢掏粪</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68543">
+<article class="comment" id="comment-68543">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522071" rel="external nofollow">新用户411453</a></span> on <a href="http://www.acmerblog.com/hdu-4319-subsequence-problem-7330.html#comment-68543" rel="nofollow"><time datetime="2017-04-11T07:10:15+00:00" pubdate="">2017年4月11日 at 上午7:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你他妈这是讨论漫画的你还问喜不喜欢掏粪</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,414 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>02-17</div>
+<div class="tit"><h1 class="entry-title">HDU 2887-Watering Hole[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观372次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4530" href="http://www.acmerblog.com/hdu-2887-watering-hole-4530.html#comments" title="《HDU 2887-Watering Hole[解题报告]HOJ》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Watering Hole</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Farmer John has decided to bring water to his N (2 &lt;= N &lt;= 5,000) pastures which are conveniently numbered 1..N. And He has M (1 &lt;= M &lt;= 25,000) pipes. He may bring water to a pasture either by building a well in that pasture or connecting the pasture via a pipe to another pasture which already has water. 
+<p>Digging a well in pasture i costs W_i (1 &lt;= W_i &lt;= 100,000). Connecting pastures i and j with a pipe costs p (1 &lt;= p &lt;= 100,000). Since the length and quality are different, there may be more than one pipes in different costs connecting pasture i and j.</p>
+<p>Luckily, farmer John found there was only one plan to minimize his cost.</p>
+<p>Farmer Jack, farmer John’s friend, has P (1 &lt;= P &lt;= 1,000) pipes. He promised that he could give one pipe to Farmer John, and farmer John can use it to connect his pasture i and j. Now, farmer John wants to know how much the minimum amount he will have to pay to water all of his pastures if he chooses one more pipe from Jack. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+There are serveral cases:<br/>Line 1: Three integers: N, M and P
+<p>Lines 2: N space-separated integers; the i-th integer is W_i </p>
+<p>Lines 3..M+3: Three integers: i, j, p. Means a pipe connecting pasture i and j costs p</p>
+<p>Lines M+4..P+M+4: Two Integers: i, j. Farmer Jack can give Farmer John a pipe connecting pasture i and j. </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+There are serveral cases:<br/>Line 1: Three integers: N, M and P
+<p>Lines 2: N space-separated integers; the i-th integer is W_i </p>
+<p>Lines 3..M+3: Three integers: i, j, p. Means a pipe connecting pasture i and j costs p</p>
+<p>Lines M+4..P+M+4: Two Integers: i, j. Farmer Jack can give Farmer John a pipe connecting pasture i and j.</p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+4 6 1
+5 4 4 3
+1 2 2
+1 3 2
+1 4 2
+2 3 3
+2 4 3
+3 4 4
+3 4</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+7</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include &lt;iostream&gt;
+#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+#include &lt;algorithm&gt;
+#include &lt;cstdlib&gt;
+#include &lt;cmath&gt;
+
+using namespace std;
+
+const int N = 5005;
+const int M = N &lt;&lt; 4;
+
+int p[N], n, m, sum, w[N];
+
+struct Edge {
+	int u, v, w;
+
+	void init(int a, int b, int c) {
+		u = a, v = b, w = c;
+	}
+
+	bool operator &lt;(const Edge&amp; e) const {
+		return w &lt; e.w;
+	}
+}E[M];
+
+int find(int u) {
+	if (p[u] != u) 
+		p[u] = find(p[u]);
+	return p[u];
+}
+
+const int lim = 17;
+
+struct Tree {
+	
+	struct Edge {
+		int v, w;
+		Edge* next;
+
+		void init(int a, Edge* e, int b) {
+			v = a;
+			w = b;
+			next = e;
+		}	
+	};
+
+	Edge E[M];
+	Edge* it, * head[N];
+	int pa[N][lim], dep[N], dis[N];
+	int maxv[N][lim];
+	int W[N];
+	int n;
+
+	void init(int n) {
+		this-&gt;n = n;
+		for (int i = 0; i &lt; n; head[i++] = 0);
+		it = E;
+	}
+
+	void add(int u, int v, int w) {
+		it-&gt;init(v, head[u], w);
+		head[u] = it++;
+		it-&gt;init(u, head[v], w);
+		head[v] = it++;
+	}
+
+	int lca(int u, int v) {
+		if (dep[u] &gt; dep[v]) swap(u, v);
+		if (dep[u] &lt; dep[v]) {
+			int d = dep[v] - dep[u];
+			for (int i = 0; i &lt; lim; i++)
+				if (d &amp; (1 &lt;&lt; i))
+					v = pa[v][i];
+		}
+		if (u != v) {
+			for (int i = lim - 1; i &gt;= 0; i--)
+				if (pa[u][i] != pa[v][i]) {
+					u = pa[u][i];
+					v = pa[v][i];
+				}
+			u = pa[u][0];
+		}
+		return u;
+	}
+
+	int query(int u, int v) {
+		if (dep[u] &gt; dep[v]) swap(u, v);
+		int res = -1;
+
+		if (dep[u] &lt; dep[v]) {
+			int d = dep[v] - dep[u];
+			for (int i = 0; i &lt; lim; i++)
+				if (d &amp; (1 &lt;&lt; i)) {
+					res = max(maxv[v][i], res);
+					v = pa[v][i];		
+				}
+		}
+
+		if (u != v) {
+			for (int i = lim - 1; i &gt;= 0; i--) {
+				if (pa[u][i] != pa[v][i]) {
+					res = max(res, maxv[u][i]);
+					res = max(res, maxv[v][i]);
+					u = pa[u][i];
+					v = pa[v][i];
+				}
+			}
+			res = max(res, maxv[u][0]);
+			res = max(res, maxv[v][0]);
+		}
+		return res;
+	}
+
+	void dfs(int u, int fa) {
+		pa[u][0] = fa;
+		maxv[u][0] = W[u];
+		dep[u] = dep[fa] + 1;
+		for (int i = 1; (1 &lt;&lt; i) &lt; n; i++) {
+			pa[u][i] = pa[pa[u][i - 1]][i - 1];
+			maxv[u][i] = max(maxv[u][i - 1], maxv[pa[u][i - 1]][i - 1]);
+		}
+		for (Edge* e = head[u]; e; e = e-&gt;next) {
+			int v = e-&gt;v;
+			if (v != fa) {
+				W[v] = e-&gt;w;
+				dfs(v, u);
+			}
+		}	
+	}
+
+	void run(int rt) {
+		dep[rt] = -1;
+		W[rt] = -1;
+		dfs(rt, rt);
+	}
+}T;
+
+int main() {
+	int u, v, w, c;
+	while (~scanf("%d%d%d", &amp;n, &amp;m, &amp;sum)) {
+		c = 0;
+		for (int i = 1; i &lt;= n; i++) {
+			scanf("%d", &amp;w);
+			E[c].init(0, i, w);
+			c++;
+		}
+		for (int i = 0; i &lt; m; i++) {
+			scanf("%d%d%d", &amp;u, &amp;v, &amp;w);
+			E[c].init(u, v, w);
+			c++;
+		}
+
+		n++;
+		m += n;
+
+		T.init(n);
+
+		int res = 0;
+		sort(E, E + c);
+		int cnt = 0;
+
+		for (int i = 0; i &lt; n; i++) p[i] = i;
+
+		for (int i = 0; i &lt; c; i++) {
+			int fu = find(E[i].u), fv = find(E[i].v);
+			if (fu != fv) {
+				p[fu] = fv;
+				res += E[i].w;
+				T.add(E[i].u, E[i].v, E[i].w);	
+				cnt++;
+			}
+			if (cnt == n - 1) break;
+		}
+
+		T.run(0);
+
+		for (int i = 0; i &lt; sum; i++) {
+			scanf("%d%d", &amp;u, &amp;v);
+			int tmp = T.query(u, v);
+			printf("%d\n", res - tmp);
+		}
+
+	}	
+	return 0;
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-81543">
+<article class="comment" id="comment-81543">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530246" rel="external nofollow">新用户076791</a></span> on <a href="http://www.acmerblog.com/hdu-2887-watering-hole-4530.html#comment-81543" rel="nofollow"><time datetime="2017-04-12T18:13:50+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>恩，这个也是我考虑的因素之一吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-25441">
+<article class="comment" id="comment-25441">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yipwinghong</a></span> on <a href="http://www.acmerblog.com/hdu-2887-watering-hole-4530.html#comment-25441" rel="nofollow"><time datetime="2015-07-02T17:32:00+00:00" pubdate="">2015年7月2日 at 下午5:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>mark, 备用</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-46873">
+<article class="comment" id="comment-46873">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">radish</a></span> on <a href="http://www.acmerblog.com/hdu-2887-watering-hole-4530.html#comment-46873" rel="nofollow"><time datetime="2015-04-26T19:47:54+00:00" pubdate="">2015年4月26日 at 下午7:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第36行，struct node **head_ref，怎么理解，那个函数感觉不是很懂啊！？？弱渣求助</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-25443">
+<article class="comment" id="comment-25443">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Aliens</a></span> on <a href="http://www.acmerblog.com/hdu-2887-watering-hole-4530.html#comment-25443" rel="nofollow"><time datetime="2015-04-22T04:09:53+00:00" pubdate="">2015年4月22日 at 上午4:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二种想法，我想来好久，为啥需要一个newhead，发现是把最后一个节点一直返回到嘴上面这层函数。厉害，这道题之前没样子想过。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-46881">
+<article class="comment" id="comment-46881">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">_Tree</a></span> on <a href="http://www.acmerblog.com/hdu-2887-watering-hole-4530.html#comment-46881" rel="nofollow"><time datetime="2015-02-16T20:11:10+00:00" pubdate="">2015年2月16日 at 下午8:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>在方法1里面：</p>
+<p>    //遍历所有的边，计算入度<br/>
+    for(int i=0; i&lt;V; i++)<br/>
+  {<br/>
+        degree <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/>  = 0;<br/>
+        for (j = adj <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .begin(); j != adj <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .end(); ++j)<br/>
+       {<br/>
+            degree[*j]++;<br/>
+        }<br/>
+    }</p>
+<p>为什么每遍历一条链表，要首先将每个链表头的顶点的入度置为0呢？<br/>
+比如顶点5，若在顶点1、2、3、4的链表中出现过顶点5，那么要增加顶点5的入度，但是在遍历顶点5的链表时，又将顶点5的入度置为0了，那之前的从顶点1234到顶点5的边不是都没了吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46875">
+<article class="comment" id="comment-46875">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zhiqiang</a></span> on <a href="http://www.acmerblog.com/hdu-2887-watering-hole-4530.html#comment-46875" rel="nofollow"><time datetime="2014-11-05T05:34:18+00:00" pubdate="">2014年11月5日 at 上午5:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>&amp;amp;这是C语言？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-46874">
+<article class="comment" id="comment-46874">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">magichu</a></span> on <a href="http://www.acmerblog.com/hdu-2887-watering-hole-4530.html#comment-46874" rel="nofollow"><time datetime="2014-09-07T04:58:25+00:00" pubdate="">2014年9月7日 at 上午4:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你这个代码显示风格很给你啊，怎么做出来的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-25442">
+<article class="comment" id="comment-25442">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">digiworm</a></span> on <a href="http://www.acmerblog.com/hdu-2887-watering-hole-4530.html#comment-25442" rel="nofollow"><time datetime="2014-08-25T12:54:08+00:00" pubdate="">2014年8月25日 at 下午12:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这配图…..</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-46876">
+<article class="comment" id="comment-46876">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">final</a></span> on <a href="http://www.acmerblog.com/hdu-2887-watering-hole-4530.html#comment-46876" rel="nofollow"><time datetime="2014-07-03T02:41:50+00:00" pubdate="">2014年7月3日 at 上午2:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>顺利测试通过了，多谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46878">
+<article class="comment" id="comment-46878">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">userwawa</a></span> on <a href="http://www.acmerblog.com/hdu-2887-watering-hole-4530.html#comment-46878" rel="nofollow"><time datetime="2014-06-03T11:06:50+00:00" pubdate="">2014年6月3日 at 上午11:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正在学习搜索，很好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-25440">
+<article class="comment" id="comment-25440">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mcitdkj</a></span> on <a href="http://www.acmerblog.com/hdu-2887-watering-hole-4530.html#comment-25440" rel="nofollow"><time datetime="2014-05-15T22:38:09+00:00" pubdate="">2014年5月15日 at 下午10:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>great work！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46877">
+<article class="comment" id="comment-46877">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xuelanghu</a></span> on <a href="http://www.acmerblog.com/hdu-2887-watering-hole-4530.html#comment-46877" rel="nofollow"><time datetime="2014-03-31T07:28:38+00:00" pubdate="">2014年3月31日 at 上午7:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很给力啊，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-25439">
+<article class="comment" id="comment-25439">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">vintion</a></span> on <a href="http://www.acmerblog.com/hdu-2887-watering-hole-4530.html#comment-25439" rel="nofollow"><time datetime="2014-03-20T14:22:52+00:00" pubdate="">2014年3月20日 at 下午2:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>示例程序中的代码不够稳健，没有考虑到输入了非法字符或者不合理输入的情况。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46879">
+<article class="comment" id="comment-46879">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xy7850151</a></span> on <a href="http://www.acmerblog.com/hdu-2887-watering-hole-4530.html#comment-46879" rel="nofollow"><time datetime="2014-03-02T08:56:48+00:00" pubdate="">2014年3月2日 at 上午8:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>递归还真是一门学问，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-46880">
+<article class="comment" id="comment-46880">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tangzhihua</a></span> on <a href="http://www.acmerblog.com/hdu-2887-watering-hole-4530.html#comment-46880" rel="nofollow"><time datetime="2014-02-20T10:27:37+00:00" pubdate="">2014年2月20日 at 上午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不考虑最后将结果排序的话，快排的时间复杂度是O(N) ，而堆排的是O(N*logK),这样比较看，快排快</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

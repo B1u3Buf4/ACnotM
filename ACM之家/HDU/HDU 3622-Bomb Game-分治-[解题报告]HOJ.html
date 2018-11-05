@@ -1,0 +1,325 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>11-29</div>
+<div class="tit"><h1 class="entry-title">HDU 3622-Bomb Game-分治-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph/connectivity" rel="category tag" title="查看连通性问题中的全部文章">连通性问题</a>, <a href="http://www.acmerblog.com/category/basis/recursion" rel="category tag" title="查看递归和分治中的全部文章">递归和分治</a></span><span class="i4">围观598次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6587" href="http://www.acmerblog.com/hdu-3622-bomb-game-6587.html#comments" title="《HDU 3622-Bomb Game-分治-[解题报告]HOJ》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Bomb Game</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Robbie is playing an interesting computer game. The game field is an unbounded 2-dimensional region. There are N rounds in the game. At each round, the computer will give Robbie two places, and Robbie should choose one of them to put a bomb. The explosion area of the bomb is a circle whose center is just the chosen place. Robbie can control the power of the bomb, that is, he can control the radius of each circle. A strange requirement is that there should be no common area for any two circles. The final score is the minimum radius of all the N circles.<br/>Robbie has cracked the game, and he has known all the candidate places of each round before the game starts. Now he wants to know the maximum score he can get with the optimal strategy. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line of each test case is an integer N (2 &lt;= N &lt;= 100), indicating the number of rounds. Then N lines follow. The i-th line contains four integers x<sub>1i</sub>, y<sub>1i</sub>, x<sub>2i</sub>, y<sub>2i</sub>, indicating that the coordinates of the two candidate places of the i-th round are (x<sub>1i</sub>, y<sub>1i</sub>) and (x<sub>2i</sub>, y<sub>2i</sub>). All the coordinates are in the range [-10000, 10000]. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The first line of each test case is an integer N (2 &lt;= N &lt;= 100), indicating the number of rounds. Then N lines follow. The i-th line contains four integers x<sub>1i</sub>, y<sub>1i</sub>, x<sub>2i</sub>, y<sub>2i</sub>, indicating that the coordinates of the two candidate places of the i-th round are (x<sub>1i</sub>, y<sub>1i</sub>) and (x<sub>2i</sub>, y<sub>2i</sub>). All the coordinates are in the range [-10000, 10000].</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+1 1 1 -1
+-1 -1 -1 1
+2
+1 1 -1 -1
+1 -1 -1 1</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+1.41
+1.00</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp" name="code">/*
+二分+2-sat
+题意：在一个二维平面上给你n个炸弹，和2*n个位置，每一行的两个位置只能有一个放炸弹
+现在炸弹爆炸有一个半径，当炸弹爆炸时两个炸弹的半径化成的圆不能相交，求最大半径
+二分半径，
+每次如果一个炸弹可放的两个位置中的一个与其他位置有矛盾，就进行建边，最后判断是否存在这样一组解
+即可。
+*/
+#include&lt;stdio.h&gt;
+#include&lt;string.h&gt;
+#include&lt;math.h&gt;
+#define eps 1e-5
+#define N 210
+struct node {
+int u,v,next;
+}bian[N*N];
+int head[N],dfn[N],low[N],stac[N],yong,index,top,vis[N],ans,belong[N];
+void init() {
+memset(head,-1,sizeof(head));memset(dfn,0,sizeof(dfn));memset(low,0,sizeof(low));
+memset(stac,0,sizeof(stac));yong=0;index=0;top=0;;memset(vis,0,sizeof(vis));ans=0;
+memset(belong,0,sizeof(belong));
+}
+void addedge(int u,int v) {
+bian[yong].u=u;
+bian[yong].v=v;
+bian[yong].next=head[u];
+head[u]=yong++;
+}
+int Min(int v,int vv) {
+return v&gt;vv?vv:v;
+}
+void tarjan(int u) {
+  dfn[u]=low[u]=++index;
+  stac[++top]=u;
+  vis[u]=1;
+  int i;
+  for(i=head[u];i!=-1;i=bian[i].next) {
+    int v=bian[i].v;
+    if(!dfn[v]) {
+        tarjan(v);
+        low[u]=Min(low[u],low[v]);
+    }
+    else
+        if(vis[v])
+        low[u]=Min(low[u],dfn[v]);
+  }
+  if(dfn[u]==low[u]) {
+    ans++;
+    int t;
+    do {
+        t=stac[top--];
+        belong[t]=ans;
+        vis[t]=0;
+    }while(t!=u);
+  }
+}
+struct nodee{
+int u,v,index;
+}f[N*N];
+int n;
+double distance(nodee d,nodee dd) {
+return 1.0*(d.u-dd.u)*(d.u-dd.u)+1.0*(d.v-dd.v)*(d.v-dd.v);
+}
+int judge(double r) {
+  int i,j;
+  init();
+     for(i=0;i&lt;2*n-1;i++)
+      for(j=i+1;j&lt;2*n;j++) {
+        if(i==(j^1))continue;
+       if(distance(f[i],f[j])&lt;(r*2)*(r*2)) {//如果有冲突就进行
+        addedge(i,j^1);
+        addedge(j,i^1);
+       }
+      }
+      for(i=0;i&lt;2*n;i++)
+        if(!dfn[i])
+            tarjan(i);
+    for(i=0;i&lt;n;i++)
+        if(belong[i*2]==belong[i*2+1])break;
+    if(i==n)return 1;
+    return 0;
+}
+int main() {
+   int i;
+   double left,right,mid;
+   while(scanf("%d",&amp;n)!=EOF) {
+      for(i=0;i&lt;n;i++)
+        scanf("%d%d%d%d",&amp;f[i*2].u,&amp;f[i*2].v,&amp;f[i*2+1].u,&amp;f[i*2+1].v);
+      right=2*10000.0*2;left=0.0;
+      while(right-left&gt;eps) {
+        mid=(left+right)/2;
+      //  printf("%.2f\n",mid);
+        if(judge(mid))left=mid+eps;
+        else
+            right=mid-eps;
+      }
+      printf("%.2f\n",left);
+   }
+return 0;}
+</pre>
+<p></p>
+<p>参考：http://blog.csdn.net/u011483306/article/details/40212507</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-73571">
+<article class="comment" id="comment-73571">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516763" rel="external nofollow">新用户169231</a></span> on <a href="http://www.acmerblog.com/hdu-3622-bomb-game-6587.html#comment-73571" rel="nofollow"><time datetime="2017-04-12T00:07:33+00:00" pubdate="">2017年4月12日 at 上午12:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>图片一闪，我以为又是植物的性器官呢。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-73570">
+<article class="comment" id="comment-73570">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516763" rel="external nofollow">新用户169231</a></span> on <a href="http://www.acmerblog.com/hdu-3622-bomb-game-6587.html#comment-73570" rel="nofollow"><time datetime="2017-04-12T00:07:33+00:00" pubdate="">2017年4月12日 at 上午12:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>图片一闪，我以为又是植物的性器官呢。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59364">
+<article class="comment" id="comment-59364">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">vincent_ynh</a></span> on <a href="http://www.acmerblog.com/hdu-3622-bomb-game-6587.html#comment-59364" rel="nofollow"><time datetime="2015-07-15T22:01:40+00:00" pubdate="">2015年7月15日 at 下午10:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>“再把所有不和该节点相邻的节点着相同的颜色”，程序中没有进行不和该节点相邻的其他节点是否相邻进行判断。再说求出来的也不一样是颜色数最少的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-59367">
+<article class="comment" id="comment-59367">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zzzzzz</a></span> on <a href="http://www.acmerblog.com/hdu-3622-bomb-game-6587.html#comment-59367" rel="nofollow"><time datetime="2015-06-22T23:56:10+00:00" pubdate="">2015年6月22日 at 下午11:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>图像处理那题解题报告在哪儿呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59368">
+<article class="comment" id="comment-59368">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Watson</a></span> on <a href="http://www.acmerblog.com/hdu-3622-bomb-game-6587.html#comment-59368" rel="nofollow"><time datetime="2015-06-22T22:54:40+00:00" pubdate="">2015年6月22日 at 下午10:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有限自动机在ACM中是必须掌握的算法，实际上在面试当中几乎不可能让你单独的去实现这个算法，如果有题目要用到有限自动机来降低时间复杂度，那么这种面试题应该属于很难的级别了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63919">
+<article class="comment" id="comment-63919">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lin</a></span> on <a href="http://www.acmerblog.com/hdu-3622-bomb-game-6587.html#comment-63919" rel="nofollow"><time datetime="2015-06-13T18:35:18+00:00" pubdate="">2015年6月13日 at 下午6:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第23行：<br/>
+hash <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = -1是否应该改成hash[s <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> ] = -1</p>
+<p>因为是要把从字符串s的start位到当前位在hash中重置</p>
+<p>修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59365">
+<article class="comment" id="comment-59365">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Rocky</a></span> on <a href="http://www.acmerblog.com/hdu-3622-bomb-game-6587.html#comment-59365" rel="nofollow"><time datetime="2015-05-16T03:43:57+00:00" pubdate="">2015年5月16日 at 上午3:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>看似简单，还是不少坑的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-32648">
+<article class="comment" id="comment-32648">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yupeng.bai</a></span> on <a href="http://www.acmerblog.com/hdu-3622-bomb-game-6587.html#comment-32648" rel="nofollow"><time datetime="2015-05-07T20:32:49+00:00" pubdate="">2015年5月7日 at 下午8:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59366">
+<article class="comment" id="comment-59366">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaotongtest</a></span> on <a href="http://www.acmerblog.com/hdu-3622-bomb-game-6587.html#comment-59366" rel="nofollow"><time datetime="2015-05-05T02:16:36+00:00" pubdate="">2015年5月5日 at 上午2:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没错的，再乘以m的就多余了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-32653">
+<article class="comment" id="comment-32653">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Trenson</a></span> on <a href="http://www.acmerblog.com/hdu-3622-bomb-game-6587.html#comment-32653" rel="nofollow"><time datetime="2015-02-18T16:12:49+00:00" pubdate="">2015年2月18日 at 下午4:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已更正。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-32652">
+<article class="comment" id="comment-32652">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zx123456</a></span> on <a href="http://www.acmerblog.com/hdu-3622-bomb-game-6587.html#comment-32652" rel="nofollow"><time datetime="2015-02-16T03:18:03+00:00" pubdate="">2015年2月16日 at 上午3:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/d8/good_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-32650">
+<article class="comment" id="comment-32650">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">litao</a></span> on <a href="http://www.acmerblog.com/hdu-3622-bomb-game-6587.html#comment-32650" rel="nofollow"><time datetime="2015-01-29T16:21:12+00:00" pubdate="">2015年1月29日 at 下午4:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不同的编译器，printf(),执行的顺序不同，所以结果也就不同，建议不要那么写</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-32649">
+<article class="comment" id="comment-32649">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">congve1</a></span> on <a href="http://www.acmerblog.com/hdu-3622-bomb-game-6587.html#comment-32649" rel="nofollow"><time datetime="2014-12-13T14:06:45+00:00" pubdate="">2014年12月13日 at 下午2:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#!/usr/bin/env  python<br/>
+def cou(n):<br/>
+        arr =  <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/82/one_org.gif"/><br/>
+        i = 1<br/>
+        while(i&lt;n):<br/>
+                arr.append(arr[i-1]+selfcount(i))<br/>
+                i+=1<br/>
+        return arr[n-1]</p>
+<p>def selfcount(n):<br/>
+        count = 0<br/>
+        while(n):<br/>
+                if n%10 == 1:<br/>
+                        count += 1<br/>
+                n /= 10<br/>
+        return count</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-32651">
+<article class="comment" id="comment-32651">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">AE</a></span> on <a href="http://www.acmerblog.com/hdu-3622-bomb-game-6587.html#comment-32651" rel="nofollow"><time datetime="2014-12-01T11:49:15+00:00" pubdate="">2014年12月1日 at 上午11:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为要修改链表头(指针)，所以要用指针的指针</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59363">
+<article class="comment" id="comment-59363">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">modstart</a></span> on <a href="http://www.acmerblog.com/hdu-3622-bomb-game-6587.html#comment-59363" rel="nofollow"><time datetime="2014-11-30T05:38:49+00:00" pubdate="">2014年11月30日 at 上午5:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感觉第二种方法其实也不是很好，不过的确要比第一种方法要好一点。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

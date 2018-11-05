@@ -1,0 +1,482 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>01-05</div>
+<div class="tit"><h1 class="entry-title">数据结构课程设计-用栈来实现表达式求值</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/zhuanti/clanguage" rel="category tag" title="查看C基础练习中的全部文章">C基础练习</a>, <a href="http://www.acmerblog.com/category/data-struct/linear" rel="category tag" title="查看线性结构中的全部文章">线性结构</a></span><span class="i4">围观2588次</span><span class="i3"><a class="ds-thread-count" data-thread-key="3396" href="http://www.acmerblog.com/data-structure-stack-expression-3396.html#comments" title="《数据结构课程设计-用栈来实现表达式求值》上的评论">26 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p><span style="font-size: 16px;">1、需求分析</span></p>
+<p>设计一个程序，演示用算符优先法对算术表达式求值的过程。利用算符优先关系，实现对算术四则混合运算表达式的求值。</p>
+<p>（1）输入的形式：表达式，例如2*(3+4)</p>
+<p>包含的运算符只能有’+’ 、’-’ 、’*’ 、’/’ 、’(‘、 ‘)’；</p>
+<p>（2）输出的形式：运算结果，例如2*(3+4)=14；</p>
+<p>（3）程序所能达到的功能：对表达式求值并输出</p>
+<p><span style="font-size: 16px;">2、系统设计</span></p>
+<p>1、栈的抽象数据类型定义：</p>
+<p>ADT Stack{</p>
+<p>数据对象：D={ai|ai∈ElemSet,i=1,2,…,n,n≥0}</p>
+<p>数据关系：R1={&lt;ai-1,ai&gt;|ai-1,ai∈D,i=2,…,n}</p>
+<p>约定an端为栈顶，ai端为栈底</p>
+<p>基本操作：</p>
+<p>Push(&amp;S,e)</p>
+<p>初始条件：栈S已存在</p>
+<p>操作结果：插入元素e为新的栈顶元素</p>
+<p>Pop(&amp;S,&amp;e)</p>
+<p>初始条件：栈S已存在且非空</p>
+<p>操作结果：删除S的栈顶元素，并用e返回其值</p>
+<p>}ADT Stack</p>
+<p>3、各个模块的主要功能：</p>
+<p>*Push(SC *s,char c)：把字符压栈</p>
+<p>*Push(SF *s,float f)：把数值压栈</p>
+<p>*Pop(SC *s)：把字符退栈</p>
+<p>*Pop(SF *s)：把数值退栈</p>
+<p>Operate(a,theta,b)：根据theta对a和b进行’+’ 、’-’ 、’*’ 、’/’ 、’^'操作</p>
+<p>In(Test,*TestOp)：若Test为运算符则返回true，否则返回false</p>
+<p>ReturnOpOrd(op,*TestOp)：若Test为运算符，则返回此运算符在数组中的下标</p>
+<p>precede(Aop,Bop)：根据运算符优先级表返回Aop与Bop之间的优先级</p>
+<p>EvaluateExpression(*MyExpression)：用算符优先法对算术表达式求值</p>
+<p><span style="font-size: 16px;"></span></p>
+<p>完整的程序代码如下：</p>
+<pre class="brush:cpp ">#include"stdio.h"
+#include"stdlib.h" 
+#include"string.h" 
+#include"math.h"
+#define true 1 
+#define false 0 
+#define OPSETSIZE 8 
+typedef int Status; 
+
+unsigned char Prior[8][8] =
+{ // 运算符优先级表 
+	// '+' '-' '*' '/' '(' ')' '#' '^' 
+	/*'+'*/'&gt;','&gt;','&lt;','&lt;','&lt;','&gt;','&gt;','&lt;', 
+	/*'-'*/'&gt;','&gt;','&lt;','&lt;','&lt;','&gt;','&gt;','&lt;', 
+	/*'*'*/'&gt;','&gt;','&gt;','&gt;','&lt;','&gt;','&gt;','&lt;', 
+	/*'/'*/'&gt;','&gt;','&gt;','&gt;','&lt;','&gt;','&gt;','&lt;', 
+	/*'('*/'&lt;','&lt;','&lt;','&lt;','&lt;','=',' ','&lt;', 
+	/*')'*/'&gt;','&gt;','&gt;','&gt;',' ','&gt;','&gt;','&gt;', 
+	/*'#'*/'&lt;','&lt;','&lt;','&lt;','&lt;',' ','=','&lt;', 
+	/*'^'*/'&gt;','&gt;','&gt;','&gt;','&lt;','&gt;','&gt;','&gt;' 
+}; 
+
+typedef struct StackChar
+{
+	char c; 
+	struct StackChar *next; 
+}SC;       //StackChar类型的结点SC
+
+typedef struct StackFloat
+{
+	float f; 
+	struct StackFloat *next; 
+}SF;       //StackFloat类型的结点SF
+
+SC *Push(SC *s,char c)          //SC类型的指针Push，返回p
+{
+	SC *p=(SC*)malloc(sizeof(SC)); 
+	p-&gt;c=c; 
+	p-&gt;next=s; 
+	return p; 
+} 
+
+SF *Push(SF *s,float f)        //SF类型的指针Push，返回p
+{
+	SF *p=(SF*)malloc(sizeof(SF)); 
+	p-&gt;f=f; 
+	p-&gt;next=s; 
+	return p; 
+} 
+
+SC *Pop(SC *s)    //SC类型的指针Pop
+{
+	SC *q=s; 
+	s=s-&gt;next; 
+	free(q); 
+	return s; 
+} 
+
+SF *Pop(SF *s)      //SF类型的指针Pop
+{
+	SF *q=s; 
+	s=s-&gt;next; 
+	free(q); 
+	return s; 
+} 
+
+float Operate(float a,unsigned char theta, float b)      //计算函数Operate
+{
+	switch(theta)
+	{
+	case '+': return a+b; 
+	case '-': return a-b; 
+	case '*': return a*b; 
+	case '/': return a/b; 
+	case '^': return pow(a,b); 
+	default : return 0; 
+	} 
+} 
+
+char OPSET[OPSETSIZE]={'+','-','*','/','(',')','#','^'}; 
+
+Status In(char Test,char *TestOp)
+{
+	int Find=false; 
+	for (int i=0; i&lt; OPSETSIZE; i++)
+	{
+		if(Test == TestOp[i])
+			Find= true; 
+	} 
+	return Find; 
+} 
+
+Status ReturnOpOrd(char op,char *TestOp)
+{ 
+	for(int i=0; i&lt; OPSETSIZE; i++)
+	{
+		if (op == TestOp[i])
+			return i;
+	}
+}
+
+char precede(char Aop, char Bop)
+{ 
+	return Prior[ReturnOpOrd(Aop,OPSET)][ReturnOpOrd(Bop,OPSET)]; 
+} 
+
+float EvaluateExpression(char* MyExpression)
+{ 
+	// 算术表达式求值的算符优先算法
+	// 设OPTR和OPND分别为运算符栈和运算数栈，OP为运算符集合 
+	SC *OPTR=NULL;       // 运算符栈，字符元素 
+	SF *OPND=NULL;       // 运算数栈，实数元素 
+	char TempData[20]; 
+	float Data,a,b; 
+	char theta,*c,Dr[]={'#','\0'}; 
+	OPTR=Push(OPTR,'#'); 
+	c=strcat(MyExpression,Dr); 
+	strcpy(TempData,"\0");//字符串拷贝函数 
+	while (*c!= '#' || OPTR-&gt;c!='#')
+	{ 
+		if (!In(*c, OPSET))
+		{ 
+			Dr[0]=*c; 
+			strcat(TempData,Dr);           //字符串连接函数 
+			c++; 
+			if (In(*c, OPSET))
+			{ 
+				Data=atof(TempData);       //字符串转换函数(double) 
+				OPND=Push(OPND, Data); 
+				strcpy(TempData,"\0"); 
+			} 
+		} 
+		else    // 不是运算符则进栈 
+		{
+			switch (precede(OPTR-&gt;c, *c))
+			{
+			case '&lt;': // 栈顶元素优先级低 
+				OPTR=Push(OPTR, *c); 
+				c++; 
+				break; 
+			case '=': // 脱括号并接收下一字符 
+				OPTR=Pop(OPTR); 
+				c++; 
+				break; 
+			case '&gt;': // 退栈并将运算结果入栈 
+				theta=OPTR-&gt;c;OPTR=Pop(OPTR); 
+				b=OPND-&gt;f;OPND=Pop(OPND); 
+				a=OPND-&gt;f;OPND=Pop(OPND); 
+				OPND=Push(OPND, Operate(a, theta, b)); 
+				break; 
+			} //switch
+		} 
+	} //while 
+	return OPND-&gt;f; 
+} //EvaluateExpression 
+
+int main(void)
+{ 
+	char s[128];
+	puts("请输入表达式:"); 
+	gets(s);
+	puts("该表达式的值为:"); 
+	printf("%s\b=%g\n",s,EvaluateExpression(s));
+	system("pause");
+	return 0;
+}</pre>
+<p><span style="font-size: 16px;">     测试结果如下：</span></p>
+<p><span style="font-size: 16px;"><img alt="" src="http://cdn.acmerblog.com/img/1388887432588.gif"/></span></p>
+<p> </p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-85424">
+<article class="comment" id="comment-85424">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528055" rel="external nofollow">新用户718292</a></span> on <a href="http://www.acmerblog.com/data-structure-stack-expression-3396.html#comment-85424" rel="nofollow"><time datetime="2017-04-13T03:10:06+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>被54+1 我喜欢黑色主题      因为我不会自己用- -</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-85423">
+<article class="comment" id="comment-85423">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528055" rel="external nofollow">新用户718292</a></span> on <a href="http://www.acmerblog.com/data-structure-stack-expression-3396.html#comment-85423" rel="nofollow"><time datetime="2017-04-13T03:10:06+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>被54+1 我喜欢黑色主题      因为我不会自己用- -</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-85422">
+<article class="comment" id="comment-85422">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528055" rel="external nofollow">新用户718292</a></span> on <a href="http://www.acmerblog.com/data-structure-stack-expression-3396.html#comment-85422" rel="nofollow"><time datetime="2017-04-13T03:10:06+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>被54+1 我喜欢黑色主题      因为我不会自己用- -</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-85421">
+<article class="comment" id="comment-85421">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528055" rel="external nofollow">新用户718292</a></span> on <a href="http://www.acmerblog.com/data-structure-stack-expression-3396.html#comment-85421" rel="nofollow"><time datetime="2017-04-13T03:10:06+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>被54+1 我喜欢黑色主题      因为我不会自己用- -</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-85420">
+<article class="comment" id="comment-85420">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528055" rel="external nofollow">新用户718292</a></span> on <a href="http://www.acmerblog.com/data-structure-stack-expression-3396.html#comment-85420" rel="nofollow"><time datetime="2017-04-13T03:10:06+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>被54+1 我喜欢黑色主题      因为我不会自己用- -</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-85419">
+<article class="comment" id="comment-85419">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528055" rel="external nofollow">新用户718292</a></span> on <a href="http://www.acmerblog.com/data-structure-stack-expression-3396.html#comment-85419" rel="nofollow"><time datetime="2017-04-13T03:10:06+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>被54+1 我喜欢黑色主题      因为我不会自己用- -</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-85418">
+<article class="comment" id="comment-85418">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528055" rel="external nofollow">新用户718292</a></span> on <a href="http://www.acmerblog.com/data-structure-stack-expression-3396.html#comment-85418" rel="nofollow"><time datetime="2017-04-13T03:10:06+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>被54+1 我喜欢黑色主题      因为我不会自己用- -</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-85417">
+<article class="comment" id="comment-85417">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528055" rel="external nofollow">新用户718292</a></span> on <a href="http://www.acmerblog.com/data-structure-stack-expression-3396.html#comment-85417" rel="nofollow"><time datetime="2017-04-13T03:10:06+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>被54+1 我喜欢黑色主题      因为我不会自己用- -</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-85416">
+<article class="comment" id="comment-85416">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528055" rel="external nofollow">新用户718292</a></span> on <a href="http://www.acmerblog.com/data-structure-stack-expression-3396.html#comment-85416" rel="nofollow"><time datetime="2017-04-13T03:10:06+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>被54+1 我喜欢黑色主题      因为我不会自己用- -</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-85415">
+<article class="comment" id="comment-85415">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528055" rel="external nofollow">新用户718292</a></span> on <a href="http://www.acmerblog.com/data-structure-stack-expression-3396.html#comment-85415" rel="nofollow"><time datetime="2017-04-13T03:10:06+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>被54+1 我喜欢黑色主题      因为我不会自己用- -</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-85414">
+<article class="comment" id="comment-85414">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528055" rel="external nofollow">新用户718292</a></span> on <a href="http://www.acmerblog.com/data-structure-stack-expression-3396.html#comment-85414" rel="nofollow"><time datetime="2017-04-13T03:10:06+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>被54+1 我喜欢黑色主题      因为我不会自己用- -</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64534">
+<article class="comment" id="comment-64534">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">贺章平v</span> on <a href="http://www.acmerblog.com/data-structure-stack-expression-3396.html#comment-64534" rel="nofollow"><time datetime="2015-08-30T13:30:11+00:00" pubdate="">2015年8月30日 at 下午1:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>两个Push函数不会出现命名冲突么</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-44982">
+<article class="comment" id="comment-44982">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">userwawa</a></span> on <a href="http://www.acmerblog.com/data-structure-stack-expression-3396.html#comment-44982" rel="nofollow"><time datetime="2015-07-09T06:07:51+00:00" pubdate="">2015年7月9日 at 上午6:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>约瑟夫也用说这么长……很成熟的一个问题了，分治的方法解起来o(n)就可以了，有兴趣可以看看具体数学的第一章，关于约瑟夫问题推导出了一系列的结论，很漂亮</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-21411">
+<article class="comment" id="comment-21411">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">digiworm</a></span> on <a href="http://www.acmerblog.com/data-structure-stack-expression-3396.html#comment-21411" rel="nofollow"><time datetime="2015-07-08T06:30:48+00:00" pubdate="">2015年7月8日 at 上午6:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>图像处理那题解题报告在哪儿呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-21414">
+<article class="comment" id="comment-21414">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Snarl_jsb</a></span> on <a href="http://www.acmerblog.com/data-structure-stack-expression-3396.html#comment-21414" rel="nofollow"><time datetime="2015-04-06T02:46:25+00:00" pubdate="">2015年4月6日 at 上午2:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p><a href="https://coding.net/moon/miracle" rel="nofollow">https://coding.net/moon/miracle</a></p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-21410">
+<article class="comment" id="comment-21410">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaoriqiang</a></span> on <a href="http://www.acmerblog.com/data-structure-stack-expression-3396.html#comment-21410" rel="nofollow"><time datetime="2015-02-20T08:28:34+00:00" pubdate="">2015年2月20日 at 上午8:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>后面的掩码变量部分乍一看比较难理解，其实就是把32位按照一个整体来看待。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-62502">
+<article class="comment" id="comment-62502">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">czw8528</a></span> on <a href="http://www.acmerblog.com/data-structure-stack-expression-3396.html#comment-62502" rel="nofollow"><time datetime="2014-12-26T01:48:00+00:00" pubdate="">2014年12月26日 at 上午1:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这一题的代码这样提交时错误的~少考虑了很多情况</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-44980">
+<article class="comment" id="comment-44980">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hanyi</a></span> on <a href="http://www.acmerblog.com/data-structure-stack-expression-3396.html#comment-44980" rel="nofollow"><time datetime="2014-11-10T19:17:24+00:00" pubdate="">2014年11月10日 at 下午7:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不考虑最后将结果排序的话，快排的时间复杂度是O(N) ，而堆排的是O(N*logK)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-44981">
+<article class="comment" id="comment-44981">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">melody12ab</a></span> on <a href="http://www.acmerblog.com/data-structure-stack-expression-3396.html#comment-44981" rel="nofollow"><time datetime="2014-11-07T05:58:28+00:00" pubdate="">2014年11月7日 at 上午5:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢支持！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-44979">
+<article class="comment" id="comment-44979">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">linyanjin</a></span> on <a href="http://www.acmerblog.com/data-structure-stack-expression-3396.html#comment-44979" rel="nofollow"><time datetime="2014-10-14T07:30:52+00:00" pubdate="">2014年10月14日 at 上午7:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，再多来的CF上面的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-44983">
+<article class="comment" id="comment-44983">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ygwx</a></span> on <a href="http://www.acmerblog.com/data-structure-stack-expression-3396.html#comment-44983" rel="nofollow"><time datetime="2014-09-30T03:36:10+00:00" pubdate="">2014年9月30日 at 上午3:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正在练习，很有帮助</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-21413">
+<article class="comment" id="comment-21413">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fermi</a></span> on <a href="http://www.acmerblog.com/data-structure-stack-expression-3396.html#comment-21413" rel="nofollow"><time datetime="2014-09-23T18:25:57+00:00" pubdate="">2014年9月23日 at 下午6:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不是有公式吗？何不直接计算</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-21412">
+<article class="comment" id="comment-21412">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">303589828</a></span> on <a href="http://www.acmerblog.com/data-structure-stack-expression-3396.html#comment-21412" rel="nofollow"><time datetime="2014-06-01T19:23:58+00:00" pubdate="">2014年6月1日 at 下午7:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序是错的吧，明显没有判断不和该节点相邻的其他节点是否相互相邻</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-62503">
+<article class="comment" id="comment-62503">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">blogpick</a></span> on <a href="http://www.acmerblog.com/data-structure-stack-expression-3396.html#comment-62503" rel="nofollow"><time datetime="2014-05-31T11:06:47+00:00" pubdate="">2014年5月31日 at 上午11:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正解，我的方法占用的内存更多些</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-44984">
+<article class="comment" id="comment-44984">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">verycourage</a></span> on <a href="http://www.acmerblog.com/data-structure-stack-expression-3396.html#comment-44984" rel="nofollow"><time datetime="2014-05-26T09:51:12+00:00" pubdate="">2014年5月26日 at 上午9:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>请不要灌水，多谢！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-44978">
+<article class="comment" id="comment-44978">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Silence.L</a></span> on <a href="http://www.acmerblog.com/data-structure-stack-expression-3396.html#comment-44978" rel="nofollow"><time datetime="2014-01-08T13:05:09+00:00" pubdate="">2014年1月8日 at 下午1:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法挺不错。NewHead代表新的头节点，通过递归找到最后一个节点之后，就把这个节点赋给NewHead，然后一直返回返回，中途这个值是没有变化的，一边返回一边把相应的指针方向颠倒，最后结束时返回新的头节点到主函数。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

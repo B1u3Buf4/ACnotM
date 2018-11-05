@@ -1,0 +1,374 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>02-15</div>
+<div class="tit"><h1 class="entry-title">UVa-108-Maximum Sum</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/uva" rel="category tag" title="查看UVA中的全部文章">UVA</a></span><span class="i4">围观751次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4170" href="http://www.acmerblog.com/uva-108-maximum-sum-4170.html#comments" title="《UVa-108-Maximum Sum》上的评论">24 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<h2 style="text-align: center;">UVa-108-Maximum Sum</h2>
+<h2>Background</h2>
+<p>A problem that is simple to solve in one dimension is often much more difficult to solve in more than one dimension. Consider satisfying a boolean expression in conjunctive normal form in which each conjunct consists of exactly 3 disjuncts. This problem (3-SAT) is NP-complete. The problem 2-SAT is solved quite efficiently, however. In contrast, some problems belong to the same complexity class regardless of the dimensionality of the problem.</p>
+<h2>The Problem</h2>
+<p>Given a 2-dimensional array of positive and negative integers, find the sub-rectangle with the largest sum. The sum of a rectangle is the sum of all the elements in that rectangle. In this problem the sub-rectangle with the largest sum is referred to as the maximal sub-rectangle. A sub-rectangle is any contiguous sub-array of size 1 × 1 or greater located within the whole array. As an example, the maximal sub-rectangle of the array:</p>
+<div align="center">
+<table align="center" border="0" cellpadding="5" cellspacing="0">
+<tbody>
+<tr>
+<td align="CENTER">0</td>
+<td align="CENTER">-2</td>
+<td align="CENTER">-7</td>
+<td align="CENTER">0</td>
+</tr>
+<tr>
+<td align="CENTER">9</td>
+<td align="CENTER">2</td>
+<td align="CENTER">6</td>
+<td align="CENTER">-2</td>
+</tr>
+<tr>
+<td align="CENTER">-4</td>
+<td align="CENTER">1</td>
+<td align="CENTER">-4</td>
+<td align="CENTER">1</td>
+</tr>
+<tr>
+<td align="CENTER">-1</td>
+<td align="CENTER">8</td>
+<td align="CENTER">0</td>
+<td align="CENTER">-2</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>is in the lower-left-hand corner:</p>
+<div align="center">
+<table align="center" border="0" cellpadding="5" cellspacing="0">
+<tbody>
+<tr>
+<td align="CENTER">9</td>
+<td align="CENTER">2</td>
+</tr>
+<tr>
+<td align="CENTER">-4</td>
+<td align="CENTER">1</td>
+</tr>
+<tr>
+<td align="CENTER">-1</td>
+<td align="CENTER">8</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>and has the sum of 15.</p>
+<h2>Input and Output</h2>
+<p>The input consists of an N × N array of integers. The input begins with a single positive integer N on a line by itself indicating the size of the square two dimensional array. This is followed by N<sup>2</sup> integers separated by white-space (newlines and spaces). These N<sup>2</sup> integers make up the array in row-major order (i.e., all numbers on the first row, left-to-right, then all numbers on the second row, left-to-right, etc.). N may be as large as 100. The numbers in the array will be in the range [-127, 127].</p>
+<p>The output is the sum of the maximal sub-rectangle.</p>
+<h2>Sample Input</h2>
+<p>4<br/>
+0 -2 -7  0 9  2 -6  2<br/>
+-4  1 -4  1 -1<br/>
+8  0 -2</p>
+<h2>Sample Output</h2>
+<p>15</p>
+<h2>Analysis</h2>
+<p>多维（含二维）的最大子集问题是NP问题，只能用暴力搜索解决。在搜索的过程中，如果不注意保留以前的结果，将会使复杂度大大增加。我的算法是由行开始，顺序如下：</p>
+<p>(r<sub>1</sub>), (r<sub>1</sub>, r<sub>2</sub>), …, (r<sub>1</sub>, r<sub>2</sub>, …, r<sub>n</sub>),</p>
+<p>(r<sub>2</sub>), (r<sub>2</sub>, r<sub>3</sub>), …, (r<sub>2</sub>, r<sub>3</sub>, …, r<sub>n</sub>),</p>
+<p>….</p>
+<p>(r<sub>n-1</sub>), (r<sub>n-1</sub>, r<sub>n</sub>),</p>
+<p>(r<sub>n</sub>)</p>
+<p>在每一行组的循环中，列组的遍例顺序也是类似。这样有一个极大的好处，就是可以保留各列的和，当子集递增到下一行时，直接将原有各列和加上新一行的值就得到了新的子集。在列中也可以同样处理，而先行后列可以顺序访问原数据矩阵而无需跳转，可以加快内存访问速度，避免页面错误（这是操作系统层面的内容，单就算法而言可以不管）。</p>
+<h2>Solution</h2>
+<pre class="brush:cpp ">#include &lt;iostream&gt;
+#include &lt;stdlib.h&gt;
+using namespace std;
+int main(void) {
+	int aMat[100][100], int aColSum[100], nDem = 100, nMaxSum = -128, nTemp;
+	cin &gt;&gt; nDem;
+	for (int i = 0; i &lt; nDem; ++i) {
+		for (int j = 0; j &lt; nDem; ++j) {
+			cin &gt;&gt; nTemp;
+			aMat[i][j] = nTemp;
+		}
+	}
+	for (int nRowBeg = 0; nRowBeg &lt; nDem; ++nRowBeg) {
+		memset(aColSum, 0, sizeof(aColSum));
+		for (int nRowEnd = nRowBeg; nRowEnd &lt; nDem; ++nRowEnd) {
+			int *pCol = (int*)(aMat[nRowEnd]);
+			for (int nCol = 0; nCol &lt; nDem; aColSum[nCol] += pCol[nCol++]);
+			for (int nColBeg = 0; nColBeg &lt; nDem; ++nColBeg) {
+				int nSum = 0;
+				for (int nColEnd = nColBeg; nColEnd &lt; nDem; ++nColEnd) {
+					nSum += aColSum[nColEnd];
+					nMaxSum = nSum &gt; nMaxSum ? nSum : nMaxSum;
+				}
+			}
+		}
+	}
+	cout &lt;&lt; nMaxSum &lt;&lt; endl;
+	return 0;
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-82026">
+<article class="comment" id="comment-82026">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527075" rel="external nofollow">新用户682541</a></span> on <a href="http://www.acmerblog.com/uva-108-maximum-sum-4170.html#comment-82026" rel="nofollow"><time datetime="2017-04-12T19:45:07+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那是阴道炎症细菌滋生的味道</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-82025">
+<article class="comment" id="comment-82025">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527075" rel="external nofollow">新用户682541</a></span> on <a href="http://www.acmerblog.com/uva-108-maximum-sum-4170.html#comment-82025" rel="nofollow"><time datetime="2017-04-12T19:45:07+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那是阴道炎症细菌滋生的味道</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-82024">
+<article class="comment" id="comment-82024">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527075" rel="external nofollow">新用户682541</a></span> on <a href="http://www.acmerblog.com/uva-108-maximum-sum-4170.html#comment-82024" rel="nofollow"><time datetime="2017-04-12T19:45:07+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那是阴道炎症细菌滋生的味道</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-82023">
+<article class="comment" id="comment-82023">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527075" rel="external nofollow">新用户682541</a></span> on <a href="http://www.acmerblog.com/uva-108-maximum-sum-4170.html#comment-82023" rel="nofollow"><time datetime="2017-04-12T19:45:07+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那是阴道炎症细菌滋生的味道</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-82022">
+<article class="comment" id="comment-82022">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527075" rel="external nofollow">新用户682541</a></span> on <a href="http://www.acmerblog.com/uva-108-maximum-sum-4170.html#comment-82022" rel="nofollow"><time datetime="2017-04-12T19:45:07+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那是阴道炎症细菌滋生的味道</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-82021">
+<article class="comment" id="comment-82021">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527075" rel="external nofollow">新用户682541</a></span> on <a href="http://www.acmerblog.com/uva-108-maximum-sum-4170.html#comment-82021" rel="nofollow"><time datetime="2017-04-12T19:45:07+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那是阴道炎症细菌滋生的味道</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-82020">
+<article class="comment" id="comment-82020">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527075" rel="external nofollow">新用户682541</a></span> on <a href="http://www.acmerblog.com/uva-108-maximum-sum-4170.html#comment-82020" rel="nofollow"><time datetime="2017-04-12T19:45:07+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那是阴道炎症细菌滋生的味道</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-82019">
+<article class="comment" id="comment-82019">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527075" rel="external nofollow">新用户682541</a></span> on <a href="http://www.acmerblog.com/uva-108-maximum-sum-4170.html#comment-82019" rel="nofollow"><time datetime="2017-04-12T19:45:07+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那是阴道炎症细菌滋生的味道</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-82018">
+<article class="comment" id="comment-82018">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527075" rel="external nofollow">新用户682541</a></span> on <a href="http://www.acmerblog.com/uva-108-maximum-sum-4170.html#comment-82018" rel="nofollow"><time datetime="2017-04-12T19:45:07+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那是阴道炎症细菌滋生的味道</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-82017">
+<article class="comment" id="comment-82017">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527075" rel="external nofollow">新用户682541</a></span> on <a href="http://www.acmerblog.com/uva-108-maximum-sum-4170.html#comment-82017" rel="nofollow"><time datetime="2017-04-12T19:45:07+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>那是阴道炎症细菌滋生的味道</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-57435">
+<article class="comment" id="comment-57435">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jupiterhyun</a></span> on <a href="http://www.acmerblog.com/uva-108-maximum-sum-4170.html#comment-57435" rel="nofollow"><time datetime="2015-06-27T16:27:39+00:00" pubdate="">2015年6月27日 at 下午4:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>代码可真够长的！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46533">
+<article class="comment" id="comment-46533">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">anthozoan77</a></span> on <a href="http://www.acmerblog.com/uva-108-maximum-sum-4170.html#comment-46533" rel="nofollow"><time datetime="2015-05-18T22:38:01+00:00" pubdate="">2015年5月18日 at 下午10:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>最长回文子串可以使用manacher算法，将时间复杂度降到O(n)。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-46528">
+<article class="comment" id="comment-46528">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jdliyao</a></span> on <a href="http://www.acmerblog.com/uva-108-maximum-sum-4170.html#comment-46528" rel="nofollow"><time datetime="2015-05-18T04:14:17+00:00" pubdate="">2015年5月18日 at 上午4:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>mark, 备用</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-24774">
+<article class="comment" id="comment-24774">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">daisyleedq</a></span> on <a href="http://www.acmerblog.com/uva-108-maximum-sum-4170.html#comment-24774" rel="nofollow"><time datetime="2015-04-21T07:43:37+00:00" pubdate="">2015年4月21日 at 上午7:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，值得借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-46530">
+<article class="comment" id="comment-46530">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">skyand</a></span> on <a href="http://www.acmerblog.com/uva-108-maximum-sum-4170.html#comment-46530" rel="nofollow"><time datetime="2015-04-09T02:05:23+00:00" pubdate="">2015年4月9日 at 上午2:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>博主的C++功底真是好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46535">
+<article class="comment" id="comment-46535">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">895350909</a></span> on <a href="http://www.acmerblog.com/uva-108-maximum-sum-4170.html#comment-46535" rel="nofollow"><time datetime="2015-03-31T12:14:47+00:00" pubdate="">2015年3月31日 at 下午12:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#!/usr/bin/env python def cou(n): arr =  [1]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-46536">
+<article class="comment" id="comment-46536">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">cyyuen</a></span> on <a href="http://www.acmerblog.com/uva-108-maximum-sum-4170.html#comment-46536" rel="nofollow"><time datetime="2015-03-14T10:21:43+00:00" pubdate="">2015年3月14日 at 上午10:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很棒的网站，加油！⛽️</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46539">
+<article class="comment" id="comment-46539">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zcmu_sls</a></span> on <a href="http://www.acmerblog.com/uva-108-maximum-sum-4170.html#comment-46539" rel="nofollow"><time datetime="2015-03-01T11:36:05+00:00" pubdate="">2015年3月1日 at 上午11:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>if(j){<br/>
+                    int ans=a <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> ;<br/>
+                    for(int x=j-1;x&gt;=0;x–){<br/>
+                        if(!a <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/d7/newx_org.gif"/> ) break;<br/>
+                        ans=min(ans,a <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/d7/newx_org.gif"/> );<br/>
+                        sum+=ans;<br/>
+                    }<br/>
+                }<br/>
+求解释，，dp的思路是什么呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-46531">
+<article class="comment" id="comment-46531">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">edward2414</a></span> on <a href="http://www.acmerblog.com/uva-108-maximum-sum-4170.html#comment-46531" rel="nofollow"><time datetime="2015-02-06T20:52:53+00:00" pubdate="">2015年2月6日 at 下午8:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>The site You have write is very nicely prepared and quite insightful thanks for nice posta?|</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46537">
+<article class="comment" id="comment-46537">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">missliuxin</a></span> on <a href="http://www.acmerblog.com/uva-108-maximum-sum-4170.html#comment-46537" rel="nofollow"><time datetime="2015-01-27T22:09:12+00:00" pubdate="">2015年1月27日 at 下午10:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>使用ListNodeWrapper很蹩脚的感觉，没有更好的解决办法？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-46534">
+<article class="comment" id="comment-46534">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">radish</a></span> on <a href="http://www.acmerblog.com/uva-108-maximum-sum-4170.html#comment-46534" rel="nofollow"><time datetime="2015-01-06T08:28:12+00:00" pubdate="">2015年1月6日 at 上午8:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>博主您好，这是一个内容十分优秀的博客，而且界面也非常漂亮。但是为什么博客的响应速度这么慢，虽然博客的主机在国外，但是我开启VPN还是经常响应很久，再者打开某些页面经常会出现数据库连接出错的提示</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46538">
+<article class="comment" id="comment-46538">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">211206421</a></span> on <a href="http://www.acmerblog.com/uva-108-maximum-sum-4170.html#comment-46538" rel="nofollow"><time datetime="2014-12-23T17:32:49+00:00" pubdate="">2014年12月23日 at 下午5:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一段代码中：<br/>
+ next <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/>  = next <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> ;<br/>
+明显不对吧，应该是 next <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> =j;才对</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-46532">
+<article class="comment" id="comment-46532">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">AcmDream</a></span> on <a href="http://www.acmerblog.com/uva-108-maximum-sum-4170.html#comment-46532" rel="nofollow"><time datetime="2014-07-10T06:00:12+00:00" pubdate="">2014年7月10日 at 上午6:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>排版</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46529">
+<article class="comment" id="comment-46529">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">_Tree</a></span> on <a href="http://www.acmerblog.com/uva-108-maximum-sum-4170.html#comment-46529" rel="nofollow"><time datetime="2014-03-25T13:19:33+00:00" pubdate="">2014年3月25日 at 下午1:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

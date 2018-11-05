@@ -1,0 +1,418 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>06-08</div>
+<div class="tit"><h1 class="entry-title">B树(一)概述和C++实现</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/data-struct/trees" rel="category tag" title="查看树形结构中的全部文章">树形结构</a>, <a href="http://www.acmerblog.com/category/zhuanti/algorithm" rel="category tag" title="查看算法分析中的全部文章">算法分析</a></span><span class="i4">围观1648次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5831" href="http://www.acmerblog.com/b-tree-5831.html#comments" title="《B树(一)概述和C++实现》上的评论">25 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p>B树（B-tree）是一种树状数据结构，它能够存储数据、对其进行排序并允许以O(log n)的时间复杂度运行进行查找、顺序读取、插入和删除的数据结构。B树，概括来说是一个节点可以拥有多于2个子节点的二叉查找树。与自平衡二叉查找树不同，B-树为系统最优化大块数据的读和写操作。<br/>
+为什么要使用b树？大多数其他的自动平衡搜索树(比如AVL树和红黑树),都假设一切都是在主内存。我们必须考虑大量的数据,不能全部放入主存。B树由于是多叉树，可以大大的降低树的高度，从而减少磁盘的访问的次数(此部分在算法导论一书有详细介绍)。普遍运用在数据库和文件系统。</p>
+<p><strong>B树的定义</strong></p>
+<p>是一种多路搜索树（并不是二叉的），具有以下的性质：<br/>
+1. 由最小度数 t 定义，t根据磁盘块大小确定。<br/>
+2. 除根节点以外的其它节点，必须包含<strong>至少</strong> t-1 个关键字。根节点可以至少有1个关键字。<br/>
+3. 所有节点(包括根节点)，可以包含<strong>最多 2t-1 </strong>个关键字。<br/>
+4.  非叶子结点的<strong>关键字个数</strong>=指向儿子的<strong>指针个数 – 1</strong>；<br/>
+6. 非叶子结点的关键字：K[1], K[2], …, K[2t-1]；且K[i] &lt; K[i+1]；就是说升序排列。<br/>
+7. 非叶子结点的指针：P[1], P[2], …, P[2t-1]；其中P[1]指向关键字小于K[1]的子树，P[2t-1]指向关键字大于K[2t-1]的子树，其它P[i]指向关键字属于(K[i-1], K[i])的子树；<br/>
+8.所有叶子结点位于同一层；</p>
+<p>如：（t=3）时，即最少要有2个以上的关键字：</p>
+<p><a href="http://cdn.acmerblog.com/wp-content/uploads/2014/06/BTreeIntro1.png"><img alt="BTreeIntro1" class="alignnone wp-image-6011" height="182" src="http://cdn.acmerblog.com/wp-content/uploads/2014/06/BTreeIntro1.png" width="532"/></a></p>
+<p>B-树的特性：<br/>
+1.关键字集合分布在整颗树中；<br/>
+2.任何一个关键字出现且只出现在一个结点中；<br/>
+3.搜索有可能在非叶子结点结束；<br/>
+4.其搜索性能等价于在关键字全集内做一次二分查找；<br/>
+5.自动层次控制；</p>
+<p><strong>B-树的搜索</strong></p>
+<p>从根结点开始，对结点内的关键字（有序）序列进行二分查找，如果命中则结束，否则进入查询关键字所属范围的儿子结点；重复，直到所对应的儿子指针为空，或已经是叶子结点；</p>
+<p><strong>B-树的遍历</strong><br/>
+和二叉树的先序遍历类似。我们从最左边的孩子开始,递归地打印最左边的孩子,然后剩下的孩子重复相同的过程。最后,递归地打印最右边的孩子。</p>
+<p><strong>代码实现</strong></p>
+<pre class="brush:cpp">#include&lt;iostream&gt;
+using namespace std;
+
+// 一个 BTree 节点
+class BTreeNode
+{
+    int *keys;  // 关键字 的数组
+    int t;      //最小的度
+    BTreeNode **C; // 孩子节点指针数组
+    int n;     // 当前节点关键字的数量
+    bool leaf; // 是否是叶子节点
+public:
+    BTreeNode(int _t, bool _leaf);   // 构造函数
+
+    // 遍历B树
+    void traverse();
+
+    //在B树中查找 k
+    BTreeNode *search(int k);
+
+friend class BTree;
+};
+
+// B树类
+class BTree
+{
+    BTreeNode *root; // 指向根节点
+    int t;  // 最小的度
+public:
+    // 构造函数
+    BTree(int _t)
+    {  root = NULL;  t = _t; }
+
+    // 遍历树
+    void traverse()
+    {  if (root != NULL) root-&gt;traverse(); }
+
+    // 查找
+    BTreeNode* search(int k)
+    {  return (root == NULL)? NULL : root-&gt;search(k); }
+};
+
+// 构造函数
+BTreeNode::BTreeNode(int _t, bool _leaf)
+{
+    t = _t;
+    leaf = _leaf;
+
+    // 分配内存
+    keys = new int[2*t-1];
+    C = new BTreeNode *[2*t];
+
+    // 初始关键字个数为0
+    n = 0;
+}
+
+// 遍历当前节点和当前节点下的子树
+void BTreeNode::traverse()
+{
+    // n个关键字，和n+1个孩子
+    int i;
+    for (i = 0; i &lt; n; i++)
+    {
+        if (leaf == false)
+            C[i]-&gt;traverse();
+        cout &lt;&lt; " " &lt;&lt; keys[i];
+    }
+
+    //遍历最后一个孩子
+    if (leaf == false)
+        C[i]-&gt;traverse();
+}
+
+// 在当前节点下查找 k
+BTreeNode *BTreeNode::search(int k)
+{
+    // 找到第一个大于或等于k的关键字
+    int i = 0;
+    while (i &lt; n &amp;&amp; k &gt; keys[i])
+        i++;
+
+    //如果相等，就找到了
+    if (keys[i] == k)
+        return this;
+
+    //如果是叶节点，未找到
+    if (leaf == true)
+        return NULL;
+
+    // 否则可能在子树中
+    return C[i]-&gt;search(k);
+}</pre>
+<p>上面的代码只是初步的实现，后续文章会实现 B树的插入和删除操作，并给出完整的包含测试的代码。</p>
+<p>参考：http://www.geeksforgeeks.org/b-tree-set-1-introduction-2/</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75517">
+<article class="comment" id="comment-75517">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521184" rel="external nofollow">新用户817941</a></span> on <a href="http://www.acmerblog.com/b-tree-5831.html#comment-75517" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>爷养了好久才养了两集感觉快熬不住了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75516">
+<article class="comment" id="comment-75516">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521184" rel="external nofollow">新用户817941</a></span> on <a href="http://www.acmerblog.com/b-tree-5831.html#comment-75516" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>爷养了好久才养了两集感觉快熬不住了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75515">
+<article class="comment" id="comment-75515">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521184" rel="external nofollow">新用户817941</a></span> on <a href="http://www.acmerblog.com/b-tree-5831.html#comment-75515" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>爷养了好久才养了两集感觉快熬不住了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75514">
+<article class="comment" id="comment-75514">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521184" rel="external nofollow">新用户817941</a></span> on <a href="http://www.acmerblog.com/b-tree-5831.html#comment-75514" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>爷养了好久才养了两集感觉快熬不住了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75513">
+<article class="comment" id="comment-75513">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521184" rel="external nofollow">新用户817941</a></span> on <a href="http://www.acmerblog.com/b-tree-5831.html#comment-75513" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>爷养了好久才养了两集感觉快熬不住了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75512">
+<article class="comment" id="comment-75512">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521184" rel="external nofollow">新用户817941</a></span> on <a href="http://www.acmerblog.com/b-tree-5831.html#comment-75512" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>爷养了好久才养了两集感觉快熬不住了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75511">
+<article class="comment" id="comment-75511">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521184" rel="external nofollow">新用户817941</a></span> on <a href="http://www.acmerblog.com/b-tree-5831.html#comment-75511" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>爷养了好久才养了两集感觉快熬不住了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75510">
+<article class="comment" id="comment-75510">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521184" rel="external nofollow">新用户817941</a></span> on <a href="http://www.acmerblog.com/b-tree-5831.html#comment-75510" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>爷养了好久才养了两集感觉快熬不住了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75509">
+<article class="comment" id="comment-75509">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521184" rel="external nofollow">新用户817941</a></span> on <a href="http://www.acmerblog.com/b-tree-5831.html#comment-75509" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>爷养了好久才养了两集感觉快熬不住了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75508">
+<article class="comment" id="comment-75508">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521184" rel="external nofollow">新用户817941</a></span> on <a href="http://www.acmerblog.com/b-tree-5831.html#comment-75508" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>爷养了好久才养了两集感觉快熬不住了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75507">
+<article class="comment" id="comment-75507">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521184" rel="external nofollow">新用户817941</a></span> on <a href="http://www.acmerblog.com/b-tree-5831.html#comment-75507" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>爷养了好久才养了两集感觉快熬不住了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75506">
+<article class="comment" id="comment-75506">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521184" rel="external nofollow">新用户817941</a></span> on <a href="http://www.acmerblog.com/b-tree-5831.html#comment-75506" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>爷养了好久才养了两集感觉快熬不住了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30399">
+<article class="comment" id="comment-30399">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">PriceKiller</a></span> on <a href="http://www.acmerblog.com/b-tree-5831.html#comment-30399" rel="nofollow"><time datetime="2015-06-05T22:14:51+00:00" pubdate="">2015年6月5日 at 下午10:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很棒的网站，加油！⛽️</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49386">
+<article class="comment" id="comment-49386">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Monkey_Sun</a></span> on <a href="http://www.acmerblog.com/b-tree-5831.html#comment-49386" rel="nofollow"><time datetime="2015-04-20T15:41:39+00:00" pubdate="">2015年4月20日 at 下午3:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法很不错啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49383">
+<article class="comment" id="comment-49383">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">nwling</a></span> on <a href="http://www.acmerblog.com/b-tree-5831.html#comment-49383" rel="nofollow"><time datetime="2015-03-10T03:06:48+00:00" pubdate="">2015年3月10日 at 上午3:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>居然是机试，还和13年重复。题目不难</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30402">
+<article class="comment" id="comment-30402">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">binqi_ren</a></span> on <a href="http://www.acmerblog.com/b-tree-5831.html#comment-30402" rel="nofollow"><time datetime="2015-02-13T01:18:32+00:00" pubdate="">2015年2月13日 at 上午1:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好厉害～</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30403">
+<article class="comment" id="comment-30403">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangduanjing</a></span> on <a href="http://www.acmerblog.com/b-tree-5831.html#comment-30403" rel="nofollow"><time datetime="2015-01-14T03:47:41+00:00" pubdate="">2015年1月14日 at 上午3:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30398">
+<article class="comment" id="comment-30398">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mazilian</a></span> on <a href="http://www.acmerblog.com/b-tree-5831.html#comment-30398" rel="nofollow"><time datetime="2015-01-07T00:40:43+00:00" pubdate="">2015年1月7日 at 上午12:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很高兴你会喜欢这个网站。目前还没有一个开发团队，网站是我一个人在维护，都是用的开源系统，也没有太多需要开发的部分，主要是内容整理。非常感谢你的关注。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30397">
+<article class="comment" id="comment-30397">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">cherry_odd</a></span> on <a href="http://www.acmerblog.com/b-tree-5831.html#comment-30397" rel="nofollow"><time datetime="2014-11-26T04:41:00+00:00" pubdate="">2014年11月26日 at 上午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学习了。找到这题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49385">
+<article class="comment" id="comment-49385">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1193658339</a></span> on <a href="http://www.acmerblog.com/b-tree-5831.html#comment-49385" rel="nofollow"><time datetime="2014-11-24T14:39:57+00:00" pubdate="">2014年11月24日 at 下午2:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>贴的有些代码的头文件不见了，这是为啥</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49387">
+<article class="comment" id="comment-49387">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangdilj</a></span> on <a href="http://www.acmerblog.com/b-tree-5831.html#comment-49387" rel="nofollow"><time datetime="2014-10-13T18:15:47+00:00" pubdate="">2014年10月13日 at 下午6:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实国内大部分公司对算法都不够重视。特别是中小型公司老板根本都不懂技术，也不懂什么是算法，从而也不要求程序员懂什么算法，做程序从来不考虑性能问题，只要页面能显示出来就是好程序，这是国内的现状，很无奈。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30401">
+<article class="comment" id="comment-30401">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">la0bei</a></span> on <a href="http://www.acmerblog.com/b-tree-5831.html#comment-30401" rel="nofollow"><time datetime="2014-09-08T18:12:44+00:00" pubdate="">2014年9月8日 at 下午6:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>.net中char类型不是两个字节么</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30400">
+<article class="comment" id="comment-30400">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bluesky</a></span> on <a href="http://www.acmerblog.com/b-tree-5831.html#comment-30400" rel="nofollow"><time datetime="2014-08-31T22:27:30+00:00" pubdate="">2014年8月31日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>6题应该就是算概率的吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-630">
+<article class="comment" id="comment-630">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">binbinlocky</span> on <a href="http://www.acmerblog.com/b-tree-5831.html#comment-630" rel="nofollow"><time datetime="2014-07-26T16:36:23+00:00" pubdate="">2014年7月26日 at 下午4:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>等待后面的实现，多谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49384">
+<article class="comment" id="comment-49384">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">czw8528</a></span> on <a href="http://www.acmerblog.com/b-tree-5831.html#comment-49384" rel="nofollow"><time datetime="2014-07-14T20:29:21+00:00" pubdate="">2014年7月14日 at 下午8:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#include &lt;cstdio&gt;<br/>
+#include &lt;cstring&gt;</p>
+<p>const int MAXSIZE=256;<br/>
+//char store[MAXSIZE];<br/>
+char str1[MAXSIZE];<br/>
+/*<br/>
+void init(char *store) {<br/>
+    int i;<br/>
+    store['A']=’V', store['B']=’W',store['C']=’X',store['D']=’Y',store['E']=’Z';<br/>
+    for(i=’F';i&lt;=’Z';++i) store <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> =i-5;<br/>
+}<br/>
+*/<br/>
+int main() {<br/>
+    //freopen("input.txt","r",stdin);<br/>
+    //init(store);<br/>
+    char *p;<br/>
+    while(fgets(str1,MAXSIZE,stdin) &amp;&amp; strcmp(str1,"STARTn")==0) {<br/>
+        if(p=fgets(str1,MAXSIZE,stdin)) {<br/>
+            for(;*p;++p) {<br/>
+				//*p=store[*p]<br/>
+                if(*p&lt;’A’ || *p&gt;’Z') continue;<br/>
+                if(*p&gt;’E') *p=*p-5;<br/>
+                else *p=*p+21;<br/>
+            }<br/>
+            printf("%s",str1);<br/>
+        }<br/>
+        fgets(str1,MAXSIZE,stdin);<br/>
+    }<br/>
+    return 0;<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

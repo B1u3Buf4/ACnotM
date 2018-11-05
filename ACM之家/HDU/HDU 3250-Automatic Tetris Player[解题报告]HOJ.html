@@ -1,0 +1,402 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-13</div>
+<div class="tit"><h1 class="entry-title">HDU 3250-Automatic Tetris Player[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观287次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5145" href="http://www.acmerblog.com/hdu-3250-automatic-tetris-player-5145.html#comments" title="《HDU 3250-Automatic Tetris Player[解题报告]HOJ》上的评论">16 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Automatic Tetris Player</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+A random sequence of tetrominoes (sometimes called "tetrads" in older versions)-shapes composed of four square blocks each-fall down the playing field (a rectangular vertical shaft, called the "well" or "matrix"). The object of the game is to manipulate these tetrominoes, by moving each one sideways and rotating it by 90 degree units, with the aim of creating a horizontal line of blocks without gaps. When such a line is created, it disappears, and any block above the deleted line will fall. As the game progresses, the tetrominoes fall faster, and the game ends when the stack of tetrominoes reaches the top of the playing field and no new tetrominoes are able to enter.
+<p>– Wikipedia (http://en.wikipedia.org/wiki/Tetris)</p>
+<p><b>Task</b><br/>The seven one-sided tetrominoes below are represented by I, J, L, O, S, T, Z from first row to the second, left to right. Look at their shapes, then you’ll realize why they’re called this way.<br/></p><center><img alt="Selecting Frames" src="/img/1395042902285.jpg"/></center><br/>Your task is to implement an automatic tetris player. You’ll be given a sequence of blocks, and your objective is to minimize the sum of squares of column heights. By "height", we mean the row number of the topmost non-empty unit block of that column. Rows are numbered 1, 2, 3, …, in a bottom-up order. Technically, if we denote the height of column i by hi, you should minimize sum{(hi)<sup>2</sup>}.
+<p>For simplicity, assume each block is falling from high enough, and you cannot control the block anymore, once you decide its rotating and horizontal position. Note that you cannot mirror the blocks, only horizontal moving and rotating is permitted.</p>
+<p>The field is always 5 columns wide. When a line of unit blocks are eliminated, the vertical position of everything above the line is decreased by 1. This is the most widely used algorithm. But the resulting board may looks strange, since things can "float up in the sky", see below.<br/></p><center><img alt="Selecting Frames" src="/img/1395042902412.jpg"/></center> </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line contains a single integer T (T &lt;= 20), the number of test cases. Each case contains a single line of a string, representing the block sequence. There will be no more than 5 blocks, each of them will be one of I, J, L, O, S, T and Z. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The first line contains a single integer T (T &lt;= 20), the number of test cases. Each case contains a single line of a string, representing the block sequence. There will be no more than 5 blocks, each of them will be one of I, J, L, O, S, T and Z.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3
+LLLLO
+IJ
+STZ</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case 1: 0
+Case 2: 3
+Case 3: 15</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;stdlib.h&gt;
+const int MAXN=10;
+int hei[10];
+int mp[300];
+int a[30][5];
+int p[100][30];
+char s[100];
+int first,anss;
+int Cnt[10]={2,4,4,1,2,4,2};
+int Dx[7][4]=
+{
+ 0,0,0,0,
+ 0,-1,-1,-1,
+ 0,-1,-1,-1,
+ 0,0,-1,-1,
+ 0,0,-1,-1,
+ 0,-1,-1,-1,
+ 0,0,-1,-1
+};
+int Dy[7][4]=
+{
+ 0,1,2,3,
+ 0,0,1,2,
+ 0,-2,-1,0,
+ 0,1,0,1,
+ 0,1,-1,0,
+ 0,-1,0,1,
+ 0,1,1,2
+};
+int rotx(int x,int y,int rot)
+{
+ if (rot==0) return x;
+ if (rot==1) return y;
+ if (rot==2) return -x;
+ if (rot==3) return -y;
+}
+int roty(int x,int y,int rot)
+{
+ if (rot==0) return y;
+ if (rot==1) return -x;
+ if (rot==2) return -y;
+ if (rot==3) return x;
+}
+bool set(int now,int id,int pos,int rot)
+{
+ for (int i=0; i&lt;4; i++)
+ {
+ int dx1=Dx[id][i];
+ int dy1=Dy[id][i];
+ int dx=rotx(dx1,dy1,rot);
+ int dy=roty(dx1,dy1,rot);
+ if (pos+dy&lt;0||pos+dy&gt;=5) return false;
+ }
+ int target=0;
+ for (int ii=MAXN; ii&gt;=0; ii--)
+ {
+ for (int i=0; i&lt;4; i++)
+ {
+ int dx1=Dx[id][i];
+ int dy1=Dy[id][i];
+ int dx=rotx(dx1,dy1,rot);
+ int dy=roty(dx1,dy1,rot);
+ if (ii+dx&lt;0)
+ {
+ target=ii+1;
+ break;
+ }
+ if (a[ii+dx][pos+dy]==1)
+ {
+ target=ii+1;
+ break;
+ }
+ }
+ if (target!=0) break;
+ }
+ //printf("%d %d\n",pos,target);
+ for (int i=0; i&lt;4; i++)
+ {
+ int dx1=Dx[id][i];
+ int dy1=Dy[id][i];
+ int dx=rotx(dx1,dy1,rot);
+ int dy=roty(dx1,dy1,rot);
+ //printf("%d %d\n",pos+dx,target+dy);
+ a[target+dx][pos+dy]=1;
+ }
+ p[now][0]=target;
+ p[now][1]=0;
+ for (int i=MAXN; i&gt;=0; i--)
+ {
+ bool find=true;
+ for (int j=0; j&lt;5; j++)
+ if (a[i][j]!=1) find=false;
+ if (find)
+ {
+ p[now][p[now][1]+2]=i;
+ for (int j=i; j&lt;MAXN; j++)
+ for (int k=0; k&lt;5; k++)
+ a[j][k]=a[j+1][k];
+ for (int k=0; k&lt;5; k++)
+ a[MAXN][k]=0;
+ p[now][1]++;
+ }
+ }
+ return true;
+}
+void remove(int now,int id,int pos,int rot)
+{
+ for (int ii=p[now][1]-1; ii&gt;=0; ii--)
+ {
+ int line=p[now][ii+2];
+ for (int i=MAXN; i&gt;line; i--)
+ for (int j=0; j&lt;5; j++)
+ a[i][j]=a[i-1][j];
+ for (int j=0; j&lt;5; j++)
+ a[line][j]=1;
+ }
+ int target=p[now][0];
+ for (int i=0; i&lt;4; i++)
+ {
+ int dx1=Dx[id][i];
+ int dy1=Dy[id][i];
+ int dx=rotx(dx1,dy1,rot);
+ int dy=roty(dx1,dy1,rot);
+ a[target+dx][pos+dy]=0;
+ }
+}
+void dfs(int now,int end)
+{
+ if (now==end)
+ {
+ int ans=0;
+ for (int i=0; i&lt;5; i++)
+ {
+ int max=0;
+ for (int j=MAXN; j&gt;=0; j--)
+ if (a[j][i]==1)
+ {
+ max=(j+1);
+ break;
+ }
+ ans+=max*max;
+ }
+ if (first||ans&lt;anss)
+ anss=ans;
+ first=0;
+ return;
+ }
+ for (int i=0; i&lt;5*Cnt[mp[s[now]]]; i++)
+ {
+ int x=i/Cnt[mp[s[now]]];
+ int rot=i%Cnt[mp[s[now]]];
+ if (set(now,mp[s[now]],x,rot))
+ {
+ dfs(now+1,end);
+ remove(now,mp[s[now]],x,rot);
+ }
+ }
+}
+
+int main()
+{
+ mp['I']=0;
+ mp['J']=1;
+ mp['L']=2;
+ mp['O']=3;
+ mp['S']=4;
+ mp['T']=5;
+ mp['Z']=6;
+ int t;
+ scanf("%d",&amp;t);
+ for (int ii=1; ii&lt;=t; ii++)
+ {
+ scanf("%s",s);
+ memset(a,0,sizeof(a));
+ first=1;
+ int len=strlen(s);
+ dfs(0,len);
+ printf("Case %d: %d\n",ii,anss);
+ }
+ return 0;
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-78278">
+<article class="comment" id="comment-78278">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528144" rel="external nofollow">新用户050630</a></span> on <a href="http://www.acmerblog.com/hdu-3250-automatic-tetris-player-5145.html#comment-78278" rel="nofollow"><time datetime="2017-04-12T10:53:29+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈的！！！初代你为毛线不开全力，二代大人为毛线不使用八门遁甲第八门！！！去他的鸣人佐助个垃圾，你们两兄弟更厉害！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78277">
+<article class="comment" id="comment-78277">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528144" rel="external nofollow">新用户050630</a></span> on <a href="http://www.acmerblog.com/hdu-3250-automatic-tetris-player-5145.html#comment-78277" rel="nofollow"><time datetime="2017-04-12T10:53:29+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈的！！！初代你为毛线不开全力，二代大人为毛线不使用八门遁甲第八门！！！去他的鸣人佐助个垃圾，你们两兄弟更厉害！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-78276">
+<article class="comment" id="comment-78276">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528144" rel="external nofollow">新用户050630</a></span> on <a href="http://www.acmerblog.com/hdu-3250-automatic-tetris-player-5145.html#comment-78276" rel="nofollow"><time datetime="2017-04-12T10:53:29+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈的！！！初代你为毛线不开全力，二代大人为毛线不使用八门遁甲第八门！！！去他的鸣人佐助个垃圾，你们两兄弟更厉害！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78275">
+<article class="comment" id="comment-78275">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528144" rel="external nofollow">新用户050630</a></span> on <a href="http://www.acmerblog.com/hdu-3250-automatic-tetris-player-5145.html#comment-78275" rel="nofollow"><time datetime="2017-04-12T10:53:29+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈的！！！初代你为毛线不开全力，二代大人为毛线不使用八门遁甲第八门！！！去他的鸣人佐助个垃圾，你们两兄弟更厉害！！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28263">
+<article class="comment" id="comment-28263">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gnipuohz</a></span> on <a href="http://www.acmerblog.com/hdu-3250-automatic-tetris-player-5145.html#comment-28263" rel="nofollow"><time datetime="2015-06-05T07:29:29+00:00" pubdate="">2015年6月5日 at 上午7:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不考虑最后将结果排序的话，快排的时间复杂度是O(N) ，而堆排的是O(N*logK)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48186">
+<article class="comment" id="comment-48186">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaotongtest</a></span> on <a href="http://www.acmerblog.com/hdu-3250-automatic-tetris-player-5145.html#comment-48186" rel="nofollow"><time datetime="2014-10-29T12:13:33+00:00" pubdate="">2014年10月29日 at 下午12:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学习了。找到这题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58194">
+<article class="comment" id="comment-58194">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">YangXiaoZhong</a></span> on <a href="http://www.acmerblog.com/hdu-3250-automatic-tetris-player-5145.html#comment-58194" rel="nofollow"><time datetime="2014-10-19T23:04:15+00:00" pubdate="">2014年10月19日 at 下午11:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>根本过不了。。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28259">
+<article class="comment" id="comment-28259">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">congve1</a></span> on <a href="http://www.acmerblog.com/hdu-3250-automatic-tetris-player-5145.html#comment-28259" rel="nofollow"><time datetime="2014-10-05T07:49:09+00:00" pubdate="">2014年10月5日 at 上午7:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法挺不错。NewHead代表新的头节点，通过递归找到最后一个节点之后，就把这个节点赋给NewHead，然后一直返回返回，中途这个值是没有变化的，一边返回一边把相应的指针方向颠倒，最后结束时返回新的头节点到主函数。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28261">
+<article class="comment" id="comment-28261">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">spiderMan</a></span> on <a href="http://www.acmerblog.com/hdu-3250-automatic-tetris-player-5145.html#comment-28261" rel="nofollow"><time datetime="2014-08-11T00:22:08+00:00" pubdate="">2014年8月11日 at 上午12:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一题是不是可以这样想，生了n孩子的家庭等价于n个家庭各生了一个1个孩子，这样最后男女的比例还是1:1</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28260">
+<article class="comment" id="comment-28260">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Tree</a></span> on <a href="http://www.acmerblog.com/hdu-3250-automatic-tetris-player-5145.html#comment-28260" rel="nofollow"><time datetime="2014-08-10T02:56:55+00:00" pubdate="">2014年8月10日 at 上午2:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>使用ListNodeWrapper很蹩脚的感觉，没有更好的解决办法？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28264">
+<article class="comment" id="comment-28264">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">3136869079</a></span> on <a href="http://www.acmerblog.com/hdu-3250-automatic-tetris-player-5145.html#comment-28264" rel="nofollow"><time datetime="2014-08-02T14:17:53+00:00" pubdate="">2014年8月2日 at 下午2:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Often We don’t set up on weblogs, but I would like to condition that this established up really forced me individually to do this! considerably outstanding publish</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48185">
+<article class="comment" id="comment-48185">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">123456789_xd</a></span> on <a href="http://www.acmerblog.com/hdu-3250-automatic-tetris-player-5145.html#comment-48185" rel="nofollow"><time datetime="2014-07-30T23:40:30+00:00" pubdate="">2014年7月30日 at 下午11:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28258">
+<article class="comment" id="comment-28258">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">895350909</a></span> on <a href="http://www.acmerblog.com/hdu-3250-automatic-tetris-player-5145.html#comment-28258" rel="nofollow"><time datetime="2014-07-04T23:16:17+00:00" pubdate="">2014年7月4日 at 下午11:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二种想法，我想来好久，为啥需要一个newhead，发现是把最后一个节点一直返回到嘴上面这层函数。厉害，这道题之前没样子想过。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58193">
+<article class="comment" id="comment-58193">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiaobei</a></span> on <a href="http://www.acmerblog.com/hdu-3250-automatic-tetris-player-5145.html#comment-58193" rel="nofollow"><time datetime="2014-06-07T16:58:53+00:00" pubdate="">2014年6月7日 at 下午4:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>代码不错，赞一个！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28262">
+<article class="comment" id="comment-28262">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bobo</a></span> on <a href="http://www.acmerblog.com/hdu-3250-automatic-tetris-player-5145.html#comment-28262" rel="nofollow"><time datetime="2014-04-30T17:09:35+00:00" pubdate="">2014年4月30日 at 下午5:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真心不错，力顶作者</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28265">
+<article class="comment" id="comment-28265">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zhenghao</a></span> on <a href="http://www.acmerblog.com/hdu-3250-automatic-tetris-player-5145.html#comment-28265" rel="nofollow"><time datetime="2014-03-14T22:24:17+00:00" pubdate="">2014年3月14日 at 下午10:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的方法，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

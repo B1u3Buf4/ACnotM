@@ -1,0 +1,288 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-12</div>
+<div class="tit"><h1 class="entry-title">HDU 1546 Idiomatic Phrases Game-字符串-[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/basis/string" rel="category tag" title="查看字符串处理中的全部文章">字符串处理</a>, <a href="http://www.acmerblog.com/category/graph/shortest-path" rel="category tag" title="查看最短路径中的全部文章">最短路径</a></span><span class="i4">围观846次</span><span class="i3"><a class="ds-thread-count" data-thread-key="2103" href="http://www.acmerblog.com/hdu-1546-Idiomatic-Phrases-Game-2103.html#comments" title="《HDU 1546 Idiomatic Phrases Game-字符串-[解题报告] C++》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Idiomatic Phrases Game</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Tom is playing a game called Idiomatic Phrases Game. An idiom consists of several Chinese characters and has a certain meaning. This game will give Tom two idioms. He should build a list of idioms and the list starts and ends with the two given idioms. For every two adjacent idioms, the last Chinese character of the former idiom should be the same as the first character of the latter one. For each time, Tom has a dictionary that he must pick idioms from and each idiom in the dictionary has a value indicates how long Tom will take to find the next proper idiom in the final list. Now you are asked to write a program to compute the shortest time Tom will take by giving you the idiom dictionary.  </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input consists of several test cases. Each test case contains an idiom dictionary. The dictionary is started by an integer N (0 &lt; N &lt; 1000) in one line. The following is N lines. Each line contains an integer T (the time Tom will take to work out) and an idiom. One idiom consists of several Chinese characters (at least 3) and one Chinese character consists of four hex digit (i.e., 0 to 9 and A to F). Note that the first and last idioms in the dictionary are the source and target idioms in the game. The input ends up with a case that N = 0. Do not process this case.  </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+One line for each case. Output an integer indicating the shortest time Tome will take. If the list can not be built, please output -1.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+5
+5 12345978ABCD2341
+5 23415608ACBD3412
+7 34125678AEFD4123
+15 23415673ACC34123
+4 41235673FBCD2156
+2
+20 12345678ABCD
+30 DCBF5432167D
+0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+17
+-1</pre>
+<p> <!-- problem end --></p>
+<p><span style="font-size:24px"><a href="http://acm.hdu.edu.cn/showproblem.php?pid=1546" target="_blank">点击打开链接hdu 1546</a></span></p>
+<p><span style="font-size:18px"><br/>
+</span></p>
+<p><span style="font-size:18px">思路：最短路+SPFA<br/>
+分析：<br/>
+1  只要建好图，然后利用SPFA求解最短路即可。注意字符串的处理<br/>
+2  定义一个char ch[10]数组，如果给数组的每一个元素值赋值后，还要记得要在最后ch[9]添加‘\0’，表示结束。就是如果要保存10个元素，那么数组最小要开到11，因为第11个表示‘\0’来表示正常结束。所以数组尽量开大点</span></p>
+<p>代码：</p>
+<p><span style="font-size:18px"></span></p>
+<pre class="brush:cpp ">#include&lt;iostream&gt;
+#include&lt;algorithm&gt;
+#include&lt;cstdio&gt;
+#include&lt;cstring&gt;
+#include&lt;string&gt;
+#include&lt;queue&gt;
+using namespace std;
+#define MAXN 1010
+#define INF 0xFFFFFFF
+
+int n;
+char str[MAXN][MAXN];
+int value[MAXN][MAXN];
+int t[MAXN];
+int dis[MAXN];
+int vis[MAXN];
+queue&lt;int&gt;q;
+
+/*初始化*/
+void init(){
+   int i , j , k , len;    
+   char ch1[10], ch2[10];
+   for(i = 1 ; i &lt;= n ; i++){
+      len = strlen(str[i])-4;
+      for(k = 0 ; k &lt; 4 ; k++)
+          ch1[k] = str[i][len+k];  
+      ch1[4] = '\0';/*末尾加上'\0'，表示字符串结束*/
+      for(j = 1 ; j &lt;= n ; j++){
+         value[i][j] = INF;
+         for(k = 0 ; k &lt; 4 ; k++)
+            ch2[k]  = str[j][k];
+         ch2[4] = '\0';/*末尾加上'\0'，表示字符串结束*/
+         if(!strcmp(ch1 , ch2))
+           value[i][j] = t[i];
+      }   
+      value[i][i] = 0;
+   }
+}
+
+/*SPFA*/
+void SPFA(){
+    memset(vis , 0 , sizeof(vis));
+    for(int i = 2 ; i &lt;= n ; i++)
+       dis[i] = INF;
+    dis[1] = 0;
+    vis[1] = 1;
+    q.push(1);
+    while(!q.empty()){
+       int x = q.front();
+       q.pop();
+       vis[x] = 0;
+       for(int i = 1 ; i &lt;= n ; i++){
+          if(value[x][i] &amp;&amp; dis[i] &gt; dis[x] + value[x][i]){
+            dis[i] = dis[x] + value[x][i];
+            if(!vis[i]){
+               vis[i] = 1;
+               q.push(i);
+            }
+          }
+       }
+    }
+}
+
+int main(){
+   while(scanf("%d" , &amp;n) &amp;&amp; n){
+      for(int i = 1; i &lt;= n ; i++)
+         scanf("%d %s" , &amp;t[i] , str[i]);
+      init();
+      SPFA();
+      if(dis[n] != INF)
+        printf("%d\n" , dis[n]);
+      else
+        printf("-1\n");
+   }
+   return 0;
+}</pre>
+<p></p>
+<p>解题报告转自：http://blog.csdn.net/chenguolinblog/article/details/8067460</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-14152">
+<article class="comment" id="comment-14152">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ycaxgjd</a></span> on <a href="http://www.acmerblog.com/hdu-1546-Idiomatic-Phrases-Game-2103.html#comment-14152" rel="nofollow"><time datetime="2015-06-04T14:35:43+00:00" pubdate="">2015年6月4日 at 下午2:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>一开始就规定不相邻节点颜色相同，可能得不到最优解。我想个类似的算法，也不确定是否总能得到最优解：先着一个点，随机挑一个相邻点，着第二色，继续随机选一个点，但必须至少有一个边和已着点相邻，着上不同色，当然尽量不增加新色，直到完成。我还找不到反例验证他的错误。。希望LZ也帮想想, 有想法欢迎来邮件。谢谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-14157">
+<article class="comment" id="comment-14157">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sharp</a></span> on <a href="http://www.acmerblog.com/hdu-1546-Idiomatic-Phrases-Game-2103.html#comment-14157" rel="nofollow"><time datetime="2015-05-27T13:07:13+00:00" pubdate="">2015年5月27日 at 下午1:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>mark, 备用</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-14146">
+<article class="comment" id="comment-14146">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fanxianxian</a></span> on <a href="http://www.acmerblog.com/hdu-1546-Idiomatic-Phrases-Game-2103.html#comment-14146" rel="nofollow"><time datetime="2015-05-21T18:10:19+00:00" pubdate="">2015年5月21日 at 下午6:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感谢分享 学习了`(*∩_∩*)′</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-14153">
+<article class="comment" id="comment-14153">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mazilian</a></span> on <a href="http://www.acmerblog.com/hdu-1546-Idiomatic-Phrases-Game-2103.html#comment-14153" rel="nofollow"><time datetime="2015-03-23T21:12:16+00:00" pubdate="">2015年3月23日 at 下午9:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Often We don’t set up on weblogs, but I would like to condition that this established up really forced me individually to do this! considerably outstanding publish</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-14148">
+<article class="comment" id="comment-14148">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rewrite</a></span> on <a href="http://www.acmerblog.com/hdu-1546-Idiomatic-Phrases-Game-2103.html#comment-14148" rel="nofollow"><time datetime="2015-03-22T01:16:44+00:00" pubdate="">2015年3月22日 at 上午1:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>能告诉我为什么对于每一个m，cnt的值不用更新吗?这儿我想不通啊，谢谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-14149">
+<article class="comment" id="comment-14149">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">303589828</a></span> on <a href="http://www.acmerblog.com/hdu-1546-Idiomatic-Phrases-Game-2103.html#comment-14149" rel="nofollow"><time datetime="2015-03-12T12:12:12+00:00" pubdate="">2015年3月12日 at 下午12:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>约瑟夫也用说这么长……很成熟的一个问题了，分治的方法解起来o(n)就可以了，有兴趣可以看看具体数学的第一章，关于约瑟夫问题推导出了一系列的结论，很漂亮</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-14147">
+<article class="comment" id="comment-14147">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ssjssh</a></span> on <a href="http://www.acmerblog.com/hdu-1546-Idiomatic-Phrases-Game-2103.html#comment-14147" rel="nofollow"><time datetime="2015-02-19T08:05:03+00:00" pubdate="">2015年2月19日 at 上午8:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Java真是解决大数的利器</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-14154">
+<article class="comment" id="comment-14154">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mysteriousAngel_love</a></span> on <a href="http://www.acmerblog.com/hdu-1546-Idiomatic-Phrases-Game-2103.html#comment-14154" rel="nofollow"><time datetime="2015-01-07T17:35:48+00:00" pubdate="">2015年1月7日 at 下午5:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>红绯鱼：<br/>
+牛逼牛逼</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-14159">
+<article class="comment" id="comment-14159">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zhenghao</a></span> on <a href="http://www.acmerblog.com/hdu-1546-Idiomatic-Phrases-Game-2103.html#comment-14159" rel="nofollow"><time datetime="2014-11-19T18:46:40+00:00" pubdate="">2014年11月19日 at 下午6:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法挺不错。NewHead代表新的头节点，通过递归找到最后一个节点之后，就把这个节点赋给NewHead，然后一直返回返回，中途这个值是没有变化的，一边返回一边把相应的指针方向颠倒，最后结束时返回新的头节点到主函数。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-14155">
+<article class="comment" id="comment-14155">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangduanjing</a></span> on <a href="http://www.acmerblog.com/hdu-1546-Idiomatic-Phrases-Game-2103.html#comment-14155" rel="nofollow"><time datetime="2014-09-16T07:47:12+00:00" pubdate="">2014年9月16日 at 上午7:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>博主的C++功底真是好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-14158">
+<article class="comment" id="comment-14158">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fwhappy</a></span> on <a href="http://www.acmerblog.com/hdu-1546-Idiomatic-Phrases-Game-2103.html#comment-14158" rel="nofollow"><time datetime="2014-09-01T01:43:35+00:00" pubdate="">2014年9月1日 at 上午1:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>21行中，j&lt;10可改为j&lt;10-i，减少比较次数</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-14150">
+<article class="comment" id="comment-14150">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiaobei</a></span> on <a href="http://www.acmerblog.com/hdu-1546-Idiomatic-Phrases-Game-2103.html#comment-14150" rel="nofollow"><time datetime="2014-08-01T19:27:55+00:00" pubdate="">2014年8月1日 at 下午7:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第36行，struct node **head_ref，怎么理解，那个函数感觉不是很懂啊！？？弱渣求助</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-14156">
+<article class="comment" id="comment-14156">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xuelanghu</a></span> on <a href="http://www.acmerblog.com/hdu-1546-Idiomatic-Phrases-Game-2103.html#comment-14156" rel="nofollow"><time datetime="2014-07-13T05:08:45+00:00" pubdate="">2014年7月13日 at 上午5:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-14151">
+<article class="comment" id="comment-14151">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hunangangli</a></span> on <a href="http://www.acmerblog.com/hdu-1546-Idiomatic-Phrases-Game-2103.html#comment-14151" rel="nofollow"><time datetime="2014-07-01T06:22:27+00:00" pubdate="">2014年7月1日 at 上午6:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不太明白DFS的方法</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

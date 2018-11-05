@@ -1,0 +1,295 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-12</div>
+<div class="tit"><h1 class="entry-title">HDU 1558 Segment set-并查集-[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/data-struct/union-find" rel="category tag" title="查看并查集中的全部文章">并查集</a></span><span class="i4">围观1087次</span><span class="i3"><a class="ds-thread-count" data-thread-key="2112" href="http://www.acmerblog.com/hdu-1558-Segment-set-2112.html#comments" title="《HDU 1558 Segment set-并查集-[解题报告] C++》上的评论">11 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Segment set</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+A segment and all segments which are connected with it compose a segment set. The size of a segment set is the number of segments in it. The problem is to find the size of some segment set.
+<p></p><center><img src="http://acm.hdu.edu.cn/showproblem.php/../data/images/C50-1004-1.jpg"/></center> </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+In the first line there is an integer t – the number of test case. For each test case in first line there is an integer n (n&lt;=1000) – the number of commands. 
+<p>There are two different commands described in different format shown below:</p>
+<p>P x1 y1 x2 y2 – paint a segment whose coordinates of the two endpoints are (x1,y1),(x2,y2).<br/>Q k           – query the size of the segment set which contains the k-th segment.</p>
+<p>k is between 1 and the number of segments in the moment. There is no segment in the plane at first, so the first command is always a P-command. </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+For each Q-command, output the answer. There is a blank line between test cases.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+10
+P 1.00 1.00 4.00 2.00
+P 1.00 -2.00 8.00 4.00
+Q 1
+P 2.00 3.00 3.00 1.00
+Q 1
+Q 3
+P 1.00 4.00 8.00 2.00
+Q 2
+P 3.00 3.00 6.00 -2.00
+Q 5</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+2
+2
+2
+5</pre>
+<p> <!-- problem end --></p>
+<p><span style="font-size:18px"><a href="http://acm.hdu.edu.cn/showproblem.php?pid=1558" target="_blank">点击打开hdu 1558</a></span></p>
+<p><span style="font-size:18px">思路: 计算几何+并查集<br/>
+分析:<br/>
+1 有n个操作，最后求有几个集合或者说是连通分量<br/>
+2 对于输入一条线段我们就去前面找能够和它相交的线段，利用并查集进行合并并且更新rank数组，rank[x]数组保存的是以x为跟节点的集合的线段的数量<br/>
+3 这一题难点就是线段的相交判断</span></p>
+<p>代码:</p>
+<pre class="brush:cpp ">#include&lt;cmath&gt;
+#include&lt;cstdio&gt;
+#include&lt;cstring&gt;
+#include&lt;iostream&gt;
+#include&lt;algorithm&gt;
+using namespace std;
+
+const double eps = 1e-8;
+const double INF = 1&lt;&lt;30;
+const int MAXN = 1010;
+
+struct Node{
+    double x1;
+    double y1;
+    double x2;
+    double y2;
+};
+Node node[MAXN];
+
+int n;
+int father[MAXN];
+int rank[MAXN];
+
+void init(int m){
+    for(int i = 0 ; i &lt;= m ; i++){
+        father[i] = i;
+        rank[i] = 1;
+    }
+}
+
+int find(int x){
+    if(father[x] != x){
+        int fa = father[x];
+        father[x] = find(fa);
+        rank[x] += rank[fa];
+    }
+    return father[x];
+}
+
+double multiply1(Node a , Node b){
+    return (a.x1-a.x2)*(b.y1-a.y1)-(a.y1-a.y2)*(b.x1-a.x1);
+}
+
+double multiply2(Node a , Node b){
+    return (a.x1-a.x2)*(b.y2-a.y1)-(a.y1-a.y2)*(b.x2-a.x1);
+}
+
+bool inter(Node a , Node b){
+    if(max(a.x1,a.x2) &gt;= min(b.x1,b.x2) &amp;&amp;
+            max(b.x1,b.x2) &gt;= min(a.x1,a.x2) &amp;&amp;
+            max(a.y1,a.y2) &gt;= min(b.y1,b.y2) &amp;&amp;
+            max(b.y1,b.y2) &gt;= min(a.y1,a.y2) &amp;&amp;
+            multiply1(a,b) * multiply2(a,b) &lt;= eps &amp;&amp;
+            multiply1(b,a) * multiply2(b,a) &lt;= eps)
+        return true;
+    else return false;
+}
+void solve(){
+    for(int i = 1 ; i &lt; n ; i++){
+        if(inter(node[i] , node[n])){
+            int fx = find(i); 
+            int fy = find(n);
+            if(fx != fy){
+                father[fy] = fx;
+                rank[fx] += rank[fy];
+            }
+        }          
+    }
+}
+
+int main(){
+    int cas , m , k;
+    bool isFirst = true;
+    char c;
+    scanf("%d" , &amp;cas);
+    while(cas--){
+        if(isFirst)
+            isFirst = false;
+        else
+            puts("");
+        n = 1;
+        scanf("%d%*c" , &amp;m); 
+        init(m);
+        while(m--){
+            c = getchar(); 
+            if(c == 'P'){
+                scanf("%lf" ,&amp;node[n].x1);       
+                scanf("%lf" ,&amp;node[n].y1);       
+                scanf("%lf" ,&amp;node[n].x2);       
+                scanf("%lf%*c" ,&amp;node[n].y2);       
+                if(node[n].x1 &gt; node[n].x2){
+                    swap(node[n].x1 , node[n].x2); 
+                    swap(node[n].y1 , node[n].y2); 
+                }
+                solve();
+                n++;
+            }
+            else{
+                scanf("%d%*c" , &amp;k); 
+                int fa = find(k);
+                printf("%d\n" , rank[fa]);
+            }
+        }
+    }
+    return 0;
+}</pre>
+<p><a href="http://acm.hdu.edu.cn/showproblem.php?pid=1558" target="_blank"></a></p>
+<p>解题报告转自：http://blog.csdn.net/chenguolinblog/article/details/9905143</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-14205">
+<article class="comment" id="comment-14205">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">piaoyi</a></span> on <a href="http://www.acmerblog.com/hdu-1558-Segment-set-2112.html#comment-14205" rel="nofollow"><time datetime="2015-05-17T12:06:15+00:00" pubdate="">2015年5月17日 at 下午12:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>
+	welcome!</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-41432">
+<article class="comment" id="comment-41432">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiaoliubuer</a></span> on <a href="http://www.acmerblog.com/hdu-1558-Segment-set-2112.html#comment-41432" rel="nofollow"><time datetime="2015-04-25T08:19:49+00:00" pubdate="">2015年4月25日 at 上午8:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚开始学，非常好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-14203">
+<article class="comment" id="comment-14203">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">beizhiwu</a></span> on <a href="http://www.acmerblog.com/hdu-1558-Segment-set-2112.html#comment-14203" rel="nofollow"><time datetime="2015-01-15T14:12:48+00:00" pubdate="">2015年1月15日 at 下午2:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>.net中char类型不是两个字节么</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-41429">
+<article class="comment" id="comment-41429">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">OrangeGuy</a></span> on <a href="http://www.acmerblog.com/hdu-1558-Segment-set-2112.html#comment-41429" rel="nofollow"><time datetime="2014-11-27T04:28:23+00:00" pubdate="">2014年11月27日 at 上午4:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>51行错了，改为：void Union(struct subset subsets[], int x, int y)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-41428">
+<article class="comment" id="comment-41428">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">130920099</a></span> on <a href="http://www.acmerblog.com/hdu-1558-Segment-set-2112.html#comment-41428" rel="nofollow"><time datetime="2014-09-19T17:37:05+00:00" pubdate="">2014年9月19日 at 下午5:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嗯，是写错了，文中以更改。MAX ( L(X[0..m-2], Y[0..n-1]), L(X[0..m-1], Y[0..n-2])</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-41427">
+<article class="comment" id="comment-41427">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">magichu</a></span> on <a href="http://www.acmerblog.com/hdu-1558-Segment-set-2112.html#comment-41427" rel="nofollow"><time datetime="2014-07-08T17:27:39+00:00" pubdate="">2014年7月8日 at 下午5:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>通不过。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-61691">
+<article class="comment" id="comment-61691">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tzf88888888</a></span> on <a href="http://www.acmerblog.com/hdu-1558-Segment-set-2112.html#comment-61691" rel="nofollow"><time datetime="2014-07-05T13:57:01+00:00" pubdate="">2014年7月5日 at 下午1:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学习了。找到这题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-14204">
+<article class="comment" id="comment-14204">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">130920099</a></span> on <a href="http://www.acmerblog.com/hdu-1558-Segment-set-2112.html#comment-14204" rel="nofollow"><time datetime="2014-06-27T23:40:29+00:00" pubdate="">2014年6月27日 at 下午11:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>递归还真是一门学问，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-41430">
+<article class="comment" id="comment-41430">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangduanjing</a></span> on <a href="http://www.acmerblog.com/hdu-1558-Segment-set-2112.html#comment-41430" rel="nofollow"><time datetime="2014-06-10T09:48:40+00:00" pubdate="">2014年6月10日 at 上午9:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>网站不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-41431">
+<article class="comment" id="comment-41431">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Dick</a></span> on <a href="http://www.acmerblog.com/hdu-1558-Segment-set-2112.html#comment-41431" rel="nofollow"><time datetime="2014-01-09T16:21:13+00:00" pubdate="">2014年1月9日 at 下午4:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Java真是解决大数的利器</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-14202">
+<article class="comment" id="comment-14202">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hunangangli</a></span> on <a href="http://www.acmerblog.com/hdu-1558-Segment-set-2112.html#comment-14202" rel="nofollow"><time datetime="2013-12-28T04:29:43+00:00" pubdate="">2013年12月28日 at 上午4:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感谢~速度真快，我很喜欢这个网站，从基础看起。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

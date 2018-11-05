@@ -1,0 +1,641 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>02-26</div>
+<div class="tit"><h1 class="entry-title">HDU 3000-A Simple Language-栈-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/data-struct/linear" rel="category tag" title="查看线性结构中的全部文章">线性结构</a></span><span class="i4">围观432次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4739" href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comments" title="《HDU 3000-A Simple Language-栈-[解题报告]HOJ》上的评论">32 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">A Simple Language</h1>
+</div>
+<div>
+<p class="mytitle">问题描述 :</p>
+</div>
+<div class="mypanel">Professor X teaches the C Programming language in college, but he finds it’s too hard for his students and only a few students can pass the exam. So, he decide to invent a new language to reduce the burden on students.This new language only support four data type, but the syntax is an strict subset of C. It only support assignment operation, brackets operation , addition , subtration, multiplication and division between variables and numbers. The priority of operations is the same as C.
+<p>In order to void the problem of forgetting the eliminator “;”, this new language allow to omit it.</p>
+<p>The variable naming rules is the same as C.</p>
+<p>Comments is not allowed in this language.</p>
+<p>Now Prof.X need to impelment this language, and the variable part is done by himself. Now Prof.X need you, a execllent ACM coder’s help: Given a section of this language’s code, please calculate it’s return value.</p>
+</div>
+<div>
+<p class="mytitle">输入:</p>
+</div>
+<div class="mypanel">The input contains many lines, each line is a section of codes written in the language described above, you can assume that all variables have been declared as int and have been set to 0 initially.</div>
+<div>
+<p class="mytitle">输出:</p>
+</div>
+<div class="mypanel">The input contains many lines, each line is a section of codes written in the language described above, you can assume that all variables have been declared as int and have been set to 0 initially.</div>
+<div>
+<p class="mytitle">样例输入:</p>
+</div>
+<pre class="mypanel iopanel">a=3
+a+b
+a=a*(b+2)+c;
+a+b
+a/4
+_hello=2*a;</pre>
+<div>
+<p class="mytitle">样例输出:</p>
+</div>
+<pre class="mypanel iopanel">3
+3
+6
+6
+1
+12</pre>
+<p><!-- problem end --></p>
+<p>这题和一般的表达式运算有些不同，要处理等号这种运算。。</p>
+<p>其实等号运算的优先级可以看成是除（外最低的。。。</p>
+<p>具体的运算符优先级可以去查看c++之类的书籍，参考一下就ok了。。</p>
+<p>另外变量值的储存可以用map来实现。。。</p>
+<pre class="brush:cpp">#include &lt;iostream&gt;
+#include &lt;string&gt;
+#include &lt;map&gt;
+using namespace std;
+#define STRLEN 1000
+//获取优先级
+int GetPriority(char oper)
+{
+switch (oper)
+{
+case '(':
+   return 0;
+   break;
+case '=':
+   return 1;
+   break;
+case '+':
+   return 2;
+   break;
+case '-':
+   return 2;
+   break;
+case '*':
+   return 3;
+   break;
+case '/':
+   return 3;
+   break;
+}
+}
+//判断是否应该计算
+bool IsCalc(char inStack, char outStack)
+{
+return GetPriority(inStack)&gt;=GetPriority(outStack);
+}
+//分词标志
+bool IsSplit(char c)
+{
+if (c == '+' || 
+   c == '-' ||
+   c == '*' ||
+   c == '/' ||
+   c == '(' ||
+   c == ')' ||
+   c == '=')
+   return true;
+else
+   return false;
+}
+//true is oper, false is num
+bool GetNext(char STR[], int &amp;s, char ans[])
+{
+int i = s, j = 0;
+int len = strlen(STR);
+bool flag = false;
+for (; i&lt;len; i++)
+{
+   if (IsSplit(STR[i]))
+   {
+    if (j == 0)
+    {
+     ans[j++] = STR[i++];
+     flag = true;
+    }
+    break;
+   } else {
+    ans[j++] = STR[i];
+   }
+}
+ans[j] = 0x00;
+s = i;
+return flag;
+}
+//判断是否是数字
+bool IsNum(char s[])
+{
+if (s[0] &gt;= '0' &amp;&amp; s[0] &lt;= '9' || s[0] == '-')
+   return true;
+else
+   return false;
+}
+int Calc(int a, int b, char oper)
+{
+switch(oper)
+{
+case '+':
+   return a+b;
+   break;
+case '-':
+   return a-b;
+   break;
+case '*':
+   return a*b;
+   break;
+case '/':
+   return a/b;
+   break;
+}
+}
+void GetTrueStr(char str[])
+{
+int len = strlen(str);
+int i;
+for (i = len-1; i&gt;=0; i--)
+   if (str[i] == ';')
+    str[i] = 0x00;
+   else
+    break;
+}
+int main()
+{
+char STR[STRLEN];
+char OperStack[STRLEN];
+char NumStack[STRLEN][100];
+char ans[STRLEN];
+char PutToNumStack[STRLEN];
+int OperTop, NumTop, StrPos;
+//从符号栈中取出的元素
+char cTopOper;
+//从数字栈中取出的元素。
+char a[STRLEN], b[STRLEN];
+//计算用到的，c为结果
+int NumA, NumB, NumC;
+//int NumC to string sNumC
+char sNumC[STRLEN];
+//MAP
+map&lt;string, int&gt; t_map;
+int len;
+bool isFuShu;
+while (cin.getline(&amp;STR[1], STRLEN))
+{
+   //memset
+   memset(OperStack, 0, sizeof(OperStack));
+   memset(NumStack, 0, sizeof(NumStack));
+   memset(ans, 0, sizeof(ans));
+   isFuShu = false;
+   //前加(
+   STR[0] = '(';
+   //去多余的;
+   GetTrueStr(STR);
+   len = strlen(STR);
+   //最后加)
+   STR[len++] = ')';
+   STR[len] = 0x00;
+   //将原来的20+20的表达式串构造成(20+20)这种形式
+
+   StrPos = OperTop = NumTop = 0;
+   while (StrPos &lt; len)
+   {
+    //如果是操作符
+    if (GetNext(STR, StrPos, ans))
+    {
+     //如果此数为负数，也就是(-100)这样的形式
+     if (ans[0] == '-' &amp;&amp; STR[StrPos-1] == '(')
+     {
+      isFuShu = true;
+      continue;
+     }
+     //如果为(则入栈
+     if (ans[0] == '(')
+     {
+      OperStack[OperTop++] = ans[0];
+     }
+     //如果为右括号，则计算到左括号为止
+     else if (ans[0] == ')')
+     {
+      //取栈顶符号
+      while ((cTopOper = OperStack[--OperTop]) != '(')
+      {
+       //如果符号为等号，则进行赋值操作
+       if (cTopOper == '=')
+       {
+        strcpy(b, NumStack[--NumTop]);
+        strcpy(a, NumStack[--NumTop]);
+        if (IsNum(b))
+         NumB = atoi(b);
+        else
+         NumB = t_map[b];
+        t_map[a] = NumB;
+        //结果压回栈
+        strcpy(NumStack[NumTop++], b);
+       } else {
+        strcpy(b, NumStack[--NumTop]);
+        strcpy(a, NumStack[--NumTop]);
+        //判断是否数字，如果不是数字就从map中取值
+        if (IsNum(b))
+         NumB = atoi(b);
+        else
+         NumB = t_map[b];
+        if (IsNum(a))
+         NumA = atoi(a);
+        else
+         NumA = t_map[a];
+        //进行运算
+        NumC = Calc(NumA, NumB, cTopOper);
+        sprintf(sNumC, "%d", NumC);
+        //结果压回栈
+        strcpy(NumStack[NumTop++], sNumC);
+       }
+      }
+     //如果是=号，则入栈
+     } else if (ans[0] == '=')
+     {
+      OperStack[OperTop++] = ans[0];
+     //如果是其他符号，则进行优先级判断
+     } else {
+      //如果栈顶符号优先级大于等于外面的，那么进行计算
+      while (IsCalc(OperStack[OperTop-1], ans[0]))
+      {
+       strcpy(b, NumStack[--NumTop]);
+       strcpy(a, NumStack[--NumTop]);
+       //判断是否数字，如果不是数字就从map中取值
+       if (IsNum(b))
+        NumB = atoi(b);
+       else
+        NumB = t_map[b];
+       if (IsNum(a))
+        NumA = atoi(a);
+       else
+        NumA = t_map[a];
+       //取出符号栈第一个符号
+       cTopOper = OperStack[--OperTop];
+       //进行运算
+       NumC = Calc(NumA, NumB, cTopOper);
+       sprintf(sNumC, "%d", NumC);
+       //结果压回栈
+       strcpy(NumStack[NumTop++], sNumC);
+      }
+      //如果外面的符号优先级大于栈顶的，则压入栈
+      if (IsCalc(OperStack[OperTop-1], ans[0]) == false)
+       OperStack[OperTop++] = ans[0];
+     }
+    } else {
+    //如果不是，则把操作数入栈，这里要处理负数
+     if (isFuShu)
+     {
+      PutToNumStack[0] = '-';
+      strcpy(&amp;PutToNumStack[1], ans);
+     } else {
+      strcpy(PutToNumStack, ans);
+     }
+     strcpy(NumStack[NumTop++], PutToNumStack);
+    }
+    isFuShu = false;
+   }
+   strcpy(a, NumStack[--NumTop]);
+   if (IsNum(a))
+    NumA = atoi(a);
+   else
+    NumA = t_map[a];
+   printf("%d\n", NumA);
+}
+return 0;
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-80190">
+<article class="comment" id="comment-80190">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522628" rel="external nofollow">新用户720785</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-80190" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>在贴吧看到过 好多这样的话</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80189">
+<article class="comment" id="comment-80189">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522628" rel="external nofollow">新用户720785</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-80189" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>在贴吧看到过 好多这样的话</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80188">
+<article class="comment" id="comment-80188">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522628" rel="external nofollow">新用户720785</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-80188" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>在贴吧看到过 好多这样的话</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80187">
+<article class="comment" id="comment-80187">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522628" rel="external nofollow">新用户720785</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-80187" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>在贴吧看到过 好多这样的话</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80186">
+<article class="comment" id="comment-80186">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522628" rel="external nofollow">新用户720785</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-80186" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>在贴吧看到过 好多这样的话</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80185">
+<article class="comment" id="comment-80185">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522628" rel="external nofollow">新用户720785</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-80185" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>在贴吧看到过 好多这样的话</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80184">
+<article class="comment" id="comment-80184">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522628" rel="external nofollow">新用户720785</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-80184" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>在贴吧看到过 好多这样的话</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80183">
+<article class="comment" id="comment-80183">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522628" rel="external nofollow">新用户720785</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-80183" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>在贴吧看到过 好多这样的话</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80182">
+<article class="comment" id="comment-80182">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522628" rel="external nofollow">新用户720785</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-80182" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>在贴吧看到过 好多这样的话</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80181">
+<article class="comment" id="comment-80181">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522628" rel="external nofollow">新用户720785</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-80181" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>在贴吧看到过 好多这样的话</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80180">
+<article class="comment" id="comment-80180">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522628" rel="external nofollow">新用户720785</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-80180" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>在贴吧看到过 好多这样的话</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80179">
+<article class="comment" id="comment-80179">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522628" rel="external nofollow">新用户720785</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-80179" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>在贴吧看到过 好多这样的话</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80178">
+<article class="comment" id="comment-80178">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522628" rel="external nofollow">新用户720785</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-80178" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>在贴吧看到过 好多这样的话</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80177">
+<article class="comment" id="comment-80177">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522628" rel="external nofollow">新用户720785</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-80177" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>在贴吧看到过 好多这样的话</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80176">
+<article class="comment" id="comment-80176">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522628" rel="external nofollow">新用户720785</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-80176" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>在贴吧看到过 好多这样的话</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80175">
+<article class="comment" id="comment-80175">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522628" rel="external nofollow">新用户720785</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-80175" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>在贴吧看到过 好多这样的话</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80174">
+<article class="comment" id="comment-80174">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522628" rel="external nofollow">新用户720785</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-80174" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>在贴吧看到过 好多这样的话</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80173">
+<article class="comment" id="comment-80173">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522628" rel="external nofollow">新用户720785</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-80173" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>在贴吧看到过 好多这样的话</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80172">
+<article class="comment" id="comment-80172">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522628" rel="external nofollow">新用户720785</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-80172" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>在贴吧看到过 好多这样的话</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-47320">
+<article class="comment" id="comment-47320">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Spike</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-47320" rel="nofollow"><time datetime="2015-07-01T09:42:18+00:00" pubdate="">2015年7月1日 at 上午9:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>5.1处，反了；“上一个操作符的优先级比操作符ch的优先级大，或栈是空的就入栈。”如代码所述，应为“上一个操作符的优先级比操作符ch的优先级小，或栈是空的就入栈。”</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-26382">
+<article class="comment" id="comment-26382">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Ding Qiangyuan</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-26382" rel="nofollow"><time datetime="2015-06-19T08:31:44+00:00" pubdate="">2015年6月19日 at 上午8:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第63行是不是漏了 return 1 + dis_right; ?</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26384">
+<article class="comment" id="comment-26384">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1193658339</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-26384" rel="nofollow"><time datetime="2015-05-14T16:31:00+00:00" pubdate="">2015年5月14日 at 下午4:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，还是这种实现比较好理解。虽然效率有点低</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47322">
+<article class="comment" id="comment-47322">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">abguorui0928</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-47322" rel="nofollow"><time datetime="2015-05-10T09:46:11+00:00" pubdate="">2015年5月10日 at 上午9:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>赞！！~~大赞！！~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-47325">
+<article class="comment" id="comment-47325">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ktcer</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-47325" rel="nofollow"><time datetime="2015-03-26T19:33:45+00:00" pubdate="">2015年3月26日 at 下午7:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，再多来的CF上面的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47319">
+<article class="comment" id="comment-47319">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hanyi</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-47319" rel="nofollow"><time datetime="2014-10-23T06:35:02+00:00" pubdate="">2014年10月23日 at 上午6:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>map[nodes <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .index][nodes <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> .index] == 0 就是判断不相邻的。这个是可以证明的。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-47324">
+<article class="comment" id="comment-47324">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wynk0804</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-47324" rel="nofollow"><time datetime="2014-09-24T01:39:15+00:00" pubdate="">2014年9月24日 at 上午1:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>辛苦了，顶</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-26381">
+<article class="comment" id="comment-26381">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Ailing</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-26381" rel="nofollow"><time datetime="2014-08-13T06:30:02+00:00" pubdate="">2014年8月13日 at 上午6:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>请问printAllCombination的时间复杂度怎么分析呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-47323">
+<article class="comment" id="comment-47323">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fastislow</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-47323" rel="nofollow"><time datetime="2014-06-26T20:18:32+00:00" pubdate="">2014年6月26日 at 下午8:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>如何解决overload的问题呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-26385">
+<article class="comment" id="comment-26385">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">admin</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-26385" rel="nofollow"><time datetime="2014-06-24T04:13:38+00:00" pubdate="">2014年6月24日 at 上午4:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>great work！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-47321">
+<article class="comment" id="comment-47321">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaotong2055</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-47321" rel="nofollow"><time datetime="2014-06-08T07:00:24+00:00" pubdate="">2014年6月8日 at 上午7:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>思考人生吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-26383">
+<article class="comment" id="comment-26383">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Spike</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-26383" rel="nofollow"><time datetime="2014-05-17T12:39:53+00:00" pubdate="">2014年5月17日 at 下午12:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第63行是不是漏了 return 1 + dis_right; ?</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-47326">
+<article class="comment" id="comment-47326">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">pain</a></span> on <a href="http://www.acmerblog.com/hdu-3000-a-simple-language-4739.html#comment-47326" rel="nofollow"><time datetime="2014-05-08T17:28:55+00:00" pubdate="">2014年5月8日 at 下午5:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第23行：<br/>
+hash <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = -1是否应该改成hash[s <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> ] = -1</p>
+<p>因为是要把从字符串s的start位到当前位在hash中重置</p>
+<p>修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

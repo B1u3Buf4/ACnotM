@@ -1,0 +1,460 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>04-16</div>
+<div class="tit"><h1 class="entry-title">HDU 4117-GRE Words[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观174次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7120" href="http://www.acmerblog.com/hdu-4117-gre-words-7120.html#comments" title="《HDU 4117-GRE Words[解题报告]HOJ》上的评论">26 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">GRE Words</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Recently George is preparing for the Graduate Record Examinations (GRE for short). Obviously the most important thing is reciting the words.<br/>Now George is working on a word list containing N words.<br/>He has so poor a memory that it is too hard for him to remember all of the words on the list. But he does find a way to help him to remember. He finds that if a sequence of words has a property that for all pairs of neighboring words, the previous one is a substring of the next one, then the sequence of words is easy to remember.<br/>So he decides to eliminate some words from the word list first to make the list easier for him. Meantime, he doesn’t want to miss the important words. He gives each word an importance, which is represented by an integer ranging from -1000 to 1000, then he wants to know which words to eliminate to maximize the sum of the importance of remaining words. Negative importance just means that George thought it useless and is a waste of time to recite the word.<br/>Note that although he can eliminate any number of words from the word list, he can never change the order between words. In another word, the order of words appeared on the word list is consistent with the order in the input. In addition, a word may have different meanings, so it can appear on the list more than once, and it may have different importance in each occurrence.<br/><center><img alt="Fruit Ninja" src="http://www.acmerblog.com/img/1436398116965.jpg"/></center> </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line contains an integer T(1 &lt;= T &lt;= 50), indicating the number of test cases.<br/>Each test case contains several lines.<br/>The first line contains an integer N(1 &lt;= N &lt;= 2 * 10<sup>4</sup>), indicating the number of words.<br/>Then N lines follows, each contains a string S<sub>i</sub> and an integer W<sub>i</sub>, representing the word and its importance. S<sub>i</sub> contains only lowercase letters.<br/>You can assume that the total length of all words will not exceeded 3 * 10<sup>5</sup>. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The first line contains an integer T(1 &lt;= T &lt;= 50), indicating the number of test cases.<br/>Each test case contains several lines.<br/>The first line contains an integer N(1 &lt;= N &lt;= 2 * 10<sup>4</sup>), indicating the number of words.<br/>Then N lines follows, each contains a string S<sub>i</sub> and an integer W<sub>i</sub>, representing the word and its importance. S<sub>i</sub> contains only lowercase letters.<br/>You can assume that the total length of all words will not exceeded 3 * 10<sup>5</sup>.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+5
+a 1
+ab 2
+abb 3
+baba 5
+abbab 8</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case #1: 14</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">/*************************************************************************
+    &gt; File Name: hdu4117.cpp
+    &gt; Author: X__X
+    &gt; Mail: Kinderlas@gmail.com 
+    &gt; Created Time: 2012/10/10 14:55:19
+ ************************************************************************/
+
+#include&lt;cstdio&gt;
+#include&lt;cstring&gt;
+#include&lt;string&gt;
+#include&lt;cstdlib&gt;
+#include&lt;iostream&gt;
+#include&lt;ctime&gt;
+#include&lt;algorithm&gt;
+#include&lt;cmath&gt;
+#include&lt;stack&gt;
+#include&lt;queue&gt;
+#include&lt;utility&gt;
+using namespace std;
+ 
+#define MP make_pair
+#define PB push_back
+#define IT iterator
+#define B begin() 
+#define E end()
+#define X first
+#define Y second
+#define foreach(it, container) \
+    for(typeof((container).begin()) it = (container).begin();it!=(container).end();++it)
+#define CLR(a, x) memset(a, x, sizeof (a))
+typedef vector&lt;int&gt; VI;
+typedef pair&lt;int,int&gt; PII;
+VI::IT it;
+void op(int n){cout &lt;&lt; n &lt;&lt; ' ';}
+
+const int inf = 0x3f3f3f3f;
+const int maxn = 1e6+10;
+const int maxz = 26;
+const char _base = 'a';
+
+char g_in[maxn];
+int trie[maxn][maxz], fail[maxn], word[maxn];
+int dp[maxn], belong[maxn];
+int pos[30000];
+int npos, n, ans;
+
+void _insert(int s)
+{
+    int k, p = 0;
+    while(g_in[s])
+    {
+        k = g_in[s] - _base;
+        if(trie[p][k] == 0)
+        {
+            trie[p][k] = ++npos;
+            CLR(trie[npos], 0);
+            word[npos] = 0;
+        }
+        p = trie[p][k];
+        s++;
+    }
+}
+
+int q[maxn];
+void build_ac()
+{
+    int t, qe, qs, cur, nt;
+    qe = qs = 0;
+    for(int i = 0; i &lt; maxz; i++)
+        if(t = trie[0][i])
+            fail[t] = 0, q[qe++] = t;
+    while(qs &lt; qe)
+    {
+        cur = q[qs++];
+        for(int i = 0; i &lt; maxz; i++)
+        {
+            if(nt = trie[cur][i])
+            {
+                fail[nt] = trie[fail[cur]][i];
+                q[qe++] = nt;
+            }
+            else
+                trie[cur][i] = trie[fail[cur]][i];
+        }
+    }
+}
+
+void cal(int x)
+{
+    int r, p, t, cur;
+    r = p = 0;
+    for(int i = pos[x]; i &lt; pos[x+1]; i++)
+    {
+        cur = g_in[i] - _base;
+        p = t = trie[p][cur];
+        while(t)
+        {
+            if(word[t])
+                r = max(r, dp[belong[word[t]]]);
+            t = fail[t];
+        }
+    }
+    word[p] = p;
+    belong[p] = x;
+    dp[x] += r;
+}
+
+void solve()
+{
+    scanf("%d", &amp;n);
+    npos = pos[0] = 0;
+    CLR(trie[0], 0);
+    int temp;
+    for(int i = 0; i &lt; n; i++)
+    {
+        scanf("%s%d", g_in + pos[i], &amp;temp);
+        pos[i+1] = pos[i] + strlen(g_in + pos[i]);
+        _insert(pos[i]);
+        dp[i] = temp;
+    }
+    build_ac();
+    ans = 0;
+    for(int i = 0; i &lt; n; i++)
+    {
+        if(dp[i] &gt; 0)
+            cal(i);
+        ans = max(ans, dp[i]);
+    }
+    printf("%d\n", ans);
+}
+
+int main() 
+{
+    //freopen("in.txt", "r", stdin); 
+    int times;
+    scanf("%d", &amp;times);
+    for(int i = 0; i &lt; times; i++)
+    {
+        printf("Case #%d: ", i+1);
+        solve();
+    }
+    return 0;
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-99650">
+<article class="comment" id="comment-99650">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919458821" rel="external nofollow">新用户396266</a></span> on <a href="http://www.acmerblog.com/hdu-4117-gre-words-7120.html#comment-99650" rel="nofollow"><time datetime="2017-04-20T19:26:56+00:00" pubdate="">2017年4月20日 at 下午7:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>要是绿教也这么玩就天下太平了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-69874">
+<article class="comment" id="comment-69874">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919459412" rel="external nofollow">新用户123916</a></span> on <a href="http://www.acmerblog.com/hdu-4117-gre-words-7120.html#comment-69874" rel="nofollow"><time datetime="2017-04-11T12:43:24+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>要打仗了吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-69873">
+<article class="comment" id="comment-69873">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919459412" rel="external nofollow">新用户123916</a></span> on <a href="http://www.acmerblog.com/hdu-4117-gre-words-7120.html#comment-69873" rel="nofollow"><time datetime="2017-04-11T12:43:24+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>要打仗了吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-69872">
+<article class="comment" id="comment-69872">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919459412" rel="external nofollow">新用户123916</a></span> on <a href="http://www.acmerblog.com/hdu-4117-gre-words-7120.html#comment-69872" rel="nofollow"><time datetime="2017-04-11T12:43:24+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>要打仗了吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-69871">
+<article class="comment" id="comment-69871">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919459412" rel="external nofollow">新用户123916</a></span> on <a href="http://www.acmerblog.com/hdu-4117-gre-words-7120.html#comment-69871" rel="nofollow"><time datetime="2017-04-11T12:43:24+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>要打仗了吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-69870">
+<article class="comment" id="comment-69870">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919459412" rel="external nofollow">新用户123916</a></span> on <a href="http://www.acmerblog.com/hdu-4117-gre-words-7120.html#comment-69870" rel="nofollow"><time datetime="2017-04-11T12:43:24+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>要打仗了吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-69869">
+<article class="comment" id="comment-69869">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919459412" rel="external nofollow">新用户123916</a></span> on <a href="http://www.acmerblog.com/hdu-4117-gre-words-7120.html#comment-69869" rel="nofollow"><time datetime="2017-04-11T12:43:24+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>要打仗了吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-69868">
+<article class="comment" id="comment-69868">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919459412" rel="external nofollow">新用户123916</a></span> on <a href="http://www.acmerblog.com/hdu-4117-gre-words-7120.html#comment-69868" rel="nofollow"><time datetime="2017-04-11T12:43:24+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>要打仗了吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-69867">
+<article class="comment" id="comment-69867">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919459412" rel="external nofollow">新用户123916</a></span> on <a href="http://www.acmerblog.com/hdu-4117-gre-words-7120.html#comment-69867" rel="nofollow"><time datetime="2017-04-11T12:43:24+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>要打仗了吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-69866">
+<article class="comment" id="comment-69866">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919459412" rel="external nofollow">新用户123916</a></span> on <a href="http://www.acmerblog.com/hdu-4117-gre-words-7120.html#comment-69866" rel="nofollow"><time datetime="2017-04-11T12:43:24+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>要打仗了吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-69865">
+<article class="comment" id="comment-69865">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919459412" rel="external nofollow">新用户123916</a></span> on <a href="http://www.acmerblog.com/hdu-4117-gre-words-7120.html#comment-69865" rel="nofollow"><time datetime="2017-04-11T12:43:24+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>要打仗了吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-69864">
+<article class="comment" id="comment-69864">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919459412" rel="external nofollow">新用户123916</a></span> on <a href="http://www.acmerblog.com/hdu-4117-gre-words-7120.html#comment-69864" rel="nofollow"><time datetime="2017-04-11T12:43:24+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>要打仗了吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-52240">
+<article class="comment" id="comment-52240">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">woweizhineng</a></span> on <a href="http://www.acmerblog.com/hdu-4117-gre-words-7120.html#comment-52240" rel="nofollow"><time datetime="2015-07-10T07:06:43+00:00" pubdate="">2015年7月10日 at 上午7:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有两个重复的话结果是正确的，但解法不够严谨，后面重复的覆盖掉前面的，由于题目数据限制也比较严，所以能提交通过。已更新算法</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-52238">
+<article class="comment" id="comment-52238">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">pain</a></span> on <a href="http://www.acmerblog.com/hdu-4117-gre-words-7120.html#comment-52238" rel="nofollow"><time datetime="2015-07-09T02:19:45+00:00" pubdate="">2015年7月9日 at 上午2:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个应该是最朴素的KMP实现</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-36017">
+<article class="comment" id="comment-36017">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wall_</a></span> on <a href="http://www.acmerblog.com/hdu-4117-gre-words-7120.html#comment-36017" rel="nofollow"><time datetime="2015-06-17T09:40:34+00:00" pubdate="">2015年6月17日 at 上午9:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我还有个问题想请教一下，就是感觉对于新手来说，递归理解起来有些困难，不知有没有什么好的方法或者什么好的建议？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-36012">
+<article class="comment" id="comment-36012">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zhiqiang</a></span> on <a href="http://www.acmerblog.com/hdu-4117-gre-words-7120.html#comment-36012" rel="nofollow"><time datetime="2015-06-09T19:05:51+00:00" pubdate="">2015年6月9日 at 下午7:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>
+	welcome!</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-52243">
+<article class="comment" id="comment-52243">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">starcuan</a></span> on <a href="http://www.acmerblog.com/hdu-4117-gre-words-7120.html#comment-52243" rel="nofollow"><time datetime="2015-05-24T19:39:28+00:00" pubdate="">2015年5月24日 at 下午7:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有点意思</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-52239">
+<article class="comment" id="comment-52239">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bcys</a></span> on <a href="http://www.acmerblog.com/hdu-4117-gre-words-7120.html#comment-52239" rel="nofollow"><time datetime="2015-05-21T04:27:57+00:00" pubdate="">2015年5月21日 at 上午4:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>分三种情况讨论。Not Possible就是impossible</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-52244">
+<article class="comment" id="comment-52244">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gyouxu</a></span> on <a href="http://www.acmerblog.com/hdu-4117-gre-words-7120.html#comment-52244" rel="nofollow"><time datetime="2015-05-16T23:11:09+00:00" pubdate="">2015年5月16日 at 下午11:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我表示楼主不要乱抄题，你写的另一个题吧，直接扒了代码没跑吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-36014">
+<article class="comment" id="comment-36014">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jlucky</a></span> on <a href="http://www.acmerblog.com/hdu-4117-gre-words-7120.html#comment-36014" rel="nofollow"><time datetime="2015-05-10T22:07:31+00:00" pubdate="">2015年5月10日 at 下午10:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可以根据二叉排序树的定义进行严格的排序树创建和后序遍历操作。如果形成的排序树相同，其树的前、中、后序遍历是相同的，但在此处不能使用中序遍历，因为，中序遍历的结果就是排序的结果。经在九度测试，运行时间90ms，比楼主的要快。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-36018">
+<article class="comment" id="comment-36018">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">CCat</a></span> on <a href="http://www.acmerblog.com/hdu-4117-gre-words-7120.html#comment-36018" rel="nofollow"><time datetime="2015-05-06T03:18:19+00:00" pubdate="">2015年5月6日 at 上午3:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很有用，收藏了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-52241">
+<article class="comment" id="comment-52241">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">TimeFight</a></span> on <a href="http://www.acmerblog.com/hdu-4117-gre-words-7120.html#comment-52241" rel="nofollow"><time datetime="2015-05-01T10:55:10+00:00" pubdate="">2015年5月1日 at 上午10:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>great!</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-36013">
+<article class="comment" id="comment-36013">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">pain</a></span> on <a href="http://www.acmerblog.com/hdu-4117-gre-words-7120.html#comment-36013" rel="nofollow"><time datetime="2015-04-27T07:47:47+00:00" pubdate="">2015年4月27日 at 上午7:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给力的文章，例子也非常好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-36015">
+<article class="comment" id="comment-36015">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Yaunxi</a></span> on <a href="http://www.acmerblog.com/hdu-4117-gre-words-7120.html#comment-36015" rel="nofollow"><time datetime="2015-04-21T12:45:36+00:00" pubdate="">2015年4月21日 at 下午12:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>gcc环境</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-36016">
+<article class="comment" id="comment-36016">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fiftyonejiao</a></span> on <a href="http://www.acmerblog.com/hdu-4117-gre-words-7120.html#comment-36016" rel="nofollow"><time datetime="2015-04-21T10:46:44+00:00" pubdate="">2015年4月21日 at 上午10:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正在练习，很有帮助</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-52242">
+<article class="comment" id="comment-52242">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">123zxc</a></span> on <a href="http://www.acmerblog.com/hdu-4117-gre-words-7120.html#comment-52242" rel="nofollow"><time datetime="2015-04-21T06:55:40+00:00" pubdate="">2015年4月21日 at 上午6:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

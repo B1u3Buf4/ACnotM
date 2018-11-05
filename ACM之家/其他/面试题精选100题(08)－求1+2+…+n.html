@@ -1,0 +1,380 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-13</div>
+<div class="tit"><h1 class="entry-title">面试题精选100题(08)－求1+2+…+n</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/offer" rel="category tag" title="查看剑指offer中的全部文章">剑指offer</a></span><span class="i4">围观2009次</span><span class="i3"><a class="ds-thread-count" data-thread-key="2425" href="http://www.acmerblog.com/interview-8-2425.html#comments" title="《面试题精选100题(08)－求1+2+…+n》上的评论">27 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p>题目：求1+2+…+n，要求不能使用乘除法、for、while、if、else、switch、case等关键字以及条件判断语句（A?B:C）。</p>
+<p>分析：这道题没有多少实际意义，因为在软件开发中不会有这么变态的限制。但这道题却能有效地考查发散思维能力，而发散思维能力能反映出对编程相关技术理解的深刻程度。</p>
+<p>通常求1+2+…+n除了用公式n(n+1)/2之外，无外乎循环和递归两种思路。由于已经明确限制for和while的使用，循环已经不能再用了。同样，递归函数也需要用if语句或者条件判断语句来判断是继续递归下去还是终止递归，但现在题目已经不允许使用这两种语句了。</p>
+<p>我们仍然围绕循环做文章。循环只是让相同的代码执行n遍而已，我们完全可以不用for和while达到这个效果。比如定义一个类，我们new一含有n个这种类型元素的数组，那么该类的构造函数将确定会被调用n次。我们可以将需要执行的代码放到构造函数里。如下代码正是基于这个思路：</p>
+<pre class="brush:cpp">class Temp
+{
+public:
+      Temp() { ++ N; Sum += N; }
+
+      static void Reset() { N = 0; Sum = 0; }
+      static int GetSum() { return Sum; }
+
+private:
+      static int N;
+      static int Sum;
+};
+
+int Temp::N = 0;
+int Temp::Sum = 0;
+
+int solution1_Sum(int n)
+{
+      Temp::Reset();
+
+      Temp *a = new Temp[n];
+      delete []a;
+      a = 0;
+
+      return Temp::GetSum();
+}</pre>
+<p>我们同样也可以围绕递归做文章。既然不能判断是不是应该终止递归，我们不妨定义两个函数。一个函数充当递归函数的角色，另一个函数处理终止递归的情况，我们需要做的就是在两个函数里二选一。从二选一我们很自然的想到布尔变量，比如ture（1）的时候调用第一个函数，false（0）的时候调用第二个函数。那现在的问题是如和把数值变量n转换成布尔值。如果对n连续做两次反运算，即!!n，那么非零的n转换为true，0转换为false。有了上述分析，我们再来看下面的代码：</p>
+<pre class="brush:cpp">class A;
+A* Array[2];
+
+class A
+{
+public:
+      virtual int Sum (int n) { return 0; }
+};
+
+class B: public A
+{
+public:
+      virtual int Sum (int n) { return Array[!!n]-&gt;Sum(n-1)+n; }
+};
+
+int solution2_Sum(int n)
+{
+      A a;
+      B b;
+      Array[0] = &amp;a;
+      Array[1] = &amp;b;
+
+      int value = Array[1]-&gt;Sum(n);
+
+      return value;
+}</pre>
+<p>这种方法是用虚函数来实现函数的选择。当n不为零时，执行函数B::Sum；当n为0时，执行A::Sum。我们也可以直接用函数指针数组，这样可能还更直接一些：</p>
+<pre class="brush:cpp">typedef int (*fun)(int);
+
+int solution3_f1(int i) 
+{
+      return 0;
+}
+
+int solution3_f2(int i)
+{
+      fun f[2]={solution3_f1, solution3_f2}; 
+      return i+f[!!i](i-1);
+}</pre>
+<p>另外我们还可以让编译器帮我们来完成类似于递归的运算，比如如下代码：</p>
+<pre class="brush:cpp">template &lt;int n&gt; struct solution4_Sum
+{
+      enum Value { N = solution4_Sum&lt;n - 1&gt;::N + n};
+};
+
+template &lt;&gt; struct solution4_Sum&lt;1&gt;
+{
+      enum Value { N = 1};
+};</pre>
+<p> </p>
+<p>solution4_Sum&lt;100&gt;::N就是1+2+…+100的结果。当编译器看到solution4_Sum&lt;100&gt;时，就是为模板类solution4_Sum以参数100生成该类型的代码。但以100为参数的类型需要得到以99为参数的类型，因为solution4_Sum&lt;100&gt;::N=solution4_Sum&lt;99&gt;::N+100。这个过程会递归一直到参数为1的类型，由于该类型已经显式定义，编译器无需生成，递归编译到此结束。由于这个过程是在编译过程中完成的，因此要求输入n必须是在编译期间就能确定，不能动态输入。这是该方法最大的缺点。而且编译器对递归编译代码的递归深度是有限制的，也就是要求n不能太大。</p>
+<p>大家还有更多、更巧妙的思路吗？欢迎讨论^_^</p>
+<p>其他终止递归的方法：</p>
+<pre class="brush:cpp">int getSum(int n, int&amp; sum){ 
+return n &amp;&amp; (sum += n) &amp;&amp; getSum(n - 1, sum);
+}</pre>
+<p>转自：http://zhedahht.blog.163.com/</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-90451">
+<article class="comment" id="comment-90451">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511992" rel="external nofollow">新用户909169</a></span> on <a href="http://www.acmerblog.com/interview-8-2425.html#comment-90451" rel="nofollow"><time datetime="2017-04-13T11:22:39+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我怎么越看越混乱了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-90450">
+<article class="comment" id="comment-90450">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511992" rel="external nofollow">新用户909169</a></span> on <a href="http://www.acmerblog.com/interview-8-2425.html#comment-90450" rel="nofollow"><time datetime="2017-04-13T11:22:39+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我怎么越看越混乱了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-90449">
+<article class="comment" id="comment-90449">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511992" rel="external nofollow">新用户909169</a></span> on <a href="http://www.acmerblog.com/interview-8-2425.html#comment-90449" rel="nofollow"><time datetime="2017-04-13T11:22:39+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我怎么越看越混乱了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-90448">
+<article class="comment" id="comment-90448">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511992" rel="external nofollow">新用户909169</a></span> on <a href="http://www.acmerblog.com/interview-8-2425.html#comment-90448" rel="nofollow"><time datetime="2017-04-13T11:22:39+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我怎么越看越混乱了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-90447">
+<article class="comment" id="comment-90447">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511992" rel="external nofollow">新用户909169</a></span> on <a href="http://www.acmerblog.com/interview-8-2425.html#comment-90447" rel="nofollow"><time datetime="2017-04-13T11:22:39+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我怎么越看越混乱了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-90446">
+<article class="comment" id="comment-90446">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511992" rel="external nofollow">新用户909169</a></span> on <a href="http://www.acmerblog.com/interview-8-2425.html#comment-90446" rel="nofollow"><time datetime="2017-04-13T11:22:39+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我怎么越看越混乱了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-90445">
+<article class="comment" id="comment-90445">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511992" rel="external nofollow">新用户909169</a></span> on <a href="http://www.acmerblog.com/interview-8-2425.html#comment-90445" rel="nofollow"><time datetime="2017-04-13T11:22:39+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我怎么越看越混乱了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-90444">
+<article class="comment" id="comment-90444">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511992" rel="external nofollow">新用户909169</a></span> on <a href="http://www.acmerblog.com/interview-8-2425.html#comment-90444" rel="nofollow"><time datetime="2017-04-13T11:22:39+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我怎么越看越混乱了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-90443">
+<article class="comment" id="comment-90443">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511992" rel="external nofollow">新用户909169</a></span> on <a href="http://www.acmerblog.com/interview-8-2425.html#comment-90443" rel="nofollow"><time datetime="2017-04-13T11:22:39+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我怎么越看越混乱了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-90442">
+<article class="comment" id="comment-90442">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511992" rel="external nofollow">新用户909169</a></span> on <a href="http://www.acmerblog.com/interview-8-2425.html#comment-90442" rel="nofollow"><time datetime="2017-04-13T11:22:39+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我怎么越看越混乱了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-90441">
+<article class="comment" id="comment-90441">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511992" rel="external nofollow">新用户909169</a></span> on <a href="http://www.acmerblog.com/interview-8-2425.html#comment-90441" rel="nofollow"><time datetime="2017-04-13T11:22:39+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我怎么越看越混乱了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64537">
+<article class="comment" id="comment-64537">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">守护你的天使</span> on <a href="http://www.acmerblog.com/interview-8-2425.html#comment-64537" rel="nofollow"><time datetime="2015-08-26T14:00:22+00:00" pubdate="">2015年8月26日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>长知识了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64536">
+<article class="comment" id="comment-64536">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">星宿阁</span> on <a href="http://www.acmerblog.com/interview-8-2425.html#comment-64536" rel="nofollow"><time datetime="2015-07-04T10:26:21+00:00" pubdate="">2015年7月4日 at 上午10:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>文章写得挺好，就是最后的斐波那契那个没有看明白</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-42323">
+<article class="comment" id="comment-42323">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Yaunxi</a></span> on <a href="http://www.acmerblog.com/interview-8-2425.html#comment-42323" rel="nofollow"><time datetime="2015-06-18T19:51:09+00:00" pubdate="">2015年6月18日 at 下午7:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>scanner改用StreamTokenizer就不超时了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-42322">
+<article class="comment" id="comment-42322">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ForgetVay</a></span> on <a href="http://www.acmerblog.com/interview-8-2425.html#comment-42322" rel="nofollow"><time datetime="2015-06-18T03:20:19+00:00" pubdate="">2015年6月18日 at 上午3:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有的，已更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-42320">
+<article class="comment" id="comment-42320">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sum_tsai</a></span> on <a href="http://www.acmerblog.com/interview-8-2425.html#comment-42320" rel="nofollow"><time datetime="2015-06-08T05:33:24+00:00" pubdate="">2015年6月8日 at 上午5:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>原来欧几里德定理应用这么多</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-42326">
+<article class="comment" id="comment-42326">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rtaxa</a></span> on <a href="http://www.acmerblog.com/interview-8-2425.html#comment-42326" rel="nofollow"><time datetime="2015-05-22T23:45:04+00:00" pubdate="">2015年5月22日 at 下午11:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>分析的很专业！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-61877">
+<article class="comment" id="comment-61877">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">09291010</a></span> on <a href="http://www.acmerblog.com/interview-8-2425.html#comment-61877" rel="nofollow"><time datetime="2015-02-03T16:37:36+00:00" pubdate="">2015年2月3日 at 下午4:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>约瑟夫也用说这么长……很成熟的一个问题了，分治的方法解起来o(n)就可以了，有兴趣可以看看具体数学的第一章，关于约瑟夫问题推导出了一系列的结论，很漂亮</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-42324">
+<article class="comment" id="comment-42324">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">cherry_odd</a></span> on <a href="http://www.acmerblog.com/interview-8-2425.html#comment-42324" rel="nofollow"><time datetime="2015-01-21T12:14:06+00:00" pubdate="">2015年1月21日 at 下午12:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>分析的很专业！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-55444">
+<article class="comment" id="comment-55444">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tkdzyl2013</a></span> on <a href="http://www.acmerblog.com/interview-8-2425.html#comment-55444" rel="nofollow"><time datetime="2014-11-25T18:29:08+00:00" pubdate="">2014年11月25日 at 下午6:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>抱歉，确实是弄错了，原来的代码是错误的，删掉了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-42319">
+<article class="comment" id="comment-42319">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">userwawa</a></span> on <a href="http://www.acmerblog.com/interview-8-2425.html#comment-42319" rel="nofollow"><time datetime="2014-11-13T19:27:01+00:00" pubdate="">2014年11月13日 at 下午7:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>大致看了下，算法的时间复杂度没有很本性的提升，算不上高效。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-61876">
+<article class="comment" id="comment-61876">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">CCCat</a></span> on <a href="http://www.acmerblog.com/interview-8-2425.html#comment-61876" rel="nofollow"><time datetime="2014-10-19T01:42:29+00:00" pubdate="">2014年10月19日 at 上午1:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>文章写得挺好，就是最后的斐波那契那个没有看明白</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-42318">
+<article class="comment" id="comment-42318">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wuzirui</a></span> on <a href="http://www.acmerblog.com/interview-8-2425.html#comment-42318" rel="nofollow"><time datetime="2014-10-18T21:51:56+00:00" pubdate="">2014年10月18日 at 下午9:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好。代码比书上的简练！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-42328">
+<article class="comment" id="comment-42328">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tzf888888</a></span> on <a href="http://www.acmerblog.com/interview-8-2425.html#comment-42328" rel="nofollow"><time datetime="2014-10-04T04:29:41+00:00" pubdate="">2014年10月4日 at 上午4:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>swap写成内联函数会不会好一些</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-42321">
+<article class="comment" id="comment-42321">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tzf88888888</a></span> on <a href="http://www.acmerblog.com/interview-8-2425.html#comment-42321" rel="nofollow"><time datetime="2014-06-22T12:36:33+00:00" pubdate="">2014年6月22日 at 下午12:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为\n\n</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-42327">
+<article class="comment" id="comment-42327">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bluesky</a></span> on <a href="http://www.acmerblog.com/interview-8-2425.html#comment-42327" rel="nofollow"><time datetime="2014-04-06T04:26:11+00:00" pubdate="">2014年4月6日 at 上午4:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>递归实现的代码部分<br/>
+14句和18句的 wt[n - 1]是不是应该改为 wt[ n ] ?</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-42325">
+<article class="comment" id="comment-42325">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">leowww</a></span> on <a href="http://www.acmerblog.com/interview-8-2425.html#comment-42325" rel="nofollow"><time datetime="2014-03-09T08:11:57+00:00" pubdate="">2014年3月9日 at 上午8:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个系列很不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

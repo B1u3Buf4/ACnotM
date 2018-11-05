@@ -1,0 +1,873 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>09-18</div>
+<div class="tit"><h1 class="entry-title">HDU 4793-Collision-计算几何-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/geometry/analytic-geometry" rel="category tag" title="查看解析几何中的全部文章">解析几何</a></span><span class="i4">围观71次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7838" href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comments" title="《HDU 4793-Collision-计算几何-[解题报告]HOJ》上的评论">69 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Collision</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+There’s a round medal fixed on an ideal smooth table, Fancy is trying to throw some  coins and make them slip towards the medal to collide. There’s also a round range  which shares exact the same center as the round medal, and radius of the medal is  strictly less than radius of the round range. Since that the round medal is fixed and the  coin is a piece of solid metal, we can assume that energy of the coin will not lose, the  coin will collide and then moving as reflect.<br/>Now assume that the center of the round medal and the round range is origin  ( Namely (0, 0) ) and the coin’s initial position is strictly outside the round range.<br/>Given radius of the medal R<sub>m</sub>, radius of coin r, radius of the round range R, initial  position (x, y) and initial speed vector (vx, vy) of the coin, please calculate the total  time that any part of the coin is inside the round range. Please note that the coin might not even touch the medal or slip through the round  range. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+There will be several test cases. Each test case contains 7 integers R<sub>m</sub>, R, r, x, y, vx and vy in one line. Here 1 ≤  R<sub>m</sub> &lt; R ≤ 2000, 1 ≤ r ≤ 1000, R + r &lt; |(x, y)| ≤ 20000, 1 ≤ |(vx, vy)| ≤ 100. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+There will be several test cases. Each test case contains 7 integers R<sub>m</sub>, R, r, x, y, vx and vy in one line. Here 1 ≤  R<sub>m</sub> &lt; R ≤ 2000, 1 ≤ r ≤ 1000, R + r &lt; |(x, y)| ≤ 20000, 1 ≤ |(vx, vy)| ≤ 100.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+5 20 1 0 100 0 -1
+5 20 1 30 15 -1 0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+30.000
+29.394</pre>
+<p> <!-- problem end --></p>
+<p><span style="font-size:14px">给出一个圆形奖牌的半径和一个圆形区域的半径，还有一枚硬币的半径，然后桌面是光滑的，给出圆硬币的速度（大小和方向，vx，vy）和坐标（圆区域和圆奖牌同心且心作为源点），问硬币在圆区域滑动的时间是多少（任何一部分在圆区域都算），硬币碰到圆奖牌会反弹，能量不变（速度不变）</span></p>
+<p><span style="font-size:14px">第一次做平面几何题</span></p>
+<p><span style="font-size:14px">看了题解，题解的板子真好用</span></p>
+<p><span style="font-size:14px">大概来说有三种情况，如下图</span></p>
+<p><span style="font-size:14px">第一种是进入圆区而不碰撞，查看h和Rm+r的关系</span></p>
+<p><span style="font-size:14px">第二种是进入圆区且碰撞，<span style="font-size:14px">查看h和Rm+r的关系</span></span></p>
+<p><span style="font-size:14px">第三种是不进入圆区，查看方向向量和圆心到初始点向量这两个向量的夹角还有h和R+r的关系，而且应该先看向量，也可以先看R+r再讨论向量</span></p>
+<p><span style="font-size:14px"><img alt="Collision" src="http://cdn.acmerblog.com/img/1447960278193.jpg"/></span></p>
+<p><span style="font-size:14px"></span></p>
+<pre class="brush:cpp" name="code">#include &lt;iostream&gt;
+#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+#include &lt;cmath&gt;
+#include &lt;cstdlib&gt;
+#include &lt;vector&gt;
+#include &lt;algorithm&gt;
+#include &lt;string&gt;
+#include &lt;set&gt;
+#define PI acos(-1.0)
+#define maxn 100005
+#define INF 0x7fffffff
+#define eps 1e-8
+using namespace std;
+int cmp(double x) {
+	if(fabs(x)&lt;eps)
+		return 0;
+	if(x&gt;0)
+		return 1;
+	return -1;
+}
+inline int sgn(double n) {
+	return fabs(n)&lt;eps?0:(n&lt;0?-1:1);
+}
+inline double sqr(double x) {
+	return x*x;
+}
+struct point{
+	double x,y;
+	point() {}
+	point(double a,double b):x(a),y(b) {}
+	void input() {
+		scanf("%lf%lf",&amp;x,&amp;y);
+	}
+	friend point operator + (const point &amp;a,const point &amp;b) {
+		return point(a.x+b.x,a.y+b.y);
+	}
+	friend point operator - (const point &amp;a,const point &amp;b) {
+		return point(a.x-b.x,a.y-b.y);
+	}
+	friend bool operator == (const point &amp;a,const point &amp;b) {
+		return cmp(a.x-b.x)==0 &amp;&amp;cmp(a.y-b.y)==0;
+	}
+	friend point operator * (const point &amp;a,const double &amp;b) {
+		return point(a.x*b,a.y*b);
+	}
+	friend point operator * (const double &amp;a,const point &amp;b) {
+		return point(a*b.x,a*b.y);
+	}
+	friend point operator / (const point &amp;a,const double &amp;b) {
+		return point(a.x/b,a.y/b);
+	}
+	double norm() {
+		return sqrt(sqr(x)+sqr(y));
+	}//到原点距离
+	void out () const {
+		printf("%.2f %.2f",x,y);
+	}
+};
+double det (const point &amp;a,const point &amp;b) {
+	return a.x*b.y-a.y*b.x;
+}//叉积
+double dot (const point &amp;a,const point &amp;b) {
+	return a.x*b.x+a.y*b.y;
+}//点乘
+double dist (const point &amp;a,const point &amp;b) {
+	return (a-b).norm();
+}//距离
+point rotate_point(const point &amp;p,double A) {
+	double tx=p.x,ty=p.y;
+	return point (tx*cos(A)-ty*sin(A),tx*sin(A)+ty*cos(A));
+}//旋转，A是弧度
+struct line {
+	point a,b;
+	line() {}
+	line(point x,point y):a(x),b(y) {}
+	point dire()const {
+		return b-a;
+	}//向量
+	double len() {
+		return dire().norm();
+	}
+};
+bool parallel(line a,line b) {
+	return !cmp(det(a.a-a.b,b.a-b.b));
+}
+bool line_make_point (line a,line b,point &amp;res) {
+	if(parallel(a,b))
+		return false;
+	double s1=det(a.a-b.a,b.b-b.a);
+	double s2=det(a.b-b.a,b.b-b.a);
+	res=(s1*a.b-s2*a.a)/(s1-s2);
+	return true;
+}
+int main()
+{
+#ifndef ONLINE_JUDGE
+	freopen("/home/rainto96/in.txt","r",stdin);
+#endif
+	double Rm,R,r,x,y,vx,vy;
+	while(~scanf("%lf%lf%lf%lf%lf%lf%lf",&amp;Rm,&amp;R,&amp;r,&amp;x,&amp;y,&amp;vx,&amp;vy)){
+                point s=point(x,y);
+                point dir=point(vx,vy);
+                if(dot(s,dir)&gt;=0){
+                        printf("0.000\n");
+                        continue;
+                }
+                point tmp=point(vy,-vx);
+                line l1=line(point(0,0),tmp);
+                line l2=line(s,point(s.x+vx,s.y+vy));
+                point ans;
+                line_make_point(l1,l2,ans);
+                double h=ans.norm();
+                double h1=R+r;
+                double h2=Rm+r;
+                double speed=sqrt(vx*vx+vy*vy);
+                if(h&gt;=h1){
+                        printf("0.000\n");
+                        continue;
+                }
+                if(h&gt;=h2){
+                        double time=sqrt(h1*h1-h*h)/speed*2;
+                        printf("%f\n",time);
+                        continue;
+                }else{
+                        double time=sqrt(h1*h1-h*h)-sqrt(h2*h2-h*h);
+                        time=time/speed*2;
+                        printf("%f\n",time);
+                        continue;
+                }
+	}
+	return 0;
+}
+</pre>
+<p>参考：http://blog.csdn.net/u011775691/article/details/39372153</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-102325">
+<article class="comment" id="comment-102325">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518384" rel="external nofollow">新用户533191</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-102325" rel="nofollow"><time datetime="2017-04-24T13:59:03+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>██████看.色.片.看.а.片 【 <a href="http://aryyy.com" rel="nofollow">http://aryyy.com</a> 】  网.址 ██████</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-102324">
+<article class="comment" id="comment-102324">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518384" rel="external nofollow">新用户533191</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-102324" rel="nofollow"><time datetime="2017-04-24T13:59:03+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>██████看.色.片.看.а.片 【 <a href="http://aryyy.com" rel="nofollow">http://aryyy.com</a> 】  网.址 ██████</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-102323">
+<article class="comment" id="comment-102323">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518384" rel="external nofollow">新用户533191</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-102323" rel="nofollow"><time datetime="2017-04-24T13:59:03+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>██████看.色.片.看.а.片 【 <a href="http://aryyy.com" rel="nofollow">http://aryyy.com</a> 】  网.址 ██████</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-102322">
+<article class="comment" id="comment-102322">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518384" rel="external nofollow">新用户533191</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-102322" rel="nofollow"><time datetime="2017-04-24T13:59:03+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>██████看.色.片.看.а.片 【 <a href="http://aryyy.com" rel="nofollow">http://aryyy.com</a> 】  网.址 ██████</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-102321">
+<article class="comment" id="comment-102321">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518384" rel="external nofollow">新用户533191</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-102321" rel="nofollow"><time datetime="2017-04-24T13:59:03+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>██████看.色.片.看.а.片 【 <a href="http://aryyy.com" rel="nofollow">http://aryyy.com</a> 】  网.址 ██████</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-102320">
+<article class="comment" id="comment-102320">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518384" rel="external nofollow">新用户533191</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-102320" rel="nofollow"><time datetime="2017-04-24T13:59:03+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>██████看.色.片.看.а.片 【 <a href="http://aryyy.com" rel="nofollow">http://aryyy.com</a> 】  网.址 ██████</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-102319">
+<article class="comment" id="comment-102319">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518384" rel="external nofollow">新用户533191</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-102319" rel="nofollow"><time datetime="2017-04-24T13:59:03+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>██████看.色.片.看.а.片 【 <a href="http://aryyy.com" rel="nofollow">http://aryyy.com</a> 】  网.址 ██████</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-102318">
+<article class="comment" id="comment-102318">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518384" rel="external nofollow">新用户533191</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-102318" rel="nofollow"><time datetime="2017-04-24T13:59:03+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>██████看.色.片.看.а.片 【 <a href="http://aryyy.com" rel="nofollow">http://aryyy.com</a> 】  网.址 ██████</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-102317">
+<article class="comment" id="comment-102317">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518384" rel="external nofollow">新用户533191</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-102317" rel="nofollow"><time datetime="2017-04-24T13:59:03+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>██████看.色.片.看.а.片 【 <a href="http://aryyy.com" rel="nofollow">http://aryyy.com</a> 】  网.址 ██████</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101787">
+<article class="comment" id="comment-101787">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519429" rel="external nofollow">新用户190745</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-101787" rel="nofollow"><time datetime="2017-04-23T14:02:16+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>讲得对！但也不能处处把大陆人都标榜为高尚无欲的，美国人也做不到！面对恶棍或无赖，光讲文明话是没有屌用的，不然要监狱、要军队干啥。骂是出气，没什么大不了，又不是你妈、你妹激动啥</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101786">
+<article class="comment" id="comment-101786">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519429" rel="external nofollow">新用户190745</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-101786" rel="nofollow"><time datetime="2017-04-23T14:02:16+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>讲得对！但也不能处处把大陆人都标榜为高尚无欲的，美国人也做不到！面对恶棍或无赖，光讲文明话是没有屌用的，不然要监狱、要军队干啥。骂是出气，没什么大不了，又不是你妈、你妹激动啥</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101785">
+<article class="comment" id="comment-101785">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519429" rel="external nofollow">新用户190745</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-101785" rel="nofollow"><time datetime="2017-04-23T14:02:16+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>讲得对！但也不能处处把大陆人都标榜为高尚无欲的，美国人也做不到！面对恶棍或无赖，光讲文明话是没有屌用的，不然要监狱、要军队干啥。骂是出气，没什么大不了，又不是你妈、你妹激动啥</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101784">
+<article class="comment" id="comment-101784">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519429" rel="external nofollow">新用户190745</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-101784" rel="nofollow"><time datetime="2017-04-23T14:02:16+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>讲得对！但也不能处处把大陆人都标榜为高尚无欲的，美国人也做不到！面对恶棍或无赖，光讲文明话是没有屌用的，不然要监狱、要军队干啥。骂是出气，没什么大不了，又不是你妈、你妹激动啥</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101783">
+<article class="comment" id="comment-101783">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519429" rel="external nofollow">新用户190745</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-101783" rel="nofollow"><time datetime="2017-04-23T14:02:16+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>讲得对！但也不能处处把大陆人都标榜为高尚无欲的，美国人也做不到！面对恶棍或无赖，光讲文明话是没有屌用的，不然要监狱、要军队干啥。骂是出气，没什么大不了，又不是你妈、你妹激动啥</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101782">
+<article class="comment" id="comment-101782">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519429" rel="external nofollow">新用户190745</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-101782" rel="nofollow"><time datetime="2017-04-23T14:02:16+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>讲得对！但也不能处处把大陆人都标榜为高尚无欲的，美国人也做不到！面对恶棍或无赖，光讲文明话是没有屌用的，不然要监狱、要军队干啥。骂是出气，没什么大不了，又不是你妈、你妹激动啥</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101781">
+<article class="comment" id="comment-101781">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519429" rel="external nofollow">新用户190745</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-101781" rel="nofollow"><time datetime="2017-04-23T14:02:16+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>讲得对！但也不能处处把大陆人都标榜为高尚无欲的，美国人也做不到！面对恶棍或无赖，光讲文明话是没有屌用的，不然要监狱、要军队干啥。骂是出气，没什么大不了，又不是你妈、你妹激动啥</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101780">
+<article class="comment" id="comment-101780">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519429" rel="external nofollow">新用户190745</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-101780" rel="nofollow"><time datetime="2017-04-23T14:02:16+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>讲得对！但也不能处处把大陆人都标榜为高尚无欲的，美国人也做不到！面对恶棍或无赖，光讲文明话是没有屌用的，不然要监狱、要军队干啥。骂是出气，没什么大不了，又不是你妈、你妹激动啥</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101779">
+<article class="comment" id="comment-101779">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519429" rel="external nofollow">新用户190745</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-101779" rel="nofollow"><time datetime="2017-04-23T14:02:16+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>讲得对！但也不能处处把大陆人都标榜为高尚无欲的，美国人也做不到！面对恶棍或无赖，光讲文明话是没有屌用的，不然要监狱、要军队干啥。骂是出气，没什么大不了，又不是你妈、你妹激动啥</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101226">
+<article class="comment" id="comment-101226">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517245" rel="external nofollow">新用户535379</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-101226" rel="nofollow"><time datetime="2017-04-22T13:59:11+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>暴漫主持人现出了真身</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101225">
+<article class="comment" id="comment-101225">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517245" rel="external nofollow">新用户535379</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-101225" rel="nofollow"><time datetime="2017-04-22T13:59:11+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>暴漫主持人现出了真身</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101223">
+<article class="comment" id="comment-101223">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517245" rel="external nofollow">新用户535379</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-101223" rel="nofollow"><time datetime="2017-04-22T13:59:11+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>暴漫主持人现出了真身</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101222">
+<article class="comment" id="comment-101222">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517245" rel="external nofollow">新用户535379</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-101222" rel="nofollow"><time datetime="2017-04-22T13:59:11+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>暴漫主持人现出了真身</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101221">
+<article class="comment" id="comment-101221">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517245" rel="external nofollow">新用户535379</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-101221" rel="nofollow"><time datetime="2017-04-22T13:59:11+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>暴漫主持人现出了真身</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101220">
+<article class="comment" id="comment-101220">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517245" rel="external nofollow">新用户535379</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-101220" rel="nofollow"><time datetime="2017-04-22T13:59:11+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>暴漫主持人现出了真身</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101219">
+<article class="comment" id="comment-101219">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517245" rel="external nofollow">新用户535379</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-101219" rel="nofollow"><time datetime="2017-04-22T13:59:11+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>暴漫主持人现出了真身</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101218">
+<article class="comment" id="comment-101218">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517245" rel="external nofollow">新用户535379</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-101218" rel="nofollow"><time datetime="2017-04-22T13:59:11+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>暴漫主持人现出了真身</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101217">
+<article class="comment" id="comment-101217">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517245" rel="external nofollow">新用户535379</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-101217" rel="nofollow"><time datetime="2017-04-22T13:59:11+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>暴漫主持人现出了真身</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101216">
+<article class="comment" id="comment-101216">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517245" rel="external nofollow">新用户535379</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-101216" rel="nofollow"><time datetime="2017-04-22T13:59:11+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>暴漫主持人现出了真身</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101215">
+<article class="comment" id="comment-101215">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517245" rel="external nofollow">新用户535379</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-101215" rel="nofollow"><time datetime="2017-04-22T13:59:11+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>暴漫主持人现出了真身</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101214">
+<article class="comment" id="comment-101214">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517245" rel="external nofollow">新用户535379</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-101214" rel="nofollow"><time datetime="2017-04-22T13:59:11+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>暴漫主持人现出了真身</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101212">
+<article class="comment" id="comment-101212">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517245" rel="external nofollow">新用户535379</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-101212" rel="nofollow"><time datetime="2017-04-22T13:59:11+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>暴漫主持人现出了真身</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101211">
+<article class="comment" id="comment-101211">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517245" rel="external nofollow">新用户535379</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-101211" rel="nofollow"><time datetime="2017-04-22T13:59:11+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>暴漫主持人现出了真身</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100461">
+<article class="comment" id="comment-100461">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516412" rel="external nofollow">新用户686987</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-100461" rel="nofollow"><time datetime="2017-04-21T14:04:10+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>楼梯旁边那个滑梯不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100460">
+<article class="comment" id="comment-100460">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516412" rel="external nofollow">新用户686987</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-100460" rel="nofollow"><time datetime="2017-04-21T14:04:10+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>楼梯旁边那个滑梯不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100459">
+<article class="comment" id="comment-100459">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516412" rel="external nofollow">新用户686987</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-100459" rel="nofollow"><time datetime="2017-04-21T14:04:10+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>楼梯旁边那个滑梯不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100458">
+<article class="comment" id="comment-100458">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516412" rel="external nofollow">新用户686987</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-100458" rel="nofollow"><time datetime="2017-04-21T14:04:10+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>楼梯旁边那个滑梯不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100457">
+<article class="comment" id="comment-100457">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516412" rel="external nofollow">新用户686987</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-100457" rel="nofollow"><time datetime="2017-04-21T14:04:10+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>楼梯旁边那个滑梯不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100456">
+<article class="comment" id="comment-100456">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516412" rel="external nofollow">新用户686987</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-100456" rel="nofollow"><time datetime="2017-04-21T14:04:10+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>楼梯旁边那个滑梯不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100455">
+<article class="comment" id="comment-100455">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516412" rel="external nofollow">新用户686987</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-100455" rel="nofollow"><time datetime="2017-04-21T14:04:10+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>楼梯旁边那个滑梯不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100454">
+<article class="comment" id="comment-100454">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516412" rel="external nofollow">新用户686987</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-100454" rel="nofollow"><time datetime="2017-04-21T14:04:10+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>楼梯旁边那个滑梯不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100453">
+<article class="comment" id="comment-100453">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516412" rel="external nofollow">新用户686987</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-100453" rel="nofollow"><time datetime="2017-04-21T14:04:10+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>楼梯旁边那个滑梯不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100452">
+<article class="comment" id="comment-100452">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516412" rel="external nofollow">新用户686987</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-100452" rel="nofollow"><time datetime="2017-04-21T14:04:10+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>楼梯旁边那个滑梯不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100451">
+<article class="comment" id="comment-100451">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516412" rel="external nofollow">新用户686987</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-100451" rel="nofollow"><time datetime="2017-04-21T14:04:10+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>楼梯旁边那个滑梯不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96624">
+<article class="comment" id="comment-96624">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524269" rel="external nofollow">新用户465425</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-96624" rel="nofollow"><time datetime="2017-04-19T19:07:51+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>老龙，下不了啊，求修复谢谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96623">
+<article class="comment" id="comment-96623">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524269" rel="external nofollow">新用户465425</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-96623" rel="nofollow"><time datetime="2017-04-19T19:07:51+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>老龙，下不了啊，求修复谢谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96621">
+<article class="comment" id="comment-96621">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524269" rel="external nofollow">新用户465425</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-96621" rel="nofollow"><time datetime="2017-04-19T19:07:51+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>老龙，下不了啊，求修复谢谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96620">
+<article class="comment" id="comment-96620">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524269" rel="external nofollow">新用户465425</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-96620" rel="nofollow"><time datetime="2017-04-19T19:07:51+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>老龙，下不了啊，求修复谢谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96619">
+<article class="comment" id="comment-96619">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524269" rel="external nofollow">新用户465425</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-96619" rel="nofollow"><time datetime="2017-04-19T19:07:51+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>老龙，下不了啊，求修复谢谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96618">
+<article class="comment" id="comment-96618">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524269" rel="external nofollow">新用户465425</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-96618" rel="nofollow"><time datetime="2017-04-19T19:07:51+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>老龙，下不了啊，求修复谢谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96617">
+<article class="comment" id="comment-96617">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524269" rel="external nofollow">新用户465425</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-96617" rel="nofollow"><time datetime="2017-04-19T19:07:51+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>老龙，下不了啊，求修复谢谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96616">
+<article class="comment" id="comment-96616">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524269" rel="external nofollow">新用户465425</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-96616" rel="nofollow"><time datetime="2017-04-19T19:07:51+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>老龙，下不了啊，求修复谢谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96615">
+<article class="comment" id="comment-96615">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524269" rel="external nofollow">新用户465425</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-96615" rel="nofollow"><time datetime="2017-04-19T19:07:51+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>老龙，下不了啊，求修复谢谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96614">
+<article class="comment" id="comment-96614">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524269" rel="external nofollow">新用户465425</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-96614" rel="nofollow"><time datetime="2017-04-19T19:07:51+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>老龙，下不了啊，求修复谢谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96613">
+<article class="comment" id="comment-96613">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524269" rel="external nofollow">新用户465425</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-96613" rel="nofollow"><time datetime="2017-04-19T19:07:51+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>老龙，下不了啊，求修复谢谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96612">
+<article class="comment" id="comment-96612">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524269" rel="external nofollow">新用户465425</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-96612" rel="nofollow"><time datetime="2017-04-19T19:07:51+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>老龙，下不了啊，求修复谢谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96610">
+<article class="comment" id="comment-96610">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524269" rel="external nofollow">新用户465425</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-96610" rel="nofollow"><time datetime="2017-04-19T19:07:51+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>老龙，下不了啊，求修复谢谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65791">
+<article class="comment" id="comment-65791">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517941" rel="external nofollow">新用户475991</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-65791" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65790">
+<article class="comment" id="comment-65790">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517941" rel="external nofollow">新用户475991</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-65790" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65789">
+<article class="comment" id="comment-65789">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517941" rel="external nofollow">新用户475991</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-65789" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65788">
+<article class="comment" id="comment-65788">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517941" rel="external nofollow">新用户475991</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-65788" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65787">
+<article class="comment" id="comment-65787">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517941" rel="external nofollow">新用户475991</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-65787" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65799">
+<article class="comment" id="comment-65799">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517941" rel="external nofollow">新用户475991</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-65799" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65798">
+<article class="comment" id="comment-65798">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517941" rel="external nofollow">新用户475991</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-65798" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65797">
+<article class="comment" id="comment-65797">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517941" rel="external nofollow">新用户475991</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-65797" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65796">
+<article class="comment" id="comment-65796">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517941" rel="external nofollow">新用户475991</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-65796" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65795">
+<article class="comment" id="comment-65795">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517941" rel="external nofollow">新用户475991</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-65795" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65794">
+<article class="comment" id="comment-65794">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517941" rel="external nofollow">新用户475991</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-65794" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65793">
+<article class="comment" id="comment-65793">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517941" rel="external nofollow">新用户475991</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-65793" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65792">
+<article class="comment" id="comment-65792">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517941" rel="external nofollow">新用户475991</a></span> on <a href="http://www.acmerblog.com/hdu-4793-collision-7838.html#comment-65792" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

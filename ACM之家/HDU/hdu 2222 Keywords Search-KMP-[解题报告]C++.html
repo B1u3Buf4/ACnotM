@@ -1,0 +1,352 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>01-04</div>
+<div class="tit"><h1 class="entry-title">hdu 2222 Keywords Search-KMP-[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/bfs" rel="category tag" title="查看BFS搜索中的全部文章">BFS搜索</a>, <a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/basis/string" rel="category tag" title="查看字符串处理中的全部文章">字符串处理</a></span><span class="i4">围观1395次</span><span class="i3"><a class="ds-thread-count" data-thread-key="3452" href="http://www.acmerblog.com/hdu-2222-keywords-search-3452.html#comments" title="《hdu 2222 Keywords Search-KMP-[解题报告]C++》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Keywords Search</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+In the modern time, Search engine came into the life of everybody like Google, Baidu, etc.<br/>Wiskey also wants to bring this feature to his image retrieval system.<br/>Every image have a long description, when users type some keywords to find the image, the system will match the keywords with description of image and show the image which the most keywords be matched.<br/>To simplify the problem, giving you a description of image, and some keywords, you should tell me how many keywords will be match. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+First line will contain one integer means how many cases will follow by.<br/>Each case will contain two integers N means the number of keywords and N keywords follow. (N &lt;= 10000)<br/>Each keyword will only contains characters ‘a’-'z’, and the length will be not longer than 50.<br/>The last line is the description, and the length will be not longer than 1000000. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+First line will contain one integer means how many cases will follow by.<br/>Each case will contain two integers N means the number of keywords and N keywords follow. (N &lt;= 10000)<br/>Each keyword will only contains characters ‘a’-'z’, and the length will be not longer than 50.<br/>The last line is the description, and the length will be not longer than 1000000.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+5
+she
+he
+say
+shr
+her
+yasherhs</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+3</pre>
+<p> <!-- problem end --></p>
+<p>昨晚开始想学AC自动机，然后尽早看了看算导的KMP。。。以前看过，忘差不多了。</p>
+<p>今天看了看一个学习AC自动机的文章，磕磕绊绊理解了。</p>
+<p>trie的建立很随意，关键是失败指针这个概念。稍微有点抽象。这个指针的建立，用到了BFS，引用那个文章的话</p>
+<p>“  假设有一个节点k，他的失败指针指向j。那么k,j满足这个性质：设root到j的距离为n，则从k之上的第n个节点到k所组成的长度为n的单词，与从root到j所组成的单词相同。对于每个节点，我们可以这样处理：设这个节点上的字母为C，沿着他父亲的失败指针走，直到走到一个节点，他的儿子中也有字母为C的节点。然后把当前节点的失败指针指向那个字目也为C的儿子。如果一直走到了root都没找到，那就把失败指针指向root，最开始，我们把root加入队列(root的失败指针显然指向自己)，这以后我们每处理一个点，就把它的所有儿子加入队列，直到搞完。”</p>
+<p align="left">查找匹配数目的时候，如果发现不匹配的就沿着失败指针寻找，直到到根部为止。</p>
+<p align="left">因为失败指针走一次后再走就没有用了，可以标记下，下次就不用走了。</p>
+<p align="left">
+</p><pre class="brush:cpp ">#include &lt;map&gt;
+#include &lt;set&gt;
+#include &lt;queue&gt;
+#include &lt;stack&gt;
+#include &lt;math.h&gt;
+#include &lt;time.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;iostream&gt;
+#include &lt;limits.h&gt;
+#include &lt;string.h&gt;
+#include &lt;string&gt;
+#include &lt;algorithm&gt;
+#define MID(x,y) ( ( x + y ) &gt;&gt; 1 )
+#define L(x) ( x &lt;&lt; 1 )
+#define R(x) ( x &lt;&lt; 1 | 1 )
+#define BUG puts("here!!!")
+#define STOP system("pause")
+
+using namespace std;
+
+const int MAX_N = 26;
+const int MAX_NODE = 500010;
+
+struct NODE{
+	int cnt;
+	NODE *next[MAX_N], *fail;
+	NODE()
+	{
+		cnt = 0;
+		fail = NULL;
+		memset(next, 0, sizeof(next));
+	}
+}*head;
+
+void Build_trie(char *s,NODE *head)
+{
+	int len = strlen(s);
+	for(int i=0; i&lt;len; i++)
+	{
+		int k = s[i] - 'a';
+		if( head-&gt;next[k] == NULL )
+			head-&gt;next[k] = new NODE();
+		head = head-&gt;next[k];
+	}
+	head-&gt;cnt++;
+}
+
+queue&lt;NODE*&gt; q;
+void Build_fail(NODE *head)
+{
+	head-&gt;fail = NULL;
+	q.push(head);
+	while( !q.empty() )
+	{
+		NODE *now = q.front(); q.pop();
+		for(int i=0; i&lt;MAX_N; i++)
+			if( now-&gt;next[i] )
+			{
+				NODE *p = now-&gt;fail;
+				while( p )
+				{
+					if( p-&gt;next[i] )
+					{
+						now-&gt;next[i]-&gt;fail = p-&gt;next[i];
+						break;
+					}
+					p = p-&gt;fail;
+				}
+				if( p == NULL )
+					now-&gt;next[i]-&gt;fail = head;
+				q.push(now-&gt;next[i]);
+			}
+						
+	}
+}
+
+int AC_find(NODE *head, char *s)
+{
+	int len = strlen(s), sum = 0;
+	NODE* p = head;
+	for(int i=0; i&lt;len; i++)
+	{
+		int k = s[i] - 'a';
+		while( p-&gt;next[k] == NULL &amp;&amp; p != head )
+			p = p-&gt;fail;
+		p = p-&gt;next[k] == NULL ? head : p-&gt;next[k];
+		
+		NODE *tmp = p;
+		while( tmp != head &amp;&amp; tmp-&gt;cnt != -1 )
+		{
+			sum += tmp-&gt;cnt;
+			tmp-&gt;cnt = -1;
+			tmp = tmp-&gt;fail;
+		}
+	}
+	return sum;
+}
+
+char s[1000005];
+char ss[100];
+int main()
+{
+	int n, ncases;
+
+	scanf("%d", &amp;ncases);
+	
+	while( ncases-- )
+	{
+		head = new NODE();
+		scanf("%d", &amp;n);		
+		while( n-- )
+		{
+			scanf("%s", ss);
+			Build_trie(ss, head);
+		}
+		
+		Build_fail( head );
+		
+		scanf("%s", s);
+		int sum = AC_find( head, s);
+		printf("%d\n", sum);
+	}
+
+return 0;
+}</pre>
+<p>解题转自：http://blog.csdn.net/zxy_snow/article/details/6709255</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-86459">
+<article class="comment" id="comment-86459">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460630" rel="external nofollow">新用户314627</a></span> on <a href="http://www.acmerblog.com/hdu-2222-keywords-search-3452.html#comment-86459" rel="nofollow"><time datetime="2017-04-13T04:24:35+00:00" pubdate="">2017年4月13日 at 上午4:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>F  德国</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-20180">
+<article class="comment" id="comment-20180">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">usx13123</a></span> on <a href="http://www.acmerblog.com/hdu-2222-keywords-search-3452.html#comment-20180" rel="nofollow"><time datetime="2015-06-19T04:48:22+00:00" pubdate="">2015年6月19日 at 上午4:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有两个重复的话结果是正确的，但解法不够严谨，后面重复的覆盖掉前面的，由于题目数据限制也比较严，所以能提交通过。已更新算法</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-44424">
+<article class="comment" id="comment-44424">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaotongtest</a></span> on <a href="http://www.acmerblog.com/hdu-2222-keywords-search-3452.html#comment-44424" rel="nofollow"><time datetime="2015-05-11T20:28:39+00:00" pubdate="">2015年5月11日 at 下午8:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我得邮箱cwqbupt@qq.com</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-44425">
+<article class="comment" id="comment-44425">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zjd1988</a></span> on <a href="http://www.acmerblog.com/hdu-2222-keywords-search-3452.html#comment-44425" rel="nofollow"><time datetime="2015-04-24T08:04:34+00:00" pubdate="">2015年4月24日 at 上午8:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个后缀数组不是常用的那个.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-62366">
+<article class="comment" id="comment-62366">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hwp</a></span> on <a href="http://www.acmerblog.com/hdu-2222-keywords-search-3452.html#comment-62366" rel="nofollow"><time datetime="2015-04-16T20:37:35+00:00" pubdate="">2015年4月16日 at 下午8:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正确性是关键，冲突是都会有的，主要是那种算法冲突的概率低</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-20175">
+<article class="comment" id="comment-20175">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zhuliyan</a></span> on <a href="http://www.acmerblog.com/hdu-2222-keywords-search-3452.html#comment-20175" rel="nofollow"><time datetime="2015-03-14T22:49:23+00:00" pubdate="">2015年3月14日 at 下午10:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>居然看懂了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-44426">
+<article class="comment" id="comment-44426">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lanifer</a></span> on <a href="http://www.acmerblog.com/hdu-2222-keywords-search-3452.html#comment-44426" rel="nofollow"><time datetime="2015-02-23T21:08:15+00:00" pubdate="">2015年2月23日 at 下午9:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>额，不对应吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-20179">
+<article class="comment" id="comment-20179">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rewrite</a></span> on <a href="http://www.acmerblog.com/hdu-2222-keywords-search-3452.html#comment-20179" rel="nofollow"><time datetime="2015-01-18T00:43:55+00:00" pubdate="">2015年1月18日 at 上午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>约瑟夫也用说这么长……很成熟的一个问题了，分治的方法解起来o(n)就可以了，有兴趣可以看看具体数学的第一章，关于约瑟夫问题推导出了一系列的结论，很漂亮</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-20173">
+<article class="comment" id="comment-20173">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">linyanjin</a></span> on <a href="http://www.acmerblog.com/hdu-2222-keywords-search-3452.html#comment-20173" rel="nofollow"><time datetime="2014-09-26T09:36:46+00:00" pubdate="">2014年9月26日 at 上午9:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>1234百位上出现的次数应该是200吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-20178">
+<article class="comment" id="comment-20178">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">BGPY</a></span> on <a href="http://www.acmerblog.com/hdu-2222-keywords-search-3452.html#comment-20178" rel="nofollow"><time datetime="2014-09-01T19:48:03+00:00" pubdate="">2014年9月1日 at 下午7:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>為甚麼fln*20+0.5f</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-20177">
+<article class="comment" id="comment-20177">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">verycourage</a></span> on <a href="http://www.acmerblog.com/hdu-2222-keywords-search-3452.html#comment-20177" rel="nofollow"><time datetime="2014-07-31T03:29:45+00:00" pubdate="">2014年7月31日 at 上午3:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>原来的主机不行，目前更换到了国内主机</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-44427">
+<article class="comment" id="comment-44427">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">super157</a></span> on <a href="http://www.acmerblog.com/hdu-2222-keywords-search-3452.html#comment-44427" rel="nofollow"><time datetime="2014-05-10T17:34:16+00:00" pubdate="">2014年5月10日 at 下午5:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#include &lt;cstdio&gt;</p>
+<p>int main() {<br/>
+	//answer must be odd<br/>
+    int n, u, d;<br/>
+    while(scanf("%d%d%d",&amp;n,&amp;u,&amp;d)==3 &amp;&amp; n&gt;0) {<br/>
+        if(n&lt;=u) { puts("1"); continue; }<br/>
+        n-=u; u-=d; n+=u-1; n/=u;<br/>
+        n&lt;&lt;=1, ++n;<br/>
+        printf("%dn",n);<br/>
+    }<br/>
+    return 0;<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-44428">
+<article class="comment" id="comment-44428">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yelawolf</a></span> on <a href="http://www.acmerblog.com/hdu-2222-keywords-search-3452.html#comment-44428" rel="nofollow"><time datetime="2014-02-12T08:26:44+00:00" pubdate="">2014年2月12日 at 上午8:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-20174">
+<article class="comment" id="comment-20174">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">cherry_odd</a></span> on <a href="http://www.acmerblog.com/hdu-2222-keywords-search-3452.html#comment-20174" rel="nofollow"><time datetime="2014-02-01T07:35:34+00:00" pubdate="">2014年2月1日 at 上午7:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的模板</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-20176">
+<article class="comment" id="comment-20176">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Mayboy</a></span> on <a href="http://www.acmerblog.com/hdu-2222-keywords-search-3452.html#comment-20176" rel="nofollow"><time datetime="2014-01-31T08:10:17+00:00" pubdate="">2014年1月31日 at 上午8:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法挺不错。NewHead代表新的头节点，通过递归找到最后一个节点之后，就把这个节点赋给NewHead，然后一直返回返回，中途这个值是没有变化的，一边返回一边把相应的指针方向颠倒，最后结束时返回新的头节点到主函数。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

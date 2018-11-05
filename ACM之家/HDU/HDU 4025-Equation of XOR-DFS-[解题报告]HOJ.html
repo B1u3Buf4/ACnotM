@@ -1,0 +1,399 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>04-15</div>
+<div class="tit"><h1 class="entry-title">HDU 4025-Equation of XOR-DFS-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/dfs" rel="category tag" title="查看DFS搜索中的全部文章">DFS搜索</a>, <a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/basis/recursion" rel="category tag" title="查看递归和分治中的全部文章">递归和分治</a></span><span class="i4">围观479次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7028" href="http://www.acmerblog.com/hdu-4025-equation-of-xor-7028.html#comments" title="《HDU 4025-Equation of XOR-DFS-[解题报告]HOJ》上的评论">22 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Equation of XOR</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Recently, Jimmy is learning about linear algebra from Blue Mary while having the course of Boolean algebra in class offered by Prof. Z. Since Jimmy has been thoroughly bored by the boring homework assigned by two teachers, evil Jimmy plans to set a hard question to baffle them as revenge for their heavy tasks. As a result, Jimmy comes up with an idea that merging the knowledge from both the two classes and constructs a complicate problem: the XOR equation system.<br/>Let’s consider the following equations:<br/>(a11 . x1) ^ (a12 . x2) ^ … ^ (a1m . xm) = 0 <br/>(a21 . x1) ^ (a22 . x2) ^ … ^ (a2m . xm) = 0 <br/>…<br/>(an1 . x1) ^ (an2 . x2) ^ … ^ (anm . xm) = 0<br/>which satisfies the following conditions:<br/>1.  aij  in {0,1}   for 1 ≤ i ≤ n and 1 ≤ j ≤ m;<br/>2.  xi  in Si where Si is a subset of {0,1,2,3}, 1 ≤ i ≤ m;<br/>3.  |Si| ≤ 3, 1 ≤ i ≤ m;<br/>4.  1≤n ≤ 30, 1 ≤ m ≤ 22.
+<p>In the system of equations, operation “ . “ denotes the multiplication operation while “ ^ ” is for bitwise XOR. Moreover, the bitwise XOR takes two bit patterns of equal length and performs the logical XOR operation on each pair of corresponding bits. The result in each position is 1 if the two bits are different, and 0 if they are the same.<br/>Rather than expecting a solution of a specified equation system, Jimmy would like to ask the teachers to calculate that how many distinct solutions can satisfy a given equation system. What a confusing puzzle! Help Jimmy’s teachers please! </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+There are several test cases. The first line of input is a single positive integer T (&lt;= 15) indicating the number of test cases, then T cases follow.<br/>For each test case, the first line contains two integers N and M giving the two dimensions of the equation system respectively where N is the number of rows and M for columns. Then N lines are following, each line contains m integers. Item at line i and column j represents aij. The next m lines are descriptions of Si that the leading integer K denotes the number of elements in Si and the following K integers represent elements. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+There are several test cases. The first line of input is a single positive integer T (&lt;= 15) indicating the number of test cases, then T cases follow.<br/>For each test case, the first line contains two integers N and M giving the two dimensions of the equation system respectively where N is the number of rows and M for columns. Then N lines are following, each line contains m integers. Item at line i and column j represents aij. The next m lines are descriptions of Si that the leading integer K denotes the number of elements in Si and the following K integers represent elements.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+1 2
+1 1
+3 0 1 2
+2 3 1</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+1</pre>
+<p> <!-- problem end --></p>
+<p>拼死拼活就这一道题，写出来后发到博客装大牛，哈哈，其实还是个菜鸟。</p>
+<p><a>http://acm.hdu.edu.cn/showproblem.php?pid=4025</a></p>
+<p>计算值的压缩，因为每一个a和x不超过两个二进制位，最多有30个式子，供60位，所以可以用__int64存下所有的结果。枚举一半的x变量，保存结果，统计每个结果出现的次数，然后再枚举另一半x，二分查找是否有对应的解。</p>
+<pre class="brush:cpp" name="code">
+/*Equation of XOR*/
+#include &lt;stdio.h&gt;
+#include &lt;iostream&gt;
+#include &lt;algorithm&gt;
+using namespace std;
+
+struct Set{
+    int k, num[5];
+};
+int ans_count, a1, a2, n, m;
+int a[31][23];
+Set s[23];
+__int64 ans[(1&lt;&lt;22) + 2];
+__int64 sum[(1&lt;&lt;22)+2];
+__int64 final_ans;
+
+int find(__int64 v)
+{
+    int left = 0, right = ans_count-1, mid;
+    if (ans_count == 0) return -1;
+    while (left &lt; right-1) {
+        mid = left + (right - left) / 2;
+        if (v &lt;= ans[mid]) right = mid;
+        else  left = mid;
+    }
+    if (v == ans[left]) return left;
+    if (v == ans[right]) return right;
+    return -1;
+}
+
+void dfs_x1(int p, __int64 now)
+{
+    int i, j, x;
+    __int64 tmp;
+    if (p &gt;= a2+1) {
+        ans[ans_count++] = now;
+        return;
+    }
+    for (i = 0; i &lt; s[p].k; i++) {
+        x = s[p].num[i];
+        tmp = now;
+        for (j = 1; j &lt;= n; j++)   tmp ^= ((__int64)(a[j][p] * x)) &lt;&lt; (2*(j-1));
+        dfs_x1(p+1, tmp);
+    }
+}
+
+void dfs_x2(int p, __int64 now)
+{
+    int i, j, x, ret;
+    __int64 tmp;
+    if (p &gt;= a2+1) {
+        ret = find(now);
+        if (ret != -1) {
+            final_ans += sum[ret];
+        }
+        return;
+    }
+    for (i = 0; i &lt; s[p].k; i++) {
+        x = s[p].num[i];
+        tmp = now;
+        for (j = 1; j &lt;= n; j++)   tmp ^= ((__int64)(a[j][p] * x)) &lt;&lt; (2*(j-1));
+        dfs_x2(p+1, tmp);
+    }
+}
+
+int main()
+{
+    int cs, tt, i, j, ss, n_count;
+
+    scanf("%d", &amp;tt);
+    for (cs = 1; cs &lt;= tt; cs++) {
+        scanf("%d %d", &amp;n, &amp;m);
+        for (i = 1; i &lt;= n; i++) {
+            for (j = 1; j &lt;= m; j++) {
+                scanf("%d", &amp;a[i][j]);
+            }
+        }
+        for (i = 1; i &lt;= m; i++) {
+            scanf("%d", &amp;s[i].k);
+            n_count = 0;
+            ss = 0;
+            for (j = 0; j &lt; s[i].k; j++) {
+                scanf("%d", &amp;s[i].num[n_count]);
+                if (ss &amp; (1&lt;&lt;s[i].num[n_count])) continue;
+                n_count++;
+            }
+            s[i].k = n_count;
+        }
+
+        ans_count = 0;
+        a1 = 1;
+        a2 = (m/2);
+        dfs_x1(a1, 0LL);
+
+        sort(ans, ans+ans_count);
+//for (i = 0; i &lt; ans_count; i++)  printf("%I64d  ", ans[i]); printf("\n");
+        j = 0;
+        sum[j] = 1;
+        for (i = 1; i &lt; ans_count; i++) {
+            if (ans[j] == ans[i]) sum[j]++;
+            else {
+                ans[++j] = ans[i];
+                sum[j] = 1;
+            }
+        }
+        ans_count = j+1;
+        final_ans = 0LL;
+        a1 = a2 + 1;
+        a2 = m;
+        dfs_x2(a1, 0LL);
+
+        printf("%I64d\n", final_ans);
+    }
+    return 0;
+}
+</pre>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/moorage/article/details/6767057</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-99995">
+<article class="comment" id="comment-99995">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460604" rel="external nofollow">新用户850453</a></span> on <a href="http://www.acmerblog.com/hdu-4025-equation-of-xor-7028.html#comment-99995" rel="nofollow"><time datetime="2017-04-20T21:02:03+00:00" pubdate="">2017年4月20日 at 下午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>天师斗僵尸粤语版….</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70667">
+<article class="comment" id="comment-70667">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456135" rel="external nofollow">新用户353298</a></span> on <a href="http://www.acmerblog.com/hdu-4025-equation-of-xor-7028.html#comment-70667" rel="nofollow"><time datetime="2017-04-11T15:16:33+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>快乐  汉子……………….</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70666">
+<article class="comment" id="comment-70666">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456135" rel="external nofollow">新用户353298</a></span> on <a href="http://www.acmerblog.com/hdu-4025-equation-of-xor-7028.html#comment-70666" rel="nofollow"><time datetime="2017-04-11T15:16:33+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>快乐  汉子……………….</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70665">
+<article class="comment" id="comment-70665">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456135" rel="external nofollow">新用户353298</a></span> on <a href="http://www.acmerblog.com/hdu-4025-equation-of-xor-7028.html#comment-70665" rel="nofollow"><time datetime="2017-04-11T15:16:33+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>快乐  汉子……………….</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70664">
+<article class="comment" id="comment-70664">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456135" rel="external nofollow">新用户353298</a></span> on <a href="http://www.acmerblog.com/hdu-4025-equation-of-xor-7028.html#comment-70664" rel="nofollow"><time datetime="2017-04-11T15:16:33+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>快乐  汉子……………….</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70663">
+<article class="comment" id="comment-70663">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456135" rel="external nofollow">新用户353298</a></span> on <a href="http://www.acmerblog.com/hdu-4025-equation-of-xor-7028.html#comment-70663" rel="nofollow"><time datetime="2017-04-11T15:16:33+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>快乐  汉子……………….</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70662">
+<article class="comment" id="comment-70662">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456135" rel="external nofollow">新用户353298</a></span> on <a href="http://www.acmerblog.com/hdu-4025-equation-of-xor-7028.html#comment-70662" rel="nofollow"><time datetime="2017-04-11T15:16:33+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>快乐  汉子……………….</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70661">
+<article class="comment" id="comment-70661">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456135" rel="external nofollow">新用户353298</a></span> on <a href="http://www.acmerblog.com/hdu-4025-equation-of-xor-7028.html#comment-70661" rel="nofollow"><time datetime="2017-04-11T15:16:33+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>快乐  汉子……………….</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70660">
+<article class="comment" id="comment-70660">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456135" rel="external nofollow">新用户353298</a></span> on <a href="http://www.acmerblog.com/hdu-4025-equation-of-xor-7028.html#comment-70660" rel="nofollow"><time datetime="2017-04-11T15:16:33+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>快乐  汉子……………….</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51916">
+<article class="comment" id="comment-51916">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">skyand</a></span> on <a href="http://www.acmerblog.com/hdu-4025-equation-of-xor-7028.html#comment-51916" rel="nofollow"><time datetime="2015-07-12T08:28:50+00:00" pubdate="">2015年7月12日 at 上午8:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你好，这题给出的代码好像弄错了，这个是pow那道题目的解法</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35398">
+<article class="comment" id="comment-35398">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sum_tsai</a></span> on <a href="http://www.acmerblog.com/hdu-4025-equation-of-xor-7028.html#comment-35398" rel="nofollow"><time datetime="2015-07-09T06:26:50+00:00" pubdate="">2015年7月9日 at 上午6:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已经挂掉了，给个参考呗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51912">
+<article class="comment" id="comment-51912">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">123zxc</a></span> on <a href="http://www.acmerblog.com/hdu-4025-equation-of-xor-7028.html#comment-51912" rel="nofollow"><time datetime="2015-07-08T06:48:18+00:00" pubdate="">2015年7月8日 at 上午6:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>使用代码高亮的插件，再修改下css</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-60091">
+<article class="comment" id="comment-60091">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sheyty</a></span> on <a href="http://www.acmerblog.com/hdu-4025-equation-of-xor-7028.html#comment-60091" rel="nofollow"><time datetime="2015-06-23T03:14:13+00:00" pubdate="">2015年6月23日 at 上午3:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>分析的很详细！赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51911">
+<article class="comment" id="comment-51911">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yesMan</a></span> on <a href="http://www.acmerblog.com/hdu-4025-equation-of-xor-7028.html#comment-51911" rel="nofollow"><time datetime="2015-06-09T00:14:15+00:00" pubdate="">2015年6月9日 at 上午12:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>网站不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51915">
+<article class="comment" id="comment-51915">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wizcabbit</a></span> on <a href="http://www.acmerblog.com/hdu-4025-equation-of-xor-7028.html#comment-51915" rel="nofollow"><time datetime="2015-05-21T05:53:57+00:00" pubdate="">2015年5月21日 at 上午5:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>分析的很详细！赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35400">
+<article class="comment" id="comment-35400">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Christmas</a></span> on <a href="http://www.acmerblog.com/hdu-4025-equation-of-xor-7028.html#comment-35400" rel="nofollow"><time datetime="2015-05-19T17:12:56+00:00" pubdate="">2015年5月19日 at 下午5:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是O(m+n)，不小心打错了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35399">
+<article class="comment" id="comment-35399">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">haojunyu</a></span> on <a href="http://www.acmerblog.com/hdu-4025-equation-of-xor-7028.html#comment-35399" rel="nofollow"><time datetime="2015-05-18T00:23:59+00:00" pubdate="">2015年5月18日 at 上午12:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢提醒，是漏掉了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35396">
+<article class="comment" id="comment-35396">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">verycourage</a></span> on <a href="http://www.acmerblog.com/hdu-4025-equation-of-xor-7028.html#comment-35396" rel="nofollow"><time datetime="2015-05-11T18:29:22+00:00" pubdate="">2015年5月11日 at 下午6:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为要修改链表头(指针)，所以要用指针的指针</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51914">
+<article class="comment" id="comment-51914">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">cherry_odd</a></span> on <a href="http://www.acmerblog.com/hdu-4025-equation-of-xor-7028.html#comment-51914" rel="nofollow"><time datetime="2015-04-29T05:13:51+00:00" pubdate="">2015年4月29日 at 上午5:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51913">
+<article class="comment" id="comment-51913">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">20134055016</a></span> on <a href="http://www.acmerblog.com/hdu-4025-equation-of-xor-7028.html#comment-51913" rel="nofollow"><time datetime="2015-04-24T18:45:37+00:00" pubdate="">2015年4月24日 at 下午6:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35397">
+<article class="comment" id="comment-35397">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">warriorbrant</a></span> on <a href="http://www.acmerblog.com/hdu-4025-equation-of-xor-7028.html#comment-35397" rel="nofollow"><time datetime="2015-04-22T07:32:11+00:00" pubdate="">2015年4月22日 at 上午7:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>int L[m+1][n+1];这样定义出错，这个在gcc上可以编译通过 在VS上不行 应该改为new 或者vector</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35395">
+<article class="comment" id="comment-35395">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">21435048</a></span> on <a href="http://www.acmerblog.com/hdu-4025-equation-of-xor-7028.html#comment-35395" rel="nofollow"><time datetime="2015-04-16T16:57:29+00:00" pubdate="">2015年4月16日 at 下午4:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好厉害～</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

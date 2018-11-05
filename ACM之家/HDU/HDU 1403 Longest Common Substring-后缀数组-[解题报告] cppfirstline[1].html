@@ -1,0 +1,343 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-09</div>
+<div class="tit"><h1 class="entry-title">HDU 1403 Longest Common Substring-后缀数组-[解题报告] cpp:firstline[1]</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/basis/string" rel="category tag" title="查看字符串处理中的全部文章">字符串处理</a>, <a href="http://www.acmerblog.com/category/basis/sort" rel="category tag" title="查看排序中的全部文章">排序</a></span><span class="i4">围观1280次</span><span class="i3"><a class="ds-thread-count" data-thread-key="1843" href="http://www.acmerblog.com/hdu-1403-Longest-Common-Substring-1843.html#comments" title="《HDU 1403 Longest Common Substring-后缀数组-[解题报告] cpp:firstline[1]》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Longest Common Substring</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Given two strings, you have to tell the length of the Longest Common Substring of them.
+<p>For example:<br/>str1 = banana<br/>str2 = cianaic</p>
+<p>So the Longest Common Substring is "ana", and the length is 3. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input contains several test cases. Each test case contains two strings, each string will have at most 100000 characters. All the characters are in lower-case.
+<p>Process to the end of file. </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+For each test case, you have to tell the length of the Longest Common Substring of them.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+banana
+cianaic</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+3</pre>
+<p> <!-- problem end --></p>
+<p>【题目地址】</p>
+<p>    <a href="http://acm.hdu.edu.cn/showproblem.php?pid=1403">http://acm.hdu.edu.cn/showproblem.php?pid=1403</a></p>
+<p> </p>
+<p>【题目大意】</p>
+<p>    给定两个字符串A和B，求最长公共字串</p>
+<p> </p>
+<p>【解题思路】</p>
+<p>    字符串的任何一个字串都是这个字符串的某个后缀的前缀。求A和B的最长公共字串就是求A的后缀和B的后缀的最长公共前缀的最大值。可以先将B写在A的后面，中间用一个没有出现过的字符（例如："#"）隔开，求新字符串的后缀数组。</p>
+<p>举例：A="abcda"  B="bcda"  A和B的最大公共字串"bcd"。如果直接A+B="abcdabcda" 求出的结果为"abcd" 长度为4，错误。</p>
+<p>所以A和B直接用一个没有出现过的字符隔开。</p>
+<p> </p>
+<p>【代码】</p>
+<pre class="brush:cpp:firstline[1] ">#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;algorithm&gt;
+using namespace std;
+#define maxn 200100
+char s[maxn];
+int h2,ans,len1,B[maxn];//B某个桶空余空间尾部的索引
+int *S1,*S2,* R,*R2;
+int mem[4][maxn],height[maxn];
+void CreateSuffixArray(char* szText,int L)
+{
+    int i,h;
+	S1=mem[0]; //h阶后缀数组
+	S2=mem[1]; //2h阶后缀数组
+	R=mem[2];  //h阶Rank数组
+	R2=mem[3]; //2h阶Rank数组
+	
+	//花O(n)的时间对h=1进行基数排序
+    for(i=0;i&lt;L;i++) B[szText[i]]++;
+    for(i=1;i&lt;256;i++) B[i]+=B[i-1];
+    for(i=L-1;i&gt;=0;i--) S1[--B[szText[i]]]=i;
+	//计算Rank(1),因为仅仅是1阶的Rank，所以有并列的
+    for(R[S1[0]]=0,i=1;i&lt;L;i++)
+    {
+        if(szText[S1[i]]==szText[S1[i-1]])
+            R[S1[i]]=R[S1[i-1]];
+        else
+            R[S1[i]]=R[S1[i-1]]+1;
+    }
+	
+	//log(n)趟O(n)的倍增排序
+	//SA(h)=&gt;Rank(h)=&gt;SA(2h)=&gt;Rank(2h)=&gt;...
+    for(h=1;h&lt;L&amp;&amp;R[S1[L-1]]&lt;L-1;h*=2)                                                                
+    {
+		//计算Rank(h)相同的后缀形成的h桶尾部的索引
+		//即有多少个后缀的h前缀相同，他们被放在一个桶中
+        for(i=0;i&lt;L;i++) B[R[S1[i]]]=i;
+		
+		//求SA(2h)
+		//在同一个h桶中，所有的后缀的h前缀肯定相同，
+		//那么比较他们的2h前缀，只要比较其2h前缀的后半的
+		//长度为h的串即可，而这个串恰恰是后面某个后缀的
+		//h前缀，所以我们逆向遍历有序的SA(h),
+		//将S1-h号前缀放到他所在桶的最后一个空位置，
+		//同时，桶尾前进一个位置，这样即形成了2h桶排序
+        for(i=L-1;i&gt;=0;i--)
+            if(h&lt;=S1[i])
+                S2[B[R[S1[i]-h]]--]=S1[i]-h;
+				
+		//对于长度不超过h的最后几个后缀，由于在h阶段
+		//他们实际上都已经独立分桶了(长度为h的也是)
+		//而且他们的桶中有且仅有一个元素，
+		//所以只要直接复制他们h阶段的SA值就可以了
+		//同时，由于采用滚动数组，所以最终我们只需复制h/2个数据
+        for(i=L-h,h2=L-(h&gt;&gt;1);i&lt;h2;i++)
+            S2[B[R[i]]]=i;
+		
+		//计算Rank(2h)
+		//2h阶段是否要分桶只需看相邻两个2h前缀的后半
+		//h前缀是否全部h阶相等
+        for(R2[S2[0]],i=1;i&lt;L;i++)
+        {
+			//这里不用考虑S1[i]+h会越界
+			//如果i达到S1[i]+h越界的数值，
+			//那么前面一个条件显然不会满足了
+			//因为此时i前缀肯定已经独立分桶了
+            if(R[S2[i]]!=R[S2[i-1]]||R[S2[i]+h]!=R[S2[i-1]+h])
+                R2[S2[i]]=R2[S2[i-1]]+1;
+            else
+                R2[S2[i]]=R2[S2[i-1]];
+        }
+		swap(S1,S2);
+        swap(R,R2);
+    }
+}
+//求height[i]=suffix(sa[i-1])和suffix(sa[i])的最长公共前缀，
+//也就是排名相邻的两个后缀的最长公共前缀
+//有height[i]&gt;=h[i-1]-1(证明见NOI论文《后缀数组--处理字符串的有力工具》作者：罗穗骞)  
+void calheight(char* r,int L)
+{
+    int i, j, k;
+    for(i=0,k=0;i&lt;L;i++)
+    {
+		if(R[i]==L-1) height[R[i]]=k=0;
+		else
+        {
+			if (k&gt;0)k--;
+			j=S1[R[i]+1];
+			for(;r[i+k]==r[j+k];k++);
+			height[R[i]]=k;
+		}
+    }
+}
+int main()
+{
+    int i,n;
+    while (scanf("%s",s)!=EOF)
+    {
+        ans=0;
+		memset(height,0,sizeof(height));
+		memset(B,0,sizeof(B));
+        memset(mem,0,sizeof(mem));
+		len1=strlen(s);
+		s[len1++]='#';
+        scanf("%s",s+len1);
+        n=strlen(s);
+		s[n++]=0;
+        CreateSuffixArray(s,n);
+        calheight(s,n);
+		
+		//判断两个两个后缀是否在同一个串里
+		//求height[]的最大值
+		for (i=0;i&lt;n-1;i++)
+			if ((S1[i]-len1)*(S1[i+1]-len1)&lt;1&amp;&amp;height[i]&gt;ans)
+				ans=height[i];
+        printf("%d/n",ans);
+    }
+    return 0;
+}</pre>
+<p> </p>
+<p> </p>
+<p>【参考资料】2009 NOI论文《后缀数组–处理字符串的有力工具》作者：罗穗骞。</p>
+<p>解题报告转自：http://blog.csdn.net/l344431432/article/details/5672359</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-13075">
+<article class="comment" id="comment-13075">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">cyyuen</a></span> on <a href="http://www.acmerblog.com/hdu-1403-Longest-Common-Substring-1843.html#comment-13075" rel="nofollow"><time datetime="2015-06-11T03:38:39+00:00" pubdate="">2015年6月11日 at 上午3:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>漂亮。佩服。<br/>
+P.S.  unsigned 应该去掉。换行符是n 不是/n<br/>
+还可以稍微优化一下，<br/>
+int main() {<br/>
+	int m,n,ai,aj,bi,bj,ak,bk;<br/>
+	while (scanf("%d%d",&amp;m,&amp;n)!=EOF) {<br/>
+		ai = sqrt(m-1);<br/>
+		bi = sqrt(n-1);<br/>
+		aj = (m-ai*ai-1)&gt;&gt;1;<br/>
+		bj = (n-bi*bi-1)&gt;&gt;1;<br/>
+		ak = ((ai+1)*(ai+1)-m)&gt;&gt;1;<br/>
+		bk = ((bi+1)*(bi+1)-n)&gt;&gt;1;<br/>
+		printf("%dn",abs(ai-bi)+abs(aj-bj)+abs(ak-bk));<br/>
+	}<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-13074">
+<article class="comment" id="comment-13074">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">water160</a></span> on <a href="http://www.acmerblog.com/hdu-1403-Longest-Common-Substring-1843.html#comment-13074" rel="nofollow"><time datetime="2015-02-25T15:38:42+00:00" pubdate="">2015年2月25日 at 下午3:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你这个代码显示风格很给你啊，怎么做出来的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-13069">
+<article class="comment" id="comment-13069">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">slowlight</a></span> on <a href="http://www.acmerblog.com/hdu-1403-Longest-Common-Substring-1843.html#comment-13069" rel="nofollow"><time datetime="2015-01-01T20:27:18+00:00" pubdate="">2015年1月1日 at 下午8:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>写的好·····  Pollard Rho快速因数分解</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-13072">
+<article class="comment" id="comment-13072">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">asdass</a></span> on <a href="http://www.acmerblog.com/hdu-1403-Longest-Common-Substring-1843.html#comment-13072" rel="nofollow"><time datetime="2014-10-27T09:04:57+00:00" pubdate="">2014年10月27日 at 上午9:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>27行 minStack.push(minValue); 去掉就对了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-13068">
+<article class="comment" id="comment-13068">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Tree</a></span> on <a href="http://www.acmerblog.com/hdu-1403-Longest-Common-Substring-1843.html#comment-13068" rel="nofollow"><time datetime="2014-08-22T10:12:45+00:00" pubdate="">2014年8月22日 at 上午10:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-13065">
+<article class="comment" id="comment-13065">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1193658339</a></span> on <a href="http://www.acmerblog.com/hdu-1403-Longest-Common-Substring-1843.html#comment-13065" rel="nofollow"><time datetime="2014-08-08T16:35:00+00:00" pubdate="">2014年8月8日 at 下午4:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>通不过。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-13062">
+<article class="comment" id="comment-13062">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jdliyao</a></span> on <a href="http://www.acmerblog.com/hdu-1403-Longest-Common-Substring-1843.html#comment-13062" rel="nofollow"><time datetime="2014-06-21T22:53:35+00:00" pubdate="">2014年6月21日 at 下午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给力！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-13067">
+<article class="comment" id="comment-13067">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">WalkCoder</a></span> on <a href="http://www.acmerblog.com/hdu-1403-Longest-Common-Substring-1843.html#comment-13067" rel="nofollow"><time datetime="2014-05-01T16:16:50+00:00" pubdate="">2014年5月1日 at 下午4:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很强大啊，佩服</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-13073">
+<article class="comment" id="comment-13073">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yipwinghong</a></span> on <a href="http://www.acmerblog.com/hdu-1403-Longest-Common-Substring-1843.html#comment-13073" rel="nofollow"><time datetime="2014-04-30T16:54:08+00:00" pubdate="">2014年4月30日 at 下午4:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>88行是多余的，可以删除</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-13064">
+<article class="comment" id="comment-13064">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">CCCat</a></span> on <a href="http://www.acmerblog.com/hdu-1403-Longest-Common-Substring-1843.html#comment-13064" rel="nofollow"><time datetime="2014-04-07T02:18:18+00:00" pubdate="">2014年4月7日 at 上午2:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实国内大部分公司对算法都不够重视。特别是中小型公司老板根本都不懂技术，也不懂什么是算法，从而也不要求程序员懂什么算法，做程序从来不考虑性能问题，只要页面能显示出来就是好程序，这是国内的现状，很无奈。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-13070">
+<article class="comment" id="comment-13070">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">biantiao</a></span> on <a href="http://www.acmerblog.com/hdu-1403-Longest-Common-Substring-1843.html#comment-13070" rel="nofollow"><time datetime="2014-04-01T05:07:09+00:00" pubdate="">2014年4月1日 at 上午5:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，赞一个！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-13071">
+<article class="comment" id="comment-13071">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Rosamondwu</a></span> on <a href="http://www.acmerblog.com/hdu-1403-Longest-Common-Substring-1843.html#comment-13071" rel="nofollow"><time datetime="2014-03-21T00:31:54+00:00" pubdate="">2014年3月21日 at 上午12:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有意思，有难度</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-13066">
+<article class="comment" id="comment-13066">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">howhaw</a></span> on <a href="http://www.acmerblog.com/hdu-1403-Longest-Common-Substring-1843.html#comment-13066" rel="nofollow"><time datetime="2014-02-11T22:01:25+00:00" pubdate="">2014年2月11日 at 下午10:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>remove没有实现</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-13063">
+<article class="comment" id="comment-13063">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">qq1005873807</a></span> on <a href="http://www.acmerblog.com/hdu-1403-Longest-Common-Substring-1843.html#comment-13063" rel="nofollow"><time datetime="2014-01-15T06:56:56+00:00" pubdate="">2014年1月15日 at 上午6:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>博主的C++功底真是好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

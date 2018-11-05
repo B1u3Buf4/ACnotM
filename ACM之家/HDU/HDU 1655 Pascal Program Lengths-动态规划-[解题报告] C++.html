@@ -1,0 +1,340 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-21</div>
+<div class="tit"><h1 class="entry-title">HDU 1655 Pascal Program Lengths-动态规划-[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/dfs" rel="category tag" title="查看DFS搜索中的全部文章">DFS搜索</a>, <a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a></span><span class="i4">围观1847次</span><span class="i3"><a class="ds-thread-count" data-thread-key="2600" href="http://www.acmerblog.com/hdu-1655-Pascal-Program-Lengths-2600.html#comments" title="《HDU 1655 Pascal Program Lengths-动态规划-[解题报告] C++》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Pascal Program Lengths</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Your local computer user’s group publishes a quarterly newsletter, and in each issue there is a small Turbo Pascal programming problem to be solved by the membership. Members submit their solutions to the problem to the newsletter editor, and the member submitting the shortest solution to the problem receives a prize. 
+<p>The length of a program is measured in units. The unit count is determined by counting all occurrences of reserved words, identifiers, constants, left parentheses, left brackets, and the following operators: +, -, *, /, =, &lt;, &gt;, &lt;=, &gt;=, &lt;&gt;, @, ^, and :=. Comments are ignored, as are all other symbols not falling into one of the categories mentioned above. The program with the lowest unit count is declared the winner. Two or more programs with equal unit counts split the prize for the quarter. </p>
+<p>In an effort to speed the judging of the contest, your team has been asked to write a program that will determine the length of a series of Pascal programs and print the number of units in each.  </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+Input to your program will be a series of Turbo Pascal programs. Each program will be terminated by a line containing tilde characters in the first two columns, followed by the name of the submitting member. Each of these programs will be syntactically correct and use the standard symbols for comments (braces) and subscripts (square brackets). </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+For each program, you are print a separate line containing the name of the submitting member and the unit count of the program. Use a format identical to that of the sample below.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+PROGRAM SAMPLEINPUT;
+
+VAR
+  TEMP : RECORD
+    FIRST, SECOND : REAL;
+    END;
+
+BEGIN {Ignore this }
+TEMP.FIRST := 5.0E-2;
+READLN (TEMP.SECOND); 
+WRITELN ('THE ANSWER IS', TEMP.FIRST * TEMP.SECOND : 7 : 3)
+END.
+~~A. N. Onymous</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Program by A. N. Onymous contains 29 units.
+
+
+Note: Here are some additional notes on Turbo Pascal for those not familiar with the language: 
+
+Identifiers start with an underscore (_) or a letter (upper or lower case) which is followed by zero or more characters that are underscores, letters or digits.
+The delimiter for the beginning and ending of a string constant is the single forward quote ('). Each string is entirely on a single source line (that is a string constant cannot begin on one line and continue on the next). If '' appears within a string then it represents a single ' character that is part of the string. A string constant consisting of a single ' character is, therefore, represented by '''' in a Turbo Pascal program. The empty string is allowed.
+The most general form of a numeric constant is illustrated by the constant 10.56E-15. The 10 is the integral part (1 or more digits) and is always present. The .56 is the decimal part and is optional. The E-15 is the exponent and it is also optional. It begins with an upper or lower case E, which is followed by a sign (+ or -). The sign is optional.
+Turbo Pascal supports hexadecimal integer constants which consist of a $ followed by one or more hex digits (`0' to `9', `a' to `f', `A' to `F'). For example, $a9F is a legal integer constant in Turbo Pascal.
+The only comment delimiters that you should recognise are {}, and not (**). Comments do not nest.
+`+' and `-' should be considered as operators wherever possible. For example in 
+x := -3 the `-' and the `3' are separate tokens.
+Subranges of ordinal types can be expressed as lower..upper. For example, 1..10 is a subrange involving the integers from 1 to 10.
+All tokens not mentioned anywhere above consist of a single character. </pre>
+<p> <!-- problem end --></p>
+<p>也是个简单树状DP，和POJ3107的写法基本一致。</p>
+<pre class="brush:cpp ">#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+#include &lt;string&gt;
+#include &lt;iostream&gt;
+#include &lt;queue&gt;
+#include &lt;algorithm&gt;
+#include &lt;map&gt;
+#include &lt;vector&gt;
+#include &lt;cmath&gt;
+#include &lt;stack&gt;
+using namespace std;
+#define ll long long
+#define int64 __int64
+#define M 100005
+#define N 1005
+#define inf 1000010
+#define mod 1000000007
+
+struct node
+{
+	int son_max;
+	int son_sum;
+	int pos;
+}tp[M];
+struct Node
+{
+	int ev , next;
+}tree[M];
+int n , tot , head[M];
+
+void Add(int s , int e)
+{
+	tree[tot].ev = e;
+	tree[tot].next = head[s];
+	head[s] = tot++;
+}
+
+void Dfs(int s , int fa)
+{
+	int i;
+	tp[s].son_max = 0;
+	tp[s].son_sum = 1;
+	tp[s].pos = s;
+	for (i = head[s] ; i != -1 ; i = tree[i].next)
+	{
+		int v = tree[i].ev;
+		if (v == fa)continue;
+		Dfs(v,s);
+		tp[s].son_max = max(tp[s].son_max , tp[v].son_sum);
+		tp[s].son_sum += tp[v].son_sum;
+	}
+	tp[s].son_max = max(tp[s].son_max , n-tp[s].son_sum);
+}
+
+bool cmp(node a , node b)
+{
+	if (a.son_max &lt; b.son_max)return true;
+	if (a.son_max &gt; b.son_max)return false;
+	if (a.pos &lt; b.pos)return true;
+	return false;
+}
+
+int main()
+{
+	int i , t;
+	scanf("%d",&amp;t);
+	while (t--)
+	{
+		tot = 0;
+		memset(head , -1 , sizeof head);
+		scanf("%d",&amp;n);
+		for (i = 1 ; i &lt; n ; i++)
+		{
+			int s , e;
+			scanf ("%d%d",&amp;s,&amp;e);
+			Add(s,e);
+			Add(e,s);
+		}
+		Dfs(1,0);
+		sort(tp+1 , tp+n+1 , cmp);
+		printf("%d %d\n",tp[1].pos,tp[1].son_max);
+	}
+	return 0;
+}</pre>
+<p>
+ </p>
+<p>解题报告转自：http://blog.csdn.net/wangjie_wang/article/details/9257109</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-16416">
+<article class="comment" id="comment-16416">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Dwayne</a></span> on <a href="http://www.acmerblog.com/hdu-1655-Pascal-Program-Lengths-2600.html#comment-16416" rel="nofollow"><time datetime="2015-06-23T23:58:12+00:00" pubdate="">2015年6月23日 at 下午11:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不同的编译器，printf(),执行的顺序不同，所以结果也就不同，建议不要那么写</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-16421">
+<article class="comment" id="comment-16421">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Dick</a></span> on <a href="http://www.acmerblog.com/hdu-1655-Pascal-Program-Lengths-2600.html#comment-16421" rel="nofollow"><time datetime="2015-06-22T06:56:11+00:00" pubdate="">2015年6月22日 at 上午6:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢指出，已改正</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-61932">
+<article class="comment" id="comment-61932">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Tree</a></span> on <a href="http://www.acmerblog.com/hdu-1655-Pascal-Program-Lengths-2600.html#comment-61932" rel="nofollow"><time datetime="2015-06-06T16:32:11+00:00" pubdate="">2015年6月6日 at 下午4:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实不需要用LCA，用DFS+vector更简单</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-16415">
+<article class="comment" id="comment-16415">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Trenson</a></span> on <a href="http://www.acmerblog.com/hdu-1655-Pascal-Program-Lengths-2600.html#comment-16415" rel="nofollow"><time datetime="2015-05-15T16:53:35+00:00" pubdate="">2015年5月15日 at 下午4:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>递归还真是一门学问，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-16414">
+<article class="comment" id="comment-16414">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fanxianxian</a></span> on <a href="http://www.acmerblog.com/hdu-1655-Pascal-Program-Lengths-2600.html#comment-16414" rel="nofollow"><time datetime="2015-02-20T21:28:33+00:00" pubdate="">2015年2月20日 at 下午9:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>题目需要求解的是最小值，而且没有考虑可能存在环</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-55547">
+<article class="comment" id="comment-55547">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Xun_Brooklyn</a></span> on <a href="http://www.acmerblog.com/hdu-1655-Pascal-Program-Lengths-2600.html#comment-55547" rel="nofollow"><time datetime="2014-09-14T03:28:07+00:00" pubdate="">2014年9月14日 at 上午3:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢支持！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-16422">
+<article class="comment" id="comment-16422">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ForgetVay</a></span> on <a href="http://www.acmerblog.com/hdu-1655-Pascal-Program-Lengths-2600.html#comment-16422" rel="nofollow"><time datetime="2014-06-13T15:58:20+00:00" pubdate="">2014年6月13日 at 下午3:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这怎么用Catalan数啊？求解答！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-16420">
+<article class="comment" id="comment-16420">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jhxxszy</a></span> on <a href="http://www.acmerblog.com/hdu-1655-Pascal-Program-Lengths-2600.html#comment-16420" rel="nofollow"><time datetime="2014-04-09T05:34:12+00:00" pubdate="">2014年4月9日 at 上午5:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>大哥，你复制也看看是不是这题的答案才复制吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-16423">
+<article class="comment" id="comment-16423">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yunyang088</a></span> on <a href="http://www.acmerblog.com/hdu-1655-Pascal-Program-Lengths-2600.html#comment-16423" rel="nofollow"><time datetime="2014-03-11T13:06:34+00:00" pubdate="">2014年3月11日 at 下午1:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#include &lt;stdio.h&gt;<br/>
+int main()<br/>
+{<br/>
+    int n,p,t[100]={1};<br/>
+    for(int i=1;i&lt;100;i++)<br/>
+        t <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> =i;<br/>
+    while(scanf("%d",&amp;n)&amp;&amp;n!=0){<br/>
+        if(n==1)<br/>
+        printf("Printing order for 1 pages:nSheet 1, front: Blank, 1n");<br/>
+        else {<br/>
+        if(n%4) p=n/4+1;<br/>
+        else p=n/4;<br/>
+        int q=4*p;<br/>
+        printf("Printing order for %d pages:n",n);<br/>
+        for(int i=0;i&lt;p;i++){<br/>
+            printf("Sheet %d, front: ",i+1);<br/>
+            if(q&gt;n) {printf("Blank, %dn",t[2*i+1]);}<br/>
+            else {printf("%d, %dn",q,t[2*i+1]);}<br/>
+            q–;//打印表前<br/>
+            printf("Sheet %d, back : ",i+1);<br/>
+            if(q&gt;n) {printf("%d, Blankn",t[2*i+2]);}<br/>
+            else {printf("%d, %dn",t[2*i+2],q);}<br/>
+            q–;//打印表后<br/>
+           }<br/>
+        }<br/>
+    }<br/>
+    return 0;<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-16419">
+<article class="comment" id="comment-16419">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">OrangeGuy</a></span> on <a href="http://www.acmerblog.com/hdu-1655-Pascal-Program-Lengths-2600.html#comment-16419" rel="nofollow"><time datetime="2014-02-28T23:23:16+00:00" pubdate="">2014年2月28日 at 下午11:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>if(j){<br/>
+                    int ans=a <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> ;<br/>
+                    for(int x=j-1;x&gt;=0;x–){<br/>
+                        if(!a <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/d7/newx_org.gif"/> ) break;<br/>
+                        ans=min(ans,a <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/d7/newx_org.gif"/> );<br/>
+                        sum+=ans;<br/>
+                    }<br/>
+                }<br/>
+求解释，，dp的思路是什么呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-16418">
+<article class="comment" id="comment-16418">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">g29tony</a></span> on <a href="http://www.acmerblog.com/hdu-1655-Pascal-Program-Lengths-2600.html#comment-16418" rel="nofollow"><time datetime="2014-02-08T09:28:35+00:00" pubdate="">2014年2月8日 at 上午9:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>终于找到一篇能看懂的，mark</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-16417">
+<article class="comment" id="comment-16417">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiao597896577</a></span> on <a href="http://www.acmerblog.com/hdu-1655-Pascal-Program-Lengths-2600.html#comment-16417" rel="nofollow"><time datetime="2014-01-05T21:13:09+00:00" pubdate="">2014年1月5日 at 下午9:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚开始学习，为啥会报错了，你试过了吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-61933">
+<article class="comment" id="comment-61933">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">winter</a></span> on <a href="http://www.acmerblog.com/hdu-1655-Pascal-Program-Lengths-2600.html#comment-61933" rel="nofollow"><time datetime="2014-01-05T16:12:00+00:00" pubdate="">2014年1月5日 at 下午4:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错的网站，建议添加些比赛信息</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-61934">
+<article class="comment" id="comment-61934">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">actlea</a></span> on <a href="http://www.acmerblog.com/hdu-1655-Pascal-Program-Lengths-2600.html#comment-61934" rel="nofollow"><time datetime="2014-01-04T22:59:06+00:00" pubdate="">2014年1月4日 at 下午10:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我觉得是D哎……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

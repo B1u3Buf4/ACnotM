@@ -1,0 +1,481 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-02</div>
+<div class="tit"><h1 class="entry-title">HDU 3120-Dolphin-最短路径-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph/shortest-path" rel="category tag" title="查看最短路径中的全部文章">最短路径</a>, <a href="http://www.acmerblog.com/category/basis/recursion" rel="category tag" title="查看递归和分治中的全部文章">递归和分治</a></span><span class="i4">围观582次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4935" href="http://www.acmerblog.com/hdu-3120-dolphin-4935.html#comments" title="《HDU 3120-Dolphin-最短路径-[解题报告]HOJ》上的评论">24 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Dolphin</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Dolphins are marine mammals that are closely related to whales and porpoises. They might have some kind of the biggest brains in the water, but are dolphins really smart? Some scientists say that they use their big brains to stay warm in the sea, rather than for lots of thinking. Obviously those scientists don’t think dolphins are smart.<br/> We know that the brain is made up of two types of cells � neurons and glia. Neurons do the thinking, while glia do things like keeping the brain warm to help the neurons. After looking at how dolphins’ brains are put together, they claim that dolphins have lots of glia and not many neurons.<br/>In order to find out how smart the dolphins are, we throw one of them into a maze we’ve just created, to see how long it’ll take the dolphin to get out.<br/>The maze consists of nodes and bidirectional edges connecting them. <br/>The dolphin needs power to swim, so we place exactly one fish at each node for him to enjoy.<br/>The dolphin is not interested in eating the same kind of fish more than once, but he can’t resist any food if it’s just in front to him! As a result, the dolphin decided to PLAN a route before going, so that it will not REACH any kind of fish more than once.<br/>Given the information above, can you tell me the minimum time that the dolphin needs to get out?  </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line consists of an integer T, indicating the number of test cases.<br/>The first line of each case consists of four integers N, M, S and E, indicating the number of nodes, the number of edges, the starting node and destination.<br/>Each of the next M lines consists of three integers U, V, C, indicating that there is an edge with length C between node U and V. It will take a dolphin C time to pass this edge.<br/>The next line consists of N integers. Ki indicates the label of which kind fishes i-th node has. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The first line consists of an integer T, indicating the number of test cases.<br/>The first line of each case consists of four integers N, M, S and E, indicating the number of nodes, the number of edges, the starting node and destination.<br/>Each of the next M lines consists of three integers U, V, C, indicating that there is an edge with length C between node U and V. It will take a dolphin C time to pass this edge.<br/>The next line consists of N integers. Ki indicates the label of which kind fishes i-th node has.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+2 1 0 1
+0 1 1
+0 0
+4 4 0 3
+0 1 1
+1 3 1
+0 2 2
+2 3 2
+0 0 1 2</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+-1
+4</pre>
+<p> <!-- problem end --></p>
+<p>这个题很不错哦，用到了最短路+二分答案+dfs，出题人太厉害了</p>
+<p>首先，100个点，总共的点的标号数目可能达到100，压缩不了，那就只能dfs了，但肯定需要剪枝</p>
+<p>我自己想到的剪枝就是，先不管标号的问题，从终点做一次最短路，记录路径，如果源点不可达，则无解，如果这条路径上的点刚好标号都不一样，则输出到源点的最短路径</p>
+<p>然后就暴力dfs，如果当前长度加上不考虑标号时当前点到终点的最短路径都大于当前最优解，就返回，这样还是T了</p>
+<p>后来想能否快速找到一个可行解作为上限值，但不会找，查了解题报告才知道，可以二分答案，相当于有目的地找多次可行解，然后去验证，很巧妙</p>
+<p>这题最让我觉得不可思议的就是每次dfs到一个点的时候都去求一次该点到终点的最短路，用来剪枝，好神奇啊</p>
+<p>还有一个值得注意的地方就是，dfs的时候，在进入某个点之前把它标记，然后dfs回来时再撤销标记，否则，在进入某个点后标记，退出这个点时在撤销，可能会由于剪枝而忘记撤销标记的情况</p>
+<p>代码：</p>
+<pre class="brush:cpp ">#include&lt;iostream&gt;
+#include&lt;cstring&gt;
+#include&lt;cstdio&gt;
+#include&lt;algorithm&gt;
+#include&lt;cmath&gt;
+#include&lt;stack&gt;
+#include&lt;queue&gt;
+#include&lt;vector&gt;
+#include&lt;map&gt;
+#include&lt;ctime&gt;
+using namespace std;
+const int MAX=1005;
+const int inf=1&lt;&lt;26;
+struct node 
+{
+    int v,w,next;
+}g[MAX*100];
+int adj[MAX],e,vis1[MAX],vis2[MAX],kind[MAX],n,m;
+int dis[MAX],fa[MAX],pre[MAX];
+int flag[MAX];
+bool pos[MAX],found;
+void add(int u,int v,int w)
+{
+    g[e].v=v; g[e].w=w; g[e].next=adj[u]; adj[u]=e++;
+}
+void spfa(int s,int t,int k)
+{
+    int i,u,v;
+    queue&lt;int&gt;que;
+    for(i=0;i&lt;=n;i++)
+        dis[i]=inf;
+    if(k)
+    	memset(pre,-1,sizeof(pre));
+    dis[s]=0;
+    memset(vis1,0,sizeof(vis1));
+    vis1[s]=1;
+    que.push(s);
+    while(!que.empty())
+    {
+        u=que.front();
+        que.pop();
+        vis1[u]=0;
+        for(i=adj[u];i!=-1;i=g[i].next)
+        {
+            v=g[i].v;
+            if(vis2[kind[v]])
+                continue;
+            //if(kind[v]==kind[t])
+                //continue;
+            //if(kind[v]==kind[s]&amp;&amp;v!=s)
+                //continue;
+            if(dis[v]&gt;dis[u]+g[i].w)
+            {
+                dis[v]=dis[u]+g[i].w;
+                pre[v]=u;
+                if(!vis1[v])
+                {
+                    vis1[v]=1;
+                    que.push(v);
+                }
+            }
+        }
+    }
+}                
+bool check()
+{
+    for(int i=0;i&lt;MAX;i++)
+        if(flag[i]&gt;1)
+            return false;
+    return true;
+}
+bool dfs(int u,int now,int limit,int t)
+{
+    if(now&gt;limit)
+        return false;
+    if(u==t)
+        return true;
+    spfa(u,t,0);
+    if(now+dis[t]&gt;limit)
+        return false;
+    int i,v;
+    for(i=adj[u];i!=-1;i=g[i].next)
+    {
+        v=g[i].v;
+        if(vis2[kind[v]])
+            continue;
+        vis2[kind[v]]=1;
+        if(dfs(v,now+g[i].w,limit,t))
+            return true;
+        vis2[kind[v]]=0;
+    }
+    return false;
+}
+void solve(int s,int t,int sum)
+{
+    int l=1,r=sum,ans=-1,mid;
+    while(l&lt;=r)
+    {
+        mid=(l+r)&gt;&gt;1;
+        memset(vis2,0,sizeof(vis2));
+        vis2[kind[s]]=1;
+        if(dfs(s,0,mid,t))
+        {
+            ans=mid;
+            r=mid-1;
+        }
+        else
+            l=mid+1;
+    }
+    printf("%d\n",ans);
+}
+inline int nextInt()
+{
+	int res = 0; char ch;
+	bool neg = false;
+	while (ch = getchar(), (ch &lt; '0' || ch &gt; '9') &amp;&amp; ch != '-');
+	if (ch == '-') neg = true;
+	else res = ch - '0';
+	while (ch = getchar(), ch &gt;= '0' &amp;&amp; ch &lt;= '9') res = res * 10 + ch - '0';
+	if (neg) res = - res;
+	return res;
+}
+int main()
+{
+    int i,j,k,T,s,t,sum=0;
+    scanf("%d",&amp;T);
+    while(T--)
+    {
+        scanf("%d%d%d%d",&amp;n,&amp;m,&amp;s,&amp;t);
+        memset(adj,-1,sizeof(adj));
+        e=0;
+        while(m--)
+        {
+            //scanf("%d%d%d",&amp;i,&amp;j,&amp;k);
+            i=nextInt(); j=nextInt(); k=nextInt();
+            add(i,j,k); add(j,i,k);
+            sum+=k;
+        }
+        for(i=0;i&lt;n;i++)
+        {
+            //scanf("%d",&amp;kind[i]);
+            kind[i]=nextInt();
+        }
+        if(s==t)
+        {
+            puts("0");
+            continue;
+        }
+        memset(vis2,0,sizeof(vis2));
+        vis2[kind[t]]=1;
+        spfa(t,s,1);
+        memset(flag,0,sizeof(flag));
+        if(pre[s]==-1)
+        {
+            puts("-1");
+            continue;
+        }
+        for(i=s;i!=-1;i=pre[i])
+        {
+            flag[kind[i]]++;
+        }
+        if(check())
+        {
+            printf("%d\n",dis[s]);
+            continue;
+        }
+        solve(s,t,sum);
+    }
+    return 0;
+}</pre>
+<p>
+</p>
+<p>参考：http://blog.csdn.net/scorpiocj/article/details/6761916</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-78960">
+<article class="comment" id="comment-78960">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919458918" rel="external nofollow">新用户671143</a></span> on <a href="http://www.acmerblog.com/hdu-3120-dolphin-4935.html#comment-78960" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可是你隔壁王叔很有才啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78959">
+<article class="comment" id="comment-78959">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919458918" rel="external nofollow">新用户671143</a></span> on <a href="http://www.acmerblog.com/hdu-3120-dolphin-4935.html#comment-78959" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可是你隔壁王叔很有才啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-78958">
+<article class="comment" id="comment-78958">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919458918" rel="external nofollow">新用户671143</a></span> on <a href="http://www.acmerblog.com/hdu-3120-dolphin-4935.html#comment-78958" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可是你隔壁王叔很有才啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78957">
+<article class="comment" id="comment-78957">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919458918" rel="external nofollow">新用户671143</a></span> on <a href="http://www.acmerblog.com/hdu-3120-dolphin-4935.html#comment-78957" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可是你隔壁王叔很有才啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-78956">
+<article class="comment" id="comment-78956">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919458918" rel="external nofollow">新用户671143</a></span> on <a href="http://www.acmerblog.com/hdu-3120-dolphin-4935.html#comment-78956" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可是你隔壁王叔很有才啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78955">
+<article class="comment" id="comment-78955">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919458918" rel="external nofollow">新用户671143</a></span> on <a href="http://www.acmerblog.com/hdu-3120-dolphin-4935.html#comment-78955" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可是你隔壁王叔很有才啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-78954">
+<article class="comment" id="comment-78954">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919458918" rel="external nofollow">新用户671143</a></span> on <a href="http://www.acmerblog.com/hdu-3120-dolphin-4935.html#comment-78954" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可是你隔壁王叔很有才啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78953">
+<article class="comment" id="comment-78953">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919458918" rel="external nofollow">新用户671143</a></span> on <a href="http://www.acmerblog.com/hdu-3120-dolphin-4935.html#comment-78953" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可是你隔壁王叔很有才啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-78952">
+<article class="comment" id="comment-78952">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919458918" rel="external nofollow">新用户671143</a></span> on <a href="http://www.acmerblog.com/hdu-3120-dolphin-4935.html#comment-78952" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可是你隔壁王叔很有才啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78951">
+<article class="comment" id="comment-78951">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919458918" rel="external nofollow">新用户671143</a></span> on <a href="http://www.acmerblog.com/hdu-3120-dolphin-4935.html#comment-78951" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可是你隔壁王叔很有才啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-78950">
+<article class="comment" id="comment-78950">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919458918" rel="external nofollow">新用户671143</a></span> on <a href="http://www.acmerblog.com/hdu-3120-dolphin-4935.html#comment-78950" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可是你隔壁王叔很有才啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-47795">
+<article class="comment" id="comment-47795">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">liluvu</a></span> on <a href="http://www.acmerblog.com/hdu-3120-dolphin-4935.html#comment-47795" rel="nofollow"><time datetime="2015-07-07T18:16:46+00:00" pubdate="">2015年7月7日 at 下午6:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个解法好像不对</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-57957">
+<article class="comment" id="comment-57957">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xy7850151</a></span> on <a href="http://www.acmerblog.com/hdu-3120-dolphin-4935.html#comment-57957" rel="nofollow"><time datetime="2015-07-06T19:08:43+00:00" pubdate="">2015年7月6日 at 下午7:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>分析的很专业！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-57955">
+<article class="comment" id="comment-57955">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1173954900</a></span> on <a href="http://www.acmerblog.com/hdu-3120-dolphin-4935.html#comment-57955" rel="nofollow"><time datetime="2015-06-19T03:08:03+00:00" pubdate="">2015年6月19日 at 上午3:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47796">
+<article class="comment" id="comment-47796">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">radish</a></span> on <a href="http://www.acmerblog.com/hdu-3120-dolphin-4935.html#comment-47796" rel="nofollow"><time datetime="2015-05-02T02:57:28+00:00" pubdate="">2015年5月2日 at 上午2:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感觉第二种方法其实也不是很好，不过的确要比第一种方法要好一点。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27256">
+<article class="comment" id="comment-27256">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">room306</a></span> on <a href="http://www.acmerblog.com/hdu-3120-dolphin-4935.html#comment-27256" rel="nofollow"><time datetime="2015-01-06T21:58:56+00:00" pubdate="">2015年1月6日 at 下午9:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有点意思</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63165">
+<article class="comment" id="comment-63165">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">0xc0de</a></span> on <a href="http://www.acmerblog.com/hdu-3120-dolphin-4935.html#comment-63165" rel="nofollow"><time datetime="2015-01-04T11:53:25+00:00" pubdate="">2015年1月4日 at 上午11:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>大哥，你复制也看看是不是这题的答案才复制吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-57958">
+<article class="comment" id="comment-57958">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wawa_zmt</a></span> on <a href="http://www.acmerblog.com/hdu-3120-dolphin-4935.html#comment-57958" rel="nofollow"><time datetime="2014-11-19T14:06:59+00:00" pubdate="">2014年11月19日 at 下午2:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>I go through some of your put up and I uncovered a good deal of expertise from it. Many thanks for posting this sort of exciting posts</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-57956">
+<article class="comment" id="comment-57956">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">crazymage</a></span> on <a href="http://www.acmerblog.com/hdu-3120-dolphin-4935.html#comment-57956" rel="nofollow"><time datetime="2014-11-12T14:11:12+00:00" pubdate="">2014年11月12日 at 下午2:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序只能输出一个子序列</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-57962">
+<article class="comment" id="comment-57962">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dongxi</a></span> on <a href="http://www.acmerblog.com/hdu-3120-dolphin-4935.html#comment-57962" rel="nofollow"><time datetime="2014-11-01T05:33:02+00:00" pubdate="">2014年11月1日 at 上午5:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-57959">
+<article class="comment" id="comment-57959">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xuelanghu</a></span> on <a href="http://www.acmerblog.com/hdu-3120-dolphin-4935.html#comment-57959" rel="nofollow"><time datetime="2014-09-26T21:02:41+00:00" pubdate="">2014年9月26日 at 下午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>代码过于复杂了吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27257">
+<article class="comment" id="comment-27257">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sheyty</a></span> on <a href="http://www.acmerblog.com/hdu-3120-dolphin-4935.html#comment-27257" rel="nofollow"><time datetime="2014-08-25T10:16:38+00:00" pubdate="">2014年8月25日 at 上午10:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还是有些难度的！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-57960">
+<article class="comment" id="comment-57960">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gyouxu</a></span> on <a href="http://www.acmerblog.com/hdu-3120-dolphin-4935.html#comment-57960" rel="nofollow"><time datetime="2014-07-21T05:50:48+00:00" pubdate="">2014年7月21日 at 上午5:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>2的64次方是多少？ 这到底是在考什么啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-57961">
+<article class="comment" id="comment-57961">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Yaunxi</a></span> on <a href="http://www.acmerblog.com/hdu-3120-dolphin-4935.html#comment-57961" rel="nofollow"><time datetime="2014-07-16T18:27:30+00:00" pubdate="">2014年7月16日 at 下午6:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是穷举，但是代码有优化（v数组），并不是2^n。测试数据应该没问题，之前有超时的代码。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

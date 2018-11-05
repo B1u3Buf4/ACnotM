@@ -1,0 +1,483 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>06-04</div>
+<div class="tit"><h1 class="entry-title">整数集合中找出3的最大倍数-数学</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/math/number-theory" rel="category tag" title="查看数论应用中的全部文章">数论应用</a>, <a href="http://www.acmerblog.com/category/zhuanti/algorithm" rel="category tag" title="查看算法分析中的全部文章">算法分析</a></span><span class="i4">围观1250次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5820" href="http://www.acmerblog.com/find-the-largest-number-multiple-of-3-5820.html#comments" title="《整数集合中找出3的最大倍数-数学》上的评论">27 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p>题目描述：给一个包含非负整数的数组(长度为n)，找出由这些数字组成的最大的3的倍数，没有的话则输出impossible。<br/>
+例如，如果输入的数组为{8,1,9}，输出应为“9 8 1”，并且如果输入的数组为{8,1,7,6,0}，输出应为”8760″。</p>
+<p><strong>方法一 暴力</strong><br/>
+直接用蛮力的话，生成所有的组合，为 2^n个，对每个数字再进行比较判断，需要 O(n)的时间，因为n可能会比较大，需要每个位的比较。<br/>
+总的时间复杂度为O(n * 2^n).<br/>
+<strong>方法二 数学技巧</strong></p>
+<p>可以借助O(n)的额外空间有效的解决这个问题。该方法是基于对数以下的简单性质：<br/>
+1）一个数是3的倍数，则该数字各位总和为3的倍数。<br/>
+例如，让我们考虑8760，它是3的倍数，因为数字总和为8 + 7 + 6 + 0 = 21，这是3的倍数。<br/>
+2）如果一个数是3的倍数，那么它的所有排列也为3的倍数，例如，6078是3的倍数，数字8760，7608，7068，…也为3的倍数。<br/>
+3）一个数的所有位之和与该数会有相同的余数。例如，如果对于151和它的各位之和7，对于3的余数都为1。<br/>
+我们可以用下面的算法：<br/>
+1，对数组进行非递减排序。<br/>
+2，用3个队列 queue0,queue1,queue2，分别存储除以3余数为 0、1、2的数字。<br/>
+3，求得所有的为的总和sum<br/>
+4，有下面三种情况：<br/>
+a) sum除以3余0。出列的所有三个队列中的数字，以非递减顺序排序输出到结果数组中。<br/>
+b) sum除以3余1。则尝试从queue1中移除一个元素或从queue2中移除两个元素，如果不可以的话，则说明impossible<br/>
+c) sum除以3余2。则尝试从queue1中移除两个元素或从queue2中移除一个元素，如果不可以的话，则说明impossible<br/>
+5，最后将3个队列中的所有元素都输出到结果数组中，非递减排序，即为最终结果。<br/>
+下面是C语言实现代码：</p>
+<pre class="brush:c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+// 自定义队列节点
+typedef struct Queue
+{
+    int front;
+    int rear;
+    int capacity;
+    int* array;
+} Queue;
+
+//创建一个队列
+Queue* createQueue( int capacity )
+{
+    Queue* queue = (Queue *) malloc (sizeof(Queue));
+    queue-&gt;capacity = capacity;
+    queue-&gt;front = queue-&gt;rear = -1;
+    queue-&gt;array = (int *) malloc (queue-&gt;capacity * sizeof(int));
+    return queue;
+}
+
+// 检测队列是否为空
+int isEmpty (Queue* queue)
+{
+    return queue-&gt;front == -1;
+}
+
+//想队列添加一个元素
+void Enqueue (Queue* queue, int item)
+{
+    queue-&gt;array[ ++queue-&gt;rear ] = item;
+    if ( isEmpty(queue) )
+        ++queue-&gt;front;
+}
+
+// 从队列删除一个元素
+int Dequeue (Queue* queue)
+{
+    int item = queue-&gt;array[ queue-&gt;front ];
+    if( queue-&gt;front == queue-&gt;rear )
+        queue-&gt;front = queue-&gt;rear = -1;
+    else
+        queue-&gt;front++;
+
+    return item;
+}
+
+// 打印数组
+void printArr (int* arr, int size)
+{
+    int i;
+    for (i = 0; i&lt; size; ++i)
+        printf ("%d ", arr[i]);
+}
+
+int compareAsc( const void* a, const void* b )
+{
+    return *(int*)a &gt; *(int*)b;
+}
+int compareDesc( const void* a, const void* b )
+{
+    return *(int*)a &lt; *(int*)b;
+}
+
+// 将3个队列中的元素输出到辅助数组
+void populateAux (int* aux, Queue* queue0, Queue* queue1,
+                            Queue* queue2, int* top )
+{
+    while ( !isEmpty(queue0) )
+        aux[ (*top)++ ] = Dequeue( queue0 );
+
+    while ( !isEmpty(queue1) )
+        aux[ (*top)++ ] = Dequeue( queue1 );
+
+    while ( !isEmpty(queue2) )
+        aux[ (*top)++ ] = Dequeue( queue2 );
+}
+
+int findMaxMultupleOf3( int* arr, int size )
+{
+    // 第1步，排序
+    qsort( arr, size, sizeof( int ), compareAsc );
+
+    Queue* queue0 = createQueue( size );
+    Queue* queue1 = createQueue( size );
+    Queue* queue2 = createQueue( size );
+
+    // 第2,3步
+    int i, sum;
+    for ( i = 0, sum = 0; i &lt; size; ++i )
+    {
+        sum += arr[i];
+        if ( (arr[i] % 3) == 0 )
+            Enqueue( queue0, arr[i] );
+        else if ( (arr[i] % 3) == 1 )
+            Enqueue( queue1, arr[i] );
+        else
+            Enqueue( queue2, arr[i] );
+    }
+
+    //第四部，b)
+    if ( (sum % 3) == 1 )
+    {
+        if ( !isEmpty( queue1 ) )
+            Dequeue( queue1 );
+        else
+        {
+            if ( !isEmpty( queue2 ) )
+                Dequeue( queue2 );
+            else
+                return 0;
+            if ( !isEmpty( queue2 ) )
+                Dequeue( queue2 );
+            else
+                return 0;
+        }
+    }
+
+    // 第4步，c)
+    else if ((sum % 3) == 2)
+    {
+        if ( !isEmpty( queue2 ) )
+            Dequeue( queue2 );
+        else
+        {
+            if ( !isEmpty( queue1 ) )
+                Dequeue( queue1 );
+            else
+                return 0;
+            if ( !isEmpty( queue1 ) )
+                Dequeue( queue1 );
+            else
+                return 0;
+        }
+    }
+
+    int aux[size], top = 0;
+
+    // 第5步
+    populateAux (aux, queue0, queue1, queue2, &amp;top);
+    qsort (aux, top, sizeof( int ), compareDesc);
+
+    // 打印结果
+    printArr (aux, top);
+
+    return 1;
+}
+
+// 测试
+int main()
+{
+    int arr[] = {8, 1, 7, 6, 0};
+    int size = sizeof(arr)/sizeof(arr[0]);
+
+    if (findMaxMultupleOf3( arr, size ) == 0)
+        printf( "Not Possible" );
+
+    return 0;
+}</pre>
+<p>上述方法可以优化以下方式。<br/>
+1）我们可以用堆排序或归并排序，以使时间复杂度为O（nlogn）。</p>
+<p>2）可以避免使用队列，因为只会有两个数字会被移除。</p>
+<p><span>3）最后，可以不必再次排序数组，可以以相反的顺序打印升序排序的数组。</span></p>
+<p>时间复杂度为O(nlogn)，主要是在数组排序</p>
+<p>参考：http://www.geeksforgeeks.org/find-the-largest-number-multiple-of-3/</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75551">
+<article class="comment" id="comment-75551">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522227" rel="external nofollow">新用户795776</a></span> on <a href="http://www.acmerblog.com/find-the-largest-number-multiple-of-3-5820.html#comment-75551" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>米格战斗机！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75550">
+<article class="comment" id="comment-75550">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522227" rel="external nofollow">新用户795776</a></span> on <a href="http://www.acmerblog.com/find-the-largest-number-multiple-of-3-5820.html#comment-75550" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>米格战斗机！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75549">
+<article class="comment" id="comment-75549">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522227" rel="external nofollow">新用户795776</a></span> on <a href="http://www.acmerblog.com/find-the-largest-number-multiple-of-3-5820.html#comment-75549" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>米格战斗机！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75548">
+<article class="comment" id="comment-75548">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522227" rel="external nofollow">新用户795776</a></span> on <a href="http://www.acmerblog.com/find-the-largest-number-multiple-of-3-5820.html#comment-75548" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>米格战斗机！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75547">
+<article class="comment" id="comment-75547">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522227" rel="external nofollow">新用户795776</a></span> on <a href="http://www.acmerblog.com/find-the-largest-number-multiple-of-3-5820.html#comment-75547" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>米格战斗机！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75546">
+<article class="comment" id="comment-75546">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522227" rel="external nofollow">新用户795776</a></span> on <a href="http://www.acmerblog.com/find-the-largest-number-multiple-of-3-5820.html#comment-75546" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>米格战斗机！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75545">
+<article class="comment" id="comment-75545">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522227" rel="external nofollow">新用户795776</a></span> on <a href="http://www.acmerblog.com/find-the-largest-number-multiple-of-3-5820.html#comment-75545" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>米格战斗机！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75544">
+<article class="comment" id="comment-75544">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522227" rel="external nofollow">新用户795776</a></span> on <a href="http://www.acmerblog.com/find-the-largest-number-multiple-of-3-5820.html#comment-75544" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>米格战斗机！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75543">
+<article class="comment" id="comment-75543">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522227" rel="external nofollow">新用户795776</a></span> on <a href="http://www.acmerblog.com/find-the-largest-number-multiple-of-3-5820.html#comment-75543" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>米格战斗机！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75542">
+<article class="comment" id="comment-75542">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522227" rel="external nofollow">新用户795776</a></span> on <a href="http://www.acmerblog.com/find-the-largest-number-multiple-of-3-5820.html#comment-75542" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>米格战斗机！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75541">
+<article class="comment" id="comment-75541">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522227" rel="external nofollow">新用户795776</a></span> on <a href="http://www.acmerblog.com/find-the-largest-number-multiple-of-3-5820.html#comment-75541" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>米格战斗机！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64867">
+<article class="comment" id="comment-64867">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">GeYXl</span> on <a href="http://www.acmerblog.com/find-the-largest-number-multiple-of-3-5820.html#comment-64867" rel="nofollow"><time datetime="2016-11-12T03:35:14+00:00" pubdate="">2016年11月12日 at 上午3:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>精彩大片你懂，htTP://uVU.Cc/ijW6 <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64735">
+<article class="comment" id="comment-64735">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">scoIM</span> on <a href="http://www.acmerblog.com/find-the-largest-number-multiple-of-3-5820.html#comment-64735" rel="nofollow"><time datetime="2016-10-10T07:12:24+00:00" pubdate="">2016年10月10日 at 上午7:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>万 ｃ部 A 片　高ｃ清 国产.日韩 <a href="http://uVU.cc/ir7q" rel="nofollow">http://uVU.cc/ir7q</a></p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30392">
+<article class="comment" id="comment-30392">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">21435048</a></span> on <a href="http://www.acmerblog.com/find-the-largest-number-multiple-of-3-5820.html#comment-30392" rel="nofollow"><time datetime="2015-07-13T08:57:17+00:00" pubdate="">2015年7月13日 at 上午8:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p><a href="http://beeder.me" rel="nofollow">http://beeder.me</a> 这个网站上有很多poj和hihoCoder的题解，质量不错，欢迎转载。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30390">
+<article class="comment" id="comment-30390">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1173954900</a></span> on <a href="http://www.acmerblog.com/find-the-largest-number-multiple-of-3-5820.html#comment-30390" rel="nofollow"><time datetime="2015-05-16T21:21:19+00:00" pubdate="">2015年5月16日 at 下午9:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>写的很好~~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30386">
+<article class="comment" id="comment-30386">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Emlar</a></span> on <a href="http://www.acmerblog.com/find-the-largest-number-multiple-of-3-5820.html#comment-30386" rel="nofollow"><time datetime="2015-05-04T12:52:49+00:00" pubdate="">2015年5月4日 at 下午12:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题应该是有一般性的解决方法</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30395">
+<article class="comment" id="comment-30395">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">howhaw</a></span> on <a href="http://www.acmerblog.com/find-the-largest-number-multiple-of-3-5820.html#comment-30395" rel="nofollow"><time datetime="2015-05-03T10:11:55+00:00" pubdate="">2015年5月3日 at 上午10:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>以了解 想問為甚麼 Tbl[6001] = {1} 初始化都是1<br/>
+為何不是Tbl[0]=1 其他為0</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30396">
+<article class="comment" id="comment-30396">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bai</a></span> on <a href="http://www.acmerblog.com/find-the-largest-number-multiple-of-3-5820.html#comment-30396" rel="nofollow"><time datetime="2015-04-21T09:54:51+00:00" pubdate="">2015年4月21日 at 上午9:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>头文件的颜色是有意设成这种灰暗色的吗？感觉看不清</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30385">
+<article class="comment" id="comment-30385">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">warriorbrant</a></span> on <a href="http://www.acmerblog.com/find-the-largest-number-multiple-of-3-5820.html#comment-30385" rel="nofollow"><time datetime="2015-03-06T18:31:18+00:00" pubdate="">2015年3月6日 at 下午6:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算法是程序的灵魂，算法分简单和复杂，如果不搞大数据类，程序员了解一下简单点的算法也是可以的，但是会算法的一定要会编程才行，程序员不一定要会算法，利于自己项目需要的可以简单了解。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30393">
+<article class="comment" id="comment-30393">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ktcer</a></span> on <a href="http://www.acmerblog.com/find-the-largest-number-multiple-of-3-5820.html#comment-30393" rel="nofollow"><time datetime="2015-02-24T01:20:21+00:00" pubdate="">2015年2月24日 at 上午1:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是研发类的题还是算法类？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30388">
+<article class="comment" id="comment-30388">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Spike</a></span> on <a href="http://www.acmerblog.com/find-the-largest-number-multiple-of-3-5820.html#comment-30388" rel="nofollow"><time datetime="2014-08-15T01:22:29+00:00" pubdate="">2014年8月15日 at 上午1:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Thanks for taking the time to examine this, I really feel strongly about it and love studying a lot more on this topic. If possible, as you acquire experience</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30391">
+<article class="comment" id="comment-30391">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">crazymage</a></span> on <a href="http://www.acmerblog.com/find-the-largest-number-multiple-of-3-5820.html#comment-30391" rel="nofollow"><time datetime="2014-08-07T18:41:54+00:00" pubdate="">2014年8月7日 at 下午6:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好，解决了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30394">
+<article class="comment" id="comment-30394">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">645198</a></span> on <a href="http://www.acmerblog.com/find-the-largest-number-multiple-of-3-5820.html#comment-30394" rel="nofollow"><time datetime="2014-07-19T02:24:26+00:00" pubdate="">2014年7月19日 at 上午2:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>额，不对应吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30389">
+<article class="comment" id="comment-30389">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Mitrenick</a></span> on <a href="http://www.acmerblog.com/find-the-largest-number-multiple-of-3-5820.html#comment-30389" rel="nofollow"><time datetime="2014-06-22T12:23:40+00:00" pubdate="">2014年6月22日 at 下午12:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正确</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30387">
+<article class="comment" id="comment-30387">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mazilian</a></span> on <a href="http://www.acmerblog.com/find-the-largest-number-multiple-of-3-5820.html#comment-30387" rel="nofollow"><time datetime="2014-06-08T21:02:33+00:00" pubdate="">2014年6月8日 at 下午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>最长回文子串可以使用manacher算法，将时间复杂度降到O(n)。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-411">
+<article class="comment" id="comment-411">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">ss</span> on <a href="http://www.acmerblog.com/find-the-largest-number-multiple-of-3-5820.html#comment-411" rel="nofollow"><time datetime="2014-06-07T15:55:50+00:00" pubdate="">2014年6月7日 at 下午3:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>3，求得所有的为的总和sum—-&gt;所有数的总和<br/>
+printf( "Not Possible" );—-&gt;printf("impossible");<br/>
+对吗？</p>
+</div>
+</article><!-- #comment-## -->
+<ul class="children">
+<li class="comment byuser comment-author-admin bypostauthor even depth-2" id="li-comment-412">
+<article class="comment" id="comment-412">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://weibo.com/itong2055" rel="external nofollow">管理员</a></span> on <a href="http://www.acmerblog.com/find-the-largest-number-multiple-of-3-5820.html#comment-412" rel="nofollow"><time datetime="2014-06-07T18:02:39+00:00" pubdate="">2014年6月7日 at 下午6:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>分三种情况讨论。Not Possible就是impossible</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ul><!-- .children -->
+</li><!-- #comment-## -->
+</ol>

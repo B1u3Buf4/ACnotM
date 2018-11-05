@@ -1,0 +1,498 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>01-05</div>
+<div class="tit"><h1 class="entry-title">hdu 2326 Roman Expressions[解题报告]hoj</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观1231次</span><span class="i3"><a class="ds-thread-count" data-thread-key="3553" href="http://www.acmerblog.com/hdu-2326-roman-expressions-3553.html#comments" title="《hdu 2326 Roman Expressions[解题报告]hoj》上的评论">21 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Roman Expressions</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+As any other marketing company, ACM produces a lot of funky advertising items that may contain a logo and be given to customers and business partners as small gifts. A unique specialty of ACM is a calculator that uses roman numbers.
+<p>Roman numbers are able to express any non-negative integer using uppercase letters:<br/><img src="http://www.acmerblog.com/img/1388997806671.jpg"/><br/>Numbers are created by appending several letters together, the letter representing a higher value must always precede letters with lower values. The only exception are the letters “I”, “X”, and “C”, they may be used before higher letters to form values expressed by digits 4 and 9. The only possible combinations are:<br/><img src="http://www.acmerblog.com/img/1388997806802.jpg"/><br/>Any roman number must first express thousands, then hundreds, tens, and ones. Therefore, 499 must always be written as “CDXCIX”, not “ID”.</p>
+<p>Although not very practical, this gift is considered extremely “cooooool”. Your task is to write software for that calculator. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input will consist from commands, each written on a separate line. Possible commands are<br/>assignments, “RESET”, and “QUIT”.<br/>An assignment command starts with a single digit representing one of ten registers that the<br/>calculator has. The register number is followed by an equal sign (“=”) and an expression. The<br/>expression will consist only from valid roman numbers, register names (digits), plus (“+”) and<br/>minus (“-”) signs. You may assume that the expression will always be valid and no longer than<br/>10000 characters. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input will consist from commands, each written on a separate line. Possible commands are<br/>assignments, “RESET”, and “QUIT”.<br/>An assignment command starts with a single digit representing one of ten registers that the<br/>calculator has. The register number is followed by an equal sign (“=”) and an expression. The<br/>expression will consist only from valid roman numbers, register names (digits), plus (“+”) and<br/>minus (“-”) signs. You may assume that the expression will always be valid and no longer than<br/>10000 characters.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1=MC+IV-X
+1=1+1
+RESET
+1=1+X
+1=MM
+1=1+1+1+1+1
+2=1+1
+QUIT</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+1=MXCIV
+1=MMCLXXXVIII
+Ready
+Error
+1=MM
+1=MMMMMMMMMM
+Error
+Bye</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#define N 10050
+#define PLUS 1
+#define SUB 2
+/* 一些罗马数字与十进制数字转换的相关数组 */
+char *hundred[10] =
+{ "", "C", "CC", "CCC", "CD", "D", "DC", "DCC", "DCCC", "CM" };
+char *ten[10] =
+{ "", "X", "XX", "XXX", "XL", "L", "LX", "LXX", "LXXX", "XC" };
+char *one[10] =
+{ "", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX" };
+/* 寄存器 */
+int reg[10];
+
+void analysis(char *cmd);
+
+int decode(char c);
+int roman_to_int(char *rm);
+void int_to_roman(int n, char *rm);
+void reset_reg();
+void substr(char *dest, char *src, int begin, int end);
+
+int main()
+{
+    char cmd[N];
+    reset_reg();
+    while (1)
+    {
+        scanf("%s", cmd);
+        if (!strcmp("QUIT", cmd))
+        {
+            printf("Bye");
+            break;
+        }
+        if (!strcmp("RESET", cmd))
+        {
+            reset_reg();
+            printf("Ready\n");
+        }
+        else
+            analysis(cmd);
+
+    }
+    return 0;
+}
+/*
+* void analysis(char *cmd)
+* 分析字符串,最复杂的函数,可能每个人都有自己的实现
+*/
+void analysis(char *cmd)
+{
+    int i, reg_id, pbegin, result = 0, t,    mode = PLUS;
+    char result_rm[10000], str[10000], num[10000];
+    /*字符串的格式是 寄存器编号=算式 , 先将寄存器编号取出*/
+    sscanf(cmd, "%d=%s", &amp;reg_id, str);
+    i = -1;
+    pbegin = 0;
+    /*将字符串逐个分拆*/
+    do
+    {    
+        i++;
+        if (str[i] == '+' || str[i] == '-' || str[i] == '\0')
+        {
+            /* 操作数在字符串的范围是pbegin到i-1*/
+            substr(num, str, pbegin, i - 1);
+            /* 需要判断一个操作数是罗马数字还是寄存器编号 */
+            /* 若是寄存器编号,则检查该寄存器是否被赋过值*/
+            if (num[0] &gt;= '0' &amp;&amp; num[0] &lt;= '9')
+            {
+                sscanf(num, "%d", &amp;t);
+                t = reg[t];
+                if (t == -1)
+                {
+                    printf("Error\n");
+                    return;
+                }
+            }
+            else 
+                t = roman_to_int(num);
+            /*加还是减,是由操作数之前的一个运算符决定,保存在mode之中*/
+            if (mode == PLUS)
+                result += t;
+            else if (mode == SUB)
+                result -= t;
+            pbegin = i + 1;
+            mode = (str[i] == '+' ? PLUS : SUB);
+        }
+    }while (str[i] != '\0');
+    if (result &gt; 10000 || result &lt; 0)
+    {
+        printf("Error\n");
+        return;
+    }
+    reg[reg_id] = result;
+    int_to_roman(result, result_rm);
+    printf("%d=%s\n", reg_id, result_rm);
+}
+/*
+* int roman_to_int(char *rm)
+* 罗马数字转为十进制数字
+*/
+int roman_to_int(char *rm)
+{
+    int i, len = strlen(rm), result = 0, t1, t2;
+    if (rm[0]=='O')
+        return 0;
+    for (i = 0; i &lt; len; i++)
+    {
+        t1 = decode(rm[i]);
+        if (i &gt; 0)
+        {
+            t2 = decode(rm[i-1]);
+            if (t2 &lt; t1)
+                result -= t2;
+        }
+        if (i &lt; len-1)
+        {
+            t2 = decode(rm[i+1]);
+            if (t2 &gt; t1)
+                continue;
+            result += t1;
+        }
+    }
+    result += decode(rm[len-1]);
+    return result;
+}
+
+/*
+* void int_to_roman(int n, char *rm)
+* 十进制数字转为罗马数字
+*/
+void int_to_roman(int n, char *rm)
+{
+    char result[1000];
+    int d, i, rest;
+    if (!n)
+    {
+        strcpy(rm, "O");
+        return;
+    }
+    memset(rm, 0, sizeof(char) * 1000);
+    memset(result, 0, sizeof(char) * 1000);
+    rest = n;
+    if (rest / 1000)
+    {
+        d = rest / 1000;
+        for (i = 0; i &lt; d; i++)
+            result[i] = 'M';
+        result[d] = '\0';
+        rest = rest -d * 1000;
+    }
+    if (rest / 100)
+    {
+        d = rest / 100;
+        rest = rest -d * 100;
+        strcat(result, hundred[d]);
+    }
+    if (rest / 10)
+    {
+        d = rest / 10;
+        rest = rest -d * 10;
+        strcat(result, ten[d]);
+    }
+    if (rest)
+        strcat(result, one[rest]);
+
+    strcpy(rm, result);
+}
+
+/*
+* int decode(char c)
+* 将一个罗马数字的字母转为对应的十进制数
+*/
+int decode(char c)
+{
+    switch (c)
+    {
+    case 'I':
+        return 1;
+    case 'V':
+        return 5;
+    case 'X':
+        return 10;
+    case 'L':
+        return 50;
+    case 'C':
+        return 100;
+    case 'D':
+        return 500;
+    case 'M':
+        return 1000;
+    }
+    return -1;
+}
+
+/*
+* void reset_reg()
+* 清空寄存器.要把寄存器清空为-1.因为根据题意,0也是合法的数字
+*/
+void reset_reg()
+{
+    int i;
+    for (i = 0; i &lt; 10; i++)
+        reg[i] = -1;
+}
+
+/*
+* void substr(char *dest, char *src, int begin, int end)
+* C库里面好像没有字符串的剪接函数,不得不自己写一个
+* 将字符串src中begin到end的字符复制到dest里面.复制区间是[beigin, end]
+*/
+void substr(char *dest, char *src, int begin, int end)
+{
+    int i, pos = 0;
+    for (i = begin; i &lt;= end; i++)
+    {
+        dest[pos] = src[i];
+        pos++;
+    }
+    dest[pos] = '\0';
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-85916">
+<article class="comment" id="comment-85916">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919457287" rel="external nofollow">新用户329252</a></span> on <a href="http://www.acmerblog.com/hdu-2326-roman-expressions-3553.html#comment-85916" rel="nofollow"><time datetime="2017-04-13T03:10:09+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你加速还加档啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-85915">
+<article class="comment" id="comment-85915">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919457287" rel="external nofollow">新用户329252</a></span> on <a href="http://www.acmerblog.com/hdu-2326-roman-expressions-3553.html#comment-85915" rel="nofollow"><time datetime="2017-04-13T03:10:09+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你加速还加档啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-85914">
+<article class="comment" id="comment-85914">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919457287" rel="external nofollow">新用户329252</a></span> on <a href="http://www.acmerblog.com/hdu-2326-roman-expressions-3553.html#comment-85914" rel="nofollow"><time datetime="2017-04-13T03:10:09+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你加速还加档啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-85913">
+<article class="comment" id="comment-85913">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919457287" rel="external nofollow">新用户329252</a></span> on <a href="http://www.acmerblog.com/hdu-2326-roman-expressions-3553.html#comment-85913" rel="nofollow"><time datetime="2017-04-13T03:10:09+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你加速还加档啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-85912">
+<article class="comment" id="comment-85912">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919457287" rel="external nofollow">新用户329252</a></span> on <a href="http://www.acmerblog.com/hdu-2326-roman-expressions-3553.html#comment-85912" rel="nofollow"><time datetime="2017-04-13T03:10:09+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你加速还加档啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-85911">
+<article class="comment" id="comment-85911">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919457287" rel="external nofollow">新用户329252</a></span> on <a href="http://www.acmerblog.com/hdu-2326-roman-expressions-3553.html#comment-85911" rel="nofollow"><time datetime="2017-04-13T03:10:09+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你加速还加档啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-85910">
+<article class="comment" id="comment-85910">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919457287" rel="external nofollow">新用户329252</a></span> on <a href="http://www.acmerblog.com/hdu-2326-roman-expressions-3553.html#comment-85910" rel="nofollow"><time datetime="2017-04-13T03:10:09+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你加速还加档啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-85909">
+<article class="comment" id="comment-85909">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919457287" rel="external nofollow">新用户329252</a></span> on <a href="http://www.acmerblog.com/hdu-2326-roman-expressions-3553.html#comment-85909" rel="nofollow"><time datetime="2017-04-13T03:10:09+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你加速还加档啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-85908">
+<article class="comment" id="comment-85908">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919457287" rel="external nofollow">新用户329252</a></span> on <a href="http://www.acmerblog.com/hdu-2326-roman-expressions-3553.html#comment-85908" rel="nofollow"><time datetime="2017-04-13T03:10:09+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你加速还加档啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-85907">
+<article class="comment" id="comment-85907">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919457287" rel="external nofollow">新用户329252</a></span> on <a href="http://www.acmerblog.com/hdu-2326-roman-expressions-3553.html#comment-85907" rel="nofollow"><time datetime="2017-04-13T03:10:09+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你加速还加档啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-20964">
+<article class="comment" id="comment-20964">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Amber</a></span> on <a href="http://www.acmerblog.com/hdu-2326-roman-expressions-3553.html#comment-20964" rel="nofollow"><time datetime="2015-04-12T08:59:02+00:00" pubdate="">2015年4月12日 at 上午8:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>网站不错，支持一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-44743">
+<article class="comment" id="comment-44743">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">20134055016</a></span> on <a href="http://www.acmerblog.com/hdu-2326-roman-expressions-3553.html#comment-44743" rel="nofollow"><time datetime="2015-04-10T23:18:22+00:00" pubdate="">2015年4月10日 at 下午11:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>位运算真赞</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-20965">
+<article class="comment" id="comment-20965">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">TimeFight</a></span> on <a href="http://www.acmerblog.com/hdu-2326-roman-expressions-3553.html#comment-20965" rel="nofollow"><time datetime="2015-01-03T03:06:58+00:00" pubdate="">2015年1月3日 at 上午3:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>如何解决overload的问题呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-20966">
+<article class="comment" id="comment-20966">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Klaus</a></span> on <a href="http://www.acmerblog.com/hdu-2326-roman-expressions-3553.html#comment-20966" rel="nofollow"><time datetime="2014-11-25T18:39:08+00:00" pubdate="">2014年11月25日 at 下午6:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>递归还真是一门学问，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-20968">
+<article class="comment" id="comment-20968">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Aifan</a></span> on <a href="http://www.acmerblog.com/hdu-2326-roman-expressions-3553.html#comment-20968" rel="nofollow"><time datetime="2014-09-14T06:38:19+00:00" pubdate="">2014年9月14日 at 上午6:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>此题答案确实应该是A。文中已修改，感谢一楼的提醒！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-44742">
+<article class="comment" id="comment-44742">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Christmas</a></span> on <a href="http://www.acmerblog.com/hdu-2326-roman-expressions-3553.html#comment-44742" rel="nofollow"><time datetime="2014-05-27T09:52:56+00:00" pubdate="">2014年5月27日 at 上午9:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是研发的在线笔试题吗?发现很多C啊，阿里不是JAVA多么？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-44741">
+<article class="comment" id="comment-44741">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Ailing</a></span> on <a href="http://www.acmerblog.com/hdu-2326-roman-expressions-3553.html#comment-44741" rel="nofollow"><time datetime="2014-03-16T02:25:38+00:00" pubdate="">2014年3月16日 at 上午2:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>DFS方法的原理还是不太清楚啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-44740">
+<article class="comment" id="comment-44740">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jinxiang23</a></span> on <a href="http://www.acmerblog.com/hdu-2326-roman-expressions-3553.html#comment-44740" rel="nofollow"><time datetime="2014-03-14T08:58:22+00:00" pubdate="">2014年3月14日 at 上午8:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>居然是机试，还和13年重复。题目不难</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-20967">
+<article class="comment" id="comment-20967">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">silianbo</a></span> on <a href="http://www.acmerblog.com/hdu-2326-roman-expressions-3553.html#comment-20967" rel="nofollow"><time datetime="2014-02-28T10:22:47+00:00" pubdate="">2014年2月28日 at 上午10:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算法还停留在大学的知识中</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-20963">
+<article class="comment" id="comment-20963">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">feifei003603</a></span> on <a href="http://www.acmerblog.com/hdu-2326-roman-expressions-3553.html#comment-20963" rel="nofollow"><time datetime="2014-02-23T10:49:31+00:00" pubdate="">2014年2月23日 at 上午10:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>贴的有些代码的头文件不见了，这是为啥</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-20969">
+<article class="comment" id="comment-20969">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sam_justin</a></span> on <a href="http://www.acmerblog.com/hdu-2326-roman-expressions-3553.html#comment-20969" rel="nofollow"><time datetime="2014-01-23T02:17:17+00:00" pubdate="">2014年1月23日 at 上午2:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这一题的代码这样提交时错误的~少考虑了很多情况</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,323 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>05-23</div>
+<div class="tit"><h1 class="entry-title">HDU 4240-Route Redundancy-Dijkstra-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph/mst" rel="category tag" title="查看最小生成树中的全部文章">最小生成树</a>, <a href="http://www.acmerblog.com/category/graph/shortest-path" rel="category tag" title="查看最短路径中的全部文章">最短路径</a></span><span class="i4">围观135次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7253" href="http://www.acmerblog.com/hdu-4240-route-redundancy-7253.html#comments" title="《HDU 4240-Route Redundancy-Dijkstra-[解题报告]HOJ》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Route Redundancy</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+A city is made up exclusively of one-way steets.each street in the city has a capacity,which is the minimum of the capcities of the streets along that route.
+<p>The redundancy ratio from point A to point B is the ratio of the maximum number of cars that can get from point A to point B in an hour using all routes simultaneously,to the maximum number of cars thar can get from point A to point B in an hour using one route.The minimum redundancy ratio is the number of capacity of the single route with the laegest capacity. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line of input contains asingle integer P,(1&lt;=P&lt;=1000),which is the number of data sets that follow.Each data set consists of several lines and represents a directed graph with positive integer weights.
+<p>The first line of each data set contains five apace separatde integers.The first integer,D is the data set number. The second integer,N(2&lt;=N&lt;=1000),is the number of nodes inthe graph. The thied integer,E,(E&gt;=1),is the number of edges in the graph. The fourth integer,A,(0&lt;=A&lt;N),is the index of point A.The fifth integer,B,(o&lt;=B&lt;N,A!=B),is the index of point B.</p>
+<p>The remaining E lines desceibe each edge. Each line contains three space separated in tegers.The First integer,U(0&lt;=U&lt;N),is the index of node U. The second integer,V(0&lt;=v&lt;N,V!=U),is the node V.The third integer,W (1&lt;=W&lt;=1000),is th capacity (weight) of path from U to V. </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The first line of input contains asingle integer P,(1&lt;=P&lt;=1000),which is the number of data sets that follow.Each data set consists of several lines and represents a directed graph with positive integer weights.
+<p>The first line of each data set contains five apace separatde integers.The first integer,D is the data set number. The second integer,N(2&lt;=N&lt;=1000),is the number of nodes inthe graph. The thied integer,E,(E&gt;=1),is the number of edges in the graph. The fourth integer,A,(0&lt;=A&lt;N),is the index of point A.The fifth integer,B,(o&lt;=B&lt;N,A!=B),is the index of point B.</p>
+<p>The remaining E lines desceibe each edge. Each line contains three space separated in tegers.The First integer,U(0&lt;=U&lt;N),is the index of node U. The second integer,V(0&lt;=v&lt;N,V!=U),is the node V.The third integer,W (1&lt;=W&lt;=1000),is th capacity (weight) of path from U to V.</p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+1 7 11 0 6
+0 1 3
+0 3 3
+1 2 4
+2 0 3
+2 3 1
+2 4 2
+3 4 2
+3 5 6
+4 1 1
+4 6 1
+5 6 9</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+1 1.667</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp" name="code">/**
+[最大流] hdu 4240 Route Redundancy
+题意：除了要求出最大流之外，还要求另一个最小车辆的最大值M，
+最小车辆的定义是 在一条可行流的路径上最小的边权(初始边权)
+
+技巧在与求增广路径的方法，主要是第一次找的方法，因为M == 第一次可行的具有最大压入流量的增广路径的压入的流量
+lowc[i]表示以i为终点的包含M的压入量，注意更新的方式，类似prim或是dijkstra算法
+*/
+#include &lt;stdio.h&gt;
+#include &lt;queue&gt;
+#include &lt;string.h&gt;
+#include &lt;algorithm&gt;
+
+using namespace std;
+
+typedef pair&lt;int,int &gt;  Pii;
+#define MK make_pair
+const int N = 101,INF = 100000000;
+int g[N][N],pre[N],n;
+
+int path(int s,int t)
+{
+    int lowc[N],vis[N],i,u,v,dd = INF;
+    priority_queue &lt; Pii &gt; que;
+    Pii p;
+    memset(vis,0,sizeof(vis));
+    memset(pre,-1,sizeof(pre));
+    for(i = 0; i &lt; n; ++i)
+        lowc[i] = INF;
+    que.push(MK(INF,s));
+    while(!que.empty())
+    {
+        u = que.top().second;
+        dd = que.top().first;
+        que.pop();
+        if(u == t)
+            return lowc[t];
+        if(vis[u])
+            continue;
+        vis[u] = 1;
+        for(i = 0; i &lt; n; ++i)
+        if(!vis[i] &amp;&amp; g[u][i] &gt; 0)
+        {
+
+            if(lowc[i] == INF)
+                lowc[i] = min(lowc[u],g[u][i]);
+            else
+            {
+                if(g[u][i] &lt; lowc[u])
+                    lowc[i] = max(lowc[i],g[u][i]);
+                else
+                    lowc[i] = lowc[u];
+            }
+            pre[i] = u;
+            que.push(MK(lowc[i],i));
+        }
+    }
+    return 0;
+}
+void maxFlow(int s,int t)
+{
+    int first = 1,res = 0,minc = INF,i,d;
+    while(1)
+    {
+
+        d = path(s,t);
+        if(!d)
+            break;
+        if(first)
+        {
+            minc = d;
+            first = 0;
+        }
+        res += d;
+        for(i = t; i != s; i = pre[i])
+        {
+            g[pre[i]][i] -= d;
+            g[i][pre[i]] += d;
+        }
+    }
+    printf("%.3lf\n",res * 1.0 / minc);
+}
+int main()
+{
+    int cas,a,b,i,j,cp,tt,e;
+    scanf("%d",&amp;tt);
+    while(tt--)
+    {
+        scanf("%d%d%d%d%d",&amp;cas,&amp;n,&amp;e,&amp;a,&amp;b);
+        memset(g,0,sizeof(g));
+        while(e--)
+        {
+            scanf("%d%d%d",&amp;i,&amp;j,&amp;cp);
+            g[i][j] += cp;
+        }
+        printf("%d ",cas);
+        maxFlow(a,b);
+    }
+    return 0;
+}
+</pre>
+<p></p>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/cscj2010/article/details/7935682</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-98998">
+<article class="comment" id="comment-98998">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512475" rel="external nofollow">新用户873065</a></span> on <a href="http://www.acmerblog.com/hdu-4240-route-redundancy-7253.html#comment-98998" rel="nofollow"><time datetime="2017-04-20T17:02:27+00:00" pubdate="">2017年4月20日 at 下午5:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>提高电脑配置………</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98997">
+<article class="comment" id="comment-98997">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512475" rel="external nofollow">新用户873065</a></span> on <a href="http://www.acmerblog.com/hdu-4240-route-redundancy-7253.html#comment-98997" rel="nofollow"><time datetime="2017-04-20T17:02:27+00:00" pubdate="">2017年4月20日 at 下午5:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>提高电脑配置………</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98996">
+<article class="comment" id="comment-98996">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512475" rel="external nofollow">新用户873065</a></span> on <a href="http://www.acmerblog.com/hdu-4240-route-redundancy-7253.html#comment-98996" rel="nofollow"><time datetime="2017-04-20T17:02:27+00:00" pubdate="">2017年4月20日 at 下午5:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>提高电脑配置………</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98995">
+<article class="comment" id="comment-98995">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512475" rel="external nofollow">新用户873065</a></span> on <a href="http://www.acmerblog.com/hdu-4240-route-redundancy-7253.html#comment-98995" rel="nofollow"><time datetime="2017-04-20T17:02:27+00:00" pubdate="">2017年4月20日 at 下午5:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>提高电脑配置………</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98994">
+<article class="comment" id="comment-98994">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512475" rel="external nofollow">新用户873065</a></span> on <a href="http://www.acmerblog.com/hdu-4240-route-redundancy-7253.html#comment-98994" rel="nofollow"><time datetime="2017-04-20T17:02:27+00:00" pubdate="">2017年4月20日 at 下午5:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>提高电脑配置………</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68829">
+<article class="comment" id="comment-68829">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530020" rel="external nofollow">新用户399923</a></span> on <a href="http://www.acmerblog.com/hdu-4240-route-redundancy-7253.html#comment-68829" rel="nofollow"><time datetime="2017-04-11T10:16:01+00:00" pubdate="">2017年4月11日 at 上午10:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真会挑时间！要是超频后整出了simulation B.H.那就走上了共同穿越到道路！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68828">
+<article class="comment" id="comment-68828">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530020" rel="external nofollow">新用户399923</a></span> on <a href="http://www.acmerblog.com/hdu-4240-route-redundancy-7253.html#comment-68828" rel="nofollow"><time datetime="2017-04-11T10:16:01+00:00" pubdate="">2017年4月11日 at 上午10:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真会挑时间！要是超频后整出了simulation B.H.那就走上了共同穿越到道路！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68827">
+<article class="comment" id="comment-68827">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530020" rel="external nofollow">新用户399923</a></span> on <a href="http://www.acmerblog.com/hdu-4240-route-redundancy-7253.html#comment-68827" rel="nofollow"><time datetime="2017-04-11T10:16:01+00:00" pubdate="">2017年4月11日 at 上午10:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真会挑时间！要是超频后整出了simulation B.H.那就走上了共同穿越到道路！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68826">
+<article class="comment" id="comment-68826">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530020" rel="external nofollow">新用户399923</a></span> on <a href="http://www.acmerblog.com/hdu-4240-route-redundancy-7253.html#comment-68826" rel="nofollow"><time datetime="2017-04-11T10:16:01+00:00" pubdate="">2017年4月11日 at 上午10:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真会挑时间！要是超频后整出了simulation B.H.那就走上了共同穿越到道路！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68825">
+<article class="comment" id="comment-68825">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530020" rel="external nofollow">新用户399923</a></span> on <a href="http://www.acmerblog.com/hdu-4240-route-redundancy-7253.html#comment-68825" rel="nofollow"><time datetime="2017-04-11T10:16:01+00:00" pubdate="">2017年4月11日 at 上午10:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真会挑时间！要是超频后整出了simulation B.H.那就走上了共同穿越到道路！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68824">
+<article class="comment" id="comment-68824">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530020" rel="external nofollow">新用户399923</a></span> on <a href="http://www.acmerblog.com/hdu-4240-route-redundancy-7253.html#comment-68824" rel="nofollow"><time datetime="2017-04-11T10:16:01+00:00" pubdate="">2017年4月11日 at 上午10:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真会挑时间！要是超频后整出了simulation B.H.那就走上了共同穿越到道路！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68823">
+<article class="comment" id="comment-68823">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530020" rel="external nofollow">新用户399923</a></span> on <a href="http://www.acmerblog.com/hdu-4240-route-redundancy-7253.html#comment-68823" rel="nofollow"><time datetime="2017-04-11T10:16:01+00:00" pubdate="">2017年4月11日 at 上午10:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真会挑时间！要是超频后整出了simulation B.H.那就走上了共同穿越到道路！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68822">
+<article class="comment" id="comment-68822">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530020" rel="external nofollow">新用户399923</a></span> on <a href="http://www.acmerblog.com/hdu-4240-route-redundancy-7253.html#comment-68822" rel="nofollow"><time datetime="2017-04-11T10:16:01+00:00" pubdate="">2017年4月11日 at 上午10:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真会挑时间！要是超频后整出了simulation B.H.那就走上了共同穿越到道路！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68821">
+<article class="comment" id="comment-68821">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530020" rel="external nofollow">新用户399923</a></span> on <a href="http://www.acmerblog.com/hdu-4240-route-redundancy-7253.html#comment-68821" rel="nofollow"><time datetime="2017-04-11T10:16:01+00:00" pubdate="">2017年4月11日 at 上午10:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真会挑时间！要是超频后整出了simulation B.H.那就走上了共同穿越到道路！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68820">
+<article class="comment" id="comment-68820">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530020" rel="external nofollow">新用户399923</a></span> on <a href="http://www.acmerblog.com/hdu-4240-route-redundancy-7253.html#comment-68820" rel="nofollow"><time datetime="2017-04-11T10:16:01+00:00" pubdate="">2017年4月11日 at 上午10:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真会挑时间！要是超频后整出了simulation B.H.那就走上了共同穿越到道路！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

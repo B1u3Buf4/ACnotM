@@ -1,0 +1,418 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>05-23</div>
+<div class="tit"><h1 class="entry-title">HDU 4344-Mark the Rope-数论-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/math/number-theory" rel="category tag" title="查看数论应用中的全部文章">数论应用</a></span><span class="i4">围观142次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7355" href="http://www.acmerblog.com/hdu-4344-mark-the-rope-7355.html#comments" title="《HDU 4344-Mark the Rope-数论-[解题报告]HOJ》上的评论">19 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Mark the Rope</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Eric has a long rope whose length is N, now he wants to mark on the rope with different colors. The way he marks the rope is:<br/><strong>1. </strong> He will choose a color that hasn’t been used<br/><strong>2. </strong> He will choose a length L (N&gt;L&gt;1) and he defines the mark’s value equals L<br/><strong>3. </strong> From the head of the rope, after every L length, he marks on the rope (you can assume the mark’s length is 0 )<br/><strong>4. </strong> When he chooses the length L in step 2, he has made sure that if he marks with this length, the last mark will be at the tail of the rope<br/>Eric is a curious boy, he want to choose K kinds of marks. Every two of the marks’ value are coprime(gcd(l1,l2)=1). Now Eric wants to know the max K. After he chooses the max K kinds of marks, he wants to know the max sum of these K kinds of marks’ values.<br/>You can assume that Eric always can find at least one kind of length to mark on the rope. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+First line: a positive number T (T&lt;=500) representing the number of test cases<br/>2 to T+1 lines: every line has only a positive number N (N&lt;2<sup>63</sup>) representing the length of rope </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+First line: a positive number T (T&lt;=500) representing the number of test cases<br/>2 to T+1 lines: every line has only a positive number N (N&lt;2<sup>63</sup>) representing the length of rope</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+180
+198</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+3 18
+3 22</pre>
+<p> <!-- problem end --></p>
+<p><span style="font-family:KaiTi_GB2312; font-size:18px">题目链接：<a target="_blank">http://acm.hdu.edu.cn/showproblem.php?pid=4344</a></span></p>
+<p><span style="font-family:KaiTi_GB2312; font-size:18px"><br/>
+</span></p>
+<p><span style="font-family:KaiTi_GB2312; font-size:18px">题目大意：给出一个长为n（n小于2^63）的管子，现在Eric要在管子上做标记，每隔L个长度单位做一个标记，从管子头端开始，保证最后一次标记恰好在管子的尾端。让你找出有多少个这样的L（L&lt;n），且他们之间两两互素，然后求出这些L的和最大值。</span></p>
+<p><span style="font-family:KaiTi_GB2312; font-size:18px"><br/>
+</span></p>
+<p><span style="font-family:KaiTi_GB2312; font-size:18px">分析：分析一下就可以知道，这题其实就是让找正整数n有多少个素因子。我们用<a target="_blank">pollard_rho大整数分解</a>可以分解n，然后对于n的每两个不同的因子，他们之间肯定互素，然后找出每个素因子的k次幂作为L的值，相加即是这些L值的和的最大值了。</span></p>
+<p><span style="font-family:KaiTi_GB2312; font-size:18px"><br/>
+</span></p>
+<p><span style="font-family:KaiTi_GB2312; font-size:18px">实现代码如下（HDU上要用用G++交，C++交的话会TLE）：</span></p>
+<p><span style="font-family:KaiTi_GB2312; font-size:18px"></span></p>
+<pre class="brush:cpp" name="code">#include &lt;cstdio&gt;
+#include &lt;iostream&gt;
+#include &lt;cstdlib&gt;
+#include &lt;cmath&gt;
+#include &lt;algorithm&gt;
+
+#define times 10
+#define N 5501
+using namespace std;
+typedef long long LL;
+const LL INF=(LL)1&lt;&lt;61;
+LL key,ct,cnt,ans;
+LL fac[N],num[N];
+
+LL gcd(LL a,LL b)
+{
+    return b?gcd(b,a%b):a;
+}
+
+LL multi(LL a,LL b,LL m)
+{
+    LL ans=0;
+    a%=m;
+    while(b)
+    {
+        if(b&amp;1)
+        {
+            ans=(ans+a)%m;
+            b--;
+        }
+        b&gt;&gt;=1;
+        a=(a+a)%m;
+    }
+    return ans;
+}
+
+LL quick_mod(LL a,LL b,LL m)
+{
+    LL ans=1;
+    a%=m;
+    while(b)
+    {
+        if(b&amp;1)
+        {
+            ans=multi(ans,a,m);
+            b--;
+        }
+        b&gt;&gt;=1;
+        a=multi(a,a,m);
+    }
+    return ans;
+}
+
+bool Miller_Rabin(LL n)
+{
+    if(n==2) return true;
+    if(n&lt;2||!(n&amp;1)) return false;
+    LL m=n-1;
+    int k=0;
+    while(!(m&amp;1))
+    {
+        k++;
+        m&gt;&gt;=1;
+    }
+    for(int i=0;i&lt;times;i++)
+    {
+        LL a=rand()%(n-1)+1;
+        LL x=quick_mod(a,m,n);
+        LL y=0;
+        for(int j=0;j&lt;k;j++)
+        {
+            y=multi(x,x,n);
+            if(y==1&amp;&amp;x!=1&amp;&amp;x!=n-1) return false;
+            x=y;
+        }
+        if(y!=1) return false;
+    }
+    return true;
+}
+
+LL Pollard_rho(LL n,LL c)
+{
+    LL i=1,k=2;
+    LL x=rand()%(n-1)+1;
+    LL y=x;
+    while(true)
+    {
+        i++;
+        x=(multi(x,x,n)+c)%n;
+        LL d=gcd((y-x+n)%n,n);
+        if(1&lt;d&amp;&amp;d&lt;n) return d;
+        if(y==x) return n;
+        if(i==k)
+        {
+            y=x;
+            k&lt;&lt;=1;
+        }
+    }
+}
+
+void Find(LL n,LL c)
+{
+    if(n==1) return ;
+    if(Miller_Rabin(n))
+    {
+        fac[ct++]=n;
+        return ;
+    }
+    LL p=n;
+    LL k=c;
+    while(p&gt;=n) p=Pollard_rho(p,c--);
+    Find(p,k);
+    Find(n/p,k);
+}
+
+
+void Solve(LL n)
+{
+    ct=0;
+    Find(n,120);
+    sort(fac,fac+ct);
+    num[0]=1;
+    int k=1;
+    for(int i=1;i&lt;ct;i++)
+    {
+        if(fac[i]==fac[i-1])
+            num[k-1]++;
+        else
+        {
+            num[k]=1;
+            fac[k++]=fac[i];
+        }
+    }
+    cnt=k;
+}
+
+int main()
+{
+    int t;
+    cin&gt;&gt;t;
+    while(t--)
+    {
+        scanf("%lld",&amp;key);
+        Solve(key);
+        ans=0;
+        for(int i=cnt-1;i&gt;=0;i--)
+        {
+            LL temp=1;
+            for(int j=0;j&lt;num[i];j++)
+                temp*=fac[i];
+            ans+=temp;
+        }
+        if(cnt==1) ans/=fac[0];//由于L&lt;N，所以当因子数为1时要除去一个因子
+        printf("%lld %lld\n",cnt,ans);
+    }
+    return 0;
+}
+</pre>
+<p>
+</p>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/ac_gibson/article/details/46972427</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-98446">
+<article class="comment" id="comment-98446">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461020" rel="external nofollow">新用户531762</a></span> on <a href="http://www.acmerblog.com/hdu-4344-mark-the-rope-7355.html#comment-98446" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚团购了东北大米，又打算团购茶叶。想先试喝一下。碰个运气吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98445">
+<article class="comment" id="comment-98445">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461020" rel="external nofollow">新用户531762</a></span> on <a href="http://www.acmerblog.com/hdu-4344-mark-the-rope-7355.html#comment-98445" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚团购了东北大米，又打算团购茶叶。想先试喝一下。碰个运气吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98444">
+<article class="comment" id="comment-98444">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461020" rel="external nofollow">新用户531762</a></span> on <a href="http://www.acmerblog.com/hdu-4344-mark-the-rope-7355.html#comment-98444" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚团购了东北大米，又打算团购茶叶。想先试喝一下。碰个运气吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98443">
+<article class="comment" id="comment-98443">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461020" rel="external nofollow">新用户531762</a></span> on <a href="http://www.acmerblog.com/hdu-4344-mark-the-rope-7355.html#comment-98443" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚团购了东北大米，又打算团购茶叶。想先试喝一下。碰个运气吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98442">
+<article class="comment" id="comment-98442">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461020" rel="external nofollow">新用户531762</a></span> on <a href="http://www.acmerblog.com/hdu-4344-mark-the-rope-7355.html#comment-98442" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚团购了东北大米，又打算团购茶叶。想先试喝一下。碰个运气吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98441">
+<article class="comment" id="comment-98441">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461020" rel="external nofollow">新用户531762</a></span> on <a href="http://www.acmerblog.com/hdu-4344-mark-the-rope-7355.html#comment-98441" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚团购了东北大米，又打算团购茶叶。想先试喝一下。碰个运气吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98440">
+<article class="comment" id="comment-98440">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461020" rel="external nofollow">新用户531762</a></span> on <a href="http://www.acmerblog.com/hdu-4344-mark-the-rope-7355.html#comment-98440" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚团购了东北大米，又打算团购茶叶。想先试喝一下。碰个运气吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98439">
+<article class="comment" id="comment-98439">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461020" rel="external nofollow">新用户531762</a></span> on <a href="http://www.acmerblog.com/hdu-4344-mark-the-rope-7355.html#comment-98439" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚团购了东北大米，又打算团购茶叶。想先试喝一下。碰个运气吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98438">
+<article class="comment" id="comment-98438">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461020" rel="external nofollow">新用户531762</a></span> on <a href="http://www.acmerblog.com/hdu-4344-mark-the-rope-7355.html#comment-98438" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚团购了东北大米，又打算团购茶叶。想先试喝一下。碰个运气吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98437">
+<article class="comment" id="comment-98437">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461020" rel="external nofollow">新用户531762</a></span> on <a href="http://www.acmerblog.com/hdu-4344-mark-the-rope-7355.html#comment-98437" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚团购了东北大米，又打算团购茶叶。想先试喝一下。碰个运气吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98436">
+<article class="comment" id="comment-98436">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461020" rel="external nofollow">新用户531762</a></span> on <a href="http://www.acmerblog.com/hdu-4344-mark-the-rope-7355.html#comment-98436" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚团购了东北大米，又打算团购茶叶。想先试喝一下。碰个运气吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98435">
+<article class="comment" id="comment-98435">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461020" rel="external nofollow">新用户531762</a></span> on <a href="http://www.acmerblog.com/hdu-4344-mark-the-rope-7355.html#comment-98435" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚团购了东北大米，又打算团购茶叶。想先试喝一下。碰个运气吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98434">
+<article class="comment" id="comment-98434">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461020" rel="external nofollow">新用户531762</a></span> on <a href="http://www.acmerblog.com/hdu-4344-mark-the-rope-7355.html#comment-98434" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚团购了东北大米，又打算团购茶叶。想先试喝一下。碰个运气吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98433">
+<article class="comment" id="comment-98433">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461020" rel="external nofollow">新用户531762</a></span> on <a href="http://www.acmerblog.com/hdu-4344-mark-the-rope-7355.html#comment-98433" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚团购了东北大米，又打算团购茶叶。想先试喝一下。碰个运气吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68532">
+<article class="comment" id="comment-68532">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529703" rel="external nofollow">新用户112648</a></span> on <a href="http://www.acmerblog.com/hdu-4344-mark-the-rope-7355.html#comment-68532" rel="nofollow"><time datetime="2017-04-11T07:10:15+00:00" pubdate="">2017年4月11日 at 上午7:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>更了……，还真是不太刺激呢！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68531">
+<article class="comment" id="comment-68531">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529703" rel="external nofollow">新用户112648</a></span> on <a href="http://www.acmerblog.com/hdu-4344-mark-the-rope-7355.html#comment-68531" rel="nofollow"><time datetime="2017-04-11T07:10:15+00:00" pubdate="">2017年4月11日 at 上午7:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>更了……，还真是不太刺激呢！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68530">
+<article class="comment" id="comment-68530">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529703" rel="external nofollow">新用户112648</a></span> on <a href="http://www.acmerblog.com/hdu-4344-mark-the-rope-7355.html#comment-68530" rel="nofollow"><time datetime="2017-04-11T07:10:15+00:00" pubdate="">2017年4月11日 at 上午7:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>更了……，还真是不太刺激呢！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68529">
+<article class="comment" id="comment-68529">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529703" rel="external nofollow">新用户112648</a></span> on <a href="http://www.acmerblog.com/hdu-4344-mark-the-rope-7355.html#comment-68529" rel="nofollow"><time datetime="2017-04-11T07:10:15+00:00" pubdate="">2017年4月11日 at 上午7:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>更了……，还真是不太刺激呢！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68528">
+<article class="comment" id="comment-68528">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529703" rel="external nofollow">新用户112648</a></span> on <a href="http://www.acmerblog.com/hdu-4344-mark-the-rope-7355.html#comment-68528" rel="nofollow"><time datetime="2017-04-11T07:10:15+00:00" pubdate="">2017年4月11日 at 上午7:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>更了……，还真是不太刺激呢！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

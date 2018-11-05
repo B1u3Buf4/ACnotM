@@ -1,0 +1,208 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>07-16</div>
+<div class="tit"><h1 class="entry-title">HDU 4419-Colourful Rectangle-计算几何-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/data-struct" rel="category tag" title="查看数据结构中的全部文章">数据结构</a>, <a href="http://www.acmerblog.com/category/geometry/analytic-geometry" rel="category tag" title="查看解析几何中的全部文章">解析几何</a></span><span class="i4">围观98次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7432" href="http://www.acmerblog.com/hdu-4419-colourful-rectangle-7432.html#comments" title="《HDU 4419-Colourful Rectangle-计算几何-[解题报告]HOJ》上的评论">一条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Colourful Rectangle</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+We use Red, Green and Blue to make new colours. See the picture below:<br/><center><img alt="Time travel" src="http://www.acmerblog.com/img/1445677746561.jpg"/></center>
+<p>Now give you n rectangles, the colour of them is red or green or blue. You have calculate the area of 7 different colour. (Note: A region may be covered by same colour several times, but it’s final colour depends on the kinds of different colour) </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line is an integer T(T &lt;= 10), the number of test cases. The first line of each case contains a integer n (0 &lt; n &lt;= 10000), the number of rectangles. Then n lines follows. Each line start with a letter C(R means Red, G means Green, B means Blue) and four integers x1, y1, x2, y2(0 &lt;= x1 &lt; x2 &lt; 10^9,  0 &lt;= y1 &lt; y2 &lt; 10^9), the left-bottom’s coordinate and the right-top’s coordinate of a rectangle. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The first line is an integer T(T &lt;= 10), the number of test cases. The first line of each case contains a integer n (0 &lt; n &lt;= 10000), the number of rectangles. Then n lines follows. Each line start with a letter C(R means Red, G means Green, B means Blue) and four integers x1, y1, x2, y2(0 &lt;= x1 &lt; x2 &lt; 10^9,  0 &lt;= y1 &lt; y2 &lt; 10^9), the left-bottom’s coordinate and the right-top’s coordinate of a rectangle.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3
+2
+R 0 0 2 2
+G 1 1 3 3 
+3
+R 0 0 4 4
+G 2 0 6 4
+B 0 2 6 6
+3
+G 2 0 3 8
+G 1 0 6 1
+B 4 2 7 7</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case 1:
+3
+3
+0
+1
+0
+0
+0
+Case 2:
+4
+4
+12
+4
+4
+4
+4
+Case 3:
+0
+12
+15
+0
+0
+0
+0</pre>
+<p> <!-- problem end --></p>
+<p>矩形面积并</p>
+<pre class="brush:cpp" name="code">#include&lt;cstdio&gt;
+#include&lt;algorithm&gt;
+#define N 20010
+using namespace std;
+typedef long long ll;
+
+struct Tree{
+    int l,r,cover[8];   //len表示区间【l,r】被占用的总长度
+    ll len[8];
+}tree[5*N];
+
+struct Line{
+    ll x,y1,y2;
+    int flag,c;
+}l[N];
+ll y[N];
+
+bool cmp(struct Line a,struct Line b){    //这里表示当2条线段x坐标重合时优先处理是入边的矩形的线段
+    if(a.x==b.x)return a.flag&gt;b.flag;
+    return a.x&lt;b.x;
+}
+void build(int s,int t,int id){
+    int i;
+    tree[id].l=s,tree[id].r=t;
+    for(i=1;i&lt;=7;i++)
+        tree[id].cover[i]=tree[id].len[i]=0;
+    if(s!=t-1){
+        int mid=(s+t)&gt;&gt;1;
+        build(s,mid,id&lt;&lt;1);
+        build(mid,t,id&lt;&lt;1|1);
+    }
+}
+void update(int id,int c){
+    if(tree[id].cover[c]&gt;0)
+        tree[id].len[c]=y[tree[id].r-1]-y[tree[id].l-1];   //注意这里都要减一
+    else if(tree[id].l==tree[id].r-1)
+        tree[id].len[c]=0;
+    else
+        tree[id].len[c]=tree[id&lt;&lt;1].len[c]+tree[id&lt;&lt;1|1].len[c];
+}
+void query(int s,int t,int flag,int c,int id){
+    if(tree[id].l==s &amp;&amp; tree[id].r==t){
+        tree[id].cover[c]+=flag;
+        update(id,c);
+        return;
+    }
+    int mid=(tree[id].l+tree[id].r)&gt;&gt;1;
+    if(t&lt;=mid)query(s,t,flag,c,id&lt;&lt;1);
+    else if(s&gt;=mid)query(s,t,flag,c,id&lt;&lt;1|1);
+    else{
+        query(s,mid,flag,c,id&lt;&lt;1);
+        query(mid,t,flag,c,id&lt;&lt;1|1);
+    }
+    update(id,c);
+}
+int main(){
+    int i,n,k;
+    ll x1,x2,y1,y2;
+    char str[10];
+    int tt,T;
+    scanf("%d",&amp;T);
+    for(tt=1;tt&lt;=T;tt++){
+        scanf("%d",&amp;n);
+        int cnt=0;
+        for(i=1;i&lt;=n;i++){
+            scanf("%s %I64d %I64d %I64d %I64d",str,&amp;x1,&amp;y1,&amp;x2,&amp;y2);
+            if(str[0]=='R') l[cnt].c=l[cnt+1].c=1;
+            else if(str[0]=='G') l[cnt].c=l[cnt+1].c=2;
+            else if(str[0]=='B') l[cnt].c=l[cnt+1].c=4;
+            l[cnt].x=x1,l[cnt].y1=y1,l[cnt].y2=y2,l[cnt].flag=1,y[cnt++]=y1;
+            l[cnt].x=x2,l[cnt].y1=y1,l[cnt].y2=y2,l[cnt].flag=-1,y[cnt++]=y2;
+        }
+        sort(y,y+cnt);
+        sort(l,l+cnt,cmp);
+        int t=unique(y,y+cnt)-y;
+        build(1,t,1);
+
+        ll ans[8]={0},last[8]={0};
+        for(i=0;i&lt;cnt;i++){
+            int lll=lower_bound(y,y+t,l[i].y1)-y+1;
+            int rr=lower_bound(y,y+t,l[i].y2)-y+1;
+            for(k=1;k&lt;8;k++){
+                if((l[i].c &amp; k)) query(lll,rr,l[i].flag,k,1);
+                if(i)ans[k]+=(ll)last[k]*(l[i].x-l[i-1].x);
+                last[k]=tree[1].len[k];
+            }
+        }
+        /*for(i=0;i&lt;cnt;i++){  //两种写法都可以
+            int lll=lower_bound(y,y+t,l[i].y1)-y+1;
+            int rr=lower_bound(y,y+t,l[i].y2)-y+1;
+            for(k=1;k&lt;8;k++){
+                if((l[i].c &amp; k)) query(lll,rr,l[i].flag,k,1);
+                if(i+1&lt;cnt)ans[k]+=(ll)tree[1].len[k]*(l[i+1].x-l[i].x);
+            }
+        }*/
+        printf("Case %d:\n",tt);
+        printf("%I64d\n",ans[7]-ans[6]);
+        printf("%I64d\n",ans[7]-ans[5]);
+        printf("%I64d\n",ans[7]-ans[3]);
+        printf("%I64d\n",ans[5]+ans[6]-ans[4]-ans[7]);
+        printf("%I64d\n",ans[3]+ans[6]-ans[2]-ans[7]);
+        printf("%I64d\n",ans[5]+ans[3]-ans[1]-ans[7]);
+        printf("%I64d\n",ans[1]+ans[2]+ans[4]-ans[3]-ans[5]-ans[6]+ans[7]);
+    }
+    return 0;
+}
+</pre>
+<p></p>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/waitfor_/article/details/8110808</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-68017">
+<article class="comment" id="comment-68017">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515010" rel="external nofollow">新用户524898</a></span> on <a href="http://www.acmerblog.com/hdu-4419-colourful-rectangle-7432.html#comment-68017" rel="nofollow"><time datetime="2017-04-11T03:57:02+00:00" pubdate="">2017年4月11日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>迅播出了135分钟的版本，但肯定不如本站的高清</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

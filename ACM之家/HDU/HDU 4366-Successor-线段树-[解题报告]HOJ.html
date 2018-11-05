@@ -1,0 +1,312 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>05-23</div>
+<div class="tit"><h1 class="entry-title">HDU 4366-Successor-线段树-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/data-struct" rel="category tag" title="查看数据结构中的全部文章">数据结构</a>, <a href="http://www.acmerblog.com/category/data-struct/trees" rel="category tag" title="查看树形结构中的全部文章">树形结构</a></span><span class="i4">围观191次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7377" href="http://www.acmerblog.com/hdu-4366-successor-7377.html#comments" title="《HDU 4366-Successor-线段树-[解题报告]HOJ》上的评论">10 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Successor</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Sean owns a company and he is the BOSS.The other Staff has one Superior.every staff has a loyalty and ability.Some times Sean will fire one staff.Then one of the fired man’s Subordinates will replace him whose ability is higher than him and has the highest loyalty for company.Sean want to know who will replace the fired man. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+In the first line a number T indicate the number of test cases. Then for each case the first line contain 2 numbers n,m (2&lt;=n,m&lt;=50000),indicate the company has n person include Sean ,m is the times of Sean’s query.Staffs are numbered from 1 to n-1,Sean’s number is 0.Follow n-1 lines,the i-th(1&lt;=i&lt;=n-1) line contains 3 integers a,b,c(0&lt;=a&lt;=n-1,0&lt;=b,c&lt;=1000000),indicate the i-th staff’s superior Serial number,i-th staff’s loyalty and ability.Every staff ‘s Serial number is bigger than his superior,Each staff has different loyalty.then follows m lines of queries.Each line only a number indicate the Serial number of whom should be fired. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+In the first line a number T indicate the number of test cases. Then for each case the first line contain 2 numbers n,m (2&lt;=n,m&lt;=50000),indicate the company has n person include Sean ,m is the times of Sean’s query.Staffs are numbered from 1 to n-1,Sean’s number is 0.Follow n-1 lines,the i-th(1&lt;=i&lt;=n-1) line contains 3 integers a,b,c(0&lt;=a&lt;=n-1,0&lt;=b,c&lt;=1000000),indicate the i-th staff’s superior Serial number,i-th staff’s loyalty and ability.Every staff ‘s Serial number is bigger than his superior,Each staff has different loyalty.then follows m lines of queries.Each line only a number indicate the Serial number of whom should be fired.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+3 2
+0 100 99
+1 101 100
+1
+2</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+-1</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp" name="code">/*
+题意：
+给你 n个点。他们有 上下级关系，一个点只有一个上级，一个上级 可以有多个下级，每个点有两个属性，能力值 、忠诚度（每个节点的忠诚度不同），求我们要删除 一个节点， 则我们 需从 其下级中选出 一个节点，其能力值 比该节点 要高，且 忠诚度是（比其能力高的下级节点中的）最高
+题解：
+首先将树状结构，转化为 线状结构， 
+可以遍历一遍将树上每个点标记为一维区间上的某个点，且在同一棵子树内的点是连续的一段。
+然后，将所有点按能力从大到小排序，能力相同的编号小的排在前面，然后扫描一遍，扫描时维护一颗线段树，
+（我们先插入线段树的是，比其能力值 大的，我们只要从这些里面找到，忠诚度最高的就 可以了）
+先查找该点为根节点的子树内的最优值，然后插入该点的忠诚度。
+*/
+#include&lt;stdio.h&gt;
+#include&lt;iostream&gt;
+#include&lt;algorithm&gt;
+#include&lt;cstring&gt;
+#include&lt;cmath&gt;
+#include&lt;queue&gt;
+#include&lt;set&gt;
+#include&lt;map&gt;
+#define maxn    100110
+#define mod 100000007
+#define eps  1e-6;
+#define ll  long long
+#define M   15520
+using namespace std;
+map&lt;int,int&gt;map1;
+vector&lt;int&gt;g[maxn] ;
+int num ,ans[maxn],n,m,l[maxn],r[maxn];
+struct staff
+{
+    int loy;
+    int abt;
+    int id;
+}sta[maxn];
+struct node
+{
+    int l;
+    int r;
+    int mx;
+}p[maxn * 2];
+bool cmp (staff a, staff b)
+{
+    return a.abt &gt; b.abt ;
+}
+void dfs(int x)//编号变为线状结构
+{
+    l[x] = num++;
+    for(int i = 0; i &lt; g[x].size(); ++i)
+    {
+        dfs(g[x][i]);
+    }
+    r[x] = num ;
+}
+void build(int x,int l,int r)
+{
+    p[x].l = l;
+    p[x].r = r;
+    p[x].mx = -1 ;
+    if(l == r) return  ;
+    int mid = (l + r) /2;
+    build(x*2,l,mid);
+    build(x*2+1,mid + 1,r);
+}
+int get(int x,int l,int r)
+{
+    if( r &lt; l ) return  -1 ;
+    if(p[x].l == l &amp;&amp; p[x].r == r)
+    {
+        return p[x].mx;
+    }
+    int mid = (p[x].l + p[x].r) /2 ;
+    if(r &lt;= mid)  return get(x * 2,l,r);
+    else
+    {
+        if(l &gt; mid) return get(x * 2 + 1,l,r);
+        else
+        {
+            return max(get(x * 2,l,mid),get(x * 2 + 1,mid + 1,r));
+        }
+    }
+}
+void insert(int x,int pos,int d)
+{
+    if(p[x].l == p[x].r )
+    {
+        p[x].mx = d;
+        return ;
+    }
+    int mid = (p[x].l + p[x].r) /2 ;
+    if(pos &lt;= mid) insert(x*2,pos,d);
+    else
+    {
+        insert(x*2 + 1, pos,d);
+    }
+    p[x].mx = max(p[x*2].mx,p[x*2+1].mx);
+}
+void init()
+{
+    for( int i = 0; i &lt;= n; ++i )
+        g[i].clear();
+    map1.clear();
+    num = 0 ;
+}
+int main()
+{
+    int t,u,loy,abt,a,j,i;
+    scanf("%d",&amp;t);
+    while(t--)
+    {
+        scanf("%d%d",&amp;n,&amp;m);
+        init();
+        for( i = 1 ; i &lt; n; ++i)
+        {
+            scanf("%d%d%d",&amp;u,&amp;loy,&amp;abt);
+            g[u].push_back(i);
+            sta[i].loy = loy;
+            sta[i].abt = abt ;
+            sta[i].id = i;
+            map1[loy] = i;
+        }
+        dfs(0);
+        build(1,0,num - 1);
+        sort(sta + 1,sta + n,cmp);//排序为了下面 查询 打基础，排好序之后，我们插入时，保证了，比 i 大的已经插入了这时直接找，忠诚的uida就可以了
+        for( i = 1 ; i &lt; n ; i = j)
+        {
+            j = i;
+            while(j &lt; n &amp;&amp;sta[i].abt == sta[j].abt)
+            {
+                int id = sta[j].id ;
+                loy = get(1,l[id] + 1,r[id] - 1);
+
+                if(loy != -1) ans[id] = map1[loy] ;
+                else ans[id] = -1;
+                ++j;
+            }
+            j = i ;
+            while(j &lt; n &amp;&amp; sta[i].abt == sta[j].abt )
+            {
+                int id =  sta[j].id;
+                insert(1,l[id],sta[j].loy);
+                ++j;
+            }
+        }
+        while(m--)
+        {
+            scanf("%d",&amp;a);
+            printf("%d\n",ans[a]) ;
+        }
+    }
+    return 0;
+}
+</pre>
+<p></p>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/weiguang_123/article/details/8143916</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-98189">
+<article class="comment" id="comment-98189">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466791" rel="external nofollow">新用户954499</a></span> on <a href="http://www.acmerblog.com/hdu-4366-successor-7377.html#comment-98189" rel="nofollow"><time datetime="2017-04-20T11:47:12+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不做的更好，难道我们要向第三世界看齐？这是工作态度的问题，就是真正有意义的事情，就从这一点工作细节上和官方，媒体的言论就能看出国人处处皆不认真，中国就是缺乏较真的人，大家都和稀泥，不分是非，关键的就是差在这。建议你看看胡适写的《差不多先生传》。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68261">
+<article class="comment" id="comment-68261">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522503" rel="external nofollow">新用户861541</a></span> on <a href="http://www.acmerblog.com/hdu-4366-successor-7377.html#comment-68261" rel="nofollow"><time datetime="2017-04-11T03:57:04+00:00" pubdate="">2017年4月11日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是男L人L就L上的L网C战，A 片：htTP://uVU.Cc/ijW6  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68260">
+<article class="comment" id="comment-68260">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522503" rel="external nofollow">新用户861541</a></span> on <a href="http://www.acmerblog.com/hdu-4366-successor-7377.html#comment-68260" rel="nofollow"><time datetime="2017-04-11T03:57:04+00:00" pubdate="">2017年4月11日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是男L人L就L上的L网C战，A 片：htTP://uVU.Cc/ijW6  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68259">
+<article class="comment" id="comment-68259">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522503" rel="external nofollow">新用户861541</a></span> on <a href="http://www.acmerblog.com/hdu-4366-successor-7377.html#comment-68259" rel="nofollow"><time datetime="2017-04-11T03:57:04+00:00" pubdate="">2017年4月11日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是男L人L就L上的L网C战，A 片：htTP://uVU.Cc/ijW6  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68258">
+<article class="comment" id="comment-68258">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522503" rel="external nofollow">新用户861541</a></span> on <a href="http://www.acmerblog.com/hdu-4366-successor-7377.html#comment-68258" rel="nofollow"><time datetime="2017-04-11T03:57:04+00:00" pubdate="">2017年4月11日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是男L人L就L上的L网C战，A 片：htTP://uVU.Cc/ijW6  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68257">
+<article class="comment" id="comment-68257">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522503" rel="external nofollow">新用户861541</a></span> on <a href="http://www.acmerblog.com/hdu-4366-successor-7377.html#comment-68257" rel="nofollow"><time datetime="2017-04-11T03:57:04+00:00" pubdate="">2017年4月11日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是男L人L就L上的L网C战，A 片：htTP://uVU.Cc/ijW6  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68256">
+<article class="comment" id="comment-68256">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522503" rel="external nofollow">新用户861541</a></span> on <a href="http://www.acmerblog.com/hdu-4366-successor-7377.html#comment-68256" rel="nofollow"><time datetime="2017-04-11T03:57:04+00:00" pubdate="">2017年4月11日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是男L人L就L上的L网C战，A 片：htTP://uVU.Cc/ijW6  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68255">
+<article class="comment" id="comment-68255">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522503" rel="external nofollow">新用户861541</a></span> on <a href="http://www.acmerblog.com/hdu-4366-successor-7377.html#comment-68255" rel="nofollow"><time datetime="2017-04-11T03:57:04+00:00" pubdate="">2017年4月11日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是男L人L就L上的L网C战，A 片：htTP://uVU.Cc/ijW6  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68254">
+<article class="comment" id="comment-68254">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522503" rel="external nofollow">新用户861541</a></span> on <a href="http://www.acmerblog.com/hdu-4366-successor-7377.html#comment-68254" rel="nofollow"><time datetime="2017-04-11T03:57:04+00:00" pubdate="">2017年4月11日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是男L人L就L上的L网C战，A 片：htTP://uVU.Cc/ijW6  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68253">
+<article class="comment" id="comment-68253">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522503" rel="external nofollow">新用户861541</a></span> on <a href="http://www.acmerblog.com/hdu-4366-successor-7377.html#comment-68253" rel="nofollow"><time datetime="2017-04-11T03:57:04+00:00" pubdate="">2017年4月11日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是男L人L就L上的L网C战，A 片：htTP://uVU.Cc/ijW6  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

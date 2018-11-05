@@ -1,0 +1,313 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>09-10</div>
+<div class="tit"><h1 class="entry-title">有序链表转化为平衡的二分查找树</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/leetcode" rel="category tag" title="查看LeetCode中的全部文章">LeetCode</a>, <a href="http://www.acmerblog.com/category/offer" rel="category tag" title="查看剑指offer中的全部文章">剑指offer</a>, <a href="http://www.acmerblog.com/category/data-struct/trees" rel="category tag" title="查看树形结构中的全部文章">树形结构</a></span><span class="i4">围观1411次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6124" href="http://www.acmerblog.com/convert-sorted-list-to-binary-search-tree-6124.html#comments" title="《有序链表转化为平衡的二分查找树》上的评论">18 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<h3><strong>Convert Sorted List to Binary Search Tree</strong></h3>
+<p><strong>题目描述</strong></p>
+<p>给定一个升序排列的有序单链表，将其转换为一棵平衡的二叉搜索树。</p>
+<p>Given a singly linked list where elements are sorted in ascending order, convert it to a height balanced BST.</p>
+<p>题目链接：<a href="https://oj.leetcode.com/problems/convert-sorted-list-to-binary-search-tree/">https://oj.leetcode.com/problems/convert-sorted-list-to-binary-search-tree/</a></p>
+<p> </p>
+<p><strong>方法一</strong></p>
+<p>比较直观的解法是自顶向下的递归解决，先找到中间节点作为根节点，然后递归左右两部分。所有我们需要先找到中间节点，对于单链表来说，必须要遍历一边，可以使用快慢指针加快查找速度。</p>
+<p>Java代码如下：</p>
+<pre class="brush:java">/**
+ * Definition for singly-linked list.
+ * public class ListNode {
+ *     int val;
+ *     ListNode next;
+ *     ListNode(int x) { val = x; next = null; }
+ * }
+ */
+/**
+ * Definition for binary tree
+ * public class TreeNode {
+ *     int val;
+ *     TreeNode left;
+ *     TreeNode right;
+ *     TreeNode(int x) { val = x; }
+ * }
+ */
+public class Solution {
+    public TreeNode sortedListToBST(ListNode head) {
+        if(head == null) return null;
+        if(head.next == null){
+            return new TreeNode(head.val);
+        }
+        //用快慢指针找到中间节点
+        ListNode slow = head;
+        ListNode fast = head;
+        ListNode preSlow = null;
+        while(fast.next != null &amp;&amp; fast.next.next != null){
+            preSlow = slow;
+            slow = slow.next;
+            fast = fast.next.next;
+        }
+        //分别递归左右两部分
+        TreeNode mid = new TreeNode(slow.val);
+        if(preSlow != null){
+            preSlow.next = null;
+            mid.left = sortedListToBST(head);
+        }
+        if(slow.next != null){
+            mid.right = sortedListToBST(slow.next);
+        }
+        return mid;
+    }
+}</pre>
+<p>时间复杂度为O（nlgn），由于找到中间节点需要O(n)的时间复杂度，有没有办法不找中间节点？</p>
+<p><strong> 方法二</strong></p>
+<p>上面的方法是自顶向下，我们也可以采用自底向上的递归来解决。可以在遍历的链表的同时生成树的节点。这种方法我们先需要遍历链表一次，得到链表的总长度，然后也是递归的调用下去。这个递归和上面的不同之处在于，我们需要修改head指针，因此需要传入指针的指针，C++的写法就是：ListNode *&amp; head或 ListNode ** head</p>
+<pre class="brush:cpp">BinaryTree* sortedListToBST(ListNode *&amp; list, int start, int end) {
+  if (start &gt; end) return NULL;
+  // same as (start+end)/2, avoids overflow
+  int mid = start + (end - start) / 2;
+  BinaryTree *leftChild = sortedListToBST(list, start, mid-1);
+  BinaryTree *parent = new BinaryTree(list-&gt;data);
+  parent-&gt;left = leftChild;
+  list = list-&gt;next;
+  parent-&gt;right = sortedListToBST(list, mid+1, end);
+  return parent;
+}
+
+BinaryTree* sortedListToBST(ListNode *head, int n) {
+  return sortedListToBST(head, 0, n-1);
+}</pre>
+<p>由于Java里面只能传引用(也就是一级指针)，所以需要用ListNodeWrapper类包装一下。</p>
+<pre class="brush:java">//============================================================================
+// Name        : SortedListToBST.java
+// Author      : GaoTong
+// Date        : 2014/9/7
+// Copyright   : www.acmerblog.com
+//============================================================================
+public class SortedListToBST {
+
+    public static TreeNode sortedListToBST(ListNode head) {
+        int len = 0;
+        ListNode tmp = head;
+        while(tmp != null){
+            len++;
+            tmp = tmp.next;
+        }
+        ListNodeWrapper headWrapper = new ListNodeWrapper();
+        headWrapper.node = head;
+        return sortedListToBST(headWrapper, 0, len-1);
+    }
+
+    public static TreeNode sortedListToBST(ListNodeWrapper headWrapper, int start, int end){
+        if(start &gt; end) return null;
+        int mid = start + (end-start)/2;
+        TreeNode left = sortedListToBST(headWrapper, start, mid-1);
+        TreeNode parent = new TreeNode(headWrapper.node.val);
+        parent.left = left;
+        headWrapper.node = headWrapper.node.next;
+        parent.right = sortedListToBST(headWrapper, mid+1, end);
+        return parent;
+    }
+
+    static class ListNodeWrapper {
+        ListNode node;
+    }
+
+}</pre>
+<p>时间复杂度为：O(n)</p>
+<p>参考：http://leetcode.com/2010/11/convert-sorted-list-to-balanced-binary.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75062">
+<article class="comment" id="comment-75062">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521090" rel="external nofollow">新用户701359</a></span> on <a href="http://www.acmerblog.com/convert-sorted-list-to-binary-search-tree-6124.html#comment-75062" rel="nofollow"><time datetime="2017-04-12T03:53:51+00:00" pubdate="">2017年4月12日 at 上午3:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>邮件已发，注意查收。(^o^)/~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64852">
+<article class="comment" id="comment-64852">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">SloFZ</span> on <a href="http://www.acmerblog.com/convert-sorted-list-to-binary-search-tree-6124.html#comment-64852" rel="nofollow"><time datetime="2016-11-12T03:34:53+00:00" pubdate="">2016年11月12日 at 上午3:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是男L人L就L上的L网C战，A 片：htTP://uVU.Cc/ijW6 <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64778">
+<article class="comment" id="comment-64778">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">akWws</span> on <a href="http://www.acmerblog.com/convert-sorted-list-to-binary-search-tree-6124.html#comment-64778" rel="nofollow"><time datetime="2016-10-21T05:47:22+00:00" pubdate="">2016年10月21日 at 上午5:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>打开 ｕｖｕ.ｃｃ/ir7p都是 浪美眉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64719">
+<article class="comment" id="comment-64719">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">HGgBV</span> on <a href="http://www.acmerblog.com/convert-sorted-list-to-binary-search-tree-6124.html#comment-64719" rel="nofollow"><time datetime="2016-10-10T07:11:58+00:00" pubdate="">2016年10月10日 at 上午7:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>打开 ｕｖｕ.ｃｃ/ir7p都是 浪美眉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63642">
+<article class="comment" id="comment-63642">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Rocky</a></span> on <a href="http://www.acmerblog.com/convert-sorted-list-to-binary-search-tree-6124.html#comment-63642" rel="nofollow"><time datetime="2015-05-17T21:12:57+00:00" pubdate="">2015年5月17日 at 下午9:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>排版</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58886">
+<article class="comment" id="comment-58886">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jhxxszy</a></span> on <a href="http://www.acmerblog.com/convert-sorted-list-to-binary-search-tree-6124.html#comment-58886" rel="nofollow"><time datetime="2015-05-17T00:08:02+00:00" pubdate="">2015年5月17日 at 上午12:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感觉第二种方法其实也不是很好，不过的确要比第一种方法要好一点。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58887">
+<article class="comment" id="comment-58887">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">130920099</a></span> on <a href="http://www.acmerblog.com/convert-sorted-list-to-binary-search-tree-6124.html#comment-58887" rel="nofollow"><time datetime="2015-04-27T20:54:54+00:00" pubdate="">2015年4月27日 at 下午8:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>全是智力分析的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49563">
+<article class="comment" id="comment-49563">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangduanjing</a></span> on <a href="http://www.acmerblog.com/convert-sorted-list-to-binary-search-tree-6124.html#comment-49563" rel="nofollow"><time datetime="2015-04-22T21:52:21+00:00" pubdate="">2015年4月22日 at 下午9:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>整理的很好，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58885">
+<article class="comment" id="comment-58885">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sgx_go</a></span> on <a href="http://www.acmerblog.com/convert-sorted-list-to-binary-search-tree-6124.html#comment-58885" rel="nofollow"><time datetime="2015-01-27T12:11:41+00:00" pubdate="">2015年1月27日 at 下午12:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题应该是有一般性的解决方法</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63639">
+<article class="comment" id="comment-63639">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">edward2414</a></span> on <a href="http://www.acmerblog.com/convert-sorted-list-to-binary-search-tree-6124.html#comment-63639" rel="nofollow"><time datetime="2014-12-23T00:21:05+00:00" pubdate="">2014年12月23日 at 上午12:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这种二分还是比较经典！mark</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49561">
+<article class="comment" id="comment-49561">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xy7850151</a></span> on <a href="http://www.acmerblog.com/convert-sorted-list-to-binary-search-tree-6124.html#comment-49561" rel="nofollow"><time datetime="2014-11-26T07:35:10+00:00" pubdate="">2014年11月26日 at 上午7:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63640">
+<article class="comment" id="comment-63640">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hao555sky</a></span> on <a href="http://www.acmerblog.com/convert-sorted-list-to-binary-search-tree-6124.html#comment-63640" rel="nofollow"><time datetime="2014-10-26T09:20:47+00:00" pubdate="">2014年10月26日 at 上午9:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>请不要灌水，多谢！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49564">
+<article class="comment" id="comment-49564">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">CCat</a></span> on <a href="http://www.acmerblog.com/convert-sorted-list-to-binary-search-tree-6124.html#comment-49564" rel="nofollow"><time datetime="2014-10-25T11:49:29+00:00" pubdate="">2014年10月25日 at 上午11:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58884">
+<article class="comment" id="comment-58884">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">keyyuanxin</a></span> on <a href="http://www.acmerblog.com/convert-sorted-list-to-binary-search-tree-6124.html#comment-58884" rel="nofollow"><time datetime="2014-09-26T05:27:18+00:00" pubdate="">2014年9月26日 at 上午5:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>&amp;amp;这是C语言？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49562">
+<article class="comment" id="comment-49562">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Amber</a></span> on <a href="http://www.acmerblog.com/convert-sorted-list-to-binary-search-tree-6124.html#comment-49562" rel="nofollow"><time datetime="2014-09-21T16:23:24+00:00" pubdate="">2014年9月21日 at 下午4:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的题，还是能做出几道的，嘿嘿</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63641">
+<article class="comment" id="comment-63641">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">753951</a></span> on <a href="http://www.acmerblog.com/convert-sorted-list-to-binary-search-tree-6124.html#comment-63641" rel="nofollow"><time datetime="2014-09-17T18:04:41+00:00" pubdate="">2014年9月17日 at 下午6:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>修改一下吧 …</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-848">
+<article class="comment" id="comment-848">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">binbinlocky</span> on <a href="http://www.acmerblog.com/convert-sorted-list-to-binary-search-tree-6124.html#comment-848" rel="nofollow"><time datetime="2014-09-15T22:58:53+00:00" pubdate="">2014年9月15日 at 下午10:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>使用ListNodeWrapper很蹩脚的感觉，没有更好的解决办法？</p>
+</div>
+</article><!-- #comment-## -->
+<ul class="children">
+<li class="comment byuser comment-author-admin bypostauthor odd alt depth-2" id="li-comment-849">
+<article class="comment" id="comment-849">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://weibo.com/itong2055" rel="external nofollow">管理员</a></span> on <a href="http://www.acmerblog.com/convert-sorted-list-to-binary-search-tree-6124.html#comment-849" rel="nofollow"><time datetime="2014-09-15T23:01:33+00:00" pubdate="">2014年9月15日 at 下午11:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个应该是比较简单的解法了，如果有更好的办法可以告诉我</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ul><!-- .children -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,297 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>11-26</div>
+<div class="tit"><h1 class="entry-title">HDU 1011 Starship Troopers-动态规划-[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph/graph-visit" rel="category tag" title="查看图的遍历中的全部文章">图的遍历</a>, <a href="http://www.acmerblog.com/category/dp2/tree-dp" rel="category tag" title="查看树形DP中的全部文章">树形DP</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a>, <a href="http://www.acmerblog.com/category/dp2/package" rel="category tag" title="查看背包问题中的全部文章">背包问题</a></span><span class="i4">围观853次</span><span class="i3"><a class="ds-thread-count" data-thread-key="1266" href="http://www.acmerblog.com/hdu-1011-Starship-Troopers-1266.html#comments" title="《HDU 1011 Starship Troopers-动态规划-[解题报告] C++》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Starship Troopers</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+You, the leader of Starship Troopers, are sent to destroy a base of the bugs. The base is built underground. It is actually a huge cavern, which consists of many rooms connected with tunnels. Each room is occupied by some bugs, and their brains hide in some of the rooms. Scientists have just developed a new weapon and want to experiment it on some brains. Your task is to destroy the whole base, and capture as many brains as possible.
+<p>To kill all the bugs is always easier than to capture their brains. A map is drawn for you, with all the rooms marked by the amount of bugs inside, and the possibility of containing a brain. The cavern’s structure is like a tree in such a way that there is one unique path leading to each room from the entrance. To finish the battle as soon as possible, you do not want to wait for the troopers to clear a room before advancing to the next one, instead you have to leave some troopers at each room passed to fight all the bugs inside. The troopers never re-enter a room where they have visited before.</p>
+<p>A starship trooper can fight against 20 bugs. Since you do not have enough troopers, you can only take some of the rooms and let the nerve gas do the rest of the job. At the mean time, you should maximize the possibility of capturing a brain. To simplify the problem, just maximize the sum of all the possibilities of containing brains for the taken rooms. Making such a plan is a difficult job. You need the help of a computer. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input contains several test cases. The first line of each test case contains two integers N (0 &lt; N &lt;= 100) and M (0 &lt;= M &lt;= 100), which are the number of rooms in the cavern and the number of starship troopers you have, respectively. The following N lines give the description of the rooms. Each line contains two non-negative integers — the amount of bugs inside and the possibility of containing a brain, respectively. The next N – 1 lines give the description of tunnels. Each tunnel is described by two integers, which are the indices of the two rooms it connects. Rooms are numbered from 1 and room 1 is the entrance to the cavern.
+<p>The last test case is followed by two -1′s. </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+For each test case, print on a single line the maximum sum of all the possibilities of containing brains for the taken rooms.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+5 10
+50 10
+40 10
+40 20
+65 30
+70 30
+1 2
+1 3
+2 4
+2 5
+1 1
+20 7
+-1 -1</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+50
+7</pre>
+<p><!-- problem end --></p>
+<p>貌似是很经典的树形dp问题，应该说是树形dp的入门！！</p>
+<p>感觉树形dp比背包多了一个辅助数组，背包直接一个数组循环下去，而树形dp因为有分支，不是线性的，所以就需要用一个辅助数组来进行转化最优情况！</p>
+<div>1011 题目大意：一棵树，有n个结点，每个结点有v个bug，有w的brain。我从1号结点开始走，带着m个战士。</div>
+<div>1个战士可以消灭20个bugs，如果我把某个结点的所有bug都消灭了我就能得到那个结点的brain。</div>
+<div>如果想攻击当前结点，那么必须先攻击了它的父结点（1号点除外）。</div>
+<div>其中当你攻占了当前结点，你可以分派人手，走向几个不同的子结点，去攻占更多。也就是说，不是单一的路径。</div>
+<div>代码：</div>
+<pre class="brush:cpp ">1 # include&lt;stdio.h&gt;
+ 2 # include&lt;string.h&gt;
+ 3 # define N 105
+ 4 struct node{
+ 5     int from,to,next;
+ 6 }edge[2*N];
+ 7 int head[N],tol,visit[N],ans[N],bug[N],n,m,dp[N][N],f[N][N];
+ 8 void add(int a,int b)
+ 9 {
+10     edge[tol].from=a;edge[tol].to=b;edge[tol].next=head[a];head[a]=tol++;
+11 }
+12 int max(int a,int b)
+13 {
+14     return a&gt;b?a:b;
+15 }
+16 void dfs(int u)
+17 {
+18     int i,j,r,tt,k;
+19     visit[u]=1;
+20     for(i=head[u];i!=-1;i=edge[i].next)
+21     {
+22         r=edge[i].to;
+23         if(!visit[r])
+24         {
+25             dfs(r);
+26             for(k=m;k&gt;=1;k--)
+27             {
+28                 for(j=1;j&lt;=k;j++)
+29                 {
+30                     f[u][k]=max(f[u][k],f[u][k-j]+dp[r][j]);
+31                 }
+32             }
+33                 /*for(j=0;j&lt;=m;j++)
+34                 {
+35                 if(j*20&gt;=ans[u]) 
+36                     dp[u][j]=max(dp[u][j],dp[r][(j*20-ans[u])/20]+bug[u]);
+37                 }*/
+38         }
+39     }
+40     tt=(ans[u]+19)/20;
+41     for(j=tt;j&lt;=m;j++)
+42         dp[u][j]=f[u][j-tt]+bug[u];
+43 }
+44 int main()
+45 {
+46     int i,a,b;
+47     while(scanf("%d%d",&amp;n,&amp;m)!=EOF)
+48     {
+49         if(n==-1 &amp;&amp; m==-1) break;
+50         for(i=1;i&lt;=n;i++)
+51             scanf("%d%d",&amp;ans[i],&amp;bug[i]);
+52         tol=0;
+53         memset(head,-1,sizeof(head));
+54         for(i=1;i&lt;n;i++)
+55         {
+56             scanf("%d%d",&amp;a,&amp;b);
+57             add(a,b);
+58             add(b,a);
+59         }
+60         memset(visit,0,sizeof(visit));
+61         memset(dp,0,sizeof(dp));
+62             memset(f,0,sizeof(f));
+63                     if(m==0)
+64         {
+65             printf("0\n");
+66             continue;
+67         }
+68 
+69         dfs(1);
+70         printf("%d\n",dp[1][m]);
+71     }
+72     return 0;
+73 }</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-54058">
+<article class="comment" id="comment-54058">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Baifern</a></span> on <a href="http://www.acmerblog.com/hdu-1011-Starship-Troopers-1266.html#comment-54058" rel="nofollow"><time datetime="2015-06-06T22:16:49+00:00" pubdate="">2015年6月6日 at 下午10:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>从数学角度确实是C(n,r)，能给个递推关系式吗，从分治的角度不好理解</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-54053">
+<article class="comment" id="comment-54053">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fermi</a></span> on <a href="http://www.acmerblog.com/hdu-1011-Starship-Troopers-1266.html#comment-54053" rel="nofollow"><time datetime="2015-03-17T21:38:53+00:00" pubdate="">2015年3月17日 at 下午9:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>楼主放题时候没注意下？xxx定律见：<br/>
+hdoj3782：http://acm.hdu.edu.cn/showproblem.php?pid=3782</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-39575">
+<article class="comment" id="comment-39575">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Supermaner</a></span> on <a href="http://www.acmerblog.com/hdu-1011-Starship-Troopers-1266.html#comment-39575" rel="nofollow"><time datetime="2015-03-06T02:48:54+00:00" pubdate="">2015年3月6日 at 上午2:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢支持！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-39576">
+<article class="comment" id="comment-39576">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">3136869079</a></span> on <a href="http://www.acmerblog.com/hdu-1011-Starship-Troopers-1266.html#comment-39576" rel="nofollow"><time datetime="2015-01-31T02:56:12+00:00" pubdate="">2015年1月31日 at 上午2:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>思考人生吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-10440">
+<article class="comment" id="comment-10440">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wkhuahuo</a></span> on <a href="http://www.acmerblog.com/hdu-1011-Starship-Troopers-1266.html#comment-10440" rel="nofollow"><time datetime="2015-01-21T16:58:34+00:00" pubdate="">2015年1月21日 at 下午4:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>yeah, This is very tricky. If you use Cpp,you need more code</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-54056">
+<article class="comment" id="comment-54056">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">CCat</a></span> on <a href="http://www.acmerblog.com/hdu-1011-Starship-Troopers-1266.html#comment-54056" rel="nofollow"><time datetime="2015-01-15T09:33:10+00:00" pubdate="">2015年1月15日 at 上午9:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>根本过不了。。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-39577">
+<article class="comment" id="comment-39577">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">lintong</a></span> on <a href="http://www.acmerblog.com/hdu-1011-Starship-Troopers-1266.html#comment-39577" rel="nofollow"><time datetime="2015-01-05T10:29:35+00:00" pubdate="">2015年1月5日 at 上午10:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>以了解 想問為甚麼 Tbl[6001] = {1} 初始化都是1<br/>
+為何不是Tbl[0]=1 其他為0</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-54057">
+<article class="comment" id="comment-54057">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fiftyonejiao</a></span> on <a href="http://www.acmerblog.com/hdu-1011-Starship-Troopers-1266.html#comment-54057" rel="nofollow"><time datetime="2014-10-16T20:18:16+00:00" pubdate="">2014年10月16日 at 下午8:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>if(j){<br/>
+                    int ans=a <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> ;<br/>
+                    for(int x=j-1;x&gt;=0;x–){<br/>
+                        if(!a <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/d7/newx_org.gif"/> ) break;<br/>
+                        ans=min(ans,a <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/d7/newx_org.gif"/> );<br/>
+                        sum+=ans;<br/>
+                    }<br/>
+                }<br/>
+求解释，，dp的思路是什么呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-54054">
+<article class="comment" id="comment-54054">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yupeng.bai</a></span> on <a href="http://www.acmerblog.com/hdu-1011-Starship-Troopers-1266.html#comment-54054" rel="nofollow"><time datetime="2014-09-06T14:36:42+00:00" pubdate="">2014年9月6日 at 下午2:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好，解决了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-10442">
+<article class="comment" id="comment-10442">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1193658339</a></span> on <a href="http://www.acmerblog.com/hdu-1011-Starship-Troopers-1266.html#comment-10442" rel="nofollow"><time datetime="2014-08-29T12:54:19+00:00" pubdate="">2014年8月29日 at 下午12:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>排版</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-10439">
+<article class="comment" id="comment-10439">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Silence.L</a></span> on <a href="http://www.acmerblog.com/hdu-1011-Starship-Troopers-1266.html#comment-10439" rel="nofollow"><time datetime="2014-03-07T18:38:03+00:00" pubdate="">2014年3月7日 at 下午6:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序员会算法，等于一个古惑仔带了zhi抢啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-10441">
+<article class="comment" id="comment-10441">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sheyty</a></span> on <a href="http://www.acmerblog.com/hdu-1011-Starship-Troopers-1266.html#comment-10441" rel="nofollow"><time datetime="2014-03-02T11:10:03+00:00" pubdate="">2014年3月2日 at 上午11:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有点意思</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-54055">
+<article class="comment" id="comment-54055">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaoriqiang2</a></span> on <a href="http://www.acmerblog.com/hdu-1011-Starship-Troopers-1266.html#comment-54055" rel="nofollow"><time datetime="2013-12-25T02:36:20+00:00" pubdate="">2013年12月25日 at 上午2:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>题本身没错，但是HDOJ放题目的时候，前面有个题目解释了什么是XXX定律。<br/>
+这里直接放了这个题目，肯定没几个人明白是干啥</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-10443">
+<article class="comment" id="comment-10443">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Baifern</a></span> on <a href="http://www.acmerblog.com/hdu-1011-Starship-Troopers-1266.html#comment-10443" rel="nofollow"><time datetime="2013-12-16T18:41:12+00:00" pubdate="">2013年12月16日 at 下午6:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>想问下computeLSPArray那里，if(len!=0) len=lps[len-1]是什么意思</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

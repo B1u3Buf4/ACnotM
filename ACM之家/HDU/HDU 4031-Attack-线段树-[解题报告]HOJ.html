@@ -1,0 +1,412 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>04-15</div>
+<div class="tit"><h1 class="entry-title">HDU 4031-Attack-线段树-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/data-struct" rel="category tag" title="查看数据结构中的全部文章">数据结构</a>, <a href="http://www.acmerblog.com/category/data-struct/indexed-trees" rel="category tag" title="查看树状数组中的全部文章">树状数组</a></span><span class="i4">围观404次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7034" href="http://www.acmerblog.com/hdu-4031-attack-7034.html#comments" title="《HDU 4031-Attack-线段树-[解题报告]HOJ》上的评论">22 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Attack</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Today is the 10th Annual of “September 11 attacks”, the Al Qaeda is about to attack American again. However, American is protected by a high wall this time, which can be treating as a segment with length N. Al Qaeda has a super weapon, every second it can attack a continuous range of the wall. American deployed N energy shield. Each one defends one unit length of the wall. However, after the shield defends one attack, it needs t seconds to cool down. If the shield defends an attack at kth second, it can’t defend any attack between (k+1)th second and (k+t-1)th second, inclusive. The shield will defend automatically when it is under attack if it is ready.
+<p>During the war, it is very important to understand the situation of both self and the enemy. So the commanders of American want to know how much time some part of the wall is successfully attacked. Successfully attacked means that the attack is not defended by the shield. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The beginning of the data is an integer T (T ≤ 20), the number of test case.<br/>The first line of each test case is three integers, N, Q, t, the length of the wall, the number of attacks and queries, and the time each shield needs to cool down.<br/>The next Q lines each describe one attack or one query. It may be one of the following formats<br/>1. Attack si ti<br/>  Al Qaeda attack the wall from si to ti, inclusive. 1 ≤ si ≤ ti ≤ N<br/>2. Query p<br/>  How many times the pth unit have been successfully attacked. 1 ≤ p ≤ N<br/>The kth attack happened at the kth second. Queries don’t take time.<br/>1 ≤ N, Q ≤ 20000<br/>1 ≤ t ≤ 50 </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The beginning of the data is an integer T (T ≤ 20), the number of test case.<br/>The first line of each test case is three integers, N, Q, t, the length of the wall, the number of attacks and queries, and the time each shield needs to cool down.<br/>The next Q lines each describe one attack or one query. It may be one of the following formats<br/>1. Attack si ti<br/>  Al Qaeda attack the wall from si to ti, inclusive. 1 ≤ si ≤ ti ≤ N<br/>2. Query p<br/>  How many times the pth unit have been successfully attacked. 1 ≤ p ≤ N<br/>The kth attack happened at the kth second. Queries don’t take time.<br/>1 ≤ N, Q ≤ 20000<br/>1 ≤ t ≤ 50</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+3 7 2
+Attack 1 2
+Query 2
+Attack 2 3
+Query 2
+Attack 1 3
+Query 1
+Query 3
+9 7 3
+Attack 5 5
+Attack 4 6
+Attack 3 7
+Attack 2 8
+Attack 1 9
+Query 5
+Query 3</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case 1:
+0
+1
+0
+1
+Case 2:
+3
+2</pre>
+<p> <!-- problem end --></p>
+<p>/*<br/>
+分析：<br/>
+    线段树。<br/>
+    在复习树状数组找到了这题，不过我怎么看都是用<br/>
+线段树更好呀-、-I。<br/>
+    一开始想要在线段树里加信息，然后直接读出所求<br/>
+的时间，不过怎么加都挺别扭的。于是就参考下别人怎<br/>
+么弄的，原来都用的暴力呀-、-I。<br/>
+    ans[i]=i被攻击的次数-i被保护的次数。用线段树<br/>
+记录并查找i被攻击的次数，同时用另一数组attack记录<br/>
+下每次的攻击，在询问i的时候，暴力遍历attack来确定<br/>
+i被保护的次数，从而得到ans[i]。(当然，遍历也不是<br/>
+完全暴力，记录元素这次遍历结束的位置从而方便此元<br/>
+素下次的遍历)。</p>
+<p>
+                                        2012-10-18<br/>
+*/</p>
+<p></p>
+<pre class="brush:cpp" name="code">#include"stdio.h"
+#include"string.h"
+#include"stdlib.h"
+int n,q,t;
+struct SegTree
+{
+	int l,r,mid;
+	int ts;
+}T[80011];
+int attack_l[20011],attack_r[20011],tot;
+int next[20011],pro[20011];
+void build(int l,int r,int k)
+{
+	T[k].l=l;
+	T[k].r=r;
+	T[k].mid=(l+r)&gt;&gt;1;
+	T[k].ts=0;
+	if(l==r)	return ;
+	build(l,T[k].mid,2*k);
+	build(T[k].mid+1,r,2*k+1);
+}
+void update(int l,int r,int k)
+{
+	if(T[k].l==l &amp;&amp; T[k].r==r)	{T[k].ts++;return ;}
+	if(r&lt;=T[k].mid)		update(l,r,2*k);
+	else if(l&gt;T[k].mid)	update(l,r,2*k+1);
+	else
+	{
+		update(l,T[k].mid,2*k);
+		update(T[k].mid+1,r,2*k+1);
+	}
+}
+int find(int d,int k)
+{
+	int sum=0;
+	if(T[k].l==T[k].r &amp;&amp; T[k].l==d)	return T[k].ts;
+	if(T[k].l&lt;=d &amp;&amp; d&lt;=T[k].r)
+	{
+		sum+=T[k].ts;
+		if(d&lt;=T[k].mid)	sum+=find(d,2*k);
+		else			sum+=find(d,2*k+1);
+		return sum;
+	}
+	else return 0;
+}
+int main()
+{
+	int T,Case;
+	int j;
+	char str[11];
+	int a,b;
+	int temp;
+	scanf("%d",&amp;T);
+	for(Case=1;Case&lt;=T;Case++)
+	{
+		scanf("%d%d%d",&amp;n,&amp;q,&amp;t);
+		build(1,n,1);
+		printf("Case %d:\n",Case);
+		memset(pro,0,sizeof(pro));
+		memset(next,0,sizeof(next));
+		tot=0;
+		while(q--)
+		{
+			scanf("%s",str);
+			if(str[0]=='A')
+			{
+				scanf("%d%d",&amp;a,&amp;b);
+				update(a,b,1);
+				attack_l[tot]=a;
+				attack_r[tot++]=b;
+			}
+			else
+			{
+				scanf("%d",&amp;a);
+				j=next[a];
+				while(j&lt;tot)
+				{
+					if(attack_l[j]&lt;=a &amp;&amp; a&lt;=attack_r[j])
+					{
+						pro[a]++;
+						j+=t;
+					}
+					else j++;
+				}
+				next[a]=j;
+				temp=find(a,1);
+				printf("%d\n",temp-pro[a]);
+			}
+		}
+	}
+	return 0;
+}</pre>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/ice_crazy/article/details/8087234</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-99992">
+<article class="comment" id="comment-99992">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524669" rel="external nofollow">新用户528314</a></span> on <a href="http://www.acmerblog.com/hdu-4031-attack-7034.html#comment-99992" rel="nofollow"><time datetime="2017-04-20T21:02:03+00:00" pubdate="">2017年4月20日 at 下午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>天真吗？体制有问题唯一的办法就是进入体制，爬到最高然后改变它，光反对有什么用，把政府废了生活就会立刻变美好？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70603">
+<article class="comment" id="comment-70603">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512627" rel="external nofollow">新用户944918</a></span> on <a href="http://www.acmerblog.com/hdu-4031-attack-7034.html#comment-70603" rel="nofollow"><time datetime="2017-04-11T15:16:33+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>草，中国人素质就是差！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70602">
+<article class="comment" id="comment-70602">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512627" rel="external nofollow">新用户944918</a></span> on <a href="http://www.acmerblog.com/hdu-4031-attack-7034.html#comment-70602" rel="nofollow"><time datetime="2017-04-11T15:16:33+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>草，中国人素质就是差！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70601">
+<article class="comment" id="comment-70601">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512627" rel="external nofollow">新用户944918</a></span> on <a href="http://www.acmerblog.com/hdu-4031-attack-7034.html#comment-70601" rel="nofollow"><time datetime="2017-04-11T15:16:33+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>草，中国人素质就是差！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70600">
+<article class="comment" id="comment-70600">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512627" rel="external nofollow">新用户944918</a></span> on <a href="http://www.acmerblog.com/hdu-4031-attack-7034.html#comment-70600" rel="nofollow"><time datetime="2017-04-11T15:16:33+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>草，中国人素质就是差！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70599">
+<article class="comment" id="comment-70599">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512627" rel="external nofollow">新用户944918</a></span> on <a href="http://www.acmerblog.com/hdu-4031-attack-7034.html#comment-70599" rel="nofollow"><time datetime="2017-04-11T15:16:33+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>草，中国人素质就是差！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70598">
+<article class="comment" id="comment-70598">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512627" rel="external nofollow">新用户944918</a></span> on <a href="http://www.acmerblog.com/hdu-4031-attack-7034.html#comment-70598" rel="nofollow"><time datetime="2017-04-11T15:16:33+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>草，中国人素质就是差！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70597">
+<article class="comment" id="comment-70597">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512627" rel="external nofollow">新用户944918</a></span> on <a href="http://www.acmerblog.com/hdu-4031-attack-7034.html#comment-70597" rel="nofollow"><time datetime="2017-04-11T15:16:33+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>草，中国人素质就是差！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70596">
+<article class="comment" id="comment-70596">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512627" rel="external nofollow">新用户944918</a></span> on <a href="http://www.acmerblog.com/hdu-4031-attack-7034.html#comment-70596" rel="nofollow"><time datetime="2017-04-11T15:16:33+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>草，中国人素质就是差！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51929">
+<article class="comment" id="comment-51929">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rtaxa</a></span> on <a href="http://www.acmerblog.com/hdu-4031-attack-7034.html#comment-51929" rel="nofollow"><time datetime="2015-07-08T07:05:02+00:00" pubdate="">2015年7月8日 at 上午7:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>能不能说下这个是用的什么算法策略？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51928">
+<article class="comment" id="comment-51928">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dream</a></span> on <a href="http://www.acmerblog.com/hdu-4031-attack-7034.html#comment-51928" rel="nofollow"><time datetime="2015-06-24T17:10:13+00:00" pubdate="">2015年6月24日 at 下午5:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感谢~速度真快，我很喜欢这个网站，从基础看起。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51935">
+<article class="comment" id="comment-51935">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Baifern</a></span> on <a href="http://www.acmerblog.com/hdu-4031-attack-7034.html#comment-51935" rel="nofollow"><time datetime="2015-06-21T23:35:35+00:00" pubdate="">2015年6月21日 at 下午11:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有一点问题。。后面动态规划的程序中<br/>
+int dp[n+1][W+1];<br/>
+会报错  提示表达式必须含有常量值。该怎么修改呢。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51937">
+<article class="comment" id="comment-51937">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zoe_music</a></span> on <a href="http://www.acmerblog.com/hdu-4031-attack-7034.html#comment-51937" rel="nofollow"><time datetime="2015-06-11T22:47:51+00:00" pubdate="">2015年6月11日 at 下午10:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Good task for the group. Hold it up for every yeara??s winner. This is a excellent oppotunity for a lot more enhancement. Indeed, obtaining far better and much better is constantly the crucial. Just like my pal suggests on the truth about ab muscles, he just keeps obtaining much better.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51936">
+<article class="comment" id="comment-51936">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">silianbo</a></span> on <a href="http://www.acmerblog.com/hdu-4031-attack-7034.html#comment-51936" rel="nofollow"><time datetime="2015-06-10T21:07:47+00:00" pubdate="">2015年6月10日 at 下午9:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正有此意，欢迎更多的建议~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64239">
+<article class="comment" id="comment-64239">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jdliyao</a></span> on <a href="http://www.acmerblog.com/hdu-4031-attack-7034.html#comment-64239" rel="nofollow"><time datetime="2015-06-10T06:00:41+00:00" pubdate="">2015年6月10日 at 上午6:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题其实还可以找循环节。参照欧拉定理（也就是费马定理的推广）,a^(phi(m)) mod m = 1</p>
+<p><a href="http://zh.wikipedia.org/wiki/%E6%AC%A7%E6%8B%89%E5%AE%9A%E7%90%86_(%E6%95%B0%E8%AE%BA)" rel="nofollow">http://zh.wikipedia.org/wiki/%E6%AC%A7%E6%8B%89%E5%AE%9A%E7%90%86_(%E6%95%B0%E8%AE%BA)</a></p>
+<p>所以先算b mod phi(10)，这个部分都是可以约掉的。基本上O(1)的时间就出解了。当然，这也是因为这个问题模数太小的原因。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35435">
+<article class="comment" id="comment-35435">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zhiqiang</a></span> on <a href="http://www.acmerblog.com/hdu-4031-attack-7034.html#comment-35435" rel="nofollow"><time datetime="2015-06-01T02:12:55+00:00" pubdate="">2015年6月1日 at 上午2:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法很不错啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51931">
+<article class="comment" id="comment-51931">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">didiaozuoren</a></span> on <a href="http://www.acmerblog.com/hdu-4031-attack-7034.html#comment-51931" rel="nofollow"><time datetime="2015-05-27T23:37:47+00:00" pubdate="">2015年5月27日 at 下午11:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么for循环找到的i一定是素数叻，而且约数定理说的是n=p1^a1*p2^a2*p3^a3*…*pk^ak，而你每次取余都用的是原来的m，也就是n</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35434">
+<article class="comment" id="comment-35434">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wizcabbit</a></span> on <a href="http://www.acmerblog.com/hdu-4031-attack-7034.html#comment-35434" rel="nofollow"><time datetime="2015-05-26T18:50:20+00:00" pubdate="">2015年5月26日 at 下午6:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正有此意，欢迎更多的建议~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51930">
+<article class="comment" id="comment-51930">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ForgetVay</a></span> on <a href="http://www.acmerblog.com/hdu-4031-attack-7034.html#comment-51930" rel="nofollow"><time datetime="2015-05-26T13:03:32+00:00" pubdate="">2015年5月26日 at 下午1:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>递归还真是一门学问，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51933">
+<article class="comment" id="comment-51933">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">abguorui0928</a></span> on <a href="http://www.acmerblog.com/hdu-4031-attack-7034.html#comment-51933" rel="nofollow"><time datetime="2015-05-22T13:31:18+00:00" pubdate="">2015年5月22日 at 下午1:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢提醒</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51932">
+<article class="comment" id="comment-51932">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jandk</a></span> on <a href="http://www.acmerblog.com/hdu-4031-attack-7034.html#comment-51932" rel="nofollow"><time datetime="2015-05-18T04:11:51+00:00" pubdate="">2015年5月18日 at 上午4:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题别太纠结了，不同的编译器结果不一</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51934">
+<article class="comment" id="comment-51934">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">youpushipop</a></span> on <a href="http://www.acmerblog.com/hdu-4031-attack-7034.html#comment-51934" rel="nofollow"><time datetime="2015-04-17T12:22:30+00:00" pubdate="">2015年4月17日 at 下午12:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>值得分享！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

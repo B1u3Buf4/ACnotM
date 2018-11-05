@@ -1,0 +1,460 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>02-21</div>
+<div class="tit"><h1 class="entry-title">HDU 3721-Building Roads-图-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/bfs" rel="category tag" title="查看BFS搜索中的全部文章">BFS搜索</a>, <a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/basis/enumeration" rel="category tag" title="查看枚举中的全部文章">枚举</a></span><span class="i4">围观552次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6701" href="http://www.acmerblog.com/hdu-3721-building-roads-6701.html#comments" title="《HDU 3721-Building Roads-图-[解题报告]HOJ》上的评论">21 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Building Roads</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+There is a magic planet in the space. There is a magical country on the planet. There are N cities in the country. The country is magical because there are exactly N-1 magic roads between the N cities, and from each city, it is possible to visit any other city. But after the huge expansion of the country, the road system seems to be messy. The moderator decided to rebuild the road system.
+<p>As a worker, I cannot do too much things. I could just move one road to another position connecting arbitrary 2 cities using my magic, keeping its length unchanged. Of course, afterwards all the N cities have to be still connected. I wonder how to move in order to make the farthest distance between any two cities minimum. Could you solve it for me? </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line of the input is one integer T (T ≤ 10), and then T test cases follow.<br/>Each test case begins with a line contains only one integer N (N ≤ 2500), means there are N magic cities. The cities are numbered from 0 to N-1.<br/>Following N-1 lines, each line has 3 integers a, b and c, means there is a magic road between a and b with distance c. (0 &lt;= a, b &lt; N, 0 &lt; c &lt;= 1000) </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The first line of the input is one integer T (T ≤ 10), and then T test cases follow.<br/>Each test case begins with a line contains only one integer N (N ≤ 2500), means there are N magic cities. The cities are numbered from 0 to N-1.<br/>Following N-1 lines, each line has 3 integers a, b and c, means there is a magic road between a and b with distance c. (0 &lt;= a, b &lt; N, 0 &lt; c &lt;= 1000)</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+4
+0 1 2
+1 2 2
+2 3 2
+5
+0 1 1
+1 2 2
+2 3 3
+3 4 4</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case 1: 4
+Case 2: 7</pre>
+<p> <!-- problem end --></p>
+<p>题目链接：<a>http://acm.hdu.edu.cn/showproblem.php?pid=3721</a></p>
+<p> </p>
+<p>题意：给你一颗n个节点n-1条边的树，每条边都有一个权值，现在让你任意移动一条边然后把这条边连接到任意两个点上，最后问你怎样移动才能使树上相距最远的两个点距离最小。</p>
+<p> </p>
+<p>思路：先求出树的最长路，然后枚举移动最长路上的所有边，移走这条边后，原树必定分为不连接的两颗子树，分别求这两颗子树的最长路，然后分别找到两颗子树最长路上靠近中点的点，把这两个点连上刚刚从母树移走的边，再求一遍母树最长路，比较所有结果取最优解即可。</p>
+<p>注意每次枚举移动后都要把图复原然后继续枚举。</p>
+<p> </p>
+<pre class="brush:cpp"> #pragma comment(linker, "/STACK:1024000000,1024000000")
+ #include &lt;iostream&gt;
+ #include &lt;cstdio&gt;
+ #include &lt;cstring&gt;
+ #include &lt;queue&gt;
+ #include &lt;algorithm&gt;
+ using namespace std;
+ 
+ const int maxn=2555;
+ const int oo=0x3fffffff;
+ int visit[maxn], pre[10*maxn];
+ int reach[10*maxn], flow[10*maxn], head[maxn], next[10*maxn];
+ int stack[10*maxn], sa[10*maxn], sb[10*maxn];
+ int color[10*maxn];
+ int st, sd, ans, edge;
+ 
+ struct Node
+ {
+     int u, e;
+     int dis;
+ };
+ queue&lt;Node&gt;q;
+ 
+ inline void addedge(int u, int v, int c)
+ {
+     reach[edge]=v, flow[edge]=c, next[edge]=head[u], head[u]=edge++;
+     reach[edge]=u, flow[edge]=c, next[edge]=head[v], head[v]=edge++;
+ }
+ 
+ void bfs(int ss,int op)
+ {
+     memset(visit,0,sizeof(visit));
+     while(!q.empty()) q.pop();
+     Node s, p;
+     s.u=ss, s.dis=0, s.e=-1, sd=-1, st=ss;
+     q.push(s);
+     visit[ss]=1;
+     int maxx=0, pos;
+     while(!q.empty())
+     {
+         p=q.front();
+         q.pop();
+         for(int i=head[p.u]; i&gt;=0; i=next[i])
+         {
+             if(color[i]||color[i^1]) continue;
+             int v=reach[i], val=flow[i];
+             s.u=v, s.dis=p.dis+val, s.e=i;
+             if(!visit[s.u])
+             {
+                 visit[s.u]=1;
+                 pre[s.e]=p.e;
+                 if(s.dis&gt;maxx)
+                 {
+                     st=s.u;
+                     maxx=s.dis;
+                     sd=s.e;
+                 }
+                 q.push(s);
+             }
+         }
+     }
+     ++op;
+     if(op==1) bfs(st,op);
+     else  ans=maxx;
+ }
+ 
+ int cal(int s[], int n, double len)  ///找最靠近中点的点
+ {
+     int sum=0;
+     for(int i=0; i&lt;n; i++)
+     {
+         sum+=flow[s[i]];
+         if(sum&gt;=len)
+         {
+             if(sum-len&lt;=len-(sum-flow[ s[i] ])) return reach[ s[i]^1 ];
+             else return reach[ s[i] ];
+         }
+     }
+ }
+ 
+ int Solve(int n)
+ {
+     int MIN=oo;
+     memset(color,0,sizeof(color));
+     memset(pre,-1,sizeof(pre));
+     bfs(1,0);
+     int top=0;
+     while(sd!=-1) stack[top++]=sd,sd=pre[sd];
+     for(int i=0; i&lt;top; i++)  ///枚举最长路上的所有边
+     {
+         int x=stack[i], na=0, nb=0;
+         color[x]=1;
+         for(int j=0; j&lt;edge; j++) pre[j]=-1;
+         bfs(reach[x],0);
+         while(sd!=-1) sa[na++]=sd, sd=pre[sd];
+         int u=cal(sa,na,1.0*ans/2);
+         if(!na) u=reach[x];
+         for(int j=0; j&lt;edge; j++) pre[j]=-1;
+         bfs(reach[x^1],0);
+         while(sd!=-1) sb[nb++]=sd,  sd=pre[sd];
+         int v=cal(sb,nb,1.0*ans/2);
+         if(!nb) v=reach[x^1];
+         addedge(u,v,flow[x]);
+         bfs(1,0);
+         MIN=min(MIN,ans);
+         color[edge-1]=1;    ///注意把新加的边移除，
+         color[x]=0;
+     }
+     return MIN;
+ }
+ 
+ int main()
+ {
+     int n, T, tcase=0;
+     cin &gt;&gt; T;
+     while(T--)
+     {
+         cin &gt;&gt; n;
+         edge=0;
+         memset(head,-1,sizeof(head));
+         for(int i=1; i&lt;n; i++)
+         {
+             int a, b, c;
+             scanf("%d%d%d",&amp;a,&amp;b,&amp;c);
+             addedge(a,b,c);
+         }
+         int tmp=Solve(n);
+         printf("Case %d: %d\n",++tcase,tmp);
+     }
+ }
+ /*
+ 10
+ 9
+ 0 1 1
+ 1 2 1
+ 2 3 1
+ 2 4 1
+ 0 5 1
+ 5 6 1
+ 5 7 1
+ 7 8 1
+ 4
+ 0 1 2
+ 1 2 2
+ 2 3 2
+ 5
+ 0 1 1
+ 1 2 2
+ 2 3 3
+ 3 4 4
+ */
+</pre>
+<p> </p>
+<p>参考：http://www.cnblogs.com/kane0526/archive/2013/09/09/3310915.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-73120">
+<article class="comment" id="comment-73120">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919462866" rel="external nofollow">新用户071208</a></span> on <a href="http://www.acmerblog.com/hdu-3721-building-roads-6701.html#comment-73120" rel="nofollow"><time datetime="2017-04-11T22:05:32+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>茶叶蛋，你值得拥有。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-73119">
+<article class="comment" id="comment-73119">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919462866" rel="external nofollow">新用户071208</a></span> on <a href="http://www.acmerblog.com/hdu-3721-building-roads-6701.html#comment-73119" rel="nofollow"><time datetime="2017-04-11T22:05:32+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>茶叶蛋，你值得拥有。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-73118">
+<article class="comment" id="comment-73118">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919462866" rel="external nofollow">新用户071208</a></span> on <a href="http://www.acmerblog.com/hdu-3721-building-roads-6701.html#comment-73118" rel="nofollow"><time datetime="2017-04-11T22:05:32+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>茶叶蛋，你值得拥有。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-73117">
+<article class="comment" id="comment-73117">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919462866" rel="external nofollow">新用户071208</a></span> on <a href="http://www.acmerblog.com/hdu-3721-building-roads-6701.html#comment-73117" rel="nofollow"><time datetime="2017-04-11T22:05:32+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>茶叶蛋，你值得拥有。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-73116">
+<article class="comment" id="comment-73116">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919462866" rel="external nofollow">新用户071208</a></span> on <a href="http://www.acmerblog.com/hdu-3721-building-roads-6701.html#comment-73116" rel="nofollow"><time datetime="2017-04-11T22:05:32+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>茶叶蛋，你值得拥有。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-73115">
+<article class="comment" id="comment-73115">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919462866" rel="external nofollow">新用户071208</a></span> on <a href="http://www.acmerblog.com/hdu-3721-building-roads-6701.html#comment-73115" rel="nofollow"><time datetime="2017-04-11T22:05:32+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>茶叶蛋，你值得拥有。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-73114">
+<article class="comment" id="comment-73114">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919462866" rel="external nofollow">新用户071208</a></span> on <a href="http://www.acmerblog.com/hdu-3721-building-roads-6701.html#comment-73114" rel="nofollow"><time datetime="2017-04-11T22:05:32+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>茶叶蛋，你值得拥有。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-59543">
+<article class="comment" id="comment-59543">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yelawolf</a></span> on <a href="http://www.acmerblog.com/hdu-3721-building-roads-6701.html#comment-59543" rel="nofollow"><time datetime="2015-07-17T08:27:14+00:00" pubdate="">2015年7月17日 at 上午8:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>remove没有实现</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33290">
+<article class="comment" id="comment-33290">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">April</a></span> on <a href="http://www.acmerblog.com/hdu-3721-building-roads-6701.html#comment-33290" rel="nofollow"><time datetime="2015-07-11T11:38:03+00:00" pubdate="">2015年7月11日 at 上午11:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Thanks for using the time to examine this, I truly feel strongly about it and enjoy finding out far more on this subject matter. If achievable, as you achieve knowledge</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33292">
+<article class="comment" id="comment-33292">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1520006273</a></span> on <a href="http://www.acmerblog.com/hdu-3721-building-roads-6701.html#comment-33292" rel="nofollow"><time datetime="2015-07-09T14:54:41+00:00" pubdate="">2015年7月9日 at 下午2:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Thanks for taking the time to examine this, I really feel strongly about it and love studying a lot more on this topic. If possible, as you acquire experience</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33289">
+<article class="comment" id="comment-33289">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">edward2414</a></span> on <a href="http://www.acmerblog.com/hdu-3721-building-roads-6701.html#comment-33289" rel="nofollow"><time datetime="2015-07-03T22:54:00+00:00" pubdate="">2015年7月3日 at 下午10:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>清华也会出这么无聊的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33291">
+<article class="comment" id="comment-33291">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">489365227</a></span> on <a href="http://www.acmerblog.com/hdu-3721-building-roads-6701.html#comment-33291" rel="nofollow"><time datetime="2015-06-29T17:53:22+00:00" pubdate="">2015年6月29日 at 下午5:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的题，还是能做出几道的，嘿嘿</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33286">
+<article class="comment" id="comment-33286">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">645198</a></span> on <a href="http://www.acmerblog.com/hdu-3721-building-roads-6701.html#comment-33286" rel="nofollow"><time datetime="2015-06-14T06:32:11+00:00" pubdate="">2015年6月14日 at 上午6:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题别太纠结了，不同的编译器结果不一样</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50956">
+<article class="comment" id="comment-50956">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">winter</a></span> on <a href="http://www.acmerblog.com/hdu-3721-building-roads-6701.html#comment-50956" rel="nofollow"><time datetime="2015-06-10T05:31:52+00:00" pubdate="">2015年6月10日 at 上午5:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算法是程序的灵魂，算法分简单和复杂，如果不搞大数据类，程序员了解一下简单点的算法也是可以的，但是会算法的一定要会编程才行，程序员不一定要会算法，利于自己项目需要的可以简单了解。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33285">
+<article class="comment" id="comment-33285">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Klaus</a></span> on <a href="http://www.acmerblog.com/hdu-3721-building-roads-6701.html#comment-33285" rel="nofollow"><time datetime="2015-05-31T14:21:23+00:00" pubdate="">2015年5月31日 at 下午2:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正有此意，欢迎更多的建议~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33283">
+<article class="comment" id="comment-33283">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yelawolf</a></span> on <a href="http://www.acmerblog.com/hdu-3721-building-roads-6701.html#comment-33283" rel="nofollow"><time datetime="2015-05-30T05:57:00+00:00" pubdate="">2015年5月30日 at 上午5:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#include &lt;stdio.h&gt;<br/>
+int main()<br/>
+{<br/>
+    int n,p,t[100]={1};<br/>
+    for(int i=1;i&lt;100;i++)<br/>
+        t <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> =i;<br/>
+    while(scanf("%d",&amp;n)&amp;&amp;n!=0){<br/>
+        if(n==1)<br/>
+        printf("Printing order for 1 pages:nSheet 1, front: Blank, 1n");<br/>
+        else {<br/>
+        if(n%4) p=n/4+1;<br/>
+        else p=n/4;<br/>
+        int q=4*p;<br/>
+        printf("Printing order for %d pages:n",n);<br/>
+        for(int i=0;i&lt;p;i++){<br/>
+            printf("Sheet %d, front: ",i+1);<br/>
+            if(q&gt;n) {printf("Blank, %dn",t[2*i+1]);}<br/>
+            else {printf("%d, %dn",q,t[2*i+1]);}<br/>
+            q–;//打印表前<br/>
+            printf("Sheet %d, back : ",i+1);<br/>
+            if(q&gt;n) {printf("%d, Blankn",t[2*i+2]);}<br/>
+            else {printf("%d, %dn",t[2*i+2],q);}<br/>
+            q–;//打印表后<br/>
+           }<br/>
+        }<br/>
+    }<br/>
+    return 0;<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33287">
+<article class="comment" id="comment-33287">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">0xc0de</a></span> on <a href="http://www.acmerblog.com/hdu-3721-building-roads-6701.html#comment-33287" rel="nofollow"><time datetime="2015-05-25T12:46:39+00:00" pubdate="">2015年5月25日 at 下午12:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>代码是给出了，但是解析的也太不清晰了吧！如 13 abejkcfghid jkebfghicda<br/>
+第一步拆分为 三部分 (bejk, cfghi, d) * C(13,3)，为什么要这样拆分，原则是什么？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33284">
+<article class="comment" id="comment-33284">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">we</a></span> on <a href="http://www.acmerblog.com/hdu-3721-building-roads-6701.html#comment-33284" rel="nofollow"><time datetime="2015-05-16T02:50:40+00:00" pubdate="">2015年5月16日 at 上午2:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>大哥，你复制也看看是不是这题的答案才复制吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33293">
+<article class="comment" id="comment-33293">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jlucky</a></span> on <a href="http://www.acmerblog.com/hdu-3721-building-roads-6701.html#comment-33293" rel="nofollow"><time datetime="2015-03-30T04:41:07+00:00" pubdate="">2015年3月30日 at 上午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不是有公式吗？何不直接计算</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33282">
+<article class="comment" id="comment-33282">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">biantiao</a></span> on <a href="http://www.acmerblog.com/hdu-3721-building-roads-6701.html#comment-33282" rel="nofollow"><time datetime="2015-03-13T01:15:19+00:00" pubdate="">2015年3月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>涨姿势了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33288">
+<article class="comment" id="comment-33288">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tkdzyl2013</a></span> on <a href="http://www.acmerblog.com/hdu-3721-building-roads-6701.html#comment-33288" rel="nofollow"><time datetime="2015-02-22T14:48:34+00:00" pubdate="">2015年2月22日 at 下午2:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>scanner改用StreamTokenizer就不超时了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,347 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-21</div>
+<div class="tit"><h1 class="entry-title">HDU 1688 Sightseeing-动态规划-[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph/shortest-path" rel="category tag" title="查看最短路径中的全部文章">最短路径</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a></span><span class="i4">围观786次</span><span class="i3"><a class="ds-thread-count" data-thread-key="2647" href="http://www.acmerblog.com/hdu-1688-Sightseeing-2647.html#comments" title="《HDU 1688 Sightseeing-动态规划-[解题报告] C++》上的评论">13 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Sightseeing</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Tour operator Your Personal Holiday organises guided bus trips across the Benelux. Every day the bus moves from one city S to another city F. On this way, the tourists in the bus can see the sights alongside the route travelled. Moreover, the bus makes a number of stops (zero or more) at some beautiful cities, where the tourists get out to see the local sights.
+<p>Different groups of tourists may have different preferences for the sights they want to see, and thus for the route to be taken from S to F. Therefore, Your Personal Holiday wants to offer its clients a choice from many different routes. As hotels have been booked in advance, the starting city S and the final city F, though, are fixed. Two routes from S to F are considered different if there is at least one road from a city A to a city B which is part of one route, but not of the other route.</p>
+<p>There is a restriction on the routes that the tourists may choose from. To leave enough time for the sightseeing at the stops (and to avoid using too much fuel), the bus has to take a short route from S to F. It has to be either a route with minimal distance, or a route which is one distance unit longer than the minimal distance. Indeed, by allowing routes that are one distance unit longer, the tourists may have more choice than by restricting them to exactly the minimal routes. This enhances the impression of a personal holiday.</p>
+<p><img src="http://acm.hdu.edu.cn/data/images/1688_1.jpg"/></p>
+<p>For example, for the above road map, there are two minimal routes from S = 1 to F = 5: 1 → 2 → 5 and 1 → 3 → 5, both of length 6. There is one route that is one distance unit longer: 1 → 3 → 4 → 5, of length 7.</p>
+<p>Now, given a (partial) road map of the Benelux and two cities S and F, tour operator Your Personal Holiday likes to know how many different routes it can offer to its clients, under the above restriction on the route length. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line of the input file contains a single number: the number of test cases to follow. Each test case has the following format:
+<p>One line with two integers N and M, separated by a single space, with 2 ≤ N ≤ 1,000 and 1 ≤ M ≤ 10, 000: the number of cities and the number of roads in the road map.</p>
+<p>M lines, each with three integers A, B and L, separated by single spaces, with 1 ≤ A, B ≤ N, A ≠ B and 1 ≤ L ≤ 1,000, describing a road from city A to city B with length L.</p>
+<p>The roads are unidirectional. Hence, if there is a road from A to B, then there is not necessarily also a road from B to A. There may be different roads from a city A to a city B.</p>
+<p>One line with two integers S and F, separated by a single space, with 1 ≤ S, F ≤ N and S ≠ F: the starting city and the final city of the route.</p>
+<p>There will be at least one route from S to F.</p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+For every test case in the input file, the output should contain a single number, on a single line: the number of routes of minimal length or one distance unit longer. Test cases are such, that this number is at most 10^9 = 1,000,000,000.
+</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+5 8
+1 2 3
+1 3 2
+1 4 5
+2 3 1
+2 5 3
+3 4 2
+3 5 4
+4 5 3
+1 5
+5 6
+2 3 1
+3 2 1
+3 1 10
+4 5 2
+5 2 7
+5 2 7
+4 1</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+3
+2</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include &lt;iostream&gt;
+#include &lt;cstring&gt;
+#include &lt;algorithm&gt;
+#include &lt;queue&gt;
+#include &lt;vector&gt;
+#include &lt;cstdio&gt;
+
+using namespace std;
+
+const int inf = 1&lt;&lt;30;
+const int maxn = 1010;
+struct Edge {
+
+    int to, w;
+};
+
+struct node {
+
+    int v,dist;
+    int mark;
+    bool friend operator &lt; (const node &amp;a, const node &amp;b) {
+
+         if(a.dist != b.dist)
+            return a.dist &gt; b.dist;
+         return a.v &gt; b.v;
+    }
+};
+
+priority_queue&lt;node&gt;Q;
+vector&lt;Edge&gt;gra[maxn*10];
+int dp[maxn][3];
+int vis[maxn][3];
+int dis[maxn][3];
+int T,N,M,A,B,L;
+
+void init() {
+
+    for(int i = 0; i &lt; maxn; i++) {
+
+        dp[i][1] = dp[i][2] = 0;
+        vis[i][1] = vis[i][2] = 0;
+        dis[i][1] = dis[i][2] = inf;
+    }
+}
+
+void Dijstra(int st, int ed) {
+
+
+    dis[st][1] = 0;
+    dp[st][1]= 1;
+    node q, p;
+    p.dist = 0;
+    p.mark = 1;
+    p.v = st;
+    Q.push(p);
+    while(!Q.empty()) {
+
+        q = Q.top();
+        Q.pop();
+        if(vis[q.v][q.mark])
+            continue;
+        vis[q.v][q.mark] = 1;
+        for(int i = 0; i &lt; gra[q.v].size(); i++){
+
+            int vv = gra[q.v][i].to;
+            int ww = gra[q.v][i].w;
+            if(!vis[vv][1] &amp;&amp; dis[vv][1] &gt; q.dist + ww) {
+
+                if(dis[vv][1] != inf) {
+
+                    dis[vv][2] = dis[vv][1];
+                    dp[vv][2] = dp[vv][1];
+                    p.dist = dis[vv][2];
+                    p.mark = 2;
+                    p.v = vv;
+                    Q.push(p);
+                }
+                dis[vv][1] = q.dist + ww;
+                dp[vv][1] = dp[q.v][q.mark];
+                p.mark = 1;
+                p.dist = dis[vv][1];
+                p.v = vv;
+                Q.push(p);
+            }
+            else if(!vis[vv][1]&amp;&amp; dis[vv][1]== q.dist + ww)
+            {
+                dp[vv][1] += dp[q.v][q.mark];
+            }
+            else if(!vis[vv][2] &amp;&amp; dis[vv][2] &gt; q.dist + ww) {
+
+                dis[vv][2] = q.dist + ww;
+                dp[vv][2] = dp[q.v][q.mark];
+                p.mark = 2;
+                p.dist = dis[vv][2];
+                p.v = vv;
+                Q.push(p);
+
+            }
+            else if(!vis[vv][2] &amp;&amp; dis[vv][2] == q.dist + ww)
+            {
+
+                dp[vv][2] += dp[q.v][q.mark];
+            }
+        }
+    }
+}
+
+int main()
+{
+    scanf("%d", &amp;T);
+    Edge tem;
+    int st, ed;
+    while(T--) {
+
+        init();
+        for(int i = 0; i &lt; maxn*10; i++) {
+
+            gra[i].clear();
+        }
+        scanf("%d%d", &amp;N, &amp;M);
+        for(int i = 0; i &lt; M; i++) {
+        scanf("%d%d%d", &amp;A, &amp;B, &amp;L);
+            tem.to = B;
+            tem.w = L;
+            gra[A].push_back(tem);
+        }
+        scanf("%d%d", &amp;st, &amp;ed);
+        Dijstra(st, ed);
+        if(dis[ed][1] + 1 == dis[ed][2])
+            printf("%d\n", dp[ed][1] + dp[ed][2]);
+        else
+            printf("%d\n", dp[ed][1]);
+    }
+    return 0;
+}</pre>
+<p></p>
+<p>解题报告转自：http://blog.csdn.net/qqchenjunwei/article/details/14647955</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-42624">
+<article class="comment" id="comment-42624">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">acmer29</a></span> on <a href="http://www.acmerblog.com/hdu-1688-Sightseeing-2647.html#comment-42624" rel="nofollow"><time datetime="2015-06-20T03:25:20+00:00" pubdate="">2015年6月20日 at 上午3:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是研发类的题还是算法类？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-16596">
+<article class="comment" id="comment-16596">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Supermaner</a></span> on <a href="http://www.acmerblog.com/hdu-1688-Sightseeing-2647.html#comment-16596" rel="nofollow"><time datetime="2015-06-15T04:13:29+00:00" pubdate="">2015年6月15日 at 上午4:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我还有个问题想请教一下，就是感觉对于新手来说，递归理解起来有些困难，不知有没有什么好的方法或者什么好的建议？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-61965">
+<article class="comment" id="comment-61965">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zoe_music</a></span> on <a href="http://www.acmerblog.com/hdu-1688-Sightseeing-2647.html#comment-61965" rel="nofollow"><time datetime="2015-06-11T09:10:21+00:00" pubdate="">2015年6月11日 at 上午9:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>什么破题，题意好难懂啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-61962">
+<article class="comment" id="comment-61962">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Rocky</a></span> on <a href="http://www.acmerblog.com/hdu-1688-Sightseeing-2647.html#comment-61962" rel="nofollow"><time datetime="2015-05-07T21:28:33+00:00" pubdate="">2015年5月7日 at 下午9:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>先从简单的做起，归并排序，二叉树相关的遍历等</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-42625">
+<article class="comment" id="comment-42625">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fiftyonejiao</a></span> on <a href="http://www.acmerblog.com/hdu-1688-Sightseeing-2647.html#comment-42625" rel="nofollow"><time datetime="2015-04-19T07:48:27+00:00" pubdate="">2015年4月19日 at 上午7:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>面霸网。www.51mx.org</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-16598">
+<article class="comment" id="comment-16598">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Cloudy</a></span> on <a href="http://www.acmerblog.com/hdu-1688-Sightseeing-2647.html#comment-16598" rel="nofollow"><time datetime="2015-04-12T04:48:50+00:00" pubdate="">2015年4月12日 at 上午4:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>约瑟夫也用说这么长……很成熟的一个问题了，分治的方法解起来o(n)就可以了，有兴趣可以看看具体数学的第一章，关于约瑟夫问题推导出了一系列的结论，很漂亮</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-16597">
+<article class="comment" id="comment-16597">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">WalkCoder</a></span> on <a href="http://www.acmerblog.com/hdu-1688-Sightseeing-2647.html#comment-16597" rel="nofollow"><time datetime="2015-01-31T16:12:29+00:00" pubdate="">2015年1月31日 at 下午4:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-16595">
+<article class="comment" id="comment-16595">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tangxiansheng</a></span> on <a href="http://www.acmerblog.com/hdu-1688-Sightseeing-2647.html#comment-16595" rel="nofollow"><time datetime="2014-09-05T05:24:35+00:00" pubdate="">2014年9月5日 at 上午5:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>2的64次方是多少？ 这到底是在考什么啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-16592">
+<article class="comment" id="comment-16592">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Aifan</a></span> on <a href="http://www.acmerblog.com/hdu-1688-Sightseeing-2647.html#comment-16592" rel="nofollow"><time datetime="2014-06-28T00:40:41+00:00" pubdate="">2014年6月28日 at 上午12:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>写的很好~~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-61963">
+<article class="comment" id="comment-61963">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">2013283119</a></span> on <a href="http://www.acmerblog.com/hdu-1688-Sightseeing-2647.html#comment-61963" rel="nofollow"><time datetime="2014-06-27T22:09:57+00:00" pubdate="">2014年6月27日 at 下午10:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有谁知道直接遍历的方法中第8行是什么意思嘛？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-16593">
+<article class="comment" id="comment-16593">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">geoksz</a></span> on <a href="http://www.acmerblog.com/hdu-1688-Sightseeing-2647.html#comment-16593" rel="nofollow"><time datetime="2014-05-30T07:26:44+00:00" pubdate="">2014年5月30日 at 上午7:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚开始学习，为啥会报错了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-16594">
+<article class="comment" id="comment-16594">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zhuliyan</a></span> on <a href="http://www.acmerblog.com/hdu-1688-Sightseeing-2647.html#comment-16594" rel="nofollow"><time datetime="2014-04-24T15:47:47+00:00" pubdate="">2014年4月24日 at 下午3:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>yeah, This is very tricky. If you use Cpp,you need more code</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-61964">
+<article class="comment" id="comment-61964">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tonight</a></span> on <a href="http://www.acmerblog.com/hdu-1688-Sightseeing-2647.html#comment-61964" rel="nofollow"><time datetime="2014-03-13T18:26:10+00:00" pubdate="">2014年3月13日 at 下午6:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个应该是最朴素的KMP实现</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

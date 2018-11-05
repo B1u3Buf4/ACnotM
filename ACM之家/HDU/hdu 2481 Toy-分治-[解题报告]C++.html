@@ -1,0 +1,196 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>01-26</div>
+<div class="tit"><h1 class="entry-title">hdu 2481 Toy-分治-[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/dfs" rel="category tag" title="查看DFS搜索中的全部文章">DFS搜索</a>, <a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/math/number-theory" rel="category tag" title="查看数论应用中的全部文章">数论应用</a></span><span class="i4">围观737次</span><span class="i3"><a class="ds-thread-count" data-thread-key="3945" href="http://www.acmerblog.com/hdu-2481-toy-3945.html#comments" title="《hdu 2481 Toy-分治-[解题报告]C++》上的评论">12 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Toy</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+On birthday, Anthony got a toy. It is constructed with N+1(N&gt;=3) balls and 2*N sticks. All balls are in a same plane. One of them is special, while the other N balls are connected to it by N sticks with the same length. The angles between any two adjacent sticks are equal. And finally, any two adjacent balls(except the central one) are connected by a stick.<br/>  Here are two examples:<br/><img src="http://www.acmerblog.com/img/1390951831556.jpg"/><br/>Anthony wanted to remove N sticks, leaving all balls still connected. He wanted to know the number of all legal solutions. Your task is to solve this problem for him. <br/>  Notice that if a solution will be the same as another one by rotation, these two solutions should be consider as the same. <br/>The answer may be quite large. You just need to calculate the remainder of the answer when divided by M. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+Input contains several test cases. <br/>For each test case, there is only one line containing two integers N and M(3&lt;=N&lt;=10^9, 2&lt;=M&lt;=10^9). <br/>Input is terminated by EOF. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+Input contains several test cases. <br/>For each test case, there is only one line containing two integers N and M(3&lt;=N&lt;=10^9, 2&lt;=M&lt;=10^9). <br/>Input is terminated by EOF.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3 10000
+4 10000
+4 10</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+6
+13
+3</pre>
+<p> <!-- problem end --><br/>
+       08年成都现场赛的神题，传说现场就清华一支队伍出了此题。这题的难点在于递推方程。网上有<a href="http://hi.baidu.com/spellbreaker/blog/item/1a7d9902ff6844e409fa93fb.html" rel="nofollow" target="_blank">万物皆数</a>大神和<a href="http://hi.baidu.com/aekdycoin/blog/item/6071b1949fa3d842d0135e49.html" rel="nofollow" target="_blank">AekdyCoin</a>大神的详细解题报告，先找递推式，然后用矩阵快速幂求答案的方法，这种方法速度很快，但是递推过程比较繁琐，并且代码量不小。<a href="http://www.cppblog.com/zxb/archive/2011/08/21/128522.html" rel="nofollow" target="_blank">另一种方法</a>是直接转化为生成树计数问题，然后根据题目的特殊性质对行列式进行化简，代码比较短。还有一个很恶心的地方就是这题的取模数&lt;=10^18，所以long long装不下，要二分模拟乘法，贴了一个别人的模板- -
+</p><div>
+<div>       我实现了一下第一种方法，最后惊奇的发现居然登顶了，看来质因数分解后DFS在大数据的时候效率还是很不错的- -</div>
+<div></div>
+<div>
+<div>       <img alt="HDU 2481 Toy - endlesscount - Memento" src="http://cdn.acmerblog.com/img/1390951841066.jpg" style="margin:0 10px 0 0;" title="HDU 2481 Toy - endlesscount - Memento"/></div>
+<p> </p></div>
+</div>
+<div></div>
+<div>
+<pre class="prettyprint"><p>#include&lt;cstdio&gt;<br/>#include&lt;iostream&gt;<br/>#include&lt;cstring&gt;<br/>#define N 32000<br/>#define ll long long<br/>using namespace std;<br/>int G;<br/>ll mod;<br/>bool notprime[ N ];<br/>int prime[ N ],pp;<br/>int fac[ 50 ][ 3 ],fp;<br/>struct matrix{<br/>    ll num[2][2];<br/>}ma[ 32 ];<br/>ll mult_mod(ll a,ll b ){<br/>    ll ret=0,tmp=a;<br/>    if(b&lt;0)b+=mod;<br/>    if(tmp&lt;0)tmp+=mod;<br/>    while(b){<br/>        if(b&amp;0x1)if((ret+=tmp)&gt;=mod)ret-=mod;<br/>        if((tmp&lt;&lt;=1)&gt;=mod)tmp-=mod;<br/>        b&gt;&gt;=1;<br/>    }<br/>    return ret;<br/>}<br/>matrix mult( matrix &amp;a,matrix &amp;b ){<br/>    matrix ret;<br/>    for( int i=0;i&lt;2;i++ )<br/>        for( int j=0;j&lt;2;j++ ){<br/>            ret.num[i][j]=0;<br/>            for( int k=0;k&lt;2;k++ )<br/>                ret.num[i][j]+=mult_mod( a.num[i][k],b.num[k][j] );<br/>            ret.num[i][j]%=mod;<br/>        }<br/>    return ret;<br/>}<br/>void init_prime(  ){<br/>    for( int i=2;i&lt;N;i++ ){<br/>        if( !notprime[i] ) prime[ pp++ ]=i;<br/>        for( int j=0;j&lt;pp&amp;&amp;i*prime[ j ]&lt;N;j++ ){<br/>            notprime[ i*prime[ j ] ]=true;<br/>            if( i%prime[ j ]==0 ) break;<br/>        }<br/>    }<br/>}<br/>void init_ma(){<br/>    ma[0].num[0][0]=3,ma[0].num[0][1]=1,ma[0].num[1][0]=-1;<br/>    for( int i=1;i&lt;32;i++ )<br/>        ma[i]=mult( ma[i-1],ma[i-1] );<br/>}<br/>void fact( int n ){<br/>    fp=0;<br/>    for( int i=0;i&lt;pp&amp;&amp;n&gt;1;i++ )<br/>        if(n%prime[ i ]==0){<br/>            for(fac[fp][0]=prime[i],fac[fp][1]=0,fac[fp][2]=1;n%prime[i]==0;n/=prime[i],fac[fp][1]++,fac[fp][2]*=prime[i]);<br/>            fp++;<br/>        }<br/>    if(n&gt;1) fac[fp][0]=n,fac[fp][1]=1,fac[fp++][2]=n;<br/>}<br/>long long getv( int n ){<br/>    if( n==1 ) return 1;<br/>    n-=2;<br/>    matrix ans;<br/>    memset( ans.num,0,sizeof( ans.num ) );<br/>    ans.num[0][0]=3,ans.num[0][1]=1;<br/>    for(int i=0;n;n&gt;&gt;=1,i++)<br/>        if( n&amp;1 )<br/>            ans=mult( ans,ma[i]);<br/>    return ( 3*ans.num[0][0]%mod-2*ans.num[0][1]%mod-2 )%mod;<br/>}<br/>void DFS( ll &amp;res,int g,int phi,int d ){<br/>    if( d==fp ){<br/>        res=( res+mult_mod( phi,getv( g ) ) )%mod;<br/>        return;<br/>    }<br/>    for( int i=0,p=fac[d][2];i&lt;=fac[d][1];i++,p/=fac[d][0] )<br/>        DFS( res,fac[d][2]/p*g,phi*(p-p/fac[d][0]),d+1 );<br/>}<br/>long long cal(int m){<br/>    fact( G );<br/>    long long ret=0;<br/>    DFS( ret,1,1,0 );    <br/>    ret=( ret/G%m+m )%m;<br/>    return ret;<br/>}<br/>int main( void ){<br/>    int m;<br/>    init_prime();    <br/>    while( cin&gt;&gt;G&gt;&gt;m ){<br/>        mod=1ll*G*m;<br/>        init_ma();<br/>        cout&lt;&lt;cal(m)&lt;&lt;endl;<br/>    }<br/>}<br/></p><div><br/></div></pre>
+<p></p></div>
+<p>解题转自：http://endlesscount.blog.163.com/blog/static/8211978720122149120772/</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-84404">
+<article class="comment" id="comment-84404">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514635" rel="external nofollow">新用户499008</a></span> on <a href="http://www.acmerblog.com/hdu-2481-toy-3945.html#comment-84404" rel="nofollow"><time datetime="2017-04-12T23:52:09+00:00" pubdate="">2017年4月12日 at 下午11:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>捏高姿势水军</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-22315">
+<article class="comment" id="comment-22315">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">changjf</a></span> on <a href="http://www.acmerblog.com/hdu-2481-toy-3945.html#comment-22315" rel="nofollow"><time datetime="2015-06-21T23:28:41+00:00" pubdate="">2015年6月21日 at 下午11:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跟书上的解法不一样，不知道哪个效率要高些</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-62610">
+<article class="comment" id="comment-62610">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hong0220</a></span> on <a href="http://www.acmerblog.com/hdu-2481-toy-3945.html#comment-62610" rel="nofollow"><time datetime="2015-02-13T11:07:02+00:00" pubdate="">2015年2月13日 at 上午11:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>能告诉我为什么对于每一个m，cnt的值不用更新吗?这儿我想不通啊，谢谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-62609">
+<article class="comment" id="comment-62609">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">feifei003603</a></span> on <a href="http://www.acmerblog.com/hdu-2481-toy-3945.html#comment-62609" rel="nofollow"><time datetime="2014-11-30T21:55:01+00:00" pubdate="">2014年11月30日 at 下午9:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有些说不通吧，只有1个孩子肯定是男孩了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22313">
+<article class="comment" id="comment-22313">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">2013283119</a></span> on <a href="http://www.acmerblog.com/hdu-2481-toy-3945.html#comment-22313" rel="nofollow"><time datetime="2014-11-30T02:17:38+00:00" pubdate="">2014年11月30日 at 上午2:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>约瑟夫也用说这么长……很成熟的一个问题了，分治的方法解起来o(n)就可以了，有兴趣可以看看具体数学的第一章，关于约瑟夫问题推导出了一系列的结论，很漂亮</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-22312">
+<article class="comment" id="comment-22312">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">09291010</a></span> on <a href="http://www.acmerblog.com/hdu-2481-toy-3945.html#comment-22312" rel="nofollow"><time datetime="2014-11-24T01:48:40+00:00" pubdate="">2014年11月24日 at 上午1:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22317">
+<article class="comment" id="comment-22317">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">usx13123</a></span> on <a href="http://www.acmerblog.com/hdu-2481-toy-3945.html#comment-22317" rel="nofollow"><time datetime="2014-07-04T09:26:29+00:00" pubdate="">2014年7月4日 at 上午9:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>for(int i=1; i&lt;=m; i++){<br/>
+            for(int j=1; j&lt;=n; j++){<br/>
+                    dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> [j-1] + 1;<br/>
+                if(s1.charAt(i-1) == s3.charAt(i+j-1))<br/>
+                    dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = dp[i-1] <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  + 1;<br/>
+                if(s2.charAt(j-1) == s3.charAt(i+j-1))<br/>
+                    dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = Math.max(dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> [j - 1] + 1, dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> );<br/>
+            }<br/>
+        }<br/>
+这里的代码似乎有点问题？ dp(i)(j) = dp(i)(j-1) + 1;这个例子System.out.println(ils.isInterleave("aa","dbbca", "aadbbcb"));返回的应该是false</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-22316">
+<article class="comment" id="comment-22316">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NiKaWaLi2015</a></span> on <a href="http://www.acmerblog.com/hdu-2481-toy-3945.html#comment-22316" rel="nofollow"><time datetime="2014-04-05T20:04:23+00:00" pubdate="">2014年4月5日 at 下午8:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个后缀数组不是常用的那个.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22314">
+<article class="comment" id="comment-22314">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">warriorbrant</a></span> on <a href="http://www.acmerblog.com/hdu-2481-toy-3945.html#comment-22314" rel="nofollow"><time datetime="2014-03-17T07:52:22+00:00" pubdate="">2014年3月17日 at 上午7:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>思路二可以用一个长度为k的队列来实现，入队后判断下队尾元素的next指针是否为空，若为空，则出队指针即为所求。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-45385">
+<article class="comment" id="comment-45385">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hao555sky</a></span> on <a href="http://www.acmerblog.com/hdu-2481-toy-3945.html#comment-45385" rel="nofollow"><time datetime="2014-03-08T20:48:35+00:00" pubdate="">2014年3月8日 at 下午8:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的方法，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22311">
+<article class="comment" id="comment-22311">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wall_</a></span> on <a href="http://www.acmerblog.com/hdu-2481-toy-3945.html#comment-22311" rel="nofollow"><time datetime="2014-02-08T03:42:55+00:00" pubdate="">2014年2月8日 at 上午3:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚开始学习，为啥会报错了，你试过了吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-45384">
+<article class="comment" id="comment-45384">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">liluvu</a></span> on <a href="http://www.acmerblog.com/hdu-2481-toy-3945.html#comment-45384" rel="nofollow"><time datetime="2014-02-04T13:52:38+00:00" pubdate="">2014年2月4日 at 下午1:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真心不错，力顶作者</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

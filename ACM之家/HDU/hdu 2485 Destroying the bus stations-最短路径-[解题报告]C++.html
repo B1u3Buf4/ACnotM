@@ -1,0 +1,320 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>01-26</div>
+<div class="tit"><h1 class="entry-title">hdu 2485 Destroying the bus stations-最短路径-[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph/shortest-path" rel="category tag" title="查看最短路径中的全部文章">最短路径</a></span><span class="i4">围观936次</span><span class="i3"><a class="ds-thread-count" data-thread-key="3949" href="http://www.acmerblog.com/hdu-2485-destroying-the-bus-stations-3949.html#comments" title="《hdu 2485 Destroying the bus stations-最短路径-[解题报告]C++》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Destroying the bus stations</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Gabiluso is one of the greatest spies in his country. Now he’s trying to complete an “impossible” mission —– to make it slow for the army of City Colugu to reach the airport. City Colugu has n bus stations and m roads. Each road connects two bus stations directly, and all roads are one way streets. In order to keep the air clean, the government bans all military vehicles. So the army must take buses to go to the airport. There may be more than one road between two bus stations. If a bus station is destroyed, all roads connecting that station will become no use. What’s Gabiluso needs to do is destroying some bus stations to make the army can’t get to the airport in k minutes. It takes exactly one minute for a bus to pass any road. All bus stations are numbered from 1 to n. The No.1 bus station is in the barrack and the No. n station is in the airport. The army always set out from the No. 1 station.<br/>No.1 station and No. n station can’t be destroyed because of the heavy guard. Of course there is no road from No.1 station to No. n station.
+<p>Please help Gabiluso to calculate the minimum number of bus stations he must destroy to complete his mission. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+There are several test cases. Input ends with three zeros.
+<p>For each test case:</p>
+<p>The first line contains 3 integers, n, m and k. (0&lt; n &lt;=50, 0&lt; m&lt;=4000, 0 &lt; k &lt; 1000)<br/>Then m lines follows. Each line contains 2 integers, s and f, indicating that there is a road from station No. s to station No. f.  </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+There are several test cases. Input ends with three zeros.
+<p>For each test case:</p>
+<p>The first line contains 3 integers, n, m and k. (0&lt; n &lt;=50, 0&lt; m&lt;=4000, 0 &lt; k &lt; 1000)<br/>Then m lines follows. Each line contains 2 integers, s and f, indicating that there is a road from station No. s to station No. f. </p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+5 7 3
+1 3
+3 4
+4 5
+1 2
+2 5
+1 4
+4 5
+0 0 0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+2</pre>
+<p> <!-- problem end --><br/>
+题目意思是说，摧毁车站，那么与车站相连的路就都失效了，因此想到了将一个点分拆为两个点，例如节点2，那么就分拆为节点2和3，并在2和3之加一条边，容量为1，费用为0，如果原来1到2有路，那么现在就变成了1到分拆出来的2有路，如果原来2到x有路，那么现在就变成了分拆出来的3到x有路，这样的话用最小费用算法在图上进行曾流的时候，没曾一次流就相当于在摧毁车站，因为车站被拆分成了两个点，并且容量为1
+</p><div>
+<div></div>
+<div>#include&lt;iostream&gt;</div>
+<div>#include&lt;queue&gt;</div>
+<div>using namespace std;</div>
+<div></div>
+<div>struct Node{</div>
+<div><span style="white-space:pre;"> </span>int here,adj;</div>
+<div><span style="white-space:pre;"> </span>int flow,cost;</div>
+<div><span style="white-space:pre;"> </span>int next;</div>
+<div>};</div>
+<div>int head[10000];</div>
+<div>Node edges[1000000];</div>
+<div>int loc;</div>
+<div>int s,t;</div>
+<div>void addEdge(int here,int adj,int flow,int cost){</div>
+<div><span style="white-space:pre;"> </span>edges[loc].here=here,edges[loc].adj=adj,edges[loc].flow=flow,edges[loc].cost=cost;</div>
+<div><span style="white-space:pre;"> </span>edges[loc].next=head[here],head[here]=loc++;</div>
+<div></div>
+<div><span style="white-space:pre;"> </span>edges[loc].here=adj,edges[loc].adj=here,edges[loc].flow=0,edges[loc].cost=-cost;</div>
+<div><span style="white-space:pre;"> </span>edges[loc].next=head[adj],head[adj]=loc++;</div>
+<div>}</div>
+<div></div>
+<div></div>
+<div>int n,r,k;</div>
+<div></div>
+<div>bool visit[100];</div>
+<div>int dis[100];</div>
+<div>int father[100];</div>
+<div>bool spfa(){</div>
+<div><span style="white-space:pre;"> </span>memset(dis,-1,sizeof(dis));</div>
+<div><span style="white-space:pre;"> </span>memset(father,-1,sizeof(father));</div>
+<div><span style="white-space:pre;"> </span>memset(visit,false,sizeof(visit));</div>
+<div><span style="white-space:pre;"> </span>int now=s;</div>
+<div><span style="white-space:pre;"> </span>dis[now]=0;</div>
+<div><span style="white-space:pre;"> </span>visit[now]=true;</div>
+<div><span style="white-space:pre;"> </span>queue&lt;int&gt; qu;</div>
+<div><span style="white-space:pre;"> </span>qu.push(now);</div>
+<div><span style="white-space:pre;"> </span>while(!qu.empty()){</div>
+<div><span style="white-space:pre;"> </span>now=qu.front(),qu.pop();</div>
+<div><span style="white-space:pre;"> </span>visit[now]=false;</div>
+<div><span style="white-space:pre;"> </span>int p;</div>
+<div><span style="white-space:pre;"> </span>for(p=head[now];p!=-1;p=edges[p].next){</div>
+<div><span style="white-space:pre;"> </span>if(edges[p].flow&gt;0){</div>
+<div><span style="white-space:pre;"> </span>int temp=dis[now]+edges[p].cost;</div>
+<div><span style="white-space:pre;"> </span>if(dis[edges[p].adj]==-1||temp&lt;dis[edges[p].adj]){</div>
+<div><span style="white-space:pre;"> </span>dis[edges[p].adj]=temp;</div>
+<div><span style="white-space:pre;"> </span>father[edges[p].adj]=p;</div>
+<div><span style="white-space:pre;"> </span>if(!visit[edges[p].adj]){</div>
+<div><span style="white-space:pre;"> </span>visit[edges[p].adj]=true;</div>
+<div><span style="white-space:pre;"> </span>qu.push(edges[p].adj);</div>
+<div><span style="white-space:pre;"> </span>}</div>
+<div><span style="white-space:pre;"> </span>}</div>
+<div><span style="white-space:pre;"> </span>}</div>
+<div><span style="white-space:pre;"> </span>}</div>
+<div><span style="white-space:pre;"> </span>}</div>
+<div><span style="white-space:pre;"> </span>return dis[t]&gt;0&amp;&amp;dis[t]&lt;=k;</div>
+<div>}</div>
+<div></div>
+<div>int mincost(){</div>
+<div><span style="white-space:pre;"> </span>int flow=0;</div>
+<div><span style="white-space:pre;"> </span>while(spfa()){</div>
+<div><span style="white-space:pre;"> </span>int end=father[t];</div>
+<div><span style="white-space:pre;"> </span>int min=1000000;</div>
+<div><span style="white-space:pre;"> </span>while(end!=-1){</div>
+<div><span style="white-space:pre;"> </span>min=edges[end].flow&lt;min?edges[end].flow:min;</div>
+<div><span style="white-space:pre;"> </span>end=father[edges[end].here];</div>
+<div><span style="white-space:pre;"> </span>}</div>
+<div><span style="white-space:pre;"> </span>flow+=min;</div>
+<div><span style="white-space:pre;"> </span>end=father[t];</div>
+<div><span style="white-space:pre;"> </span>while(end!=-1){</div>
+<div><span style="white-space:pre;"> </span>edges[end].flow-=min;</div>
+<div><span style="white-space:pre;"> </span>edges[end^1].flow+=min;</div>
+<div><span style="white-space:pre;"> </span>end=father[edges[end].here];</div>
+<div><span style="white-space:pre;"> </span>}</div>
+<div><span style="white-space:pre;"> </span>}</div>
+<div><span style="white-space:pre;"> </span>return flow;</div>
+<div>}</div>
+<div></div>
+<div></div>
+<div></div>
+<div>int main(){</div>
+<div><span style="white-space:pre;"> </span>while(scanf(“%d%d%d”,&amp;n,&amp;r,&amp;k),n){</div>
+<div><span style="white-space:pre;"> </span>s=1,t=2*n-2;</div>
+<div><span style="white-space:pre;"> </span>memset(head,-1,sizeof(head));</div>
+<div><span style="white-space:pre;"> </span>loc=0;</div>
+<div><span style="white-space:pre;"> </span>for(int i=1;i&lt;n-1;i++){</div>
+<div>            addEdge(2*i,2*i+1,1,0);</div>
+<div>        }</div>
+<div><span style="white-space:pre;"> </span>for( i=1;i&lt;=r;i++){</div>
+<div><span style="white-space:pre;"> </span>int a,b;</div>
+<div><span style="white-space:pre;"> </span>scanf(“%d%d”,&amp;a,&amp;b);</div>
+<div><span style="white-space:pre;"> </span>a–,b–;</div>
+<div><span style="white-space:pre;"> </span>addEdge(2*a+1,2*b,1,1);</div>
+<div><span style="white-space:pre;"> </span>}</div>
+<div><span style="white-space:pre;"> </span></div>
+<div><span style="white-space:pre;"> </span>printf(“%d\n”,mincost());</div>
+<div></div>
+<div><span style="white-space:pre;"> </span>}</div>
+<div></div>
+<div></div>
+<div><span style="white-space:pre;"> </span>return 0;</div>
+<div>}</div>
+<div></div>
+<p><wbr/></p></div>
+<p>解题转自：http://2225377fjs.blog.163.com/blog/static/1746298372011116112013244/</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-84398">
+<article class="comment" id="comment-84398">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519179" rel="external nofollow">新用户018677</a></span> on <a href="http://www.acmerblog.com/hdu-2485-destroying-the-bus-stations-3949.html#comment-84398" rel="nofollow"><time datetime="2017-04-12T23:52:09+00:00" pubdate="">2017年4月12日 at 下午11:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>-_-!吐槽都吐不動了。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-22350">
+<article class="comment" id="comment-22350">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zwj0571</a></span> on <a href="http://www.acmerblog.com/hdu-2485-destroying-the-bus-stations-3949.html#comment-22350" rel="nofollow"><time datetime="2015-06-18T17:54:12+00:00" pubdate="">2015年6月18日 at 下午5:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>大致看了下，算法的时间复杂度没有很本性的提升，算不上高效。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-45397">
+<article class="comment" id="comment-45397">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">litao</a></span> on <a href="http://www.acmerblog.com/hdu-2485-destroying-the-bus-stations-3949.html#comment-45397" rel="nofollow"><time datetime="2015-03-17T10:06:06+00:00" pubdate="">2015年3月17日 at 上午10:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>aha, welcome!</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-22352">
+<article class="comment" id="comment-22352">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tangxiansheng</a></span> on <a href="http://www.acmerblog.com/hdu-2485-destroying-the-bus-stations-3949.html#comment-22352" rel="nofollow"><time datetime="2015-02-21T05:04:48+00:00" pubdate="">2015年2月21日 at 上午5:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为是要把从字符串s的start位到当前位在hash中重置，修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22348">
+<article class="comment" id="comment-22348">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Christmas</a></span> on <a href="http://www.acmerblog.com/hdu-2485-destroying-the-bus-stations-3949.html#comment-22348" rel="nofollow"><time datetime="2014-08-30T12:00:56+00:00" pubdate="">2014年8月30日 at 下午12:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>“再把所有不和该节点相邻的节点着相同的颜色”，程序中没有进行不和该节点相邻的其他节点是否相邻进行判断。再说求出来的也不一样是颜色数最少的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-22353">
+<article class="comment" id="comment-22353">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xuelanghu</a></span> on <a href="http://www.acmerblog.com/hdu-2485-destroying-the-bus-stations-3949.html#comment-22353" rel="nofollow"><time datetime="2014-08-11T21:15:35+00:00" pubdate="">2014年8月11日 at 下午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>辛苦了，顶</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22351">
+<article class="comment" id="comment-22351">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">didiaozuoren</a></span> on <a href="http://www.acmerblog.com/hdu-2485-destroying-the-bus-stations-3949.html#comment-22351" rel="nofollow"><time datetime="2014-08-01T20:57:12+00:00" pubdate="">2014年8月1日 at 下午8:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>.net中char类型不是两个字节么</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-22356">
+<article class="comment" id="comment-22356">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">JcZ</a></span> on <a href="http://www.acmerblog.com/hdu-2485-destroying-the-bus-stations-3949.html#comment-22356" rel="nofollow"><time datetime="2014-07-12T13:36:21+00:00" pubdate="">2014年7月12日 at 下午1:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是往年的笔试题，非在线，主要考察基础，Java会在面试时问到</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22349">
+<article class="comment" id="comment-22349">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ForgetVay</a></span> on <a href="http://www.acmerblog.com/hdu-2485-destroying-the-bus-stations-3949.html#comment-22349" rel="nofollow"><time datetime="2014-06-10T05:36:03+00:00" pubdate="">2014年6月10日 at 上午5:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>A的话不是不能避免冲突么？感觉出题者在考察是否考虑了冲突解决办法？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-22355">
+<article class="comment" id="comment-22355">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bluesky</a></span> on <a href="http://www.acmerblog.com/hdu-2485-destroying-the-bus-stations-3949.html#comment-22355" rel="nofollow"><time datetime="2014-05-25T15:39:17+00:00" pubdate="">2014年5月25日 at 下午3:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好。代码比书上的简练！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22347">
+<article class="comment" id="comment-22347">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dreams</a></span> on <a href="http://www.acmerblog.com/hdu-2485-destroying-the-bus-stations-3949.html#comment-22347" rel="nofollow"><time datetime="2014-05-09T20:43:30+00:00" pubdate="">2014年5月9日 at 下午8:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我还有个问题想请教一下，就是感觉对于新手来说，递归理解起来有些困难，不知有没有什么好的方法或者什么好的建议？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-45396">
+<article class="comment" id="comment-45396">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Bob</a></span> on <a href="http://www.acmerblog.com/hdu-2485-destroying-the-bus-stations-3949.html#comment-45396" rel="nofollow"><time datetime="2014-04-23T14:15:58+00:00" pubdate="">2014年4月23日 at 下午2:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题应该是有一般性的解决方法</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-45395">
+<article class="comment" id="comment-45395">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Monkey_Sun</a></span> on <a href="http://www.acmerblog.com/hdu-2485-destroying-the-bus-stations-3949.html#comment-45395" rel="nofollow"><time datetime="2014-04-21T12:15:54+00:00" pubdate="">2014年4月21日 at 下午12:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>博主，你这个是wordpress哪个主题啊，不错哦~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-22354">
+<article class="comment" id="comment-22354">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">PriceKiller</a></span> on <a href="http://www.acmerblog.com/hdu-2485-destroying-the-bus-stations-3949.html#comment-22354" rel="nofollow"><time datetime="2014-04-09T06:32:32+00:00" pubdate="">2014年4月9日 at 上午6:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题别太纠结了，不同的编译器结果不一</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-45394">
+<article class="comment" id="comment-45394">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">April</a></span> on <a href="http://www.acmerblog.com/hdu-2485-destroying-the-bus-stations-3949.html#comment-45394" rel="nofollow"><time datetime="2014-03-02T06:14:56+00:00" pubdate="">2014年3月2日 at 上午6:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>We do not harbor that I couldn’t remove other individuals’ problems whenever this arrived at.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

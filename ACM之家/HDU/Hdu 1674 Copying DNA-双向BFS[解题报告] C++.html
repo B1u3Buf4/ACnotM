@@ -1,0 +1,539 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-21</div>
+<div class="tit"><h1 class="entry-title">Hdu 1674 Copying DNA-双向BFS[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/bfs" rel="category tag" title="查看BFS搜索中的全部文章">BFS搜索</a>, <a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观672次</span><span class="i3"><a class="ds-thread-count" data-thread-key="2624" href="http://www.acmerblog.com/hdu-1674-copying-dna-2624.html#comments" title="《Hdu 1674 Copying DNA-双向BFS[解题报告] C++》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Copying DNA</h1>
+</div>
+<div>
+<p class="mytitle">问题描述 :</p>
+</div>
+<div class="mypanel">Evolution is a seemingly random process which works in a way which resembles certain approaches we use to get approximate solutions to hard combinatorial problems. You are now to do something completely different.<br/>
+Given a DNA string S from the alphabet {A,C,G,T}, find the minimal number of copy operations needed to create another string T. You may reverse the strings you copy, and copy both from S and the pieces of your partial T. You may put these pieces together at any time. You may only copy contiguous parts of your partial T, and all copied strings must be used in your final T. Example:<br/>
+From S = “ACTG” create T = “GTACTATTATA”<br/>
+1. Get GT……… by copying and reversing “TG” from S.<br/>
+2. Get GTAC……. by copying “AC” from S.<br/>
+3. Get GTAC…TA.. by copying “TA” from the partial T.<br/>
+4. Get GTAC…TAAT by copying and reversing “TA” from the partial T.<br/>
+5. Get GTACAATTAAT by copying “AAT” from the partial T.</div>
+<div>
+<p class="mytitle">输入:</p>
+</div>
+<div class="mypanel">The first line of input gives a single integer, 1 &lt;= t &lt;= 100, the number of test cases. Then follow, for each test case, a line with the string S of length 1 &lt;= m &lt;= 18, and a line with the string T of length 1 &lt;= n &lt;= 18.</div>
+<div>
+<p class="mytitle">输出:</p>
+</div>
+<div class="mypanel">Output for each test case the number of copy operations needed to create T from S, or “impossible” if it cannot be done.</div>
+<div>
+<p class="mytitle">样例输入:</p>
+</div>
+<pre class="mypanel iopanel">5
+ACGT
+GTAC
+A
+C
+ACGT
+TGCA
+ACGT
+TCGATCGA
+A
+AAAAAAAAAAAAAAAAAA</pre>
+<div>
+<p class="mytitle">样例输出:</p>
+</div>
+<pre class="mypanel iopanel">2
+impossible
+1
+4
+6</pre>
+<p><!-- problem end --></p>
+<p>题目大意：给出一个S串，要求构造T串</p>
+<p>解题报告：这题串的长度比较小，才18，可以用搜索。</p>
+<p>用状态压缩的方法，把每一个位置的字母有没有已经被填冲做为信息，这样的话状态就2^18</p>
+<p>然后可以先预处理出来S可以填冲哪些段。</p>
+<p>对于T中的有一些段，可以填冲哪些段。</p>
+<p>搜索的时候直接广搜会TLE的，要用双向广搜。</p>
+<p>PS：由于walk函数里面少写了一个return false WA了很久。后来突然看到。编译器怎么就不提示？</p>
+<p>交上去也没有CE，唉。</p>
+<pre class="brush:cpp">#include&lt;math.h&gt;
+#include&lt;stdio.h&gt;
+#include&lt;string.h&gt;
+#include&lt;iostream&gt;
+#include&lt;time.h&gt;
+#include&lt;math.h&gt;
+#include&lt;string&gt;
+#include&lt;algorithm&gt;
+#include&lt;vector&gt;
+#include&lt;map&gt;
+#include&lt;queue&gt;
+using namespace std;
+
+//typedef long long lld;
+typedef __int64 lld;//??????????????long long
+const lld MAX=210;
+const double  INF=1.0e9;
+lld gcd(lld a,lld b){return a%b?gcd(b,a%b):b;}
+
+int dblcmp(double x)
+{
+    const double EPS=1.0e-8;
+    if(fabs(x)&lt;EPS)return 0;
+    return x&lt;0?-1:1;
+}
+char s[MAX],t[MAX];
+int pt[MAX];
+bool smove[1&lt;&lt;19];
+vector&lt;int&gt;edge[MAX][MAX];
+void ins(char dest[],int n,int i,int j)
+{
+    char zs[MAX];
+    strcpy(zs,dest);
+    if(strstr(s,zs)!=NULL)
+    {
+        smove[((pt[j-i+1]-1)&lt;&lt;i)]=true;
+        return ;
+    }
+    reverse(zs,zs+n);
+
+    if(strstr(s,zs)!=NULL)
+    {
+        smove[((pt[j-i+1]-1)&lt;&lt;i)]=true;
+    }
+}
+vector&lt;int&gt; match(char src[],int lens,int lent)
+{
+    vector&lt;int&gt;ret;
+    ret.clear();
+    int i;
+    char*pos;
+    int v;
+    for(i=0;i+lens-1&lt;lent;i++)
+    {
+        v=(pt[lens]-1)&lt;&lt;i;
+        pos=strstr(&amp;t[i],src);
+        if(pos==&amp;t[i])
+        {
+            ret.push_back(v);
+        }
+        else
+        {
+            reverse(src,src+lens);
+            pos=strstr(&amp;t[i],src);
+            if(pos==&amp;t[i])
+            {
+                ret.push_back(v);
+            }
+            reverse(src,src+lens);
+        }
+    }
+    return ret;
+}
+queue&lt;int&gt;q;
+queue&lt;int&gt;qa;
+bool visa[1&lt;&lt;19];
+bool vis[1&lt;&lt;19];
+bool walk(int n)
+{
+    int i,j,k;
+    int full=(1&lt;&lt;n)-1;
+    int size=q.size();
+    while(size--)
+    {
+        int cur=q.front();
+        q.pop();
+        int i,v;
+        int j,k;
+        for(i=0;i&lt;n;i++)
+        {
+            for(j=i;j&lt;n;j++)
+            {
+                if((1&lt;&lt;j)&amp;cur)break;
+                v=(pt[j-i+1]-1)&lt;&lt;i;
+                if(smove[v]==false)break;
+
+                v|=cur;
+                if(visa[v])return true;
+                if(vis[v])continue;
+                vis[v]=true;
+
+                q.push(v);
+            }
+        }
+
+        for(i=0;i&lt;n;i++)
+        {
+            for(j=i;j&lt;n;j++)
+            {
+                if(((1&lt;&lt;j)&amp;cur)==0)break;
+
+                for(k=0;k&lt;edge[i][j].size();k++)
+                {
+                    v=edge[i][j][k];
+                    if((v&amp;cur)==0)
+                    {
+                        v|=cur;
+                        if(visa[v])return true;
+                        if(vis[v])continue;
+                        vis[v]=true;
+
+                        q.push(v);
+                    }
+                }
+            }
+        }
+    }
+return false;
+}
+bool walka(int n)
+{
+    int i,j,k;
+    int full=(1&lt;&lt;n)-1;
+    int size=qa.size();
+    while(size--)
+    {
+        int cur=qa.front();
+        qa.pop();
+        int i,v;
+        int j,k;
+        for(i=0;i&lt;n;i++)
+        {
+            for(j=i;j&lt;n;j++)
+            {
+                if(0==((1&lt;&lt;j)&amp;cur))break;
+                v=(pt[j-i+1]-1)&lt;&lt;i;
+                if(smove[v]==false)break;
+
+                v^=cur;
+                if(vis[v])return true;
+                if(visa[v])continue;
+                visa[v]=true;
+
+                qa.push(v);
+            }
+        }
+
+        for(i=0;i&lt;n;i++)
+        {
+            for(j=i;j&lt;n;j++)
+            {
+                if(((1&lt;&lt;j)&amp;cur)==0)break;
+
+                for(k=0;k&lt;edge[i][j].size();k++)
+                {
+                    v=edge[i][j][k];
+                    if(v&amp;((pt[j-i+1]-1)&lt;&lt;i))continue;
+                    if((v&amp;cur)==v)
+                    {
+                        v^=cur;
+                        if(vis[v])return true;
+                        if(visa[v])continue;
+                        visa[v]=true;
+
+                        qa.push(v);
+                    }
+                }
+            }
+        }
+    }
+return false;
+}
+int BFS(int n)
+{
+    memset(vis,false,sizeof(bool)*((1&lt;&lt;n)+3));
+    memset(visa,false,sizeof(bool)*((1&lt;&lt;n)+3));
+    while(!q.empty())q.pop();
+    while(!qa.empty())qa.pop();
+    int full=1&lt;&lt;n;
+    vis[0]=true;
+    q.push(0);
+    visa[full-1]=true;
+    qa.push(full-1);
+    int step=0,size;
+    while(!q.empty()||!qa.empty())
+    {
+        step++;
+        if(step&amp;1)
+        {
+            if(walk(n))return step;
+        }
+        else
+        {
+            if(walka(n))return step;
+        }
+    }
+    return -1;
+}
+int main()
+{
+    int n;
+    int i,j,k;
+    int CS=1;
+    int T;
+    int m;
+    pt[0]=1;
+    for(i=1;i&lt;MAX;i++)pt[i]=pt[i-1]*2;
+    scanf("%d",&amp;T);
+    while(T--)
+    {
+        scanf("%s%s",s,t);
+
+        int lens=strlen(s);
+        bool ext[222]={false};
+        for(i=0;i&lt;lens;i++)ext[s[i]]=true;
+        int lent=strlen(t);
+        memset(smove,false,sizeof(bool)*((1&lt;&lt;lent)+3));
+        for(i=0;i&lt;lent;i++)
+        {
+            if(!ext[t[i]])break;
+        }
+        if(i&lt;lent)
+        {
+            puts("impossible");
+            continue;
+        }
+        char tmps[MAX];
+        char zs[MAX];
+        for(i=0;i&lt;lent;i++)
+        {
+            k=0;
+            for(j=i;j&lt;lent;j++)
+            {
+                tmps[k]=t[j];
+                k++;
+                tmps[k]=0;
+                ins(tmps,k,i,j);
+
+            }
+        }
+//      for(i=0;i&lt;(1&lt;&lt;lent);i++)   {           printf("smove[%d]=%d\n",i,smove[i]);        }
+
+        for(i=0;i&lt;lent;i++)
+        {
+            k=0;
+            for(j=i;j&lt;lent;j++)
+            {
+                tmps[k]=t[j];
+                k++;
+                tmps[k]=0;
+                //if(i==0&amp;&amp;j==3)
+                {
+                    edge[i][j]=match(tmps,k,lent);
+                }
+
+            }
+        }
+        /*
+        for(i=0;i&lt;lent;i++)
+        {
+            for(j=i;j&lt;lent;j++)
+            {
+                printf("[%d,%d]",i,j);
+                for(k=0;k&lt;edge[i][j].size();k++)
+                {
+                    printf("-&gt;%d",edge[i][j][k]);
+                }
+                puts("");
+            }
+        }*/
+        int ans=BFS(lent);
+        if(ans==-1)puts("impossible");
+        else printf("%d\n",ans);
+    }
+    return 0;
+}
+/*
+
+A
+AAAA
+
+A
+AAAAA
+
+A
+AAAAAA
+
+AAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAD
+
+ACGT
+TCGATCGA
+
+GTACTATTATA
+GTACAATTAAT
+
+ACGT
+TCGATCGA
+1248
+
+16+64=80
+
+128+32=160
+(2^4-1)=15&lt;&lt;4
+15*16
+ABCEFGHIJKLMNOPQRS
+AAAAAAAAAAAAAAAAAA
+
+ABCEFGHIJKLMNOPQRS
+ABCEFGHIJKLMNOPQRS
+
+ABCEFGHIJKLMNOPQRS
+ABCEFGHIJKLMNOPQRA
+*/</pre>
+<p>转自：http://hi.baidu.com/chenwenwen0210/item/66b7466d36552eb0c5d249d1</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-89979">
+<article class="comment" id="comment-89979">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919463893" rel="external nofollow">新用户747253</a></span> on <a href="http://www.acmerblog.com/hdu-1674-copying-dna-2624.html#comment-89979" rel="nofollow"><time datetime="2017-04-13T11:22:37+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嘿嘿~我的Blog通过的是XHMTL1.1和CSS3~~话说在XHTML1.1里，”"_blank”"又被允许了~不错不错  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-42559">
+<article class="comment" id="comment-42559">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hong0220</a></span> on <a href="http://www.acmerblog.com/hdu-1674-copying-dna-2624.html#comment-42559" rel="nofollow"><time datetime="2015-07-09T19:13:58+00:00" pubdate="">2015年7月9日 at 下午7:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序是对的。有些地方用了C++的写法</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-61952">
+<article class="comment" id="comment-61952">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">stamwoo</a></span> on <a href="http://www.acmerblog.com/hdu-1674-copying-dna-2624.html#comment-61952" rel="nofollow"><time datetime="2015-05-24T16:19:04+00:00" pubdate="">2015年5月24日 at 下午4:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给力！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-42561">
+<article class="comment" id="comment-42561">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">895350909</a></span> on <a href="http://www.acmerblog.com/hdu-1674-copying-dna-2624.html#comment-42561" rel="nofollow"><time datetime="2015-02-13T07:15:43+00:00" pubdate="">2015年2月13日 at 上午7:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个..  真没看出来</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-16524">
+<article class="comment" id="comment-16524">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mr-zhang2011</a></span> on <a href="http://www.acmerblog.com/hdu-1674-copying-dna-2624.html#comment-16524" rel="nofollow"><time datetime="2015-02-04T02:10:38+00:00" pubdate="">2015年2月4日 at 上午2:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一题选错了，答案是A</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-55579">
+<article class="comment" id="comment-55579">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">liluvu</a></span> on <a href="http://www.acmerblog.com/hdu-1674-copying-dna-2624.html#comment-55579" rel="nofollow"><time datetime="2015-01-04T05:37:09+00:00" pubdate="">2015年1月4日 at 上午5:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>失误失误，转载错了。已经改正，抱歉。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-55582">
+<article class="comment" id="comment-55582">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Christmas</a></span> on <a href="http://www.acmerblog.com/hdu-1674-copying-dna-2624.html#comment-55582" rel="nofollow"><time datetime="2014-10-29T16:00:13+00:00" pubdate="">2014年10月29日 at 下午4:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>即为打印出的组合的个数C(n,r)，假设print函数复杂度为O(1)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-61953">
+<article class="comment" id="comment-61953">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tzf88888888</a></span> on <a href="http://www.acmerblog.com/hdu-1674-copying-dna-2624.html#comment-61953" rel="nofollow"><time datetime="2014-10-22T08:56:38+00:00" pubdate="">2014年10月22日 at 上午8:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不太懂呀，乡亲们。原理知道代码不会</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-55583">
+<article class="comment" id="comment-55583">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">digiworm</a></span> on <a href="http://www.acmerblog.com/hdu-1674-copying-dna-2624.html#comment-55583" rel="nofollow"><time datetime="2014-10-21T11:58:32+00:00" pubdate="">2014年10月21日 at 上午11:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我表示楼主不要乱抄题，你写的另一个题吧，直接扒了代码没跑吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-55580">
+<article class="comment" id="comment-55580">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Christmas</a></span> on <a href="http://www.acmerblog.com/hdu-1674-copying-dna-2624.html#comment-55580" rel="nofollow"><time datetime="2014-10-10T12:02:17+00:00" pubdate="">2014年10月10日 at 下午12:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有谁知道直接遍历的方法中第8行是什么意思嘛？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-55581">
+<article class="comment" id="comment-55581">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Bob</a></span> on <a href="http://www.acmerblog.com/hdu-1674-copying-dna-2624.html#comment-55581" rel="nofollow"><time datetime="2014-08-31T14:28:03+00:00" pubdate="">2014年8月31日 at 下午2:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你的理解应该是：即使主持人拿走一个箱子对结果没有影响。这样想，主持人拿走的箱子只是没有影响到你初始选择的那个箱子中有奖品的概率，但是改变了其余两个箱子的概率分布。由 1/3,1/3 变成了 0, 2/3</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-42560">
+<article class="comment" id="comment-42560">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dongxi</a></span> on <a href="http://www.acmerblog.com/hdu-1674-copying-dna-2624.html#comment-42560" rel="nofollow"><time datetime="2014-04-19T12:28:37+00:00" pubdate="">2014年4月19日 at 下午12:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有没有C++语言的代码？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-184">
+<article class="comment" id="comment-184">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">king飞</span> on <a href="http://www.acmerblog.com/hdu-1674-copying-dna-2624.html#comment-184" rel="nofollow"><time datetime="2014-03-02T19:02:30+00:00" pubdate="">2014年3月2日 at 下午7:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>代码可真够长的！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-55578">
+<article class="comment" id="comment-55578">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">youpushipop</a></span> on <a href="http://www.acmerblog.com/hdu-1674-copying-dna-2624.html#comment-55578" rel="nofollow"><time datetime="2013-12-25T07:49:27+00:00" pubdate="">2013年12月25日 at 上午7:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个还不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

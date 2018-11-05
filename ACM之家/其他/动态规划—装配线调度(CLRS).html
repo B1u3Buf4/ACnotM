@@ -1,0 +1,480 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>06-27</div>
+<div class="tit"><h1 class="entry-title">动态规划—装配线调度(CLRS)</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a></span><span class="i4">围观987次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5888" href="http://www.acmerblog.com/dp-assembly-line-scheduling-5888.html#comments" title="《动态规划—装配线调度(CLRS)》上的评论">24 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p><strong>前言：动态规划的概念</strong></p>
+<p>动态规划（dynamic programming）是通过组合子问题的解而解决整个问题的。分治算法是指将问题划分为一些独立的子问题，递归的求解各个问题，然后合并子问题的解而得到原问题的解。例如归并排序，快速排序都是采用分治算法思想。本书在第二章介绍归并排序时，详细介绍了分治算法的操作步骤，详细的内容请参考：<a>http://www.cnblogs.com/Anker/archive/2013/01/22/2871042.html</a>。而动态规划与此不同，适用于子问题不是独立的情况，也就是说各个子问题包含有公共的子问题。如在这种情况下，用分治算法则会重复做不必要的工作。采用动态规划算法对每个子问题只求解一次，将其结果存放到一张表中，以供后面的子问题参考，从而避免每次遇到各个子问题时重新计算答案。</p>
+<p>动态规划与分治法之间的区别：<br/>
+<span style="color: #ff00ff;"><strong>（1）分治法是指将问题分成一些独立的子问题，递归的求解各子问题</strong></span><br/>
+<span style="color: #ff00ff;"><strong>（2）动态规划适用于这些子问题不是独立的情况，也就是各子问题包含公共子问题</strong></span></p>
+<p>动态规划通常用于最优化问题（此类问题一般有很多可行解，我们希望从这些解中找出一个具有最优（最大或最小）值的解）。动态规划算法的设计分为以下四个步骤：</p>
+<p><span style="color: #ff00ff;"><strong>（1）描述最优解的结构</strong></span></p>
+<p><span style="color: #ff00ff;"><strong>（2）递归定义最优解的值</strong></span></p>
+<p><span style="color: #ff00ff;"><strong>（3）按自低向上的方式计算最优解的值</strong></span></p>
+<p><span style="color: #ff00ff;"><strong>（4）由计算出的结果构造一个最优解</strong></span></p>
+<p>动态规划最重要的就是要找出最优解的子结构。书中接下来列举4个问题，讲解如何利用动态规划方法来解决。动态规划的内容比较多，我计划每个问题都认真分析，写成日志。今天先来看第一个问题：装配线调度问题</p>
+<p><strong>2、问题描述</strong></p>
+<p>一个汽车公司在有2条装配线的工厂内生产汽车，每条装配线有n个装配站，不同装配线上对应的装配站执行的功能相同，但是每个站执行的时间是不同的。在装配汽车时，为了提高速度，可以在这两天装配线上的装配站中做出选择，即可以将部分完成的汽车在任何装配站上从一条装配线移到另一条装配线上。装配过程如下图所示：<img alt="" src="http://cdn.acmerblog.com/img/1403535226275.png"/></p>
+<p>装配过程的时间包括：进入装配线时间e、每装配线上各个装配站执行时间a、从一条装配线移到另外一条装配线的时间t、离开最后一个装配站时间x。举个例子来说明，现在有2条装配线，每条装配线上有6个装配站，各个时间如下图所示：<img alt="" src="http://cdn.acmerblog.com/img/1403535227529.png"/></p>
+<p>从图中可以看出按照红色箭头方向进行装配汽车最快，时间为38。分别现在装配线1上的装配站1、3和6，装配线2上装配站2、4和5。</p>
+<p><strong>3、动态规划解决步骤</strong></p>
+<p><strong>（1）描述通过工厂最快线路的结构</strong></p>
+<p>对于装配线调度问题，一个问题的（找出通过装配站S<sub>i,j</sub>的<sub> </sub>最快线路）最优解包含了子问题（找出通过S<sub>1,j-1</sub>或S<sub>2,j-1</sub>的最快线路）的一个最优解，这就是最优子结构。观察一条通过装配站S1,j的最快线路，会发现它必定是经过装配线1或2上装配站j-1。因此通过装配站的最快线路只能以下二者之一：</p>
+<p><span style="color: #ff00ff;"><strong>a)通过装配线S<sub>1,j-1</sub>的最快线路，然后直接通过装配站S<sub>i,j</sub>；</strong></span></p>
+<p><span style="color: #ff00ff;"><strong>b)通过装配站S<sub>2,j-1</sub>的最快线路，从装配线2移动到装配线1，然后通过装配线S<sub>1,j</sub>。</strong></span></p>
+<p><strong>为了解决这个问题，即寻找通过一条装配线上的装配站j的最快线路，需要解决其子问题，即寻找通过两条装配线上的装配站j-1的最快线路。</strong></p>
+<p><strong>（2）一个递归的解</strong></p>
+<p>最终目标是确定底盘通过工厂的所有路线的最快时间，设为f*，令f<sub>i</sub>[j]表示一个底盘从起点到装配站S<sub>i,j</sub>的最快时间，则<span style="color: #ff00ff;"><strong>f* = min(f<sub>1</sub>[n]+x<sub>1</sub>,f<sub>2</sub>[n]+x<sub>2</sub>)</strong></span>。逐步向下推导，直到j=1。</p>
+<p>当j=1时: <span style="color: #ff00ff;"><strong>f<sub>1</sub>[1] = e<sub>1</sub>+a<sub>1,1</sub>,f<sub>2</sub>[1] = e<sub>2</sub>+a<sub>2,1</sub></strong></span>。</p>
+<p>当j&gt;1时：<span style="color: #ff00ff;"><strong>f<sub>1</sub>[j] = min(f<sub>1</sub>[j-1]+a<sub>1,j</sub>，f<sub>2</sub>[j-1]+t<sub>2,j-1</sub>+a<sub>1,j</sub>)，f<sub>2</sub>[j] = min(f<sub>2</sub>[j-1]+a<sub>2,j</sub>，f<sub>1</sub>[j-1]+t<sub>1,j-1</sub>+a<sub>2,j</sub>)</strong></span>。</p>
+<p><strong>（3）计算最快时间</strong></p>
+<p>有了递归的解，就可以按照上述的思路编写程序实现，为了避免用递归实现，需要开辟辅助空间来进行，以空间来换取时间，用C语言实现如下所示：</p>
+<pre class="brush:cpp"> void fastest_way(int a[][N],int t[][N-1],int e[],int x[],int f[][N],int l[][N],int n)
+ {
+     int i,j;
+     f[0][0] = e[0] + a[0][0];
+     f[1][0] = e[1] + a[1][0];
+     l[0][0] = 1;
+     l[1][0] = 2;
+     for(j=1;j&lt;n;j++)
+     {
+         if(f[0][j-1] &lt; f[1][j-1] + t[1][j-1])
+         {
+             f[0][j] = f[0][j-1] + a[0][j];
+             l[0][j] = 1;
+         }
+         else
+         {
+             f[0][j] = f[1][j-1] + t[1][j-1] + a[0][j];
+             l[0][j] = 2;
+         }
+         if(f[1][j-1] &lt; f[0][j-1] + t[0][j-1])
+         {
+             f[1][j] = f[1][j-1] + a[1][j];
+             l[1][j] = 2;
+         }
+         else
+         {
+             f[1][j] = f[0][j-1] + t[0][j-1] + a[1][j];
+             l[1][j] = 1;
+         }
+     }
+     if(f[0][n-1] + x[0] &lt; f[1][n-1] + x[1])
+     {
+         last_f = f[0][n-1] + x[0];
+         last_l = 1;
+     }
+     else
+     {
+         last_f = f[1][n-1] + x[1];
+         last_l = 2;
+     }
+ }</pre>
+<p><strong>（4）构造通过工厂的最快线路</strong></p>
+<p>有第三步骤已经计算出来并记录了每个装配站所在的装配线编号，故可以按照以站号递减顺序直接输出，程序如下所示：</p>
+<pre class="brush:cpp"> void print_station(int l[][N],int last_l,int n)
+ {
+     int i = last_l;
+     int j;
+     printf("line %d,station %d\n",i,n);
+     for(j=n-1;j&gt;0;--j)
+     {
+         i = l[i-1][j];
+         printf("line %d,station %d\n",i,j);
+     }
+ }</pre>
+<p>若是按照站号递增顺序输出，则需通过递归进行实现，程序如下所示：</p>
+<pre class="brush:cpp"> void print_station_recursive(int l[][N],int last_l,int n)
+ {
+     int i = last_l;
+     if(n == 1)
+         printf("line %d,station %d\n",i,n);
+     else
+     {
+          print_station_recursive(l,l[i-1][n-1],n-1);
+          printf("line %d,station %d\n",i,n);
+     }
+
+ }</pre>
+<p><strong>4、编程实现</strong></p>
+<p>根据上面的分析，采用C语言实现如下：</p>
+<pre class="brush:cpp"> #include &lt;stdio.h&gt;
+ #include &lt;stdlib.h&gt;
+
+ #define N 6
+
+ void fastest_way(int a[][N],int t[][N-1],int e[],int x[],int f[][N],int l[][N],int n);
+ void print_station(int l[][N],int last_l,int n);
+ void print_station_recursive();
+ //全局变量，last_t表示最短时间,last_l表示最后一个装配站所在的装配线编号
+ int last_f,last_l;
+
+ int main()
+ {
+     int a[2][6] = {{7,9,3,4,8,4},{8,5,6,4,5,7}};
+     int t[2][5] = {{2,3,1,3,4},{2,1,2,2,1}};
+     int f[2][6] = {0};
+     int l[2][6] = {0};
+     int e[2] = {2,4};
+     int x[2] = {3,2};
+     int i,j;
+     fastest_way(a,t,e,x,f,l,6);
+     //打印输出各个装配线上各个装配站执行的最短时间
+     for(i=0;i&lt;2;++i)
+     {
+         printf("f%d is: ",i+1);
+         for(j=0;j&lt;6;++j)
+           printf("%d ",f[i][j]);
+         printf("\n");
+     }
+     printf("last_f is: %d\nlast_l is: %d\n",last_f,last_l);
+     for(i=0;i&lt;2;++i)
+     {
+         printf("l%d is: ",i+1);
+         for(j=0;j&lt;6;++j)
+           printf("%d ",l[i][j]);
+         printf("\n");
+     }
+     print_station(l,last_l,6);
+     printf("output sequence by recursive.\n");
+     print_station_recursive(l,last_l,6);
+     return 0;
+ }
+
+ void fastest_way(int a[][N],int t[][N-1],int e[],int x[],int f[][N],int l[][N],int n)
+ {
+     int i,j;
+     f[0][0] = e[0] + a[0][0];
+     f[1][0] = e[1] + a[1][0];
+     l[0][0] = 1;
+     l[1][0] = 2;
+     for(j=1;j&lt;n;j++)
+     {
+         if(f[0][j-1] &lt; f[1][j-1] + t[1][j-1])
+         {
+             f[0][j] = f[0][j-1] + a[0][j];
+             l[0][j] = 1;
+         }
+         else
+         {
+             f[0][j] = f[1][j-1] + t[1][j-1] + a[0][j];
+             l[0][j] = 2;
+         }
+         if(f[1][j-1] &lt; f[0][j-1] + t[0][j-1])
+         {
+             f[1][j] = f[1][j-1] + a[1][j];
+             l[1][j] = 2;
+         }
+         else
+         {
+             f[1][j] = f[0][j-1] + t[0][j-1] + a[1][j];
+             l[1][j] = 1;
+         }
+     }
+     if(f[0][n-1] + x[0] &lt; f[1][n-1] + x[1])
+     {
+         last_f = f[0][n-1] + x[0];
+         last_l = 1;
+     }
+     else
+     {
+         last_f = f[1][n-1] + x[1];
+         last_l = 2;
+     }
+ }
+
+ void print_station(int l[][N],int last_l,int n)
+ {
+     int i = last_l;
+     int j;
+     printf("line %d,station %d\n",i,n);
+     for(j=n-1;j&gt;0;--j)
+     {
+         i = l[i-1][j];
+         printf("line %d,station %d\n",i,j);
+     }
+ }
+ void print_station_recursive(int l[][N],int last_l,int n)
+ {
+     int i = last_l;
+     if(n == 1)
+         printf("line %d,station %d\n",i,n);
+     else
+     {
+          print_station_recursive(l,l[i-1][n-1],n-1);
+          printf("line %d,station %d\n",i,n);
+     }
+
+ }</pre>
+<p>程序执行结果如下所示：</p>
+<p><img alt="" src="http://cdn.acmerblog.com/img/1403535227988.png"/></p>
+<p><strong>5、总结</strong></p>
+<p>动态规划是个非常有效的设计方法，要善于用动态规划去分析问题，重点是如何发现子问题的结构。最优子结构在问题域中以两种方式变化（在找出这两个问题的解之后，构造出原问题的最优子结构往往就不是难事了）：</p>
+<p>a) 有多少个子问题被用在原问题的一个最优解中<br/>
+b) 在决定一个最优解中使用哪些子问题有多少个选择</p>
+<p>原文：http://www.cnblogs.com/Anker/archive/2013/03/09/2951785.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75340">
+<article class="comment" id="comment-75340">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520148" rel="external nofollow">新用户403404</a></span> on <a href="http://www.acmerblog.com/dp-assembly-line-scheduling-5888.html#comment-75340" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有没有必要请让人民自己判断</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75339">
+<article class="comment" id="comment-75339">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520148" rel="external nofollow">新用户403404</a></span> on <a href="http://www.acmerblog.com/dp-assembly-line-scheduling-5888.html#comment-75339" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有没有必要请让人民自己判断</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75338">
+<article class="comment" id="comment-75338">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520148" rel="external nofollow">新用户403404</a></span> on <a href="http://www.acmerblog.com/dp-assembly-line-scheduling-5888.html#comment-75338" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有没有必要请让人民自己判断</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75337">
+<article class="comment" id="comment-75337">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520148" rel="external nofollow">新用户403404</a></span> on <a href="http://www.acmerblog.com/dp-assembly-line-scheduling-5888.html#comment-75337" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有没有必要请让人民自己判断</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75336">
+<article class="comment" id="comment-75336">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520148" rel="external nofollow">新用户403404</a></span> on <a href="http://www.acmerblog.com/dp-assembly-line-scheduling-5888.html#comment-75336" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有没有必要请让人民自己判断</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75335">
+<article class="comment" id="comment-75335">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520148" rel="external nofollow">新用户403404</a></span> on <a href="http://www.acmerblog.com/dp-assembly-line-scheduling-5888.html#comment-75335" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有没有必要请让人民自己判断</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75334">
+<article class="comment" id="comment-75334">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520148" rel="external nofollow">新用户403404</a></span> on <a href="http://www.acmerblog.com/dp-assembly-line-scheduling-5888.html#comment-75334" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有没有必要请让人民自己判断</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75333">
+<article class="comment" id="comment-75333">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520148" rel="external nofollow">新用户403404</a></span> on <a href="http://www.acmerblog.com/dp-assembly-line-scheduling-5888.html#comment-75333" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有没有必要请让人民自己判断</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75332">
+<article class="comment" id="comment-75332">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520148" rel="external nofollow">新用户403404</a></span> on <a href="http://www.acmerblog.com/dp-assembly-line-scheduling-5888.html#comment-75332" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有没有必要请让人民自己判断</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75331">
+<article class="comment" id="comment-75331">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520148" rel="external nofollow">新用户403404</a></span> on <a href="http://www.acmerblog.com/dp-assembly-line-scheduling-5888.html#comment-75331" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有没有必要请让人民自己判断</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75330">
+<article class="comment" id="comment-75330">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520148" rel="external nofollow">新用户403404</a></span> on <a href="http://www.acmerblog.com/dp-assembly-line-scheduling-5888.html#comment-75330" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有没有必要请让人民自己判断</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30463">
+<article class="comment" id="comment-30463">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">cyyuen</a></span> on <a href="http://www.acmerblog.com/dp-assembly-line-scheduling-5888.html#comment-30463" rel="nofollow"><time datetime="2015-07-08T03:23:30+00:00" pubdate="">2015年7月8日 at 上午3:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好。代码比书上的简练！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30473">
+<article class="comment" id="comment-30473">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">CCat</a></span> on <a href="http://www.acmerblog.com/dp-assembly-line-scheduling-5888.html#comment-30473" rel="nofollow"><time datetime="2015-04-20T15:52:06+00:00" pubdate="">2015年4月20日 at 下午3:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很棒的网站，加油！⛽️</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30471">
+<article class="comment" id="comment-30471">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">MCIT</a></span> on <a href="http://www.acmerblog.com/dp-assembly-line-scheduling-5888.html#comment-30471" rel="nofollow"><time datetime="2015-04-17T14:12:13+00:00" pubdate="">2015年4月17日 at 下午2:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>通不过。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30466">
+<article class="comment" id="comment-30466">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hanyi</a></span> on <a href="http://www.acmerblog.com/dp-assembly-line-scheduling-5888.html#comment-30466" rel="nofollow"><time datetime="2015-03-23T02:31:24+00:00" pubdate="">2015年3月23日 at 上午2:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这一题的代码这样提交时错误的~少考虑了很多情况</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30467">
+<article class="comment" id="comment-30467">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yupeng.bai</a></span> on <a href="http://www.acmerblog.com/dp-assembly-line-scheduling-5888.html#comment-30467" rel="nofollow"><time datetime="2015-03-12T20:03:31+00:00" pubdate="">2015年3月12日 at 下午8:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我没看懂题目<br/>
+2<br/>
+5 6 -1 5 4 -7<br/>
+7 0 6 -1 1 -6 7 -5<br/>
+我觉得第一个应该是5 6 -1 5 4 输出是19 5 4<br/>
+第二个是7 0 6 -1 1 -6 7输出是14 7 7<br/>
+不知道题目例子是怎么得出来的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30472">
+<article class="comment" id="comment-30472">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">645198</a></span> on <a href="http://www.acmerblog.com/dp-assembly-line-scheduling-5888.html#comment-30472" rel="nofollow"><time datetime="2015-02-07T11:26:18+00:00" pubdate="">2015年2月7日 at 上午11:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>参考 <a href="http://www.acmerblog.com/leetcode-solutions-6422.html" rel="nofollow">http://www.acmerblog.com/leetcode-solutions-6422.html</a></p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30469">
+<article class="comment" id="comment-30469">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1520006273</a></span> on <a href="http://www.acmerblog.com/dp-assembly-line-scheduling-5888.html#comment-30469" rel="nofollow"><time datetime="2015-01-15T08:24:51+00:00" pubdate="">2015年1月15日 at 上午8:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真考人啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30468">
+<article class="comment" id="comment-30468">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wall_</a></span> on <a href="http://www.acmerblog.com/dp-assembly-line-scheduling-5888.html#comment-30468" rel="nofollow"><time datetime="2014-11-05T17:54:14+00:00" pubdate="">2014年11月5日 at 下午5:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>原来的主机不行，目前更换到了国内主机</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30474">
+<article class="comment" id="comment-30474">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">beizhiwu</a></span> on <a href="http://www.acmerblog.com/dp-assembly-line-scheduling-5888.html#comment-30474" rel="nofollow"><time datetime="2014-10-21T17:24:33+00:00" pubdate="">2014年10月21日 at 下午5:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>抱歉，确实是弄错了，原来的代码是错误的，删掉了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30465">
+<article class="comment" id="comment-30465">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">3136869079</a></span> on <a href="http://www.acmerblog.com/dp-assembly-line-scheduling-5888.html#comment-30465" rel="nofollow"><time datetime="2014-10-02T11:50:35+00:00" pubdate="">2014年10月2日 at 上午11:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不是有公式吗？何不直接计算</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30462">
+<article class="comment" id="comment-30462">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">silianbo</a></span> on <a href="http://www.acmerblog.com/dp-assembly-line-scheduling-5888.html#comment-30462" rel="nofollow"><time datetime="2014-08-22T07:53:31+00:00" pubdate="">2014年8月22日 at 上午7:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p><a href="http://beeder.me" rel="nofollow">http://beeder.me</a> 这个网站上有很多poj和hihoCoder的题解，质量不错，欢迎转载。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30470">
+<article class="comment" id="comment-30470">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">chengleisheng</a></span> on <a href="http://www.acmerblog.com/dp-assembly-line-scheduling-5888.html#comment-30470" rel="nofollow"><time datetime="2014-08-01T12:35:27+00:00" pubdate="">2014年8月1日 at 下午12:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>原来欧几里德定理应用这么多</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30464">
+<article class="comment" id="comment-30464">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Trenson</a></span> on <a href="http://www.acmerblog.com/dp-assembly-line-scheduling-5888.html#comment-30464" rel="nofollow"><time datetime="2014-07-21T03:43:38+00:00" pubdate="">2014年7月21日 at 上午3:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一段代码中：<br/>
+ next <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/>  = next <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> ;<br/>
+明显不对吧，应该是 next <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> =j;才对</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

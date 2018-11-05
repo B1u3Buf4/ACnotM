@@ -1,0 +1,432 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>04-16</div>
+<div class="tit"><h1 class="entry-title">九度-1371-最小的K个数</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/jdoj" rel="category tag" title="查看九度OJ中的全部文章">九度OJ</a>, <a href="http://www.acmerblog.com/category/offer" rel="category tag" title="查看剑指offer中的全部文章">剑指offer</a>, <a href="http://www.acmerblog.com/category/basis/sort" rel="category tag" title="查看排序中的全部文章">排序</a></span><span class="i4">围观1185次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5712" href="http://www.acmerblog.com/jiudu-1371-mink-5712.html#comments" title="《九度-1371-最小的K个数》上的评论">27 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p>这个题目再经典不过了，也是常见的面试题。</p>
+<dl>
+<dt><b>题目描述：</b></dt>
+<dd>输入n个整数，找出其中最小的K个数。例如输入4,5,1,6,2,7,3,8这8个数字，则最小的4个数字是1,2,3,4,。</dd>
+</dl>
+<dl>
+<dt><b>输入：</b></dt>
+<dd>每个测试案例包括2行：第一行为2个整数n，k(1&lt;=n，k&lt;=200000)，表示数组的长度。
+<p>第二行包含n个整数，表示这n个数，数组中的数的范围是[0,1000 000 000]。</p>
+</dd>
+</dl>
+<dl>
+<dt><b>输出：</b></dt>
+<dd>对应每个测试案例，输出最小的k个数，并按从小到大顺序打印。</dd>
+</dl>
+<dl>
+<dt><b>样例输入：</b></dt>
+<dd>
+<pre>8 4
+4 5 1 6 2 7 3 8</pre>
+</dd>
+</dl>
+<dl>
+<dt><b>样例输出：</b></dt>
+<dd>
+<pre>1 2 3 4</pre>
+</dd>
+</dl>
+<p>此题的不同之处是最后的输出结果需要是排序过的，一般是不要求这个的。</p>
+<p>最常见的解法就是使用快速排序和大顶堆。</p>
+<p>方法一使用快速排序的思想，划分的操作不用改，对递归部分稍作修改</p>
+<pre class="brush:cpp">#include&lt;stdio.h&gt;
+#include&lt;algorithm&gt;
+using namespace std;
+int partition(int arr[], int s, int e){
+    int x = arr[s];
+    int r = e+1;
+    int l = s;
+    while(l &lt; r){
+        while(l&lt;e &amp;&amp; arr[++l] &lt;= x);
+        while(r&gt;s &amp;&amp; arr[--r] &gt; x);
+        if(l &gt;= r) break;
+        swap(arr[r],  arr[l]);
+    }
+    arr[s] = arr[r];
+    arr[r] = x;
+    return r;
+}
+int k;
+void minK(int arr[],int start,int end){
+    if(start &gt;= end) return;
+    int index = partition(arr,start,end);
+    if(index == k) return;
+    //类似二分的思想，比快速排序要少一个递归
+    if(index &gt; k) minK(arr,start,index-1);
+    else minK(arr,index+1,end);
+}
+const int M = 200001;
+int n,arr[M];
+int main()
+{
+    while(scanf("%d%d",&amp;n, &amp;k) != EOF){
+        for(int i=0; i&lt;n; i++){
+            scanf("%d", &amp;arr[i]);
+        }
+         --k;
+         minK(arr,0,n-1);
+         sort(arr,arr+k+1);//输出结果需要是排序的
+         for(int i=0; i&lt;k; i++)
+             printf("%d ",arr[i]);
+         printf("%d\n",arr[k]);
+    }
+    return 0;
+}
+
+/**************************************************************
+    Problem: 1371
+    User: coder
+    Language: C++
+    Result: Accepted
+    Time:810 ms
+    Memory:1800 kb
+****************************************************************/</pre>
+<p>方法二使用 大顶堆。</p>
+<pre class="brush:cpp">#include &lt;algorithm&gt;
+#include &lt;cstdio&gt;
+using namespace std;
+int n,k,a[200000];
+void adjustHeap(int idx){
+    int l = idx*2 + 1;
+    int r = idx*2 + 2;
+    int largeIndex = idx;
+    //先检查边界。k即为要创建的堆的大小
+    while( l&lt;k  || r&lt;k ){
+        if(l&lt;k &amp;&amp; a[l] &gt; a[largeIndex]) largeIndex = l;
+        if(r&lt;k &amp;&amp; a[r] &gt; a[largeIndex]) largeIndex = r;
+        if(largeIndex != idx){
+            //交换 root和子节点。
+            swap(a[idx], a[largeIndex]);
+            //交换之后继续调整子节点
+            idx = largeIndex;
+            l = idx*2 + 1;
+            r = idx*2 + 2;
+        }else{
+            break; //无需调整
+        }
+    }
+}
+void buildHeap(){
+    for(int i= (k-1)/2; i&gt;=0; i--){
+        adjustHeap(i);
+    }
+}
+int main(){
+    while(scanf("%d%d", &amp;n, &amp;k) != EOF){
+        for(int i = 0; i &lt; k; i++)
+            scanf("%d", &amp;a[i]);
+        buildHeap();
+        for(int i = k; i &lt; n; i++){
+            scanf("%d", &amp;a[i]);
+            if(a[0] &gt; a[i]){
+                swap(a[0],a[i]);
+                adjustHeap(0);
+            }
+        }
+        sort(a,a+k);
+        for(int i = 0; i&lt;k-1; i++)
+                printf("%d ", a[i]);
+        printf("%d\n", a[k-1]);
+    }
+}
+
+/**************************************************************
+    Problem: 1371
+    User: coder
+    Language: C++
+    Result: Accepted
+    Time:910 ms
+    Memory:1800 kb
+****************************************************************/</pre>
+<p>可见效率其实相差并不大。</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75775">
+<article class="comment" id="comment-75775">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524821" rel="external nofollow">新用户571854</a></span> on <a href="http://www.acmerblog.com/jiudu-1371-mink-5712.html#comment-75775" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>***xt   为啥还是非法~~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75774">
+<article class="comment" id="comment-75774">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524821" rel="external nofollow">新用户571854</a></span> on <a href="http://www.acmerblog.com/jiudu-1371-mink-5712.html#comment-75774" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>***xt   为啥还是非法~~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75773">
+<article class="comment" id="comment-75773">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524821" rel="external nofollow">新用户571854</a></span> on <a href="http://www.acmerblog.com/jiudu-1371-mink-5712.html#comment-75773" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>***xt   为啥还是非法~~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75772">
+<article class="comment" id="comment-75772">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524821" rel="external nofollow">新用户571854</a></span> on <a href="http://www.acmerblog.com/jiudu-1371-mink-5712.html#comment-75772" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>***xt   为啥还是非法~~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75771">
+<article class="comment" id="comment-75771">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524821" rel="external nofollow">新用户571854</a></span> on <a href="http://www.acmerblog.com/jiudu-1371-mink-5712.html#comment-75771" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>***xt   为啥还是非法~~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75770">
+<article class="comment" id="comment-75770">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524821" rel="external nofollow">新用户571854</a></span> on <a href="http://www.acmerblog.com/jiudu-1371-mink-5712.html#comment-75770" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>***xt   为啥还是非法~~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75769">
+<article class="comment" id="comment-75769">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524821" rel="external nofollow">新用户571854</a></span> on <a href="http://www.acmerblog.com/jiudu-1371-mink-5712.html#comment-75769" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>***xt   为啥还是非法~~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75782">
+<article class="comment" id="comment-75782">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524821" rel="external nofollow">新用户571854</a></span> on <a href="http://www.acmerblog.com/jiudu-1371-mink-5712.html#comment-75782" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>***xt   为啥还是非法~~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75781">
+<article class="comment" id="comment-75781">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524821" rel="external nofollow">新用户571854</a></span> on <a href="http://www.acmerblog.com/jiudu-1371-mink-5712.html#comment-75781" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>***xt   为啥还是非法~~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75780">
+<article class="comment" id="comment-75780">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524821" rel="external nofollow">新用户571854</a></span> on <a href="http://www.acmerblog.com/jiudu-1371-mink-5712.html#comment-75780" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>***xt   为啥还是非法~~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75779">
+<article class="comment" id="comment-75779">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524821" rel="external nofollow">新用户571854</a></span> on <a href="http://www.acmerblog.com/jiudu-1371-mink-5712.html#comment-75779" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>***xt   为啥还是非法~~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75778">
+<article class="comment" id="comment-75778">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524821" rel="external nofollow">新用户571854</a></span> on <a href="http://www.acmerblog.com/jiudu-1371-mink-5712.html#comment-75778" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>***xt   为啥还是非法~~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75777">
+<article class="comment" id="comment-75777">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524821" rel="external nofollow">新用户571854</a></span> on <a href="http://www.acmerblog.com/jiudu-1371-mink-5712.html#comment-75777" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>***xt   为啥还是非法~~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75776">
+<article class="comment" id="comment-75776">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524821" rel="external nofollow">新用户571854</a></span> on <a href="http://www.acmerblog.com/jiudu-1371-mink-5712.html#comment-75776" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>***xt   为啥还是非法~~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58766">
+<article class="comment" id="comment-58766">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ygwx</a></span> on <a href="http://www.acmerblog.com/jiudu-1371-mink-5712.html#comment-58766" rel="nofollow"><time datetime="2015-06-26T10:00:18+00:00" pubdate="">2015年6月26日 at 上午10:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好的，多谢指出</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49310">
+<article class="comment" id="comment-49310">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hsp_77_abc</a></span> on <a href="http://www.acmerblog.com/jiudu-1371-mink-5712.html#comment-49310" rel="nofollow"><time datetime="2015-04-11T19:24:33+00:00" pubdate="">2015年4月11日 at 下午7:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>写的很好~~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58768">
+<article class="comment" id="comment-58768">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jade1827</a></span> on <a href="http://www.acmerblog.com/jiudu-1371-mink-5712.html#comment-58768" rel="nofollow"><time datetime="2015-04-06T10:44:11+00:00" pubdate="">2015年4月6日 at 上午10:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>“可以发现,树将是满二叉树,”这句话不对吧，构造的树应该是“完全二叉树”，而非“满二叉树”。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63575">
+<article class="comment" id="comment-63575">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Rocky</a></span> on <a href="http://www.acmerblog.com/jiudu-1371-mink-5712.html#comment-63575" rel="nofollow"><time datetime="2015-03-11T00:37:16+00:00" pubdate="">2015年3月11日 at 上午12:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>分析的很详细！赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63577">
+<article class="comment" id="comment-63577">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">we</a></span> on <a href="http://www.acmerblog.com/jiudu-1371-mink-5712.html#comment-63577" rel="nofollow"><time datetime="2015-02-21T08:49:58+00:00" pubdate="">2015年2月21日 at 上午8:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有的，已更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30276">
+<article class="comment" id="comment-30276">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1193658339</a></span> on <a href="http://www.acmerblog.com/jiudu-1371-mink-5712.html#comment-30276" rel="nofollow"><time datetime="2015-01-14T15:07:57+00:00" pubdate="">2015年1月14日 at 下午3:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个是代码高亮功能，那就再换一个颜色</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30275">
+<article class="comment" id="comment-30275">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">testnew</a></span> on <a href="http://www.acmerblog.com/jiudu-1371-mink-5712.html#comment-30275" rel="nofollow"><time datetime="2014-12-21T16:26:21+00:00" pubdate="">2014年12月21日 at 下午4:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63576">
+<article class="comment" id="comment-63576">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaotong2055</a></span> on <a href="http://www.acmerblog.com/jiudu-1371-mink-5712.html#comment-63576" rel="nofollow"><time datetime="2014-10-19T18:16:08+00:00" pubdate="">2014年10月19日 at 下午6:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是穷举，但是代码有优化（v数组），并不是2^n。测试数据应该没问题，之前有超时的代码。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58767">
+<article class="comment" id="comment-58767">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gyouxu</a></span> on <a href="http://www.acmerblog.com/jiudu-1371-mink-5712.html#comment-58767" rel="nofollow"><time datetime="2014-10-12T02:18:54+00:00" pubdate="">2014年10月12日 at 上午2:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，赞一个！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30274">
+<article class="comment" id="comment-30274">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">beizhiwu</a></span> on <a href="http://www.acmerblog.com/jiudu-1371-mink-5712.html#comment-30274" rel="nofollow"><time datetime="2014-07-16T13:39:06+00:00" pubdate="">2014年7月16日 at 下午1:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢支持！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-326">
+<article class="comment" id="comment-326">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.zhouleyu.com" rel="external nofollow">zhouleyu</a></span> on <a href="http://www.acmerblog.com/jiudu-1371-mink-5712.html#comment-326" rel="nofollow"><time datetime="2014-04-29T12:23:37+00:00" pubdate="">2014年4月29日 at 下午12:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不考虑最后将结果排序的话，快排的时间复杂度是O(N) ，而堆排的是O(N*logK)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63574">
+<article class="comment" id="comment-63574">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ygwx</a></span> on <a href="http://www.acmerblog.com/jiudu-1371-mink-5712.html#comment-63574" rel="nofollow"><time datetime="2014-04-27T23:20:03+00:00" pubdate="">2014年4月27日 at 下午11:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为是要把从字符串s的start位到当前位在hash中重置，修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-311">
+<article class="comment" id="comment-311">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">lambda</span> on <a href="http://www.acmerblog.com/jiudu-1371-mink-5712.html#comment-311" rel="nofollow"><time datetime="2014-04-22T09:09:01+00:00" pubdate="">2014年4月22日 at 上午9:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不考虑最后将结果排序的话，快排的时间复杂度是O(N) ，而堆排的是O(N*logK),这样比较看，快排快</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

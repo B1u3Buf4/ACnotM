@@ -1,0 +1,523 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>01-31</div>
+<div class="tit"><h1 class="entry-title">纸上谈兵: AVL树</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/zhuanti/algorithm" rel="category tag" title="查看算法分析中的全部文章">算法分析</a></span><span class="i4">围观1626次</span><span class="i3"><a class="ds-thread-count" data-thread-key="3975" href="http://www.acmerblog.com/avl-tree-3975.html#comments" title="《纸上谈兵: AVL树》上的评论">13 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p><span style="font-family: courier new,courier;">作者：Vamei 出处：http://www.cnblogs.com/vamei 欢迎转载，也请保留这段声明。谢谢！</span></p>
+<p><span style="font-family: courier new,courier;"> </span></p>
+<h3><span style="font-family: courier new,courier;">二叉搜索树的深度与搜索效率</span></h3>
+<p><span style="font-family: courier new,courier;">我们在<a class="postTitle2" href="http://www.cnblogs.com/vamei/archive/2013/03/17/2962290.html" id="cb_post_title_url">树, 二叉树, 二叉搜索树</a>中提到，一个有n个节点的二叉树，它的最小深度为<span style="color: #ff0000;">log(n)</span>，最大深度为<span style="color: #ff0000;">n</span>。比如下面两个二叉树:</span></p>
+<p><span style="font-family: courier new,courier;"><img alt="" src="http://cdn.acmerblog.com/img/1391395886165.png" style="display: block; margin-left: auto; margin-right: auto;"/></span></p>
+<p style="text-align: center;"><span style="font-family: courier new,courier;">深度为n的二叉树</span></p>
+<p style="text-align: center;"><span style="font-family: courier new,courier;"><img alt="" src="http://cdn.acmerblog.com/img/1391395886395.png"/></span></p>
+<p style="text-align: center;"><span style="font-family: courier new,courier;">深度为log(n)的二叉树</span></p>
+<p><span style="font-family: courier new,courier;">这两个二叉树同时也是<span style="color: #ff0000;">二叉搜索树<span style="color: #000000;">(参考<a class="postTitle2" href="http://www.cnblogs.com/vamei/archive/2013/03/17/2962290.html" id="cb_post_title_url">树, 二叉树, 二叉搜索树</a>)</span></span>。注意，log以2为基底。<span style="color: #ff0000;">log(n)</span>是指深度的量级。根据我们对深度的定义，精确的最小深度为floor(log(n)+1)。</span></p>
+<p><span style="font-family: courier new,courier;">我们将处于同一深度的节点归为一层。如果除最后一层外的其他层都被节点填满时，二叉树有最小深度log(n)。</span></p>
+<p><span style="font-family: courier new,courier;">二叉搜索树的深度越小，那么搜索所需要的运算时间越小。一个深度为log(n)的二叉搜索树，搜索算法的时间复杂度也是log(n)。然而，我们在<a href="http://www.cnblogs.com/vamei/archive/2013/03/17/2962290.html">二叉搜索树</a>中已经实现的插入和删除操作并不能让保持log(n)的深度。如果我们按照8，7，6，5，4，3，2，1的顺序插入节点，那么就是一个深度为n的二叉树。那么，搜索算法的时间复杂度为n。</span></p>
+<p><span style="font-family: courier new,courier;"> </span></p>
+<p><span style="font-family: courier new,courier;">n和log(n)的时间复杂度意味着什么呢？时间复杂度代表了完成算法所需要的运算次数。时间复杂度越小，算法的速度越快。</span></p>
+<p><span style="font-family: courier new,courier;"><img alt="" src="http://cdn.acmerblog.com/img/1391395886590.jpg" style="display: block; margin-left: auto; margin-right: auto;"/></span></p>
+<p><span style="font-family: courier new,courier;">可以看到，随着元素的增加，log(n)的时间复杂度的增长要远小于n。所以，我们自然希望二叉搜索树能尽可能保持log(n)的深度。在上面深度为n的例子中，我们发现，每个节点只有左节点被填满。树的每一层都有很多空位。能不能尽可能减少每一层的空位呢？ (相应的，减少树的深度)</span></p>
+<p><span style="font-family: courier new,courier;"><img alt="" height="385" src="http://cdn.acmerblog.com/img/1391395886785.jpg" style="display: block; margin-left: auto; margin-right: auto;" width="390"/></span></p>
+<p style="text-align: center;"><span style="font-family: courier new,courier;">“紧致”的树</span></p>
+<p><span style="font-family: courier new,courier;">一种想法是先填满一层，再去填充下一层，这样就是一个完全二叉树(complete binary tree)。这样的二叉树实现插入算法会比较复杂。我们将介绍一种思路相似，但比较容易实现的树状数据结构——AVL树。</span></p>
+<p><span style="font-family: courier new,courier;"> </span></p>
+<h3><span style="font-family: courier new,courier;">AVL树</span></h3>
+<p><span style="font-family: courier new,courier;"><span class="mw-redirect"><span style="color: #ff0000;">AVL树</span>是根据它的发明者G. M. <span style="color: #ff0000;">A</span>delson-<span style="color: #ff0000;">V</span>elskii</span>和<span class="mw-redirect">E. M. <span style="color: #ff0000;">L</span>andis命名的。</span>它是一种特殊的二叉搜索树。AVL树要求: <span style="color: #ff0000;">任一节点的左子树深度和右子树深度相差不超过1</span> </span></p>
+<p><span style="font-family: courier new,courier;">(空树的深度为0。注意，有的教材中，采用了不同的深度定义方法，所以空树的深度为-1)</span></p>
+<p> </p>
+<p><span style="font-family: courier new,courier;">下面是AVL树:</span></p>
+<p><span style="font-family: courier new,courier;"><img alt="" src="http://cdn.acmerblog.com/img/1391395887353.png" style="display: block; margin-left: auto; margin-right: auto;"/></span></p>
+<p style="text-align: center;"><span style="font-family: courier new,courier;">AVL树</span></p>
+<p><span style="font-family: courier new,courier;">AVL树的特性让二叉搜索树的节点实现<span style="color: #ff0000;">平衡</span>(balance)：节点相对均匀分布，而不是偏向某一侧。因此，AVL树的搜索算法复杂度是<span style="color: #ff0000;">log(n)</span>的量级。</span></p>
+<p><span style="font-family: courier new,courier;">我们在<a href="http://www.cnblogs.com/vamei/archive/2013/03/17/2962290.html">二叉搜索树</a>中定义的操作，除了插入，都可以用在AVL树上 (假设使用懒惰删除)。如果进行<span style="color: #ff0000;">插入</span>操作，有可能会破坏AVL树的性质，比如:</span></p>
+<p><span style="font-family: courier new,courier;"><img alt="" src="http://cdn.acmerblog.com/img/1391395887682.png" style="display: block; margin-left: auto; margin-right: auto;"/></span></p>
+<p style="text-align: center;"><span style="font-family: courier new,courier;">插入2: 破坏AVL树</span></p>
+<p><span style="font-family: courier new,courier;">观察节点5，它的左子树深度为2，右子树深度为0，所以左右两个子树深度相差为2，不再是AVL树。由于2的加入，从节点6，1，5，3到2的层数都增加1。6, 1, 5节点的AVL性质都被破坏。如果从节点2向上回溯，节点5是第一个被破坏的。从节点3开始的子树深度加1，这是造成6, 1, 5的AVL性质被破坏的本质原因。我们将5和3之间的路径画成<span style="color: #ff0000;">虚线</span>(就好像挂了重物，边被拉断一样)。</span></p>
+<p><span style="font-family: courier new,courier;"> </span></p>
+<p><span style="font-family: courier new,courier;">我们可以通过<span style="color: #ff0000;">单旋照(single rotation)<span style="color: #000000;">，调整</span></span>以5为根节点的子树，来修正因为插入一个元素而引起的对AVL性质的破坏。如下:</span></p>
+<p><span style="font-family: courier new,courier;"><img alt="" src="http://cdn.acmerblog.com/img/1391395888168.png" style="display: block; margin-left: auto; margin-right: auto;"/></span></p>
+<p style="text-align: center;"><span style="font-family: courier new,courier;">Single rotation: 左侧超重，向右转</span></p>
+<p><span style="font-family: courier new,courier;">通过单旋转，3成为新的根节点，2,5称为3的左右子节点。子树重新成为AVL树。该子树的深度减小1，这将自动修正2带给节点6,1的“超负荷”。</span></p>
+<p> </p>
+<p><span style="font-family: courier new,courier;">单旋转效果如下：</span></p>
+<p style="text-align: center;"><span style="font-family: courier new,courier;"><img alt="" src="http://cdn.acmerblog.com/img/1391395888479.png" style="display: block; margin-left: auto; margin-right: auto;"/> 向右单旋转</span></p>
+<p><span style="font-family: courier new,courier;">特别要注意的是，为了保持二叉树的性质，子树B过继给了节点5。</span></p>
+<p><span style="font-family: courier new,courier;">向左单旋转与之类似。作为练习，可以尝试绘制向左单旋转的示意图。</span></p>
+<p> </p>
+<p><span style="font-family: courier new,courier;">但如果插入的节点不是2，而是4，会是如何呢？</span></p>
+<p><span style="font-family: courier new,courier;"><img alt="" src="http://cdn.acmerblog.com/img/1391395888723.png" style="display: block; margin-left: auto; margin-right: auto;"/></span></p>
+<p style="text-align: center;"><span style="font-family: courier new,courier;">插入4</span></p>
+<p style="text-align: left;"><span style="font-family: courier new,courier;">尝试单旋转，会发现无法解决问题。以5为根节点的子树向右单旋转后，树将以3为根节点，4,5为子节点。4比3大，却是3的左子节点，显然，这依然不符合二叉搜索树的性质。但基于和上面相似的原则(调整以5为根节点的树)，我们发现有一个简单的解决方式：</span></p>
+<p style="text-align: left;"><span style="font-family: courier new,courier;"><img alt="" src="http://cdn.acmerblog.com/img/1391395888983.png" style="display: block; margin-left: auto; margin-right: auto;"/></span></p>
+<p style="text-align: center;"><span style="font-family: courier new,courier;">double rotation</span></p>
+<p style="text-align: center;"><span style="font-family: courier new,courier;"> </span></p>
+<p style="text-align: left;"><span style="font-family: courier new,courier;">上面的操作被称作<span style="color: #ff0000;">双旋转(double rotation)</span>。双旋转实际上是进行两次单旋转: 4为根节点的子树先进行一次向左的单旋转，然后将5为根节点的子树进行了一次向右的单旋转。这样恢复了树的ACL性质。</span></p>
+<p style="text-align: left;"><span style="font-family: courier new,courier;"> </span></p>
+<p style="text-align: left;"><span style="font-family: courier new,courier;">对于AVL树，可以证明，在新增一个节点时，总可以通过一次旋转恢复AVL树的性质。</span></p>
+<p style="text-align: left;"><span style="font-family: courier new,courier;">当我们插入一个新的节点时，<span style="color: #ff0000;"><span style="color: #000000;">在哪里旋转？是用</span><span style="color: #888888;">单旋转还是双旋转</span></span>?</span></p>
+<p style="text-align: left;"><span style="font-family: courier new,courier;"><img alt="" src="http://cdn.acmerblog.com/img/1391395889288.png" style="display: block; margin-left: auto; margin-right: auto;"/></span></p>
+<p style="text-align: left;"><span style="font-family: courier new,courier;">我们按照如下基本步骤进行：</span></p>
+<p style="text-align: left;"><span style="font-family: courier new,courier;">1. 按照二叉搜索树的方式增加节点，新增节点称为一个叶节点。</span></p>
+<p style="text-align: left;"><span style="font-family: courier new,courier;">2. 从新增节点开始，回溯到<span style="color: #ff0000;">第一个失衡节点</span>(5)。</span></p>
+<p style="text-align: left;"><span style="font-family: courier new,courier;">    (如果回溯到根节点，还没有失衡节点，就说明该树已经符合AVL性质。)</span></p>
+<p style="text-align: left;"><span style="font-family: courier new,courier;">3. 找到<span style="color: #ff0000;">断的边</span>(5-&gt;3)，并确定断弦的方向(5的左侧)</span></p>
+<p style="text-align: left;"><span style="font-family: courier new,courier;">4. 以断边下端(3)为根节点，确定两个子树中的哪一个深度大(左子树还是右子树)。</span></p>
+<p style="text-align: left;"><span style="font-family: courier new,courier;">    (这两棵子树的深度不可能相等，而且深度大的子树包含有新增节点。想想为什么)</span></p>
+<p style="text-align: left;"><span style="font-family: courier new,courier;">5. 如果第2和第3步中的<span style="color: #ff0000;">方向一致</span>(都为左或者都为右)，需要<span style="color: #ff0000;">单旋转</span>以失衡节点为根节点的子树。</span></p>
+<p style="text-align: left;"><span style="font-family: courier new,courier;">    <span style="color: #ff0000;">否则</span>，<span style="color: #ff0000;">双旋转</span>以失衡节点为根节点的子树。</span></p>
+<p style="text-align: left;"><span style="font-family: courier new,courier;"> </span></p>
+<p style="text-align: left;"><span style="font-family: courier new,courier;">下面是AVL树的插入算法实现如下:</span></p>
+<pre class="brush:cpp ">/* By Vamei */
+/* binary search tree */
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+typedef struct node *position;
+typedef int ElementTP;
+
+struct node {
+    int depth; 
+    position parent;
+    ElementTP element;
+    position lchild;
+    position rchild;
+};
+
+/* pointer =&gt; root node of the tree */
+typedef struct node *TREE;
+
+position insert_value(TREE, ElementTP);
+int depth(TREE);
+
+static void insert_node_to_nonempty_tree(TREE, position);
+static void update_root_depth(TREE); 
+static TREE recover_avl(TREE, position);
+static int depth_diff(TREE); 
+static position insert_leaf(TREE, ElementTP);
+static void insert_node_to_nonempty_tree(TREE, position);
+static TREE left_single_rotate(TREE);
+static TREE left_double_rotate(TREE);
+static TREE right_single_rotate(TREE);
+static TREE right_double_rotate(TREE);
+
+void main(void) 
+{
+    TREE tr;
+    position np;
+    ElementTP element;
+    tr = NULL;
+    tr = insert_value(tr, 18);
+    tr = insert_value(tr, 5);
+    printf("root: %d\n", tr-&gt;element);
+    printf("depth: %d\n", depth(tr));
+    tr = insert_value(tr, 2); 
+    printf("root: %d\n", tr-&gt;element);
+    printf("depth: %d\n", depth(tr));
+    tr = insert_value(tr, 4);
+    printf("root: %d\n", tr-&gt;element);
+    printf("depth: %d\n", depth(tr));
+    printf("root-&gt;lchild: %d\n", tr-&gt;lchild-&gt;element);
+    tr = insert_value(tr, 3);
+    printf("root: %d\n", tr-&gt;element);
+    printf("depth: %d\n", depth(tr));
+    printf("root-&gt;lchild: %d\n", tr-&gt;lchild-&gt;element);
+    printf("root-&gt;lchild-&gt;lchild: %d\n", tr-&gt;lchild-&gt;lchild-&gt;element);
+}
+
+
+/*
+ * insert value
+ *
+ */
+position insert_value(TREE tr, ElementTP value) 
+{
+    position new;
+
+    /* insert a value to a binary search tree */
+    new = insert_leaf(tr, value);
+    update_root_depth(new);
+    if (tr == NULL) {
+        tr = new;
+    }
+    else {
+        tr = recover_avl(tr, new);
+    }
+    return tr;
+}
+
+/*
+ * get the depth of the tree
+ * use this function to access depth
+ */
+int depth(TREE tr) {
+    if (tr == NULL) {
+        return 0;
+    }
+    else {
+        return tr-&gt;depth;
+    }
+}
+
+//========================================
+// static functions: for internal use
+
+/* 
+ * traverse the path from new node to root node
+ * make one rotation, recover AVL and stop
+ */
+static TREE recover_avl(TREE tr, position np) 
+{
+    int myDiff;
+    while (np != NULL) {
+        update_root_depth(np);
+        myDiff = depth_diff(np);
+    if (myDiff &gt; 1 || myDiff &lt; -1) {
+            if (myDiff &gt; 1) {
+                /* left rotate needed */
+                if(depth_diff(np-&gt;rchild) &gt; 0) {
+                    np = left_single_rotate(np);
+                }
+                else {
+                    np = left_double_rotate(np);
+                }
+            }
+            if (myDiff &lt; -1) {
+                if(depth_diff(np-&gt;lchild) &lt; 0) {
+                    np = right_single_rotate(np);
+                }
+                else {
+                    np = right_double_rotate(np);
+                }
+            }
+            /* if rotation changes root node */
+            if (np-&gt;parent == NULL) tr = np;
+            break;
+        }
+        np = np-&gt;parent;
+    }
+    
+    return tr;
+}
+
+/*
+ * difference of rchild-&gt;depth and lchild-&gt;depth
+ */
+static int depth_diff(TREE tr) 
+{
+    if (tr == NULL) {
+        return 0;
+    }
+    else {
+        return depth(tr-&gt;rchild) - depth(tr-&gt;lchild);
+    }
+}
+
+
+/* 
+ * left single rotation 
+ * return the new root
+ */
+static TREE left_single_rotate(TREE tr) 
+{
+    TREE newRoot, parent;
+    parent  = tr-&gt;parent;
+    newRoot = tr-&gt;rchild;
+    /* detach &amp; attach */ 
+    if (newRoot-&gt;lchild != NULL) newRoot-&gt;lchild-&gt;parent = tr;
+    tr-&gt;rchild = newRoot-&gt;lchild;
+    update_root_depth(tr);
+   
+    /* raise new root node */
+    newRoot-&gt;lchild = tr;
+    newRoot-&gt;parent = parent;
+    if (parent != NULL) {
+        if (parent-&gt;lchild == tr) {
+        parent-&gt;lchild = newRoot;
+    }
+    else {
+        parent-&gt;rchild = newRoot;
+    }
+    }
+    tr-&gt;parent = newRoot;
+    update_root_depth(newRoot);
+    return newRoot;
+}
+
+/* 
+ * right single rotation 
+ * return the new root
+ */
+static TREE right_single_rotate(TREE tr) 
+{
+    TREE newRoot, parent;
+    parent  = tr-&gt;parent;
+    newRoot = tr-&gt;lchild;
+
+    /* detach &amp; attach */
+    if (newRoot-&gt;rchild != NULL) newRoot-&gt;rchild-&gt;parent = tr;
+    tr-&gt;lchild = newRoot-&gt;rchild;
+    update_root_depth(tr);
+  
+    /* raise new root node */
+    newRoot-&gt;rchild = tr;
+    newRoot-&gt;parent = parent;
+    if (parent != NULL) {
+        if (parent-&gt;lchild == tr) {
+        parent-&gt;lchild = newRoot;
+    }
+    else {
+        parent-&gt;rchild = newRoot;
+    }
+    }
+    tr-&gt;parent = newRoot;
+    update_root_depth(newRoot);
+    return newRoot;
+}
+
+/*
+ * left double rotation
+ * return
+ */
+static TREE left_double_rotate(TREE tr) 
+{
+    right_single_rotate(tr-&gt;rchild);
+    return left_single_rotate(tr);
+}
+
+/*
+ * right double rotation
+ * return
+ */
+static TREE right_double_rotate(TREE tr) 
+{
+    left_single_rotate(tr-&gt;lchild);
+    return right_single_rotate(tr);
+}
+
+/*
+ * update tr-&gt;depth
+ * assume lchild-&gt;depth and rchild-&gt;depth are correct
+ */
+static void update_root_depth(TREE tr) 
+{
+    int maxChildDepth; 
+    int depLChild, depRChild;
+    if (tr==NULL) return;
+    else {
+        depLChild = depth(tr-&gt;lchild);
+        depRChild = depth(tr-&gt;rchild);
+        maxChildDepth = depLChild &gt; depRChild ? depLChild : depRChild;
+        tr-&gt;depth = maxChildDepth + 1;
+    }
+}
+
+/* 
+ * insert a new value into the tree as a leaf
+ * return address of the new node
+ */
+static position insert_leaf(TREE tr, ElementTP value) 
+{
+    position np;
+    /* prepare the node */
+    np = (position) malloc(sizeof(struct node));
+    np-&gt;element = value;
+    np-&gt;parent  = NULL;
+    np-&gt;lchild  = NULL;
+    np-&gt;rchild  = NULL;
+ 
+    if (tr != NULL) {
+        insert_node_to_nonempty_tree(tr, np);
+    }
+    return np;
+}
+
+/*
+ * insert a node to a non-empty tree
+ * called by insert_value()
+ */
+static void insert_node_to_nonempty_tree(TREE tr, position np)
+{
+    /* insert the node */
+    if(np-&gt;element &lt;= tr-&gt;element) {
+        if (tr-&gt;lchild == NULL) {
+            /* then tr-&gt;lchild is the proper place */
+            tr-&gt;lchild = np;
+            np-&gt;parent = tr;
+            return;
+        }
+        else {
+            insert_node_to_nonempty_tree(tr-&gt;lchild, np);
+        }
+    }
+    else if(np-&gt;element &gt; tr-&gt;element) {
+        if (tr-&gt;rchild == NULL) {
+            tr-&gt;rchild = np;
+            np-&gt;parent = tr;
+            return;
+        }
+        else {
+            insert_node_to_nonempty_tree(tr-&gt;rchild, np);
+        }
+    }
+}</pre>
+<p><span style="font-family: courier new,courier;"> </span></p>
+<p><span style="font-family: courier new,courier;">输出如下：</span></p>
+<p><span style="color: #800000; font-family: courier new,courier;">root: 18</span><br/><span style="color: #800000; font-family: courier new,courier;">depth: 2</span></p>
+<p><span style="color: #800000; font-family: courier new,courier;">root: 5</span><br/><span style="color: #800000; font-family: courier new,courier;">depth: 2</span></p>
+<p><span style="color: #800000; font-family: courier new,courier;">root: 5</span><br/><span style="color: #800000; font-family: courier new,courier;">depth: 3</span><br/><span style="color: #800000; font-family: courier new,courier;">root-&gt;lchild: 2</span></p>
+<p><span style="color: #800000; font-family: courier new,courier;">depth: 3</span><br/><span style="color: #800000; font-family: courier new,courier;">root-&gt;lchild: 3</span><br/><span style="color: #800000; font-family: courier new,courier;">root-&gt;lchild-&gt;lchild: 2</span></p>
+<p style="text-align: left;"><span style="font-family: courier new,courier;">(空行是额外加的)</span></p>
+<p style="text-align: left;"><span style="font-family: courier new,courier;"> </span></p>
+<p style="text-align: left;"><span style="font-family: courier new,courier;">总结:</span></p>
+<p style="text-align: left;"><span style="font-family: courier new,courier;">AVL树: 平衡，深度相差不超过1</span></p>
+<p style="text-align: left;"><span style="font-family: courier new,courier;">单旋转，双旋转</span></p>
+<p style="text-align: left;"> </p>
+<p style="text-align: left;"><span style="font-family: courier new,courier;">欢迎继续阅读<a href="http://www.cnblogs.com/vamei/archive/2013/03/22/2974052.html">“纸上谈兵: 算法与数据结构”</a>系列。</span></p>
+<p style="text-align: left;"> </p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-84378">
+<article class="comment" id="comment-84378">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521032" rel="external nofollow">新用户129016</a></span> on <a href="http://www.acmerblog.com/avl-tree-3975.html#comment-84378" rel="nofollow"><time datetime="2017-04-12T23:52:08+00:00" pubdate="">2017年4月12日 at 下午11:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>狗心里说：我把前腿放下还得游泳 更累！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-45474">
+<article class="comment" id="comment-45474">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sgx_go</a></span> on <a href="http://www.acmerblog.com/avl-tree-3975.html#comment-45474" rel="nofollow"><time datetime="2015-06-11T19:35:25+00:00" pubdate="">2015年6月11日 at 下午7:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为nn</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-56908">
+<article class="comment" id="comment-56908">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mechine</a></span> on <a href="http://www.acmerblog.com/avl-tree-3975.html#comment-56908" rel="nofollow"><time datetime="2014-11-21T09:37:35+00:00" pubdate="">2014年11月21日 at 上午9:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-56906">
+<article class="comment" id="comment-56906">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tzf888888</a></span> on <a href="http://www.acmerblog.com/avl-tree-3975.html#comment-56906" rel="nofollow"><time datetime="2014-11-17T18:02:37+00:00" pubdate="">2014年11月17日 at 下午6:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么不直接用STL排序呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22527">
+<article class="comment" id="comment-22527">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">pascal</a></span> on <a href="http://www.acmerblog.com/avl-tree-3975.html#comment-22527" rel="nofollow"><time datetime="2014-10-24T21:51:34+00:00" pubdate="">2014年10月24日 at 下午9:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>秒！~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-45475">
+<article class="comment" id="comment-45475">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">liuyuedeyu</a></span> on <a href="http://www.acmerblog.com/avl-tree-3975.html#comment-45475" rel="nofollow"><time datetime="2014-10-18T22:51:04+00:00" pubdate="">2014年10月18日 at 下午10:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可以根据二叉排序树的定义进行严格的排序树创建和后序遍历操作。如果形成的排序树相同，其树的前、中、后序遍历是相同的，但在此处不能使用中序遍历，因为，中序遍历的结果就是排序的结果。经在九度测试，运行时间90ms，比楼主的要快。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22528">
+<article class="comment" id="comment-22528">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">radish</a></span> on <a href="http://www.acmerblog.com/avl-tree-3975.html#comment-22528" rel="nofollow"><time datetime="2014-09-22T11:09:13+00:00" pubdate="">2014年9月22日 at 上午11:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你的理解应该是：即使主持人拿走一个箱子对结果没有影响。这样想，主持人拿走的箱子只是没有影响到你初始选择的那个箱子中有奖品的概率，但是改变了其余两个箱子的概率分布。由 1/3,1/3 变成了 0, 2/3</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-22526">
+<article class="comment" id="comment-22526">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Monkey_Sun</a></span> on <a href="http://www.acmerblog.com/avl-tree-3975.html#comment-22526" rel="nofollow"><time datetime="2014-09-15T18:00:58+00:00" pubdate="">2014年9月15日 at 下午6:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学习了！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22529">
+<article class="comment" id="comment-22529">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Cloudy</a></span> on <a href="http://www.acmerblog.com/avl-tree-3975.html#comment-22529" rel="nofollow"><time datetime="2014-07-29T12:10:04+00:00" pubdate="">2014年7月29日 at 下午12:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>博主的C++功底真是好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-62649">
+<article class="comment" id="comment-62649">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Xun_Brooklyn</a></span> on <a href="http://www.acmerblog.com/avl-tree-3975.html#comment-62649" rel="nofollow"><time datetime="2014-07-23T03:15:49+00:00" pubdate="">2014年7月23日 at 上午3:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很棒的网站，加油！⛽️</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-56907">
+<article class="comment" id="comment-56907">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wawa</a></span> on <a href="http://www.acmerblog.com/avl-tree-3975.html#comment-56907" rel="nofollow"><time datetime="2014-03-20T22:16:39+00:00" pubdate="">2014年3月20日 at 下午10:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>总数为2n，遍历到第n个，就是中间的位置</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-45476">
+<article class="comment" id="comment-45476">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">we</a></span> on <a href="http://www.acmerblog.com/avl-tree-3975.html#comment-45476" rel="nofollow"><time datetime="2014-02-28T16:39:45+00:00" pubdate="">2014年2月28日 at 下午4:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这种题解就相当于直接贴代码了，，想看的是思路</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-62650">
+<article class="comment" id="comment-62650">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiao1108</a></span> on <a href="http://www.acmerblog.com/avl-tree-3975.html#comment-62650" rel="nofollow"><time datetime="2014-02-14T05:35:43+00:00" pubdate="">2014年2月14日 at 上午5:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你指的哪个问题？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

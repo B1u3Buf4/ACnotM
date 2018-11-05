@@ -1,0 +1,488 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>01-26</div>
+<div class="tit"><h1 class="entry-title">hdu 2459 Maximum repetition substring-后缀数组-[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/basis/string" rel="category tag" title="查看字符串处理中的全部文章">字符串处理</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a></span><span class="i4">围观1553次</span><span class="i3"><a class="ds-thread-count" data-thread-key="3923" href="http://www.acmerblog.com/hdu-2459-maximum-repetition-substring-3923.html#comments" title="《hdu 2459 Maximum repetition substring-后缀数组-[解题报告]C++》上的评论">27 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Maximum repetition substring</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+The repetition number of a string is defined as the maximum number R such that the string can be partitioned into R same consecutive substrings. For example, the repetition number of "ababab" is 3 and "ababa" is 1.
+<p>Given a string containing lowercase letters, you are to find a substring of it with maximum repetition number. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input consists of multiple test cases. Each test case contains exactly one line, which<br/>gives a non-empty string consisting of lowercase letters. The length of the string will not be greater than 100,000.
+<p>The last test case is followed by a line containing a ‘#’. </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input consists of multiple test cases. Each test case contains exactly one line, which<br/>gives a non-empty string consisting of lowercase letters. The length of the string will not be greater than 100,000.
+<p>The last test case is followed by a line containing a ‘#’.</p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+ccabababc
+daabbccaa
+#</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case 1: ababab
+Case 2: aa</pre>
+<p> <!-- problem end --></p>
+<p>题意：让你求一个串中连续重复次数最多的串(不重叠)，如果重复的次数一样多的话就输出字典序小的那一串。</p>
+<p>分析：有一道比这个简单一些的题spoj 687，</p>
+<p>假设一个长度为l的子串重复出现两次，那么它必然会包含s[0]、s[l]、s[l*2]…之中的相邻的两个。不难看出，该重复子串必然会包含s[0..l]或s[l..l*2]或s[l*2..l*3]…。所以，我们可以枚举一个i，对于每个i*l的位置，利用后缀数组可以求出s[i*l..(i+1)*l]向后延伸的长度k。k/l+1即i*l..(i+1)*l这一段重复出现的次数。但还有一种情况。考虑以下的字符串：</p>
+<p>aababababab</p>
+<p>假设现在l=2，i=1。则当前得到的子串为ba.用后缀数组可以求得k=7，则ba共重复出现了4次。但实际上，长度为2的子串重复出现最多的应该是“ab”，出现了5次。可以看出来，上述方法求得的k不能整除l，故可能在i的左边位置存在一个子串能完整重复覆盖i这个子串后面的子串。这里是i左边一位的“ab”子串。分析下这种情况，可以得知，如果以i-(l-k%l)开头的长度为l的子串，向后延伸的长度能大于k的话，那么有一个子串出现次数为k/l+2。就这样，问题得到解决。</p>
+<p>这是根据罗xx大牛的论文里的解题报告得出的做法。我现在对于这种方法不是很理解，总感觉有可能会漏掉某些串，既然无话理解的话那就把它当做结论吧！！</p>
+<p>代码实现：</p>
+<pre class="brush:cpp ">#include&lt;cstdio&gt;
+#include&lt;cstring&gt;
+#include&lt;iostream&gt;
+#include&lt;cmath&gt;
+using namespace std;
+#define N 100005
+int ws1[N],wv[N],wa[N],wb[N];
+int rank[N],height[N],sa[N],len;
+char str[N],xiao;
+int dp[N][25];
+
+int min(int x,int y)
+{
+    return x&lt;y?x:y;
+}
+
+int cmp(int *r,int a,int b,int l)
+{
+    return r[a]==r[b] &amp;&amp; r[a+l]==r[b+l];
+}
+
+void da(char *r,int *sa,int n,int m)
+{
+    int i,j,p,*x=wa,*y=wb,*t;
+    for(i=0;i&lt;m;i++)
+        ws1[i]=0;
+    for(i=0;i&lt;n;i++)
+        ws1[x[i]=r[i]]++;
+    for(i=1;i&lt;m;i++)
+        ws1[i]+=ws1[i-1];
+    for(i=n-1;i&gt;=0;i--)
+        sa[--ws1[x[i]]]=i;
+    for(j=1,p=1;p&lt;n;j*=2,m=p)
+    {
+        for(p=0,i=n-j;i&lt;n;i++)
+            y[p++]=i;
+        for(i=0;i&lt;n;i++)
+            if(sa[i]&gt;=j)
+                y[p++]=sa[i]-j;
+        for(i=0;i&lt;n;i++)
+            wv[i]=x[y[i]];
+        for(i=0;i&lt;m;i++)
+            ws1[i]=0;
+        for(i=0;i&lt;n;i++)
+            ws1[wv[i]]++;
+        for(i=1;i&lt;m;i++)
+            ws1[i]+=ws1[i-1];
+        for(i=n-1;i&gt;=0;i--)
+            sa[--ws1[wv[i]]]=y[i];
+        for(t=x,x=y,y=t,p=1,x[sa[0]]=0,i=1;i&lt;n;i++)
+            x[sa[i]]=cmp(y,sa[i-1],sa[i],j)?p-1:p++;
+    }
+}
+
+void calheight(char *r,int *sa,int n)
+{
+     int i,j,k=0;
+     for(i=1;i&lt;=n;i++)
+         rank[sa[i]]=i;
+     for(i=0;i&lt;n;height[rank[i++]]=k)
+         for(k?k--:0,j=sa[rank[i]-1];r[i+k]==r[j+k];k++) ;
+}
+
+void RMQ()//RMQ初始化
+{
+    int i,j,m;
+    m=(int)(log((double)len)/log(2.00));
+    for(i=1;i&lt;=len;i++)
+       dp[i][0]=height[i];
+    for(j=1;j&lt;=m;j++)
+        for(i=1;i+(1&lt;&lt;j)-1&lt;=len;i++)
+            dp[i][j]=min(dp[i][j-1],dp[i+(1&lt;&lt;(j-1))][j-1]);
+}
+
+int lcp(int x,int y)//求最长公共前缀
+{
+    int t;
+    x=rank[x];y=rank[y];
+    if(x&gt;y)
+        swap(x,y);
+    x++;
+    t=(int)(log(double(y-x+1))/log(2.00));
+    return min(dp[x][t],dp[y-(1&lt;&lt;t)+1][t]);
+}
+
+void solve()
+{
+    int i,j,max=1,f=0,l1,num=0,t,node=1,k,cnt,p;
+    for(i=1;i&lt;=len/2;i++)//i&lt;=len/2优化了，枚举长度不同的循环节
+    {
+        for(j=0;j+i&lt;len;j+=i)
+        {
+           if(str[j]!=str[j+i])//这里也优化了
+               continue;
+           l1=lcp(j,j+i);
+           num=l1/i+1;
+           p=j;
+           t=i-l1%i;
+           cnt=0;
+           for(k=j-1;k&gt;=0&amp;&amp;k+i&gt;j&amp;&amp;str[k]==str[k+i];k--)//这个for循环我也不是很理解，但是大体的意思明白
+           {
+               cnt++;
+               if(cnt==t)
+               {
+                   num++;
+                   p=k;
+               }
+               else if(rank[k]&lt;rank[p])
+                   p=k;
+           }
+           if(max&lt;num)
+           {
+               f=p;
+               max=num;
+               node=i;
+           }
+           else if(max==num&amp;&amp;rank[f]&gt;rank[p])
+           {
+               f=p;
+               node=i;
+           }
+        }
+    }
+    if(max==1)
+    {
+        printf("%c\n",xiao);
+        return ;
+    }
+    for(i=f;i&lt;=f+max*node-1;i++)
+        printf("%c",str[i]);
+    printf("\n");
+} 
+
+int main()
+{
+    int T=0,i;
+    while(scanf("%s",str)!=EOF&amp;&amp;str[0]!='#')
+    {
+        T++;
+        len=strlen(str);
+        xiao='z'+1;
+        for(i=0;i&lt;len;i++)
+           if(str[i]&lt;xiao)
+               xiao=str[i];
+        str[len]='0';
+        da(str,sa,len+1,'z'+1);
+        calheight(str,sa,len);
+        RMQ();
+        printf("Case %d: ",T);
+        solve();
+    }
+    return 0;
+}</pre>
+<p> </p>
+<p>解题转自：http://www.cnblogs.com/jiangjing/archive/2013/08/11/3251719.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-84479">
+<article class="comment" id="comment-84479">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512016" rel="external nofollow">新用户631232</a></span> on <a href="http://www.acmerblog.com/hdu-2459-maximum-repetition-substring-3923.html#comment-84479" rel="nofollow"><time datetime="2017-04-13T01:15:54+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>卫泽只是稀饭童夕  况且他哪里可恶了？(〃＞皿＜)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-84478">
+<article class="comment" id="comment-84478">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512016" rel="external nofollow">新用户631232</a></span> on <a href="http://www.acmerblog.com/hdu-2459-maximum-repetition-substring-3923.html#comment-84478" rel="nofollow"><time datetime="2017-04-13T01:15:54+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>卫泽只是稀饭童夕  况且他哪里可恶了？(〃＞皿＜)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-84477">
+<article class="comment" id="comment-84477">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512016" rel="external nofollow">新用户631232</a></span> on <a href="http://www.acmerblog.com/hdu-2459-maximum-repetition-substring-3923.html#comment-84477" rel="nofollow"><time datetime="2017-04-13T01:15:54+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>卫泽只是稀饭童夕  况且他哪里可恶了？(〃＞皿＜)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-84476">
+<article class="comment" id="comment-84476">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512016" rel="external nofollow">新用户631232</a></span> on <a href="http://www.acmerblog.com/hdu-2459-maximum-repetition-substring-3923.html#comment-84476" rel="nofollow"><time datetime="2017-04-13T01:15:54+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>卫泽只是稀饭童夕  况且他哪里可恶了？(〃＞皿＜)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-84475">
+<article class="comment" id="comment-84475">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512016" rel="external nofollow">新用户631232</a></span> on <a href="http://www.acmerblog.com/hdu-2459-maximum-repetition-substring-3923.html#comment-84475" rel="nofollow"><time datetime="2017-04-13T01:15:54+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>卫泽只是稀饭童夕  况且他哪里可恶了？(〃＞皿＜)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-84474">
+<article class="comment" id="comment-84474">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512016" rel="external nofollow">新用户631232</a></span> on <a href="http://www.acmerblog.com/hdu-2459-maximum-repetition-substring-3923.html#comment-84474" rel="nofollow"><time datetime="2017-04-13T01:15:54+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>卫泽只是稀饭童夕  况且他哪里可恶了？(〃＞皿＜)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-84487">
+<article class="comment" id="comment-84487">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512016" rel="external nofollow">新用户631232</a></span> on <a href="http://www.acmerblog.com/hdu-2459-maximum-repetition-substring-3923.html#comment-84487" rel="nofollow"><time datetime="2017-04-13T01:15:54+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>卫泽只是稀饭童夕  况且他哪里可恶了？(〃＞皿＜)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-84486">
+<article class="comment" id="comment-84486">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512016" rel="external nofollow">新用户631232</a></span> on <a href="http://www.acmerblog.com/hdu-2459-maximum-repetition-substring-3923.html#comment-84486" rel="nofollow"><time datetime="2017-04-13T01:15:54+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>卫泽只是稀饭童夕  况且他哪里可恶了？(〃＞皿＜)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-84485">
+<article class="comment" id="comment-84485">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512016" rel="external nofollow">新用户631232</a></span> on <a href="http://www.acmerblog.com/hdu-2459-maximum-repetition-substring-3923.html#comment-84485" rel="nofollow"><time datetime="2017-04-13T01:15:54+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>卫泽只是稀饭童夕  况且他哪里可恶了？(〃＞皿＜)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-84484">
+<article class="comment" id="comment-84484">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512016" rel="external nofollow">新用户631232</a></span> on <a href="http://www.acmerblog.com/hdu-2459-maximum-repetition-substring-3923.html#comment-84484" rel="nofollow"><time datetime="2017-04-13T01:15:54+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>卫泽只是稀饭童夕  况且他哪里可恶了？(〃＞皿＜)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-84483">
+<article class="comment" id="comment-84483">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512016" rel="external nofollow">新用户631232</a></span> on <a href="http://www.acmerblog.com/hdu-2459-maximum-repetition-substring-3923.html#comment-84483" rel="nofollow"><time datetime="2017-04-13T01:15:54+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>卫泽只是稀饭童夕  况且他哪里可恶了？(〃＞皿＜)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-84482">
+<article class="comment" id="comment-84482">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512016" rel="external nofollow">新用户631232</a></span> on <a href="http://www.acmerblog.com/hdu-2459-maximum-repetition-substring-3923.html#comment-84482" rel="nofollow"><time datetime="2017-04-13T01:15:54+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>卫泽只是稀饭童夕  况且他哪里可恶了？(〃＞皿＜)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-84481">
+<article class="comment" id="comment-84481">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512016" rel="external nofollow">新用户631232</a></span> on <a href="http://www.acmerblog.com/hdu-2459-maximum-repetition-substring-3923.html#comment-84481" rel="nofollow"><time datetime="2017-04-13T01:15:54+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>卫泽只是稀饭童夕  况且他哪里可恶了？(〃＞皿＜)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-84480">
+<article class="comment" id="comment-84480">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512016" rel="external nofollow">新用户631232</a></span> on <a href="http://www.acmerblog.com/hdu-2459-maximum-repetition-substring-3923.html#comment-84480" rel="nofollow"><time datetime="2017-04-13T01:15:54+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>卫泽只是稀饭童夕  况且他哪里可恶了？(〃＞皿＜)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22160">
+<article class="comment" id="comment-22160">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">AE</a></span> on <a href="http://www.acmerblog.com/hdu-2459-maximum-repetition-substring-3923.html#comment-22160" rel="nofollow"><time datetime="2015-05-24T15:15:19+00:00" pubdate="">2015年5月24日 at 下午3:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>从数学角度确实是C(n,r)，能给个递推关系式吗，从分治的角度不好理解</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-22159">
+<article class="comment" id="comment-22159">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Emlar</a></span> on <a href="http://www.acmerblog.com/hdu-2459-maximum-repetition-substring-3923.html#comment-22159" rel="nofollow"><time datetime="2015-05-16T07:13:00+00:00" pubdate="">2015年5月16日 at 上午7:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈呀！这个Dijkstra模板好长OwQ！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22158">
+<article class="comment" id="comment-22158">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">room306</a></span> on <a href="http://www.acmerblog.com/hdu-2459-maximum-repetition-substring-3923.html#comment-22158" rel="nofollow"><time datetime="2015-04-25T11:43:39+00:00" pubdate="">2015年4月25日 at 上午11:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有意思，有难度</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-22161">
+<article class="comment" id="comment-22161">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wuzirui</a></span> on <a href="http://www.acmerblog.com/hdu-2459-maximum-repetition-substring-3923.html#comment-22161" rel="nofollow"><time datetime="2015-04-24T00:08:34+00:00" pubdate="">2015年4月24日 at 上午12:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>目前为止见过的最易懂的一个，多谢分享</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22168">
+<article class="comment" id="comment-22168">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">stamwoo</a></span> on <a href="http://www.acmerblog.com/hdu-2459-maximum-repetition-substring-3923.html#comment-22168" rel="nofollow"><time datetime="2015-04-19T12:11:39+00:00" pubdate="">2015年4月19日 at 下午12:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给力的文章，例子也非常好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-22167">
+<article class="comment" id="comment-22167">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ozhfo</a></span> on <a href="http://www.acmerblog.com/hdu-2459-maximum-repetition-substring-3923.html#comment-22167" rel="nofollow"><time datetime="2015-03-21T04:16:27+00:00" pubdate="">2015年3月21日 at 上午4:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>涨姿势了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-62590">
+<article class="comment" id="comment-62590">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">libaichuan07</a></span> on <a href="http://www.acmerblog.com/hdu-2459-maximum-repetition-substring-3923.html#comment-62590" rel="nofollow"><time datetime="2015-02-13T17:06:16+00:00" pubdate="">2015年2月13日 at 下午5:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>swap写成内联函数会不会好一些</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-22163">
+<article class="comment" id="comment-22163">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Dwayne</a></span> on <a href="http://www.acmerblog.com/hdu-2459-maximum-repetition-substring-3923.html#comment-22163" rel="nofollow"><time datetime="2015-01-29T14:48:56+00:00" pubdate="">2015年1月29日 at 下午2:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算法还停留在大学的知识中</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22165">
+<article class="comment" id="comment-22165">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangduanjing</a></span> on <a href="http://www.acmerblog.com/hdu-2459-maximum-repetition-substring-3923.html#comment-22165" rel="nofollow"><time datetime="2014-10-20T17:46:24+00:00" pubdate="">2014年10月20日 at 下午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>全是智力分析的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-22162">
+<article class="comment" id="comment-22162">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Bob</a></span> on <a href="http://www.acmerblog.com/hdu-2459-maximum-repetition-substring-3923.html#comment-22162" rel="nofollow"><time datetime="2014-10-14T21:56:50+00:00" pubdate="">2014年10月14日 at 下午9:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为是要把从字符串s的start位到当前位在hash中重置，修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-56843">
+<article class="comment" id="comment-56843">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">YangXiaoZhong</a></span> on <a href="http://www.acmerblog.com/hdu-2459-maximum-repetition-substring-3923.html#comment-56843" rel="nofollow"><time datetime="2014-10-10T10:55:08+00:00" pubdate="">2014年10月10日 at 上午10:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/d8/good_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-22166">
+<article class="comment" id="comment-22166">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangduanjing</a></span> on <a href="http://www.acmerblog.com/hdu-2459-maximum-repetition-substring-3923.html#comment-22166" rel="nofollow"><time datetime="2014-07-20T17:25:02+00:00" pubdate="">2014年7月20日 at 下午5:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>请问printAllCombination的时间复杂度怎么分析呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22164">
+<article class="comment" id="comment-22164">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yesMan</a></span> on <a href="http://www.acmerblog.com/hdu-2459-maximum-repetition-substring-3923.html#comment-22164" rel="nofollow"><time datetime="2014-05-12T02:50:40+00:00" pubdate="">2014年5月12日 at 上午2:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好。代码比书上的简练！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

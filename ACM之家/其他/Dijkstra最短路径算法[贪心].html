@@ -1,0 +1,420 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>06-22</div>
+<div class="tit"><h1 class="entry-title">Dijkstra最短路径算法[贪心]</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/graph/shortest-path" rel="category tag" title="查看最短路径中的全部文章">最短路径</a>, <a href="http://www.acmerblog.com/category/zhuanti/classic" rel="category tag" title="查看经典问题中的全部文章">经典问题</a></span><span class="i4">围观2162次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5876" href="http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html#comments" title="《Dijkstra最短路径算法[贪心]》上的评论">29 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p><strong>源最短路径问题</strong><br/>
+给定一个带权有向图 G=(V,E) ，其中每条边的权是一个非负实数。另外，还给定 V 中的一个顶点，称为源。现在我们要计算从源到所有其他各顶点的最短路径长度。这里的长度是指路上各边权之和。这个问题通常称为单源最短路径问题。</p>
+<p>前面<a href="http://www.acmerblog.com/bellman-ford-algorithm-5828.html">Bellman-Ford最短路径算法</a>讲了单源最短路径的Bellman-Ford算法(动态规划算法)。这里介绍另外一个更常见的算法Dijkstra算法。</p>
+<p>Dijkstra算法和 <a href="http://www.acmerblog.com/prims-minimum-spanning-tree-mst-5786.html">最小生成树Prim算法</a>最小生成树算法非常类似，大家可以先熟悉下个算法。两个算法都是基于贪心算法。虽然Dijkstra算法相对来说比Bellman-Ford 算法更快，但是不适用于有负权值边的图，贪心算法决定了它的目光短浅。而Bellman-Ford 算法从全局考虑，可以检测到有负权值的回路。</p>
+<p>这里模仿MST(Minimum Spanning Tree)的Prim算法，我们创建一个SPT(最短路径树)，最初只包含源点。我们维护两个集合，一组已经包含在SPT(最短路径树)中的顶点S集合,另一组是未包含在SPT内的顶点T集合。每次从T集合中选择到S集合路径最短的那个点，并加入到集合S中，并把这个点从集合T删除。直到T集合为空为止。</p>
+<p>举例说明，如下图所示的图：</p>
+<p><img alt="" height="266" src="http://d2o58evtke57tz.cloudfront.net/wp-content/uploads/Fig-11.jpg" width="571"/></p>
+<p>S集合最初为空，然后选取源点0，S集合为 {0}，源点到其它所有点的距离为 {0, 4, INF, INF, INF, INF, 8, INF} 。图中蓝色表示 SPT，迭代的过程如下</p>
+<p><img alt="" src="http://d2o58evtke57tz.cloudfront.net/wp-content/uploads/MST1.jpg"/>     <img alt="" src="http://d2o58evtke57tz.cloudfront.net/wp-content/uploads/DIJ2.jpg"/>   <img alt="" src="http://d2o58evtke57tz.cloudfront.net/wp-content/uploads/DIJ3.jpg"/>     <img alt="" src="http://d2o58evtke57tz.cloudfront.net/wp-content/uploads/DIJ4.jpg"/></p>
+<p>最终得到 SPT(最短路径树) 如下：</p>
+<p><img alt="" src="http://d2o58evtke57tz.cloudfront.net/wp-content/uploads/DIJ5.jpg"/></p>
+<p>算法C++实现：</p>
+<p>我们使用Boolean 数组sptSet[] (也有习惯用visit[]命名，表示是否访问过)，来表示顶点是否为有SPT中。sptSet[v]=true,说明顶点v在SPT中。 dist[] 用来存储源点到其它所有点的最短路径。</p>
+<p> </p>
+<pre class="brush:cpp">#include &lt;iostream&gt;
+#include &lt;stdio.h&gt;
+#include &lt;limits.h&gt;
+using namespace std;
+const int V = 9; //定义顶点个数
+
+//从未包含在SPT的集合T中，选取一个到S集合的最短距离的顶点。
+int getMinIndex(int dist[V], bool sptSet[V]) {
+	   int min = INT_MAX, min_index;
+	   for (int v = 0; v &lt; V; v++)
+	     if (sptSet[v] == false &amp;&amp; dist[v] &lt; min)
+	         min = dist[v], min_index = v;
+	   return min_index;
+}
+
+// 打印结果
+void printSolution(int dist[], int n) {
+	printf("Vertex   Distance from Source\n");
+	for (int i = 0; i &lt; V; i++)
+		printf("%d \t\t %d\n", i, dist[i]);
+}
+
+//source 代表源点
+void dijkstra(int graph[V][V], int source) {
+	int dist[V];     // 存储结果，从源点到 i的距离
+
+	bool sptSet[V]; // sptSet[i]=true 如果顶点i包含在SPT中
+
+	// 初始化. 0代表不可达
+	for (int i = 0; i &lt; V; i++){
+		dist[i] = (graph[source][i] == 0 ? INT_MAX:graph[source][i]);
+		sptSet[i] = false;
+	}
+
+	// 源点，距离总是为0. 并加入SPT
+	dist[source] = 0;
+	sptSet[source] = true;
+
+	// 迭代V-1次，因此不用计算源点了，还剩下V-1个需要计算的顶点。
+	for (int count = 0; count &lt; V - 1; count++) {
+		// u，是T集合中，到S集合距离最小的点
+		int u = getMinIndex(dist, sptSet);
+
+		// 加入SPT中
+		sptSet[u] = true;
+
+		//更新到V的距离。可以理解为Bellman-Ford中的松弛操作
+		for (int v = 0; v &lt; V; v++)
+			if (!sptSet[v] &amp;&amp; graph[u][v] &amp;&amp; dist[u] != INT_MAX
+					&amp;&amp; dist[u] + graph[u][v] &lt; dist[v])
+				dist[v] = dist[u] + graph[u][v];
+	}
+
+	printSolution(dist, V);
+}
+
+int main() {
+	/* 以例子中的图为例 */
+	int graph[V][V] =
+			{ { 0, 4, 0, 0, 0, 0, 0, 8, 0 }, { 4, 0, 8, 0, 0, 0, 0, 11, 0 }, {
+					0, 8, 0, 7, 0, 4, 0, 0, 2 }, { 0, 0, 7, 0, 9, 14, 0, 0, 0 },
+					{ 0, 0, 0, 9, 0, 10, 0, 0, 0 },
+					{ 0, 0, 4, 0, 10, 0, 2, 0, 0 },
+					{ 0, 0, 0, 14, 0, 2, 0, 1, 6 },
+					{ 8, 11, 0, 0, 0, 0, 1, 0, 7 },
+					{ 0, 0, 2, 0, 0, 0, 6, 7, 0 } };
+
+	dijkstra(graph, 0);
+
+	return 0;
+}</pre>
+<p>输出源点0到其它各个顶点的最短距离：</p>
+<pre class="brush:cpp">Vertex   Distance from Source
+0                0
+1                4
+2                12
+3                19
+4                21
+5                11
+6                9
+7                8
+8                14</pre>
+<p>其它</p>
+<p>1）如果需要打印路径的话，也很简单，使用一个 parent[] 数组记录上一个节点。参考<a href="http://www.acmerblog.com/prims-minimum-spanning-tree-mst-5786.html">最小生成树Prim算法</a></p>
+<p>2）这个是无向图的算法，有向图也类似</p>
+<p>3）这个算法是找到所有顶点的最短路径，如果我们只需要到其中一个顶点target的最短路径，可以在循环中加一个break，当u==target即可退出。</p>
+<p>4）Dijkstra<strong>不</strong>适合图中有负权值的边。</p>
+<p>参考：http://www.geeksforgeeks.org/greedy-algorithms-set-6-dijkstras-shortest-path-algorithm/</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75406">
+<article class="comment" id="comment-75406">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526571" rel="external nofollow">新用户840006</a></span> on <a href="http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html#comment-75406" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>叨叨是女神！女神！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75405">
+<article class="comment" id="comment-75405">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526571" rel="external nofollow">新用户840006</a></span> on <a href="http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html#comment-75405" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>叨叨是女神！女神！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75404">
+<article class="comment" id="comment-75404">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526571" rel="external nofollow">新用户840006</a></span> on <a href="http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html#comment-75404" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>叨叨是女神！女神！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75403">
+<article class="comment" id="comment-75403">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526571" rel="external nofollow">新用户840006</a></span> on <a href="http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html#comment-75403" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>叨叨是女神！女神！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75402">
+<article class="comment" id="comment-75402">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526571" rel="external nofollow">新用户840006</a></span> on <a href="http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html#comment-75402" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>叨叨是女神！女神！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75401">
+<article class="comment" id="comment-75401">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526571" rel="external nofollow">新用户840006</a></span> on <a href="http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html#comment-75401" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>叨叨是女神！女神！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75400">
+<article class="comment" id="comment-75400">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526571" rel="external nofollow">新用户840006</a></span> on <a href="http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html#comment-75400" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>叨叨是女神！女神！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75399">
+<article class="comment" id="comment-75399">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526571" rel="external nofollow">新用户840006</a></span> on <a href="http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html#comment-75399" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>叨叨是女神！女神！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75398">
+<article class="comment" id="comment-75398">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526571" rel="external nofollow">新用户840006</a></span> on <a href="http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html#comment-75398" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>叨叨是女神！女神！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75397">
+<article class="comment" id="comment-75397">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526571" rel="external nofollow">新用户840006</a></span> on <a href="http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html#comment-75397" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>叨叨是女神！女神！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75396">
+<article class="comment" id="comment-75396">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526571" rel="external nofollow">新用户840006</a></span> on <a href="http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html#comment-75396" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>叨叨是女神！女神！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64853">
+<article class="comment" id="comment-64853">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">qoPMs</span> on <a href="http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html#comment-64853" rel="nofollow"><time datetime="2016-11-12T03:34:55+00:00" pubdate="">2016年11月12日 at 上午3:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个更C刺j激，准备好手纸哦 A 片。HTTp://T.Cn/Rc4PF3o <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+<ul class="children">
+<li class="comment even depth-2" id="li-comment-65007">
+<article class="comment" id="comment-65007">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">这评论我一个游客都看不下去了</span> on <a href="http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html#comment-65007" rel="nofollow"><time datetime="2017-01-05T08:57:23+00:00" pubdate="">2017年1月5日 at 上午8:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>666</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ul><!-- .children -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-even depth-1" id="li-comment-64779">
+<article class="comment" id="comment-64779">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">OlgeL</span> on <a href="http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html#comment-64779" rel="nofollow"><time datetime="2016-10-21T05:47:23+00:00" pubdate="">2016年10月21日 at 上午5:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个更刺ｃ激，准备好手纸哦 A 片。。 <a href="http://T.CN/RcFeD2C" rel="nofollow">http://T.CN/RcFeD2C</a> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-odd thread-alt depth-1" id="li-comment-64720">
+<article class="comment" id="comment-64720">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">WvrSP</span> on <a href="http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html#comment-64720" rel="nofollow"><time datetime="2016-10-10T07:12:01+00:00" pubdate="">2016年10月10日 at 上午7:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个更刺ｃ激，准备好手纸哦 A 片。。 <a href="http://T.CN/RcFeD2C" rel="nofollow">http://T.CN/RcFeD2C</a> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-even depth-1" id="li-comment-63605">
+<article class="comment" id="comment-63605">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Riddick</a></span> on <a href="http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html#comment-63605" rel="nofollow"><time datetime="2015-06-25T03:50:23+00:00" pubdate="">2015年6月25日 at 上午3:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>博主的C++功底真是好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-odd thread-alt depth-1" id="li-comment-49402">
+<article class="comment" id="comment-49402">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fermi</a></span> on <a href="http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html#comment-49402" rel="nofollow"><time datetime="2015-06-01T16:44:52+00:00" pubdate="">2015年6月1日 at 下午4:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Good task for the group. Hold it up for every yeara??s winner. This is a excellent oppotunity for a lot more enhancement. Indeed, obtaining far better and much better is constantly the crucial. Just like my pal suggests on the truth about ab muscles, he just keeps obtaining much better.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-even depth-1" id="li-comment-58806">
+<article class="comment" id="comment-58806">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">daisyleedq</a></span> on <a href="http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html#comment-58806" rel="nofollow"><time datetime="2015-05-24T05:35:35+00:00" pubdate="">2015年5月24日 at 上午5:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>请不要灌水，多谢！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-odd thread-alt depth-1" id="li-comment-49399">
+<article class="comment" id="comment-49399">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1193658339</a></span> on <a href="http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html#comment-49399" rel="nofollow"><time datetime="2015-04-15T21:35:03+00:00" pubdate="">2015年4月15日 at 下午9:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>大致看了下，算法的时间复杂度没有很本性的提升，算不上高效。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-even depth-1" id="li-comment-63604">
+<article class="comment" id="comment-63604">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NiKaWaLi2015</a></span> on <a href="http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html#comment-63604" rel="nofollow"><time datetime="2014-10-21T23:32:06+00:00" pubdate="">2014年10月21日 at 下午11:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>This write-up presents the gentle in which we can notice the fact. this is extremely wonderful one and gives in depth info.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-odd thread-alt depth-1" id="li-comment-49400">
+<article class="comment" id="comment-49400">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">becool456</a></span> on <a href="http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html#comment-49400" rel="nofollow"><time datetime="2014-10-17T21:46:32+00:00" pubdate="">2014年10月17日 at 下午9:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是穷举，但是代码有优化（v数组），并不是2^n。测试数据应该没问题，之前有超时的代码。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-even depth-1" id="li-comment-49401">
+<article class="comment" id="comment-49401">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">linyanjin</a></span> on <a href="http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html#comment-49401" rel="nofollow"><time datetime="2014-10-01T06:02:30+00:00" pubdate="">2014年10月1日 at 上午6:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>辛苦了，顶</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-odd thread-alt depth-1" id="li-comment-807">
+<article class="comment" id="comment-807">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">allan</span> on <a href="http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html#comment-807" rel="nofollow"><time datetime="2014-09-08T11:08:26+00:00" pubdate="">2014年9月8日 at 上午11:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>…. 配图居然是没方向的。。</p>
+</div>
+</article><!-- #comment-## -->
+<ul class="children">
+<li class="comment byuser comment-author-admin bypostauthor odd alt depth-2" id="li-comment-808">
+<article class="comment" id="comment-808">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://weibo.com/itong2055" rel="external nofollow">管理员</a></span> on <a href="http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html#comment-808" rel="nofollow"><time datetime="2014-09-08T12:49:41+00:00" pubdate="">2014年9月8日 at 下午12:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>说的就是无向图啊，有向图的算法也是类似的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ul><!-- .children -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-695">
+<article class="comment" id="comment-695">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">苏城</span> on <a href="http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html#comment-695" rel="nofollow"><time datetime="2014-08-11T21:49:40+00:00" pubdate="">2014年8月11日 at 下午9:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Dijkstra 不适合有负权值的边吧</p>
+</div>
+</article><!-- #comment-## -->
+<ul class="children">
+<li class="comment byuser comment-author-admin bypostauthor odd alt depth-2" id="li-comment-701">
+<article class="comment" id="comment-701">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://weibo.com/itong2055" rel="external nofollow">管理员</a></span> on <a href="http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html#comment-701" rel="nofollow"><time datetime="2014-08-12T11:52:36+00:00" pubdate="">2014年8月12日 at 上午11:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>漏了一个"不"，已修正:)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ul><!-- .children -->
+</li><!-- #comment-## -->
+<li class="comment even thread-odd thread-alt depth-1" id="li-comment-63606">
+<article class="comment" id="comment-63606">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">keyyuanxin</a></span> on <a href="http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html#comment-63606" rel="nofollow"><time datetime="2014-07-23T09:15:16+00:00" pubdate="">2014年7月23日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>题本身没错，但是HDOJ放题目的时候，前面有个题目解释了什么是XXX定律。<br/>
+这里直接放了这个题目，肯定没几个人明白是干啥</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-even depth-1" id="li-comment-58807">
+<article class="comment" id="comment-58807">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">lsdtc1225</a></span> on <a href="http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html#comment-58807" rel="nofollow"><time datetime="2014-07-08T03:25:58+00:00" pubdate="">2014年7月8日 at 上午3:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p><a href="https://coding.net/moon/miracle" rel="nofollow">https://coding.net/moon/miracle</a></p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-odd thread-alt depth-1" id="li-comment-30435">
+<article class="comment" id="comment-30435">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zclzcllove</a></span> on <a href="http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html#comment-30435" rel="nofollow"><time datetime="2014-07-03T13:59:30+00:00" pubdate="">2014年7月3日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跟书上的解法不一样，不知道哪个效率要高些</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

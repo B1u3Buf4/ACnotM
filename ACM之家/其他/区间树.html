@@ -1,0 +1,398 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>06-29</div>
+<div class="tit"><h1 class="entry-title">区间树</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/data-struct/trees" rel="category tag" title="查看树形结构中的全部文章">树形结构</a>, <a href="http://www.acmerblog.com/category/zhuanti/algorithm" rel="category tag" title="查看算法分析中的全部文章">算法分析</a></span><span class="i4">围观3134次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5902" href="http://www.acmerblog.com/interval-tree-5902.html#comments" title="《区间树》上的评论">23 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p>考虑这样一个情况，我们有一个区间的集合，我们需有效地实现以下的操作。</p>
+<p>1）添加一个区间</p>
+<p>2）删除一个区间</p>
+<p>3）给定一个区间x，查询x 是否和已存在的区间存在重合。</p>
+<p><strong>区间树</strong></p>
+<p><strong></strong>区间树是在红黑树基础上进行扩展得到的支持以区间为元素的动态集合的操作，其中每个节点的关键值是区间的左端点。通过建立这种特定的结构，可是使区间的元素的查找和插入都可以在O(lgn)的时间内完成。相比于基础的数据结构，增加了一个max[x]，即以x为根的子树中所有区间的断点的最大值。区间树如下图所示：</p>
+<p><a href="http://cdn.acmerblog.com/wp-content/uploads/2014/06/IntervalSearcTree.png"><img alt="IntervalSearcTree" class="alignnone size-full wp-image-5903" height="577" src="http://cdn.acmerblog.com/wp-content/uploads/2014/06/IntervalSearcTree.png" width="924"/></a></p>
+<p>区间树的每个节点存储以下信息：</p>
+<p>1） 一个表示为 <em>[low, high] </em>的区间</p>
+<p>2） 当前节点的子树的最大值。</p>
+<p><strong>区间查找</strong></p>
+<p>这里的区间查找的并不是精确查找，而是查找和给定区间重叠的元素，重叠的定义如下图所示：</p>
+<p><img alt="" src="http://hi.csdn.net/attachment/201106/8/0_1307539490IYaA.gif"/></p>
+<p>实现INTERVAL-SEARCH(T, i)，返回一个和区间i重叠的区间，若无，则返回nil[T]。基本思想是我们通过左子树的max进行划分：如果左子树的max值小于low[i]，则左子树不存在这样的区间和i重叠，转到右子树；否则，转到右子树，因为左子树的端点小于右子树，若左子树无可能，右子树也必然不可能。</p>
+<p>INTERVAL-SEARCH(T, i)整个过程如下：</p>
+<pre class="brush:other">INTERVAL-SEARCH(T, i)
+x ← root[T]
+while x≠nil[T] and i does not overlap x
+   do if left[x]≠nil[T] and max[left[x]]≥low[i]
+         then x ← left[x]
+         else x ← right[x]
+return x</pre>
+<p><strong> 区间树的实现</strong></p>
+<p>下面是C++的实现，为了简单，使用的是普通二分查找树的算法，实际上应该用AVL树或红黑树来实现。但是基本原理是一样的，只是性能有所差别。</p>
+<pre class="brush:cpp">#include &lt;iostream&gt;
+using namespace std;
+
+// 表示一个区间
+struct Interval
+{
+    int low, high;
+};
+
+//区间树节点
+struct ITNode
+{
+    Interval *i; // 'i' 也可以是一个普通的变量
+    int max;
+    ITNode *left, *right;
+};
+
+//创建一个区间树
+ITNode * newNode(Interval i)
+{
+    ITNode *temp = new ITNode;
+    temp-&gt;i = new Interval(i);
+    temp-&gt;max = i.high;
+    temp-&gt;left = temp-&gt;right = NULL;
+};
+
+// 插入区间
+ITNode *insert(ITNode *root, Interval i)
+{
+    if (root == NULL)
+        return newNode(i);
+    // 获得当前节点的low
+    int l = root-&gt;i-&gt;low;
+    if (i.low &lt; l)
+        root-&gt;left = insert(root-&gt;left, i);
+    else
+        root-&gt;right = insert(root-&gt;right, i);
+    // 重要：更新max
+    if (root-&gt;max &lt; i.high)
+        root-&gt;max = i.high;
+    return root;
+}
+
+// 检测两个区间是否重合
+bool doOVerlap(Interval i1, Interval i2)
+{
+    if (i1.low &lt;= i2.high &amp;&amp; i2.low &lt;= i1.high)
+        return true;
+    return false;
+}
+
+// 找一个重叠区间(可能有多个，只找到一个，优先找左子树的)
+Interval *intervalSearch(ITNode *root, Interval i)
+{
+    // 基本情况，树是空的
+    if (root == NULL) return NULL;
+
+    // If given interval overlaps with root
+    if (doOVerlap(*(root-&gt;i), i))
+        return root-&gt;i;
+
+    //左子树会有一个重叠区间
+    if (root-&gt;left != NULL &amp;&amp; root-&gt;left-&gt;max &gt;= i.low)
+        return intervalSearch(root-&gt;left, i);
+
+    // 否则，只可能出现在又子树
+    return intervalSearch(root-&gt;right, i);
+}
+
+void inorder(ITNode *root)
+{
+    if (root == NULL) return;
+
+    inorder(root-&gt;left);
+
+    cout &lt;&lt; "[" &lt;&lt; root-&gt;i-&gt;low &lt;&lt; ", " &lt;&lt; root-&gt;i-&gt;high &lt;&lt; "]"
+         &lt;&lt; " max = " &lt;&lt; root-&gt;max &lt;&lt; endl;
+
+    inorder(root-&gt;right);
+}
+
+// 测试
+int main()
+{
+    // 创建
+    Interval ints[] = {{15, 20}, {10, 30}, {17, 19},
+        {5, 20}, {12, 15}, {30, 40}
+    };
+    int n = sizeof(ints)/sizeof(ints[0]);
+    ITNode *root = NULL;
+    for (int i = 0; i &lt; n; i++)
+        root = insert(root, ints[i]);
+
+    cout &lt;&lt; "Inorder traversal of constructed Interval Tree is\n";
+    inorder(root);
+
+    Interval x = {6, 7};
+
+    cout &lt;&lt; "\nSearching for interval [" &lt;&lt; x.low &lt;&lt; "," &lt;&lt; x.high &lt;&lt; "]";
+    Interval *res = intervalSearch(root, x);
+    if (res == NULL)
+        cout &lt;&lt; "\nNo Overlapping Interval";
+    else
+        cout &lt;&lt; "\nOverlaps with [" &lt;&lt; res-&gt;low &lt;&lt; ", " &lt;&lt; res-&gt;high &lt;&lt; "]";
+}</pre>
+<p>输出：</p>
+<pre class="brush:other">Inorder traversal of constructed Interval Tree is
+[5, 20] max = 20
+[10, 30] max = 30
+[12, 15] max = 15
+[15, 20] max = 40
+[17, 19] max = 40
+[30, 40] max = 40
+
+Searching for interval [6,7]
+Overlaps with [5, 20]</pre>
+<p>区间树主要是用于几何数据结构和常用窗口查询，例如，电脑地图上找到在一个矩形窗口中的所有道路，或找到一个三维场景中的所有可见的元素。</p>
+<p><strong>区间树与线段树</strong></p>
+<p>点击这里<a href="http://www.acmerblog.com/segment-tree-sum-of-given-range-5886.html">线段树简介</a>。两种树都存储区间，只是另外附加的信息不同。线段树主要是查询优化对于给定的点，和区间树主要是优化查询区间的重叠对于一个给定的区间。</p>
+<p>参考：http://www.geeksforgeeks.org/interval-tree/</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75329">
+<article class="comment" id="comment-75329">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517758" rel="external nofollow">新用户766585</a></span> on <a href="http://www.acmerblog.com/interval-tree-5902.html#comment-75329" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也觉得很好吃，不过我不是伴着吃，是蘸着吃。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75328">
+<article class="comment" id="comment-75328">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517758" rel="external nofollow">新用户766585</a></span> on <a href="http://www.acmerblog.com/interval-tree-5902.html#comment-75328" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也觉得很好吃，不过我不是伴着吃，是蘸着吃。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75327">
+<article class="comment" id="comment-75327">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517758" rel="external nofollow">新用户766585</a></span> on <a href="http://www.acmerblog.com/interval-tree-5902.html#comment-75327" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也觉得很好吃，不过我不是伴着吃，是蘸着吃。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75326">
+<article class="comment" id="comment-75326">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517758" rel="external nofollow">新用户766585</a></span> on <a href="http://www.acmerblog.com/interval-tree-5902.html#comment-75326" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也觉得很好吃，不过我不是伴着吃，是蘸着吃。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75325">
+<article class="comment" id="comment-75325">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517758" rel="external nofollow">新用户766585</a></span> on <a href="http://www.acmerblog.com/interval-tree-5902.html#comment-75325" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也觉得很好吃，不过我不是伴着吃，是蘸着吃。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75324">
+<article class="comment" id="comment-75324">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517758" rel="external nofollow">新用户766585</a></span> on <a href="http://www.acmerblog.com/interval-tree-5902.html#comment-75324" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也觉得很好吃，不过我不是伴着吃，是蘸着吃。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75323">
+<article class="comment" id="comment-75323">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517758" rel="external nofollow">新用户766585</a></span> on <a href="http://www.acmerblog.com/interval-tree-5902.html#comment-75323" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也觉得很好吃，不过我不是伴着吃，是蘸着吃。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75322">
+<article class="comment" id="comment-75322">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517758" rel="external nofollow">新用户766585</a></span> on <a href="http://www.acmerblog.com/interval-tree-5902.html#comment-75322" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也觉得很好吃，不过我不是伴着吃，是蘸着吃。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75321">
+<article class="comment" id="comment-75321">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517758" rel="external nofollow">新用户766585</a></span> on <a href="http://www.acmerblog.com/interval-tree-5902.html#comment-75321" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也觉得很好吃，不过我不是伴着吃，是蘸着吃。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75320">
+<article class="comment" id="comment-75320">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517758" rel="external nofollow">新用户766585</a></span> on <a href="http://www.acmerblog.com/interval-tree-5902.html#comment-75320" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也觉得很好吃，不过我不是伴着吃，是蘸着吃。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75319">
+<article class="comment" id="comment-75319">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517758" rel="external nofollow">新用户766585</a></span> on <a href="http://www.acmerblog.com/interval-tree-5902.html#comment-75319" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也觉得很好吃，不过我不是伴着吃，是蘸着吃。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30477">
+<article class="comment" id="comment-30477">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">testnew</a></span> on <a href="http://www.acmerblog.com/interval-tree-5902.html#comment-30477" rel="nofollow"><time datetime="2015-07-11T09:06:33+00:00" pubdate="">2015年7月11日 at 上午9:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Java真是解决大数的利器</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30478">
+<article class="comment" id="comment-30478">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Happiness</a></span> on <a href="http://www.acmerblog.com/interval-tree-5902.html#comment-30478" rel="nofollow"><time datetime="2015-05-03T01:32:20+00:00" pubdate="">2015年5月3日 at 上午1:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有没有C++语言的代码？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63608">
+<article class="comment" id="comment-63608">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">linyanjin</a></span> on <a href="http://www.acmerblog.com/interval-tree-5902.html#comment-63608" rel="nofollow"><time datetime="2015-04-13T07:46:50+00:00" pubdate="">2015年4月13日 at 上午7:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>21行中，j&lt;10可改为j&lt;10-i，减少比较次数</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58813">
+<article class="comment" id="comment-58813">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Monkey_Sun</a></span> on <a href="http://www.acmerblog.com/interval-tree-5902.html#comment-58813" rel="nofollow"><time datetime="2015-03-08T11:22:04+00:00" pubdate="">2015年3月8日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第23行：<br/>
+hash <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = -1是否应该改成hash[s <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> ] = -1</p>
+<p>因为是要把从字符串s的start位到当前位在hash中重置</p>
+<p>修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30476">
+<article class="comment" id="comment-30476">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rick</a></span> on <a href="http://www.acmerblog.com/interval-tree-5902.html#comment-30476" rel="nofollow"><time datetime="2015-01-13T08:32:34+00:00" pubdate="">2015年1月13日 at 上午8:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个才是我想要的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49419">
+<article class="comment" id="comment-49419">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mr-zhang2011</a></span> on <a href="http://www.acmerblog.com/interval-tree-5902.html#comment-49419" rel="nofollow"><time datetime="2014-12-04T05:11:51+00:00" pubdate="">2014年12月4日 at 上午5:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>输出规范写错了哦~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58814">
+<article class="comment" id="comment-58814">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">everos</a></span> on <a href="http://www.acmerblog.com/interval-tree-5902.html#comment-58814" rel="nofollow"><time datetime="2014-10-15T14:21:48+00:00" pubdate="">2014年10月15日 at 下午2:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算法是程序的灵魂，算法分简单和复杂，如果不搞大数据类，程序员了解一下简单点的算法也是可以的，但是会算法的一定要会编程才行，程序员不一定要会算法，利于自己项目需要的可以简单了解。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58812">
+<article class="comment" id="comment-58812">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">acmclown</a></span> on <a href="http://www.acmerblog.com/interval-tree-5902.html#comment-58812" rel="nofollow"><time datetime="2014-10-07T03:07:57+00:00" pubdate="">2014年10月7日 at 上午3:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的方法，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63607">
+<article class="comment" id="comment-63607">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zclzcllove</a></span> on <a href="http://www.acmerblog.com/interval-tree-5902.html#comment-63607" rel="nofollow"><time datetime="2014-09-23T10:48:34+00:00" pubdate="">2014年9月23日 at 上午10:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这代码的输出格式不对阿，else语句的low=p移动一下位置，增加可读性</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63609">
+<article class="comment" id="comment-63609">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mechine</a></span> on <a href="http://www.acmerblog.com/interval-tree-5902.html#comment-63609" rel="nofollow"><time datetime="2014-09-11T12:00:23+00:00" pubdate="">2014年9月11日 at 下午12:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢提醒，是漏掉了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58815">
+<article class="comment" id="comment-58815">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">123456789_xd</a></span> on <a href="http://www.acmerblog.com/interval-tree-5902.html#comment-58815" rel="nofollow"><time datetime="2014-08-27T12:59:38+00:00" pubdate="">2014年8月27日 at 下午12:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>值得分享！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30475">
+<article class="comment" id="comment-30475">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">changjf</a></span> on <a href="http://www.acmerblog.com/interval-tree-5902.html#comment-30475" rel="nofollow"><time datetime="2014-08-05T14:42:49+00:00" pubdate="">2014年8月5日 at 下午2:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没错的，再乘以m的就多余了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,341 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>07-18</div>
+<div class="tit"><h1 class="entry-title">LeetCode-Sort List 链表排序</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/leetcode" rel="category tag" title="查看LeetCode中的全部文章">LeetCode</a>, <a href="http://www.acmerblog.com/category/basis/sort" rel="category tag" title="查看排序中的全部文章">排序</a></span><span class="i4">围观2195次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5982" href="http://www.acmerblog.com/leetcode-sort-list-5982.html#comments" title="《LeetCode-Sort List 链表排序》上的评论">20 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<h3>Sort List</h3>
+<p>Sort a linked list in <i>O</i>(<i>n</i> log <i>n</i>) time using constant space complexity.</p>
+<p>原题链接: <a href="http://oj.leetcode.com/problems/sort-list/" target="_blank">http://oj.leetcode.com/problems/sort-list/</a></p>
+<p>对链表进行排序，要求的时间复杂度为<i>O</i>(<i>n</i> log <i>n</i>)。nlogn的排序有快速排序、归并排序、堆排序。双向链表用快排比较适合，堆排序也可以用于链表，单向链表适合用归并排序。题目要求的是常数的空间复杂度，因为这里用了递归，如果算上栈空间的话，也要 o(logn)的复杂度。</p>
+<p>关于链表的划分，这里使用了快慢指针，从中间节点进行切开成单独的链表。在merge之后又会合并成一个链表。</p>
+<p>以下分别用归并排序和快速排序实现(Java)，遗憾的是快速排序的实现超时了，毕竟交换数据的次数过多，没有归并排序之家更换指针要快。快速排序的实现大家可以忽略，代码写的不太好。</p>
+<p>关于链表的归并排序可参考之前的一篇文章<a href="http://www.acmerblog.com/merge-sort-for-linked-list-5371.html" rel="bookmark" target="_blank" title="链向 归并排序对链表进行排序 的固定链接">归并排序对链表进行排序</a></p>
+<p>，只是实现比下面这个有些复杂。</p>
+<p><strong>1. 归并排序实现</strong></p>
+<pre class="brush:java">public class MergetSortList {
+
+	public static  ListNode sortList(ListNode head) {
+	    if(head == null || head.next == null) return head;
+		ListNode slow = head;
+		ListNode fast = head;
+		//用快慢指针找到中间节点
+	    while(fast.next != null &amp;&amp; fast.next.next != null){
+	    	slow = slow.next;
+	    	fast = fast.next.next;
+	    }
+	    ListNode list2 = slow.next;
+	    slow.next = null;
+	    head = sortList(head);
+	    list2 = sortList(list2);
+    	return merge(head, list2);
+	}
+
+	private static ListNode merge(ListNode list1, ListNode list2) {
+		if(list1 == null) return list2;
+		if(list2 == null) return list1;
+		ListNode newHead = new ListNode(0);//链表头不存储实际数据
+		ListNode last = newHead;
+		last = newHead;
+		//连接每个节点，只更换指针，因此空间复杂度为O(1)
+		while(list1 != null &amp;&amp; list2 != null){
+			if(list1.val &lt; list2.val){
+				last.next = list1;
+				list1 = list1.next;
+			}else{
+				last.next = list2;
+				list2 = list2.next;
+			}
+			last = last.next;
+		}
+		//最后剩余的部分，直接连接起来即可
+		if(list1 != null) last.next = list1;
+		else if(list2 != null) last.next = list2;
+		return newHead.next;
+	}
+
+	public static void main(String[] args) {
+		ListNode l1 = new ListNode(8);
+        ListNode l2 = new ListNode(7);
+        ListNode l3 = new ListNode(6);
+        ListNode l4 = new ListNode(5);
+        ListNode l5 = new ListNode(4);
+        ListNode l6 = new ListNode(3);
+
+    	l1.next = l2;
+    	l2.next = l3;
+    	l3.next = l4;
+    	l4.next = l5;
+    	l5.next = l6;
+
+    	l1 = sortList(l1);
+
+    	while(l1 != null){
+    		System.out.print(l1.val + " ");
+    		l1 = l1.next;
+    	}
+	}
+}</pre>
+<p><strong>2.快速排序实现</strong></p>
+<pre class="brush:java">	//以end节点作为pivot进行划分，返回划分的节点的前一个节点
+    public static ListNode partition(ListNode head, ListNode end){
+		int pivot = end.val;
+		ListNode lastSmallNode = null;
+		ListNode tmpHead = head;
+		while(tmpHead != end){
+			if(tmpHead.val &lt; pivot){
+				if(lastSmallNode == null) lastSmallNode = head;
+				else lastSmallNode = lastSmallNode.next;
+				int tmp = lastSmallNode.val;
+				lastSmallNode.val = tmpHead.val;
+				tmpHead.val = tmp;
+			}
+			tmpHead = tmpHead.next;
+		}
+		//有可能是划分的节点就是第一个，此时返回null
+		if(lastSmallNode == null){
+			end.val = head.val;
+			head.val = pivot;
+			return null;
+		}else{
+			end.val = lastSmallNode.next.val;
+			lastSmallNode.next.val = pivot;
+			return lastSmallNode;
+		}
+	}
+
+	public  static void quickSort(ListNode head, ListNode end){
+		if( head == null || head == end || end == null || head.next == null) return;
+		ListNode mid = partition(head, end);
+		quickSort(head, mid);
+		//空表示，划分点是第一个位置
+		if(mid == null)
+			quickSort(head.next, end);
+		//如果划分点是最后一个位置，就无需再排序
+		else if(mid != end &amp;&amp; mid.next != null &amp;&amp; mid.next != end)
+			quickSort(mid.next.next, end);
+	}
+
+	public static  ListNode sortList(ListNode head) {
+	    if(head == null || head.next == null) return head;
+		ListNode tail = head;
+		while(tail.next != null)
+			tail = tail.next;
+		quickSort(head,tail);
+    	return head;
+	}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75190">
+<article class="comment" id="comment-75190">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520178" rel="external nofollow">新用户133998</a></span> on <a href="http://www.acmerblog.com/leetcode-sort-list-5982.html#comment-75190" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把知道的扔掉一些或者给别人</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75189">
+<article class="comment" id="comment-75189">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520178" rel="external nofollow">新用户133998</a></span> on <a href="http://www.acmerblog.com/leetcode-sort-list-5982.html#comment-75189" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把知道的扔掉一些或者给别人</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75188">
+<article class="comment" id="comment-75188">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520178" rel="external nofollow">新用户133998</a></span> on <a href="http://www.acmerblog.com/leetcode-sort-list-5982.html#comment-75188" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把知道的扔掉一些或者给别人</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75187">
+<article class="comment" id="comment-75187">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520178" rel="external nofollow">新用户133998</a></span> on <a href="http://www.acmerblog.com/leetcode-sort-list-5982.html#comment-75187" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把知道的扔掉一些或者给别人</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75186">
+<article class="comment" id="comment-75186">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520178" rel="external nofollow">新用户133998</a></span> on <a href="http://www.acmerblog.com/leetcode-sort-list-5982.html#comment-75186" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把知道的扔掉一些或者给别人</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75185">
+<article class="comment" id="comment-75185">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520178" rel="external nofollow">新用户133998</a></span> on <a href="http://www.acmerblog.com/leetcode-sort-list-5982.html#comment-75185" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把知道的扔掉一些或者给别人</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75184">
+<article class="comment" id="comment-75184">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520178" rel="external nofollow">新用户133998</a></span> on <a href="http://www.acmerblog.com/leetcode-sort-list-5982.html#comment-75184" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把知道的扔掉一些或者给别人</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75183">
+<article class="comment" id="comment-75183">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520178" rel="external nofollow">新用户133998</a></span> on <a href="http://www.acmerblog.com/leetcode-sort-list-5982.html#comment-75183" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把知道的扔掉一些或者给别人</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49466">
+<article class="comment" id="comment-49466">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">chengleisheng</a></span> on <a href="http://www.acmerblog.com/leetcode-sort-list-5982.html#comment-49466" rel="nofollow"><time datetime="2015-07-15T07:15:08+00:00" pubdate="">2015年7月15日 at 上午7:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>图像处理那题解题报告在哪儿呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49465">
+<article class="comment" id="comment-49465">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">admin</a></span> on <a href="http://www.acmerblog.com/leetcode-sort-list-5982.html#comment-49465" rel="nofollow"><time datetime="2015-06-11T03:29:50+00:00" pubdate="">2015年6月11日 at 上午3:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么for循环找到的i一定是素数叻，而且约数定理说的是n=p1^a1*p2^a2*p3^a3*…*pk^ak，而你每次取余都用的是原来的m，也就是n</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49474">
+<article class="comment" id="comment-49474">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ktcer</a></span> on <a href="http://www.acmerblog.com/leetcode-sort-list-5982.html#comment-49474" rel="nofollow"><time datetime="2015-05-26T18:58:08+00:00" pubdate="">2015年5月26日 at 下午6:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>输入样例作为一个整体输入，带回车</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49472">
+<article class="comment" id="comment-49472">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fastislow</a></span> on <a href="http://www.acmerblog.com/leetcode-sort-list-5982.html#comment-49472" rel="nofollow"><time datetime="2015-05-15T03:25:43+00:00" pubdate="">2015年5月15日 at 上午3:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢支持！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49473">
+<article class="comment" id="comment-49473">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">skyand</a></span> on <a href="http://www.acmerblog.com/leetcode-sort-list-5982.html#comment-49473" rel="nofollow"><time datetime="2015-03-24T01:06:11+00:00" pubdate="">2015年3月24日 at 上午1:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正在学习搜索，很好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49469">
+<article class="comment" id="comment-49469">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jue</a></span> on <a href="http://www.acmerblog.com/leetcode-sort-list-5982.html#comment-49469" rel="nofollow"><time datetime="2015-03-21T03:07:25+00:00" pubdate="">2015年3月21日 at 上午3:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>输入样例作为一个整体输入，带回车</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49470">
+<article class="comment" id="comment-49470">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">litao</a></span> on <a href="http://www.acmerblog.com/leetcode-sort-list-5982.html#comment-49470" rel="nofollow"><time datetime="2015-02-23T03:13:51+00:00" pubdate="">2015年2月23日 at 上午3:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题别太纠结了，不同的编译器结果不一</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49463">
+<article class="comment" id="comment-49463">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tonight</a></span> on <a href="http://www.acmerblog.com/leetcode-sort-list-5982.html#comment-49463" rel="nofollow"><time datetime="2014-12-28T15:32:52+00:00" pubdate="">2014年12月28日 at 下午3:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>88行是多余的，可以删除</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49468">
+<article class="comment" id="comment-49468">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">raymanshf</a></span> on <a href="http://www.acmerblog.com/leetcode-sort-list-5982.html#comment-49468" rel="nofollow"><time datetime="2014-12-27T14:48:17+00:00" pubdate="">2014年12月27日 at 下午2:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>想问下computeLSPArray那里，if(len!=0) len=lps[len-1]是什么意思</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49471">
+<article class="comment" id="comment-49471">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bcys</a></span> on <a href="http://www.acmerblog.com/leetcode-sort-list-5982.html#comment-49471" rel="nofollow"><time datetime="2014-11-10T21:46:40+00:00" pubdate="">2014年11月10日 at 下午9:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，这里说的最长回文子序列，非子串</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49464">
+<article class="comment" id="comment-49464">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jintianya</a></span> on <a href="http://www.acmerblog.com/leetcode-sort-list-5982.html#comment-49464" rel="nofollow"><time datetime="2014-11-08T11:10:12+00:00" pubdate="">2014年11月8日 at 上午11:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很不错！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49467">
+<article class="comment" id="comment-49467">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">753951</a></span> on <a href="http://www.acmerblog.com/leetcode-sort-list-5982.html#comment-49467" rel="nofollow"><time datetime="2014-11-03T15:28:18+00:00" pubdate="">2014年11月3日 at 下午3:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>打字员路过。。。。。。算法是啥。。。能干嘛。。。。。。。。能吃么。。哎</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

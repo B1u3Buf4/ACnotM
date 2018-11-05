@@ -1,0 +1,332 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-07</div>
+<div class="tit"><h1 class="entry-title">动态规划(6)-最小花费路径</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/zhuanti/algorithm" rel="category tag" title="查看算法分析中的全部文章">算法分析</a>, <a href="http://www.acmerblog.com/category/zhuanti/classic" rel="category tag" title="查看经典问题中的全部文章">经典问题</a></span><span class="i4">围观1006次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4909" href="http://www.acmerblog.com/dp6-min-cost-path-4909.html#comments" title="《动态规划(6)-最小花费路径》上的评论">20 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p>第6讲，继续通过案例说明动态规划。</p>
+<p>给定一个矩阵cost[][]和其中的一个位置（m，n），写一个函数，返回从到达（0，0）到（M，N）最小成本路径的花费。该矩阵的每个格子代表遍历该格子的花费。到达（M，N）的路径的总成本是该路径上（包括源和目标）所有的费用总和。你只能从开始位置 向右、下和右下走，也就是说，从一个给定的格子（I，J），只有（i+1，j）的（i，j +1）和（i +1， j +1）的可以通过。你可以假设所有的花费都是正整数。</p>
+<p>例如，在下面的图中，到（2,2）的最小花费路径？</p>
+<p><img alt="" src="http://d2o58evtke57tz.cloudfront.net/wp-content/uploads/dp.png"/></p>
+<p><span>最小花费的路径，如下图高亮显示。</span><span>的路径为（0，0） – &gt;（0，1） – &gt;（1，2） – &gt;（2，2）。</span><span>路径的成本是8（1 + 2 + 2 + 3）。</span></p>
+<p><img alt="" src="http://d2o58evtke57tz.cloudfront.net/wp-content/uploads/dp2.png"/></p>
+<p><strong><span>1）最优子结构</span></strong><br/>
+<span>的路径到达（M，N）必须通过3格子中的一个：（M-1，N-1）或（m-1，n）或（M，N-1）。</span>到达（M，N），所以最小的花费路径可以写成“3个格子最小的 加[M] [N]的花费”。</p>
+<p>minCost(m, n) = min (minCost(m-1, n-1), minCost(m-1, n), minCost(m, n-1)) + cost[m][n]</p>
+<p><strong><span>2）重叠子问题</span></strong><br/>
+<span><span>以下是直接的递归实现的最小花费路径的问题，用的上面的递归函数</span><span>。</span></span></p>
+<pre class="brush:cpp">/* 直接的递归解决 MCP(Minimum Cost Path) 问题 */
+#include&lt;stdio.h&gt;
+#include&lt;limits.h&gt;
+#define R 3
+#define C 3
+
+int min(int x, int y, int z);
+
+/* 返回从 (0,0) 到 (m, n) 的最小花费*/
+int minCost(int cost[R][C], int m, int n)
+{
+   if (n &lt; 0 || m &lt; 0)
+      return INT_MAX;
+   else if (m == 0 &amp;&amp; n == 0)
+      return cost[m][n];
+   else
+      return cost[m][n] + min( minCost(cost, m-1, n-1),
+                               minCost(cost, m-1, n), 
+                               minCost(cost, m, n-1) );
+}
+
+/* 返回三个数中最小的*/
+int min(int x, int y, int z)
+{
+   if (x &lt; y)
+      return (x &lt; z)? x : z;
+   else
+      return (y &lt; z)? y : z;
+}
+
+/* Driver program to test above functions */
+int main()
+{
+   int cost[R][C] = { {1, 2, 3},
+                      {4, 8, 2},
+                      {1, 5, 3} };
+   printf(" %d ", minCost(cost, 2, 2));
+   return 0;
+}</pre>
+<p><span>应当指出的是，上述函数反复计算相同的子问题。</span><span>请参见下面的递归树。</span><span>这时候直接的递归解决方案的复杂性是指数，这是极其缓慢的。</span></p>
+<pre class="brush:other">mC 代表 minCost()
+                                    mC(2, 2)
+                          /            |           \
+                         /             |            \             
+                 mC(1, 1)           mC(1, 2)             mC(2, 1)
+              /     |     \       /     |     \           /     |     \ 
+             /      |      \     /      |      \         /      |       \
+       mC(0,0) mC(0,1) mC(1,0) mC(0,1) mC(0,2) mC(1,1) mC(1,0) mC(1,1) mC(2,0)</pre>
+<p><span><span>因此，MCP问题是具有动态规划必须的两个性质</span></span><span><span>。</span><span>像其他典型的</span></span><span>动态规划（DP）的问题</span><span><span>，可通过打表已自下而上的方式避免相同的子问题重复计算。</span></span></p>
+<pre class="brush:cpp">/ *动态规划实现的MCP问题* /
+#include&lt;stdio.h&gt;
+#include&lt;limits.h&gt;
+#define R 3
+#define C 3
+
+int min(int x, int y, int z);
+
+int minCost(int cost[R][C], int m, int n)
+{
+     int i, j;
+     int tc[R][C];  
+
+     tc[0][0] = cost[0][0];
+
+     /* 初始化第一列 cost(tc) array */
+     for (i = 1; i &lt;= m; i++)
+        tc[i][0] = tc[i-1][0] + cost[i][0];
+
+     /* 初始化第一行 */
+     for (j = 1; j &lt;= n; j++)
+        tc[0][j] = tc[0][j-1] + cost[0][j];
+
+     /* Construct rest of the tc array */
+     for (i = 1; i &lt;= m; i++)
+        for (j = 1; j &lt;= n; j++)
+            tc[i][j] = min(tc[i-1][j-1], tc[i-1][j], tc[i][j-1]) + cost[i][j];
+
+     return tc[m][n];
+}
+
+/* 返回3个整数中最小的 */
+int min(int x, int y, int z)
+{
+   if (x &lt; y)
+      return (x &lt; z)? x : z;
+   else
+      return (y &lt; z)? y : z;
+}
+
+/* 测试 */
+int main()
+{
+   int cost[R][C] = { {1, 2, 3},
+                      {4, 8, 2},
+                      {1, 5, 3} };
+   printf(" %d ", minCost(cost, 2, 2));
+   return 0;
+}</pre>
+<p>时间复杂度为O（MN）。</p>
+<p>参考：http://www.geeksforgeeks.org/dynamic-programming-set-6-min-cost-path/</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-78725">
+<article class="comment" id="comment-78725">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522091" rel="external nofollow">新用户138194</a></span> on <a href="http://www.acmerblog.com/dp6-min-cost-path-4909.html#comment-78725" rel="nofollow"><time datetime="2017-04-12T12:30:19+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>如果是在黑魂里的话那个大的应该马上转头就去寻求巨人保护协会的帮助</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78724">
+<article class="comment" id="comment-78724">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522091" rel="external nofollow">新用户138194</a></span> on <a href="http://www.acmerblog.com/dp6-min-cost-path-4909.html#comment-78724" rel="nofollow"><time datetime="2017-04-12T12:30:19+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>如果是在黑魂里的话那个大的应该马上转头就去寻求巨人保护协会的帮助</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-78723">
+<article class="comment" id="comment-78723">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522091" rel="external nofollow">新用户138194</a></span> on <a href="http://www.acmerblog.com/dp6-min-cost-path-4909.html#comment-78723" rel="nofollow"><time datetime="2017-04-12T12:30:19+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>如果是在黑魂里的话那个大的应该马上转头就去寻求巨人保护协会的帮助</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78722">
+<article class="comment" id="comment-78722">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522091" rel="external nofollow">新用户138194</a></span> on <a href="http://www.acmerblog.com/dp6-min-cost-path-4909.html#comment-78722" rel="nofollow"><time datetime="2017-04-12T12:30:19+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>如果是在黑魂里的话那个大的应该马上转头就去寻求巨人保护协会的帮助</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-78721">
+<article class="comment" id="comment-78721">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522091" rel="external nofollow">新用户138194</a></span> on <a href="http://www.acmerblog.com/dp6-min-cost-path-4909.html#comment-78721" rel="nofollow"><time datetime="2017-04-12T12:30:19+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>如果是在黑魂里的话那个大的应该马上转头就去寻求巨人保护协会的帮助</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78720">
+<article class="comment" id="comment-78720">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522091" rel="external nofollow">新用户138194</a></span> on <a href="http://www.acmerblog.com/dp6-min-cost-path-4909.html#comment-78720" rel="nofollow"><time datetime="2017-04-12T12:30:19+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>如果是在黑魂里的话那个大的应该马上转头就去寻求巨人保护协会的帮助</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-78719">
+<article class="comment" id="comment-78719">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522091" rel="external nofollow">新用户138194</a></span> on <a href="http://www.acmerblog.com/dp6-min-cost-path-4909.html#comment-78719" rel="nofollow"><time datetime="2017-04-12T12:30:19+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>如果是在黑魂里的话那个大的应该马上转头就去寻求巨人保护协会的帮助</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78718">
+<article class="comment" id="comment-78718">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522091" rel="external nofollow">新用户138194</a></span> on <a href="http://www.acmerblog.com/dp6-min-cost-path-4909.html#comment-78718" rel="nofollow"><time datetime="2017-04-12T12:30:19+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>如果是在黑魂里的话那个大的应该马上转头就去寻求巨人保护协会的帮助</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-78717">
+<article class="comment" id="comment-78717">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522091" rel="external nofollow">新用户138194</a></span> on <a href="http://www.acmerblog.com/dp6-min-cost-path-4909.html#comment-78717" rel="nofollow"><time datetime="2017-04-12T12:30:19+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>如果是在黑魂里的话那个大的应该马上转头就去寻求巨人保护协会的帮助</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48101">
+<article class="comment" id="comment-48101">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Aifan</a></span> on <a href="http://www.acmerblog.com/dp6-min-cost-path-4909.html#comment-48101" rel="nofollow"><time datetime="2015-07-01T06:22:31+00:00" pubdate="">2015年7月1日 at 上午6:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>网站不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28066">
+<article class="comment" id="comment-28066">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xy7850151</a></span> on <a href="http://www.acmerblog.com/dp6-min-cost-path-4909.html#comment-28066" rel="nofollow"><time datetime="2015-06-04T13:15:52+00:00" pubdate="">2015年6月4日 at 下午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很不错！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48102">
+<article class="comment" id="comment-48102">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ozhfo</a></span> on <a href="http://www.acmerblog.com/dp6-min-cost-path-4909.html#comment-48102" rel="nofollow"><time datetime="2015-05-02T12:48:45+00:00" pubdate="">2015年5月2日 at 下午12:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好，解决了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48099">
+<article class="comment" id="comment-48099">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">pascal</a></span> on <a href="http://www.acmerblog.com/dp6-min-cost-path-4909.html#comment-48099" rel="nofollow"><time datetime="2015-04-16T21:26:34+00:00" pubdate="">2015年4月16日 at 下午9:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>helpful！！ mark</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28068">
+<article class="comment" id="comment-28068">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">123456789_xd</a></span> on <a href="http://www.acmerblog.com/dp6-min-cost-path-4909.html#comment-28068" rel="nofollow"><time datetime="2015-01-03T10:24:31+00:00" pubdate="">2015年1月3日 at 上午10:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题别太纠结了，不同的编译器结果不一</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28067">
+<article class="comment" id="comment-28067">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">CCat</a></span> on <a href="http://www.acmerblog.com/dp6-min-cost-path-4909.html#comment-28067" rel="nofollow"><time datetime="2014-11-24T19:32:53+00:00" pubdate="">2014年11月24日 at 下午7:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序只能输出一个子序列</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58142">
+<article class="comment" id="comment-58142">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">litaotao</a></span> on <a href="http://www.acmerblog.com/dp6-min-cost-path-4909.html#comment-58142" rel="nofollow"><time datetime="2014-11-18T21:49:45+00:00" pubdate="">2014年11月18日 at 下午9:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法挺不错。NewHead代表新的头节点，通过递归找到最后一个节点之后，就把这个节点赋给NewHead，然后一直返回返回，中途这个值是没有变化的，一边返回一边把相应的指针方向颠倒，最后结束时返回新的头节点到主函数。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58141">
+<article class="comment" id="comment-58141">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangduanjing</a></span> on <a href="http://www.acmerblog.com/dp6-min-cost-path-4909.html#comment-58141" rel="nofollow"><time datetime="2014-05-12T03:25:46+00:00" pubdate="">2014年5月12日 at 上午3:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>swap写成内联函数会不会好一些</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48100">
+<article class="comment" id="comment-48100">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">20122256</a></span> on <a href="http://www.acmerblog.com/dp6-min-cost-path-4909.html#comment-48100" rel="nofollow"><time datetime="2014-05-03T16:54:52+00:00" pubdate="">2014年5月3日 at 下午4:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不同的编译器，printf(),执行的顺序不同，所以结果也就不同，建议不要那么写</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28070">
+<article class="comment" id="comment-28070">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zcmu_sls</a></span> on <a href="http://www.acmerblog.com/dp6-min-cost-path-4909.html#comment-28070" rel="nofollow"><time datetime="2014-04-25T04:29:43+00:00" pubdate="">2014年4月25日 at 上午4:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>输入样例作为一个整体输入，带回车</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28069">
+<article class="comment" id="comment-28069">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">piaoyi</a></span> on <a href="http://www.acmerblog.com/dp6-min-cost-path-4909.html#comment-28069" rel="nofollow"><time datetime="2014-03-09T10:40:39+00:00" pubdate="">2014年3月9日 at 上午10:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还是有些难度的！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,369 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-07</div>
+<div class="tit"><h1 class="entry-title">动态规划(5)-最小编辑距离(Edit Distance)</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/zhuanti/algorithm" rel="category tag" title="查看算法分析中的全部文章">算法分析</a>, <a href="http://www.acmerblog.com/category/zhuanti/classic" rel="category tag" title="查看经典问题中的全部文章">经典问题</a></span><span class="i4">围观3836次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4883" href="http://www.acmerblog.com/dp5-edit-distance-4883.html#comments" title="《动态规划(5)-最小编辑距离(Edit Distance)》上的评论">20 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p><span>继续动态规划系列案例讲解–</span><em>编辑距离，</em><span>一个很有趣的算法。</span></p>
+<p><strong><span>问题：</span></strong><span>给定一个长度为m和n的两个字符串，设有以下几种操作：替换（R），插入（I）和删除（D）且都是相同的操作。</span><span>寻找到转换一个字符串插入到另一个需要修改的最小（操作）数量。</span></p>
+<p>PS：最短编辑距离算法右许多实际应用，参考<a href="http://en.wikipedia.org/wiki/Lucene" target="_blank">Lucene的</a> API。另一个例子，对一个字典应用，显示最接近给定单词\正确拼写单词的所有单词。</p>
+<p><strong>找递归函数：</strong></p>
+<p><strong></strong>这个案例的子问题是什么呢？考虑寻找的他们的前缀子串的编辑距离，让我们表示他们为</p>
+<p>[1 ... i]和[1 ....j] , 1&lt;i&lt;m 和1 &lt;j &lt;n</p>
+<p>显然，这是解决最终问题的子问题，记为E（i，j）。我们的目标是找到E（m，n）和最小的编辑距离。</p>
+<p>我们可以用三种方式:<span style="color: #0000ff;"><strong> (i, -), (-, j) 和(i, j)</strong></span>右对齐两个前缀字符串。连字符符号（ – ）表示没有字符。看一个例子或许会更清楚：</p>
+<p>假设给定的字符串是 SUNDAY 和 SATURDAY。如果 i= 2 ,  j = 4，即前缀字符串分别是SU和SATU（假定字符串索引从1开始）。这两个字串最右边的字符可以用三种不同的方式对齐：</p>
+<p><em>1  (i, j): </em>对齐字符U和U。他们是相等的，没有修改的必要。我们仍然留下其中i = 1和j = 3，即问题E（1,3）</p>
+<p><em>2 (i, -) : </em>对第一个字符串右对齐，第二字符串最右为空字符。我们需要一个删除（D）操作。我们还留下其中i = 1和j = 4的 子问题 E（i-1，j）。</p>
+<p><em>3 (-, j)  : <em> </em></em>对第二个字符串右对齐，第一个字符串最右为空字符。在这里，我们需要一个插入（I）操作。我们还留下了子问题 i= 2 和 j = 3，E（i，j-1）。</p>
+<p>对于这三种操作，我可以得到最少的操作为：</p>
+<p>E(i, j) = min( [<span style="color: #0000ff;">E(i-1, j) + D</span>], [<span style="color: #008080;">E(i, j-1) + I</span>],  [<span style="color: #ff0000;">E(i-1, j-1) + R</span> (如果 i,j 字符不一样)] )</p>
+<p>到这里还没有做完。什么将是基本情况？</p>
+<p>当两个字符串的大小为0，其操作距离为0。当其中一个字符串的长度是零，需要的操作距离就是另一个字符串的长度. 即：</p>
+<p><span style="color: #0000ff;">E（0，0）= 0，E（i，0）= i，E（0，j）= j</span></p>
+<p>为基本情况。这样就可以完成递归程序了。</p>
+<p><strong>动态规划解法：</strong></p>
+<p>我们先计算出上面递归表达式的时间复杂度：T(m, n) = T(m-1, n-1) + T(m, n-1) + T(m-1, n) + C</p>
+<p>T（M，N）的复杂性，可以通过连续替代方法或结二元齐次方程计算。结果是指数级的复杂度。</p>
+<p>这是显而易见的，从递归树可以看出这将是一次又一次地解决子问题。</p>
+<p>我们对重复子问题的结果打表存储，并在有需要时（自下而上）查找。</p>
+<p>动态规划的解法时间复杂度为 O(mn) 正是我们打表的时间.</p>
+<p><span>通常情况下，D，I和R操作的成本是不一样的。</span><span>在这种情况下，该问题可以表示为一个有向无环图（DAG）与各边的权重，并且找到最短路径给出编辑距离。</span></p>
+<p>实现代码如下：</p>
+<p>给出了动态规划实现 和 递归实现。大家可以比较他们的效率差异。</p>
+<pre class="brush:cpp">// 动态规划实现 最小编辑距离
+#include&lt;stdio.h&gt;
+#include&lt;stdlib.h&gt;
+#include&lt;string.h&gt;
+
+// 测试字符串
+#define STRING_X "SUNDAY"
+#define STRING_Y "SATURDAY"
+
+#define SENTINEL (-1)
+#define EDIT_COST (1)
+
+inline
+int min(int a, int b) {
+   return a &lt; b ? a : b;
+}
+
+// Returns Minimum among a, b, c
+int Minimum(int a, int b, int c)
+{
+    return min(min(a, b), c);
+}
+
+// Strings of size m and n are passed.
+// Construct the Table for X[0...m, m+1], Y[0...n, n+1]
+int EditDistanceDP(char X[], char Y[])
+{
+    // Cost of alignment
+    int cost = 0;
+    int leftCell, topCell, cornerCell;
+
+    int m = strlen(X)+1;
+    int n = strlen(Y)+1;
+
+    // T[m][n]
+    int *T = (int *)malloc(m * n * sizeof(int));
+
+    // Initialize table
+    for(int i = 0; i &lt; m; i++)
+        for(int j = 0; j &lt; n; j++)
+            *(T + i * n + j) = SENTINEL;
+
+    // Set up base cases
+    // T[i][0] = i
+    for(int i = 0; i &lt; m; i++)
+        *(T + i * n) = i;
+
+    // T[0][j] = j
+    for(int j = 0; j &lt; n; j++)
+        *(T + j) = j;
+
+    // Build the T in top-down fashion
+    for(int i = 1; i &lt; m; i++)
+    {
+        for(int j = 1; j &lt; n; j++)
+        {
+            // T[i][j-1]
+            leftCell = *(T + i*n + j-1);
+            leftCell += EDIT_COST; // deletion
+
+            // T[i-1][j]
+            topCell = *(T + (i-1)*n + j);
+            topCell += EDIT_COST; // insertion
+
+            // Top-left (corner) cell
+            // T[i-1][j-1]
+            cornerCell = *(T + (i-1)*n + (j-1) );
+
+            // edit[(i-1), (j-1)] = 0 if X[i] == Y[j], 1 otherwise
+            cornerCell += (X[i-1] != Y[j-1]); // may be replace
+
+            // Minimum cost of current cell
+            // Fill in the next cell T[i][j]
+            *(T + (i)*n + (j)) = Minimum(leftCell, topCell, cornerCell);
+        }
+    }
+
+    // 结果存储在 T[m][n]
+    cost = *(T + m*n - 1);
+    free(T);
+    return cost;
+}
+
+// 递归方法实现
+int EditDistanceRecursion( char *X, char *Y, int m, int n )
+{
+    // 基本情况
+    if( m == 0 &amp;&amp; n == 0 )
+        return 0;
+
+    if( m == 0 )
+        return n;
+
+    if( n == 0 )
+        return m;
+
+    // Recurse
+    int left = EditDistanceRecursion(X, Y, m-1, n) + 1;
+    int right = EditDistanceRecursion(X, Y, m, n-1) + 1;
+    int corner = EditDistanceRecursion(X, Y, m-1, n-1) + (X[m-1] != Y[n-1]);
+
+    return Minimum(left, right, corner);
+}
+
+int main()
+{
+    char X[] = STRING_X; // vertical
+    char Y[] = STRING_Y; // horizontal
+
+    printf("Minimum edits required to convert %s into %s is %d\n",
+           X, Y, EditDistanceDP(X, Y) );
+    printf("Minimum edits required to convert %s into %s is %d by recursion\n",
+           X, Y, EditDistanceRecursion(X, Y, strlen(X), strlen(Y)));
+
+    return 0;
+}</pre>
+<p>参考：http://www.geeksforgeeks.org/dynamic-programming-set-5-edit-distance/</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-78365">
+<article class="comment" id="comment-78365">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466583" rel="external nofollow">新用户951541</a></span> on <a href="http://www.acmerblog.com/dp5-edit-distance-4883.html#comment-78365" rel="nofollow"><time datetime="2017-04-12T12:30:17+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嗯嗯，痴情天子</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78364">
+<article class="comment" id="comment-78364">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466583" rel="external nofollow">新用户951541</a></span> on <a href="http://www.acmerblog.com/dp5-edit-distance-4883.html#comment-78364" rel="nofollow"><time datetime="2017-04-12T12:30:17+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嗯嗯，痴情天子</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-78363">
+<article class="comment" id="comment-78363">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466583" rel="external nofollow">新用户951541</a></span> on <a href="http://www.acmerblog.com/dp5-edit-distance-4883.html#comment-78363" rel="nofollow"><time datetime="2017-04-12T12:30:17+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嗯嗯，痴情天子</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78362">
+<article class="comment" id="comment-78362">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466583" rel="external nofollow">新用户951541</a></span> on <a href="http://www.acmerblog.com/dp5-edit-distance-4883.html#comment-78362" rel="nofollow"><time datetime="2017-04-12T12:30:17+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嗯嗯，痴情天子</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-78361">
+<article class="comment" id="comment-78361">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466583" rel="external nofollow">新用户951541</a></span> on <a href="http://www.acmerblog.com/dp5-edit-distance-4883.html#comment-78361" rel="nofollow"><time datetime="2017-04-12T12:30:17+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嗯嗯，痴情天子</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78360">
+<article class="comment" id="comment-78360">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466583" rel="external nofollow">新用户951541</a></span> on <a href="http://www.acmerblog.com/dp5-edit-distance-4883.html#comment-78360" rel="nofollow"><time datetime="2017-04-12T12:30:17+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嗯嗯，痴情天子</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28054">
+<article class="comment" id="comment-28054">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dongxi</a></span> on <a href="http://www.acmerblog.com/dp5-edit-distance-4883.html#comment-28054" rel="nofollow"><time datetime="2015-05-21T16:17:06+00:00" pubdate="">2015年5月21日 at 下午4:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>想问下computeLSPArray那里，if(len!=0) len=lps[len-1]是什么意思</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48092">
+<article class="comment" id="comment-48092">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaoriqiang2</a></span> on <a href="http://www.acmerblog.com/dp5-edit-distance-4883.html#comment-48092" rel="nofollow"><time datetime="2015-05-18T14:12:13+00:00" pubdate="">2015年5月18日 at 下午2:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第23行：<br/>
+hash <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = -1是否应该改成hash[s <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> ] = -1</p>
+<p>因为是要把从字符串s的start位到当前位在hash中重置</p>
+<p>修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28053">
+<article class="comment" id="comment-28053">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1520006273</a></span> on <a href="http://www.acmerblog.com/dp5-edit-distance-4883.html#comment-28053" rel="nofollow"><time datetime="2015-04-08T12:50:04+00:00" pubdate="">2015年4月8日 at 下午12:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>确实有点难度，搞了好久。int溢出要注意</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28046">
+<article class="comment" id="comment-28046">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">skyand</a></span> on <a href="http://www.acmerblog.com/dp5-edit-distance-4883.html#comment-28046" rel="nofollow"><time datetime="2015-02-12T07:28:05+00:00" pubdate="">2015年2月12日 at 上午7:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算法是程序的灵魂，算法分简单和复杂，如果不搞大数据类，程序员了解一下简单点的算法也是可以的，但是会算法的一定要会编程才行，程序员不一定要会算法，利于自己项目需要的可以简单了解。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28052">
+<article class="comment" id="comment-28052">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">userwawa</a></span> on <a href="http://www.acmerblog.com/dp5-edit-distance-4883.html#comment-28052" rel="nofollow"><time datetime="2015-02-02T18:19:45+00:00" pubdate="">2015年2月2日 at 下午6:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感谢分享 学习了`(*∩_∩*)′</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28051">
+<article class="comment" id="comment-28051">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Trenson</a></span> on <a href="http://www.acmerblog.com/dp5-edit-distance-4883.html#comment-28051" rel="nofollow"><time datetime="2014-10-16T04:53:06+00:00" pubdate="">2014年10月16日 at 上午4:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嗯，是写错了，文中以更改。MAX ( L(X[0..m-2], Y[0..n-1]), L(X[0..m-1], Y[0..n-2])</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28048">
+<article class="comment" id="comment-28048">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">siaswj</a></span> on <a href="http://www.acmerblog.com/dp5-edit-distance-4883.html#comment-28048" rel="nofollow"><time datetime="2014-10-14T12:59:57+00:00" pubdate="">2014年10月14日 at 下午12:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>整理的很好，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28050">
+<article class="comment" id="comment-28050">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">liuyuedeyu</a></span> on <a href="http://www.acmerblog.com/dp5-edit-distance-4883.html#comment-28050" rel="nofollow"><time datetime="2014-09-06T08:37:34+00:00" pubdate="">2014年9月6日 at 上午8:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>补充：此算法求出的不一定是最优解，之前理解错了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28049">
+<article class="comment" id="comment-28049">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tzf88888888</a></span> on <a href="http://www.acmerblog.com/dp5-edit-distance-4883.html#comment-28049" rel="nofollow"><time datetime="2014-07-17T17:56:18+00:00" pubdate="">2014年7月17日 at 下午5:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>网站不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48093">
+<article class="comment" id="comment-48093">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dreams</a></span> on <a href="http://www.acmerblog.com/dp5-edit-distance-4883.html#comment-48093" rel="nofollow"><time datetime="2014-06-21T15:42:26+00:00" pubdate="">2014年6月21日 at 下午3:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序输出是对的，呈三角型。原程序是按C++写的，已经改成了C的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28055">
+<article class="comment" id="comment-28055">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">HDC</a></span> on <a href="http://www.acmerblog.com/dp5-edit-distance-4883.html#comment-28055" rel="nofollow"><time datetime="2014-06-15T15:25:49+00:00" pubdate="">2014年6月15日 at 下午3:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>
+	Hello Web Admin, I noticed that your On-Page SEO is is missing a few factors, for one you do not use all three H tags in your post, also I notice that you are not using bold or italics properly in your SEO optimization. On-Page SEO means more now than ever since the new Google update: Panda. No longer are backlinks and simply pinging or sending out a RSS feed the key to getting Google PageRank or Alexa Rankings, You now NEED On-Page SEO. So what is good On-Page SEO?First your keyword must appear in the title.Then it must appear in the URL.You have to optimize your keyword and make sure that it has a nice keyword density of 3-5% in your article with relevant LSI (Latent Semantic Indexing). Then you should spread all H1,H2,H3 tags in your article.Your Keyword should appear in your first paragraph and in the last sentence of the page. You should have relevant usage of Bold and italics of your keyword.There should be one internal link to a page on your blog and you should have one image with an alt tag that has your keyword….wait there's even more Now what if i told you there was a simple WordPress plugin that does all the On-Page SEO, and automatically for you? That's right AUTOMATICALLY, just watch this 4minute video for more information at.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28047">
+<article class="comment" id="comment-28047">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rtaxa</a></span> on <a href="http://www.acmerblog.com/dp5-edit-distance-4883.html#comment-28047" rel="nofollow"><time datetime="2014-05-16T19:35:25+00:00" pubdate="">2014年5月16日 at 下午7:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>补充：此算法求出的不一定是最优解，之前理解错了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28056">
+<article class="comment" id="comment-28056">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">CCCat</a></span> on <a href="http://www.acmerblog.com/dp5-edit-distance-4883.html#comment-28056" rel="nofollow"><time datetime="2014-04-05T10:37:22+00:00" pubdate="">2014年4月5日 at 上午10:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个..  真没看出来</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-214">
+<article class="comment" id="comment-214">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">shelley</span> on <a href="http://www.acmerblog.com/dp5-edit-distance-4883.html#comment-214" rel="nofollow"><time datetime="2014-03-08T16:09:59+00:00" pubdate="">2014年3月8日 at 下午4:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个系列很不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

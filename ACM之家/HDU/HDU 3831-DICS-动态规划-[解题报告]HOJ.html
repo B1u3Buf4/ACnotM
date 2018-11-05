@@ -1,0 +1,390 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>04-13</div>
+<div class="tit"><h1 class="entry-title">HDU 3831-DICS-动态规划-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a>, <a href="http://www.acmerblog.com/category/basis/recurrence" rel="category tag" title="查看递推中的全部文章">递推</a></span><span class="i4">围观421次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6833" href="http://www.acmerblog.com/hdu-3831-dics-6833.html#comments" title="《HDU 3831-DICS-动态规划-[解题报告]HOJ》上的评论">22 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">DICS</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+I think all of you must be skilled in the classic problem Levenshtein Distance , which is more commonly known as Edit Distance. For more historic knowledge and basic concepts, see <a .="" href="http://en.wikipedia.org/wiki/Levenshtein_distance">http://en.wikipedia.org/wiki/Levenshtein_distance .</a><br/>This time, we are involved in a more complicated one: given two strings SOURCE and DESTINATION , we have 4 operations<br/><strong>Delete</strong>: remove the ith character.<br/><strong>Insert</strong>: in pos i(the ith character in the first string),you can insert a character, any one as you like. <br/><strong>Change</strong>: in pos i,you can change that original character to any other character(of course you won’t change it to itself).<br/><strong>Suffix change</strong>: which means you can change all characters to an identical character, from the ith pos to the end. For instance: abcdefg, you can make this operation in character b,maybe you can use d and the result is adddddd, or if you use e the result is aeeeeee or if you use this operation in character c with character f,the result is abfffff.<br/>With the help of Suffix change, sometimes the edit distance can be greatly shortened. See the following example
+<p>abcdefg<br/>ccccccg</p>
+<p>You can first replace every character from the beginning to the end with c,and the first string will be ccccccc,then change the last character c to g. In such way,we can see the edit distance is 2.  </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+Input consists of several test cases, each case contains two line,the first line will show you the SOURCE string, the second line provide the DESTINATION string. You should write a program to caculate the minimum number of operations(delete, insert, changes, suffix change as I mentioned before) of transforming the SOURCE to DESTINATION. You can assume none of string in any case will be longer than "500". Input ends with a line consists of a ‘#’.<br/>PAY ATTENTION:Both strings consist of either lower or upper letters,in other word in each position there is 52 possibilities.There will be at most 15 test cases.</div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+Input consists of several test cases, each case contains two line,the first line will show you the SOURCE string, the second line provide the DESTINATION string. You should write a program to caculate the minimum number of operations(delete, insert, changes, suffix change as I mentioned before) of transforming the SOURCE to DESTINATION. You can assume none of string in any case will be longer than "500". Input ends with a line consists of a ‘#’.<br/>PAY ATTENTION:Both strings consist of either lower or upper letters,in other word in each position there is 52 possibilities.There will be at most 15 test cases.
+</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+abcdefg
+aaaaaaa
+#</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+1</pre>
+<p> <!-- problem end --></p>
+<p>题意：</p>
+<p>给定2个字符串，对上面的字符串进行修改使得其变成下面的字符串</p>
+<p>有4种操作：</p>
+<p>1、删除一个字符</p>
+<p>2、插入一个字符</p>
+<p>3、修改一个字符</p>
+<p>4、把任意位置开始 [i, strlen] 修改为相同的字符</p>
+<p>问最少需要几次操作</p>
+<pre class="brush:cpp" name="code">#include&lt;iostream&gt;
+#include&lt;cstdio&gt;
+#include&lt;cstring&gt;
+#include&lt;string&gt;
+#include&lt;algorithm&gt;
+#include&lt;map&gt;
+#include&lt;queue&gt;
+#include&lt;stack&gt;
+#include&lt;set&gt;
+#include&lt;cmath&gt;
+#include&lt;vector&gt;
+using namespace std;
+#define mod 1000000007
+#define inf 0x7f7f7f7f
+#define N 505
+int dp[N][N][55];//dp[i][j][k] 表示前i个字符与前j个字符匹配 最后一次使用后缀修改为字符k的状态需要最小的次数
+//52表示没有使用过后缀修改
+//dp[i][j][k] 可以从删除 dp[i-1][j][k]+1
+//dp[i][j][k] 从插入	 dp[i][j-1][k]+1
+//dp[i][j][k] 替换       dp[i-1][j-1][k]+1
+//dp[i][j][k] 修改后缀	 dp[i-1][j-1][any]+1 if(k==p[j]) dp[i][j][k]=min(dp[i-1][j-1][k]);
+char s[N],p[N];
+int  a[N],b[N];
+int la, lb;
+//把s-&gt;p最少需要修改s几步
+int main()
+{
+	int i, j, k, u, v;
+	while(scanf("%s",s+1),s[1]!='#'){
+		scanf("%s",p+1);
+		for(i=1;s[i];i++)if(islower(s[i]))a[i] = s[i]-'a';else a[i] = s[i]-'A'+26;
+		for(i=1;p[i];i++)if(islower(p[i]))b[i] = p[i]-'a';else b[i] = p[i]-'A'+26;
+		memset(dp, inf, sizeof dp);
+		la = strlen(s+1), lb = strlen(p+1);
+
+		dp[0][0][52] = 0;
+		for(i = 1; i &lt;= la; i++)dp[0][i][52]=dp[i][0][52] = i;
+		for(i = 1; i &lt;= la; i++)
+		{
+			for(j = 1; j &lt;= lb; j++)
+			{
+				for(k = 0; k &lt; 52; k++)
+				{
+					u = inf;
+					if(b[j]==k)
+						u = dp[i-1][j-1][k];
+					else 
+					{
+					u = min(u, dp[i-1][j][k]+1);
+					u = min(u, dp[i][j-1][k]+1);
+					u = min(u, dp[i-1][j-1][k] +1);
+					dp[i][j][b[j]] = min(dp[i][j][b[j]],dp[i-1][j-1][k]+1);
+					}
+					dp[i][j][k] = min(u, dp[i][j][k]);
+				}
+				u = inf;
+				if(a[i]==b[j])
+					u = dp[i-1][j-1][52];
+				else {
+					u = min(u, dp[i-1][j][52]+1);
+					u = min(u, dp[i][j-1][52]+1);
+					u = min(u, dp[i-1][j-1][52] +1);
+					dp[i][j][b[j]] = min(dp[i][j][b[j]], dp[i-1][j-1][52]+1);
+				}
+				dp[i][j][52] = min(dp[i][j][52], u);
+			}
+		}
+
+		int ans = 1000000000;
+		for(i = 0; i &lt;= 52; i++)ans = min(ans, dp[la][lb][i]);
+		printf("%d\n",ans);	
+    }
+	return 0;
+}</pre>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/acmmmm/article/details/24272537</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-72400">
+<article class="comment" id="comment-72400">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518806" rel="external nofollow">新用户560086</a></span> on <a href="http://www.acmerblog.com/hdu-3831-dics-6833.html#comment-72400" rel="nofollow"><time datetime="2017-04-11T19:58:24+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个我没什么感觉。。。我也没找到调节的选项</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-72399">
+<article class="comment" id="comment-72399">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518806" rel="external nofollow">新用户560086</a></span> on <a href="http://www.acmerblog.com/hdu-3831-dics-6833.html#comment-72399" rel="nofollow"><time datetime="2017-04-11T19:58:24+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个我没什么感觉。。。我也没找到调节的选项</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-72398">
+<article class="comment" id="comment-72398">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518806" rel="external nofollow">新用户560086</a></span> on <a href="http://www.acmerblog.com/hdu-3831-dics-6833.html#comment-72398" rel="nofollow"><time datetime="2017-04-11T19:58:24+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个我没什么感觉。。。我也没找到调节的选项</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-72397">
+<article class="comment" id="comment-72397">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518806" rel="external nofollow">新用户560086</a></span> on <a href="http://www.acmerblog.com/hdu-3831-dics-6833.html#comment-72397" rel="nofollow"><time datetime="2017-04-11T19:58:24+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个我没什么感觉。。。我也没找到调节的选项</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-72396">
+<article class="comment" id="comment-72396">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518806" rel="external nofollow">新用户560086</a></span> on <a href="http://www.acmerblog.com/hdu-3831-dics-6833.html#comment-72396" rel="nofollow"><time datetime="2017-04-11T19:58:24+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个我没什么感觉。。。我也没找到调节的选项</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-72395">
+<article class="comment" id="comment-72395">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518806" rel="external nofollow">新用户560086</a></span> on <a href="http://www.acmerblog.com/hdu-3831-dics-6833.html#comment-72395" rel="nofollow"><time datetime="2017-04-11T19:58:24+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个我没什么感觉。。。我也没找到调节的选项</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-72394">
+<article class="comment" id="comment-72394">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518806" rel="external nofollow">新用户560086</a></span> on <a href="http://www.acmerblog.com/hdu-3831-dics-6833.html#comment-72394" rel="nofollow"><time datetime="2017-04-11T19:58:24+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个我没什么感觉。。。我也没找到调节的选项</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-72393">
+<article class="comment" id="comment-72393">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518806" rel="external nofollow">新用户560086</a></span> on <a href="http://www.acmerblog.com/hdu-3831-dics-6833.html#comment-72393" rel="nofollow"><time datetime="2017-04-11T19:58:24+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个我没什么感觉。。。我也没找到调节的选项</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51260">
+<article class="comment" id="comment-51260">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">missliuxin</a></span> on <a href="http://www.acmerblog.com/hdu-3831-dics-6833.html#comment-51260" rel="nofollow"><time datetime="2015-06-29T00:58:50+00:00" pubdate="">2015年6月29日 at 上午12:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Thanks for taking the time to examine this, I really feel strongly about it and love studying a lot more on this topic. If possible, as you acquire experience</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-59691">
+<article class="comment" id="comment-59691">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ozhfo</a></span> on <a href="http://www.acmerblog.com/hdu-3831-dics-6833.html#comment-59691" rel="nofollow"><time datetime="2015-06-24T15:58:20+00:00" pubdate="">2015年6月24日 at 下午3:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#include &lt;cstdio&gt;<br/>
+#include &lt;cstring&gt;</p>
+<p>const int MAXSIZE=256;<br/>
+//char store[MAXSIZE];<br/>
+char str1[MAXSIZE];<br/>
+/*<br/>
+void init(char *store) {<br/>
+    int i;<br/>
+    store['A']=’V', store['B']=’W',store['C']=’X',store['D']=’Y',store['E']=’Z';<br/>
+    for(i=’F';i&lt;=’Z';++i) store <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> =i-5;<br/>
+}<br/>
+*/<br/>
+int main() {<br/>
+    //freopen("input.txt","r",stdin);<br/>
+    //init(store);<br/>
+    char *p;<br/>
+    while(fgets(str1,MAXSIZE,stdin) &amp;&amp; strcmp(str1,"STARTn")==0) {<br/>
+        if(p=fgets(str1,MAXSIZE,stdin)) {<br/>
+            for(;*p;++p) {<br/>
+				//*p=store[*p]<br/>
+                if(*p&lt;’A’ || *p&gt;’Z') continue;<br/>
+                if(*p&gt;’E') *p=*p-5;<br/>
+                else *p=*p+21;<br/>
+            }<br/>
+            printf("%s",str1);<br/>
+        }<br/>
+        fgets(str1,MAXSIZE,stdin);<br/>
+    }<br/>
+    return 0;<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-34131">
+<article class="comment" id="comment-34131">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">samjustin</a></span> on <a href="http://www.acmerblog.com/hdu-3831-dics-6833.html#comment-34131" rel="nofollow"><time datetime="2015-06-10T23:22:51+00:00" pubdate="">2015年6月10日 at 下午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>您没有考虑 树的根节点是负数的情况， 若树的根节点是个很大的负数，那么就要考虑过不过另外一边子树了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51259">
+<article class="comment" id="comment-51259">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Yaunxi</a></span> on <a href="http://www.acmerblog.com/hdu-3831-dics-6833.html#comment-51259" rel="nofollow"><time datetime="2015-06-07T04:17:42+00:00" pubdate="">2015年6月7日 at 上午4:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我得邮箱cwqbupt@qq.com</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51262">
+<article class="comment" id="comment-51262">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">0xc0de</a></span> on <a href="http://www.acmerblog.com/hdu-3831-dics-6833.html#comment-51262" rel="nofollow"><time datetime="2015-06-03T13:51:23+00:00" pubdate="">2015年6月3日 at 下午1:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正确</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-34133">
+<article class="comment" id="comment-34133">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wkhuahuo</a></span> on <a href="http://www.acmerblog.com/hdu-3831-dics-6833.html#comment-34133" rel="nofollow"><time datetime="2015-05-27T16:48:30+00:00" pubdate="">2015年5月27日 at 下午4:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已更正。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51261">
+<article class="comment" id="comment-51261">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">g29tony</a></span> on <a href="http://www.acmerblog.com/hdu-3831-dics-6833.html#comment-51261" rel="nofollow"><time datetime="2015-05-26T16:02:53+00:00" pubdate="">2015年5月26日 at 下午4:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是研发类的题还是算法类？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51264">
+<article class="comment" id="comment-51264">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">skyand</a></span> on <a href="http://www.acmerblog.com/hdu-3831-dics-6833.html#comment-51264" rel="nofollow"><time datetime="2015-05-21T14:13:33+00:00" pubdate="">2015年5月21日 at 下午2:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有意思，有难度</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-34132">
+<article class="comment" id="comment-34132">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">CCat</a></span> on <a href="http://www.acmerblog.com/hdu-3831-dics-6833.html#comment-34132" rel="nofollow"><time datetime="2015-05-19T21:14:22+00:00" pubdate="">2015年5月19日 at 下午9:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>We do not harbor that I couldn’t remove other individuals’ problems whenever this arrived at.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-34129">
+<article class="comment" id="comment-34129">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">testnew</a></span> on <a href="http://www.acmerblog.com/hdu-3831-dics-6833.html#comment-34129" rel="nofollow"><time datetime="2015-05-19T03:11:23+00:00" pubdate="">2015年5月19日 at 上午3:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可是看了很多算法书什么的都是说的(start-end)/2哎。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-34128">
+<article class="comment" id="comment-34128">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jupiterhyun</a></span> on <a href="http://www.acmerblog.com/hdu-3831-dics-6833.html#comment-34128" rel="nofollow"><time datetime="2015-05-15T19:24:23+00:00" pubdate="">2015年5月15日 at 下午7:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>请问printAllCombination的时间复杂度怎么分析呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51258">
+<article class="comment" id="comment-51258">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fermi</a></span> on <a href="http://www.acmerblog.com/hdu-3831-dics-6833.html#comment-51258" rel="nofollow"><time datetime="2015-05-09T12:23:25+00:00" pubdate="">2015年5月9日 at 下午12:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给力，赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-34130">
+<article class="comment" id="comment-34130">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jintianya</a></span> on <a href="http://www.acmerblog.com/hdu-3831-dics-6833.html#comment-34130" rel="nofollow"><time datetime="2015-04-19T03:34:12+00:00" pubdate="">2015年4月19日 at 上午3:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算法是程序的灵魂，算法分简单和复杂，如果不搞大数据类，程序员了解一下简单点的算法也是可以的，但是会算法的一定要会编程才行，程序员不一定要会算法，利于自己项目需要的可以简单了解。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51263">
+<article class="comment" id="comment-51263">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">siaswj</a></span> on <a href="http://www.acmerblog.com/hdu-3831-dics-6833.html#comment-51263" rel="nofollow"><time datetime="2015-04-17T12:50:45+00:00" pubdate="">2015年4月17日 at 下午12:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很强大啊，佩服</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

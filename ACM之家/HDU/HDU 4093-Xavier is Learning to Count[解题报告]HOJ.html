@@ -1,0 +1,515 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>04-16</div>
+<div class="tit"><h1 class="entry-title">HDU 4093-Xavier is Learning to Count[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观353次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7096" href="http://www.acmerblog.com/hdu-4093-xavier-is-learning-to-count-7096.html#comments" title="《HDU 4093-Xavier is Learning to Count[解题报告]HOJ》上的评论">25 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Xavier is Learning to Count</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+  Xavier, a 9-year-old student, loves playing many kinds of puzzles. One of his favourites is the following:<br/>  Xerier, his classmate, has made many cards. She writes down a single positive number on each of them. No numbers written on different cards are the same. After that she writes down an equation, whose right side is a single positive number chosen by her, and the left side is the sum of p integers:
+<p>  Then she asks Xavier put p cards on the corresponding Xi’s position to make this equation correct, with an additional condition that Xi should be ordered from smaller to bigger, i.e.<br/>  Every time Xavier immediately comes up with many solutions. Now he wants to know how many solutions in total are there for any n given by Xerier. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+  There are multiple test cases. The number of them is given in the beginning of the input. Then a series of input block comes one by one.<br/>  For each test case:<br/>  The first line contains two space-separated integers m and p (1&lt;=p&lt;=5).  The second line contains m distinct positive integers – the numbers written on each of the cards. None of these integers exceeds 13000.<br/>  There are about 120 test cases in total, but 90% of them are relatively small. More precisely, all numbers are less than or equal to 100 in 90% of the test cases. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+  There are multiple test cases. The number of them is given in the beginning of the input. Then a series of input block comes one by one.<br/>  For each test case:<br/>  The first line contains two space-separated integers m and p (1&lt;=p&lt;=5).  The second line contains m distinct positive integers – the numbers written on each of the cards. None of these integers exceeds 13000.<br/>  There are about 120 test cases in total, but 90% of them are relatively small. More precisely, all numbers are less than or equal to 100 in 90% of the test cases.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3
+3 3
+1 2 3
+5 4
+1 3 5 6 7
+10 3
+1 2 3 4 5 6 7 8 9 10</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case #1:
+6: 1
+
+Case #2:
+15: 1
+16: 1
+17: 1
+19: 1
+21: 1
+
+Case #3:
+6: 1
+7: 1
+8: 2
+9: 3
+10: 4
+11: 5
+12: 7
+13: 8
+14: 9
+15: 10
+16: 10
+17: 10
+18: 10
+19: 9
+20: 8
+21: 7
+22: 5
+23: 4
+24: 3
+25: 2
+26: 1
+27: 1</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include &lt;iostream&gt;
+#include&lt;cstdio&gt;
+#include&lt;cstring&gt;
+#include&lt;cmath&gt;
+#include&lt;complex&gt;
+#define pi acos(-1.0)
+using namespace std;
+int n,k;
+typedef complex&lt;double&gt; cp;
+#define maxn 13100
+int arr[maxn];
+int fftlen;//FFT鏁扮粍闀垮害
+#define PI pi
+struct cparr
+{
+    cp v[65536];
+    void operator=(const cparr &amp;a)
+    {
+        memcpy(v, a.v, sizeof(cp) * fftlen);
+    }
+};
+const cp I(0,1);
+cparr f[6];//FFT鏁扮粍
+cparr g[7];//缁撴灉FFT鏁扮粍
+void fft(cp a[],int n, double theta )
+{
+    for(int m=n; m&gt;=2; m&gt;&gt;=1)
+    {
+        int mh = m &gt;&gt; 1;
+        for(int i=0; i&lt;mh; i++)
+        {
+            cp w = exp(i*theta*I);
+            for(int j=i; j&lt;n; j+=m)
+            {
+                int k = j + mh;
+                cp x = a[j] - a[k];
+                a[j] += a[k];
+                a[k] = w * x;
+            }
+        }
+        theta *= 2;
+    }
+    int i = 0;
+    for(int j=1; j&lt;n-1; j++)
+    {
+        for(int k=n&gt;&gt;1; k&gt;(i^=k); k&gt;&gt;=1);
+        if(j&lt;i)
+            swap(a[i],a[j]);
+    }
+}
+
+void mul(cparr &amp;a,cparr &amp;b)
+{
+    for(int i=0; i&lt;fftlen; i++)
+        a.v[i]*=b.v[i];
+}
+#define ndiv p
+int p;
+void gao()
+{
+    switch(k)
+    {
+    case 1:
+        g[0] = f[1];
+        p = 1;
+        break;
+    case 2:
+        g[0] = f[2];
+        g[1] = f[1];
+        mul(g[1], f[1]);
+        p = 2;
+        break;
+    case 3:
+        g[0] = f[3];
+        g[1] = f[2];
+        mul(g[1],f[1]);
+        g[2] = f[1];
+        mul(g[2],f[1]);
+        mul(g[2],f[1]);
+        p = 3;
+        break;
+    case 4:
+        g[0] = f[4];
+        g[1] = f[3];
+        mul(g[1],f[1]);
+        g[2] = f[2];
+        mul(g[2],f[2]);
+        g[3] = f[2];
+        mul(g[3],f[1]);
+        mul(g[3],f[1]);
+        g[4] = f[1];
+        mul(g[4],f[1]);
+        mul(g[4],g[4]);
+        p = 5;
+        break;
+    case 5:
+        g[0] = f[5];
+        g[1] = f[4];
+        mul(g[1], f[1]);
+        g[2] = f[3];
+        mul(g[2],f[2]);
+        g[3] = f[3];
+        mul(g[3],f[1]);
+        mul(g[3],f[1]);
+        g[4] = f[2];
+        mul(g[4],f[2]);
+        mul(g[4],f[1]);
+        g[5] = f[2];
+        mul(g[5],f[1]);
+        mul(g[5],f[1]);
+        mul(g[5],f[1]);
+        g[6] = f[1];
+        mul(g[6],f[1]);
+        mul(g[6],g[6]);
+        mul(g[6],f[1]);
+        p = 7;
+        break;
+    }
+}
+
+const int factor[6]= {1,1,2,6,24,120};
+const double ce[6][10] =
+{
+    {0.000000},
+    {1.000000},
+    {-1.000000, 1.000000},
+    {2.000000, -3.000000, 1.000000},
+    {-6.000000, 8.000000, 3.000000, -6.000000, 1.000000},
+    {24.000000, -30.000000, -20.000000, 20.000000, 15.000000, -10.000000, 1.000000}
+};
+int main()
+{
+    int tcase;
+    scanf("%d",&amp;tcase);
+    for(int ti=1; ti&lt;=tcase; ti++)
+    {
+        scanf("%d%d",&amp;n,&amp;k);
+        fftlen=1;
+        for(int i=0; i&lt;n; i++)
+        {
+            scanf("%d",&amp;arr[i]);
+            while(fftlen&lt;=arr[i]*k)fftlen&lt;&lt;=1;
+        }
+        for(int i=1; i&lt;=k; i++)
+            for(int j=0; j&lt;fftlen; j++)
+                f[i].v[j]=0;
+        //鍒濆鍖朏FT鏁扮粍
+        for(int i=1; i&lt;=k; i++)
+        {
+            for(int j=0; j&lt;n; j++)
+                f[i].v[arr[j]*i]+=1;
+            fft(f[i].v,fftlen,2 * PI / fftlen);
+        }
+        gao();
+        for(int i=0; i&lt;ndiv; i++)
+            fft(g[i].v,fftlen,-2 * PI / fftlen);
+        printf("Case #%d:\n",ti);
+        for(int i=0; i&lt;fftlen; i++)
+        {
+            double tmp=0;
+            for(int j=0; j&lt;ndiv; j++)
+                tmp+=g[j].v[i].real()*ce[k][j];
+            tmp/=factor[k]*fftlen;
+            if(tmp&gt;0.5)
+                printf("%d: %.0f\n",i,tmp);
+        }
+        printf("\n");
+    }
+    return 0;
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-99663">
+<article class="comment" id="comment-99663">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520468" rel="external nofollow">新用户147093</a></span> on <a href="http://www.acmerblog.com/hdu-4093-xavier-is-learning-to-count-7096.html#comment-99663" rel="nofollow"><time datetime="2017-04-20T19:26:57+00:00" pubdate="">2017年4月20日 at 下午7:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有点像生化危机6</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70521">
+<article class="comment" id="comment-70521">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517831" rel="external nofollow">新用户632716</a></span> on <a href="http://www.acmerblog.com/hdu-4093-xavier-is-learning-to-count-7096.html#comment-70521" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>非常感谢鸭子哥哥。  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70520">
+<article class="comment" id="comment-70520">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517831" rel="external nofollow">新用户632716</a></span> on <a href="http://www.acmerblog.com/hdu-4093-xavier-is-learning-to-count-7096.html#comment-70520" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>非常感谢鸭子哥哥。  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70519">
+<article class="comment" id="comment-70519">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517831" rel="external nofollow">新用户632716</a></span> on <a href="http://www.acmerblog.com/hdu-4093-xavier-is-learning-to-count-7096.html#comment-70519" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>非常感谢鸭子哥哥。  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70518">
+<article class="comment" id="comment-70518">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517831" rel="external nofollow">新用户632716</a></span> on <a href="http://www.acmerblog.com/hdu-4093-xavier-is-learning-to-count-7096.html#comment-70518" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>非常感谢鸭子哥哥。  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70517">
+<article class="comment" id="comment-70517">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517831" rel="external nofollow">新用户632716</a></span> on <a href="http://www.acmerblog.com/hdu-4093-xavier-is-learning-to-count-7096.html#comment-70517" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>非常感谢鸭子哥哥。  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70516">
+<article class="comment" id="comment-70516">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517831" rel="external nofollow">新用户632716</a></span> on <a href="http://www.acmerblog.com/hdu-4093-xavier-is-learning-to-count-7096.html#comment-70516" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>非常感谢鸭子哥哥。  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70515">
+<article class="comment" id="comment-70515">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517831" rel="external nofollow">新用户632716</a></span> on <a href="http://www.acmerblog.com/hdu-4093-xavier-is-learning-to-count-7096.html#comment-70515" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>非常感谢鸭子哥哥。  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70514">
+<article class="comment" id="comment-70514">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517831" rel="external nofollow">新用户632716</a></span> on <a href="http://www.acmerblog.com/hdu-4093-xavier-is-learning-to-count-7096.html#comment-70514" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>非常感谢鸭子哥哥。  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70513">
+<article class="comment" id="comment-70513">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517831" rel="external nofollow">新用户632716</a></span> on <a href="http://www.acmerblog.com/hdu-4093-xavier-is-learning-to-count-7096.html#comment-70513" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>非常感谢鸭子哥哥。  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70512">
+<article class="comment" id="comment-70512">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517831" rel="external nofollow">新用户632716</a></span> on <a href="http://www.acmerblog.com/hdu-4093-xavier-is-learning-to-count-7096.html#comment-70512" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>非常感谢鸭子哥哥。  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-70511">
+<article class="comment" id="comment-70511">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517831" rel="external nofollow">新用户632716</a></span> on <a href="http://www.acmerblog.com/hdu-4093-xavier-is-learning-to-count-7096.html#comment-70511" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>非常感谢鸭子哥哥。  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-70510">
+<article class="comment" id="comment-70510">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517831" rel="external nofollow">新用户632716</a></span> on <a href="http://www.acmerblog.com/hdu-4093-xavier-is-learning-to-count-7096.html#comment-70510" rel="nofollow"><time datetime="2017-04-11T12:43:26+00:00" pubdate="">2017年4月11日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>非常感谢鸭子哥哥。  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35880">
+<article class="comment" id="comment-35880">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiao597896577</a></span> on <a href="http://www.acmerblog.com/hdu-4093-xavier-is-learning-to-count-7096.html#comment-35880" rel="nofollow"><time datetime="2015-07-09T02:25:37+00:00" pubdate="">2015年7月9日 at 上午2:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35883">
+<article class="comment" id="comment-35883">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">cherry_odd</a></span> on <a href="http://www.acmerblog.com/hdu-4093-xavier-is-learning-to-count-7096.html#comment-35883" rel="nofollow"><time datetime="2015-07-04T11:26:01+00:00" pubdate="">2015年7月4日 at 上午11:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-60216">
+<article class="comment" id="comment-60216">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wawa</a></span> on <a href="http://www.acmerblog.com/hdu-4093-xavier-is-learning-to-count-7096.html#comment-60216" rel="nofollow"><time datetime="2015-07-02T15:20:29+00:00" pubdate="">2015年7月2日 at 下午3:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>map[nodes <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .index][nodes <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> .index] == 0 就是判断不相邻的。这个是可以证明的。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64292">
+<article class="comment" id="comment-64292">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">silianbo</a></span> on <a href="http://www.acmerblog.com/hdu-4093-xavier-is-learning-to-count-7096.html#comment-64292" rel="nofollow"><time datetime="2015-06-12T23:49:31+00:00" pubdate="">2015年6月12日 at 下午11:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学算法中的数据结构学到一定程度会乐此不疲的，比如其中的2－3树，类似的红黑树，我甚至可以自己写个逻辑文件系统结构来。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35885">
+<article class="comment" id="comment-35885">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hong0220</a></span> on <a href="http://www.acmerblog.com/hdu-4093-xavier-is-learning-to-count-7096.html#comment-35885" rel="nofollow"><time datetime="2015-06-09T05:05:02+00:00" pubdate="">2015年6月9日 at 上午5:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好网站，肯定会火的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35882">
+<article class="comment" id="comment-35882">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">stamwoo</a></span> on <a href="http://www.acmerblog.com/hdu-4093-xavier-is-learning-to-count-7096.html#comment-35882" rel="nofollow"><time datetime="2015-06-05T19:59:28+00:00" pubdate="">2015年6月5日 at 下午7:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>a是根先忽略掉，递归子树。剩下前缀bejkcfghid和后缀jkebfghicd，分拆的原则的是每个子树前缀和后缀的节点个数是一样的，根节点出现在前缀的第一个，后缀的最后一个。根节点b出现后缀的第四个位置，则第一部分为四个节点，前缀bejk，后缀jkeb，剩下的c出现在后缀的倒数第2个，就划分为cfghi和 fghic，第3部分就为c、c</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-52137">
+<article class="comment" id="comment-52137">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">howhaw</a></span> on <a href="http://www.acmerblog.com/hdu-4093-xavier-is-learning-to-count-7096.html#comment-52137" rel="nofollow"><time datetime="2015-05-26T14:14:15+00:00" pubdate="">2015年5月26日 at 下午2:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的模板</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35881">
+<article class="comment" id="comment-35881">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gnipuohz</a></span> on <a href="http://www.acmerblog.com/hdu-4093-xavier-is-learning-to-count-7096.html#comment-35881" rel="nofollow"><time datetime="2015-05-23T23:39:57+00:00" pubdate="">2015年5月23日 at 下午11:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>书上的解法更巧妙一些，在九度OJ实测的效率差不多</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64293">
+<article class="comment" id="comment-64293">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zhenghao</a></span> on <a href="http://www.acmerblog.com/hdu-4093-xavier-is-learning-to-count-7096.html#comment-64293" rel="nofollow"><time datetime="2015-05-19T15:31:30+00:00" pubdate="">2015年5月19日 at 下午3:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>6题应该就是算概率的吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-52138">
+<article class="comment" id="comment-52138">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">winter</a></span> on <a href="http://www.acmerblog.com/hdu-4093-xavier-is-learning-to-count-7096.html#comment-52138" rel="nofollow"><time datetime="2015-05-07T03:46:55+00:00" pubdate="">2015年5月7日 at 上午3:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，还是这种实现比较好理解。虽然效率有点低</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-60217">
+<article class="comment" id="comment-60217">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1832044043</a></span> on <a href="http://www.acmerblog.com/hdu-4093-xavier-is-learning-to-count-7096.html#comment-60217" rel="nofollow"><time datetime="2015-04-18T03:50:39+00:00" pubdate="">2015年4月18日 at 上午3:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我没看懂题目<br/>
+2<br/>
+5 6 -1 5 4 -7<br/>
+7 0 6 -1 1 -6 7 -5<br/>
+我觉得第一个应该是5 6 -1 5 4 输出是19 5 4<br/>
+第二个是7 0 6 -1 1 -6 7输出是14 7 7<br/>
+不知道题目例子是怎么得出来的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35884">
+<article class="comment" id="comment-35884">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">magichu</a></span> on <a href="http://www.acmerblog.com/hdu-4093-xavier-is-learning-to-count-7096.html#comment-35884" rel="nofollow"><time datetime="2015-04-17T23:18:42+00:00" pubdate="">2015年4月17日 at 下午11:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>懂了，谢谢啦</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

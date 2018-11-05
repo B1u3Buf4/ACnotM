@@ -1,0 +1,324 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>02-12</div>
+<div class="tit"><h1 class="entry-title">hdu 2640 Toy bricks-动态规划-[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a></span><span class="i4">围观708次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4230" href="http://www.acmerblog.com/hdu-2640-toy-bricks-4230.html#comments" title="《hdu 2640 Toy bricks-动态规划-[解题报告]C++》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Toy bricks</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+When Teddy was a child,he liked playing toy bricks very much.And he had found an interesting way to play with those toy bricks.<br/>There is a big plate with some blocks in it,of course you can’t put the bricks in the block,you can only put the the bricks in the place which is empty.<br/>To make the problem easier I only give you one kind of brick:
+<pre><br/> @<br/>@@@<br/> @<br/></pre>
+<p>and I will give you the box’s initial state as below:</p>
+<pre><br/>...####..<br/>...###..#<br/>..####..#<br/>...####..<br/></pre>
+<p>the ‘#’ means the block and the ‘.’ means the empty place.<br/>To play this game,simply,you just need to put as many bricks to the box as you can.<br/>OK,just tell me what is the maximum number of bricks can be put into the box ^_^. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line contain a T followed by T cases.<br/>The first line of each case,there are two integers n,m,indicating the Height adn the Width of the box.(n &lt;= 100 , m &lt;= 8).<br/>then n lines strings each with m characters give the initial stae of the box.<br/>There will be one blank line after each case. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The first line contain a T followed by T cases.<br/>The first line of each case,there are two integers n,m,indicating the Height adn the Width of the box.(n &lt;= 100 , m &lt;= 8).<br/>then n lines strings each with m characters give the initial stae of the box.<br/>There will be one blank line after each case.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+5 4
+#.#.
+...#
+#..#
+#...
+##.#</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+2</pre>
+<p> <!-- problem end --></p>
+<p><a href="http://acm.hdu.edu.cn/showproblem.php?pid=2640" target="_blank">题目</a></p>
+<p>
+</p>
+<p>
+</p>
+<pre class="brush:cpp ">#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;algorithm&gt;
+using namespace std;
+
+int t,n,m,dp[2][13][13],num,ok[13],cnt[13];
+char map[105][10];
+
+/*
+    状态是每个物体的第三行...
+    由于第二行的特殊性,加上不能重叠,可以知道第三行状态很少一共有:
+    00000000 , 01001000
+    01000000 , 01000100
+    00100000 , 01000010
+    00010000 , 00100100
+    00001000 , 00100010
+    00000100 , 00010010
+    00000010
+    13种.
+*/
+inline void init(){//求出合法状态
+    ok[0]=cnt[0]=0;
+    num=1;
+    for(int i=1;i+1&lt;m;i++){
+        ok[num]=(1&lt;&lt;i),cnt[num]=1,num++;
+        for(int j=i+3;j+1&lt;m;j++){
+            ok[num]=(1&lt;&lt;i)+(1&lt;&lt;j),cnt[num]=2,num++;
+        }
+    }
+}
+
+inline bool suit(int st,int i){//第i行状态为st,可以吗?需要考虑三行
+    for(int j=0;j&lt;m;j++){
+        if(st&amp;(1&lt;&lt;j)){
+            if(map[i][j]=='#' || map[i-1][j]=='#' || map[i-1][j-1]=='#' || map[i-1][j+1]=='#' || map[i-2][j]=='#')
+                return 0;
+        }
+    }
+    return 1;
+}
+
+inline bool Can1(int st1,int st2){//对于物体,第三行的状态和第二行的状态合法不
+    int a[3][8];
+    memset(a,0,sizeof(a));
+    for(int i=0;i&lt;8;i++){
+        if(st1&amp;(1&lt;&lt;i)){
+            a[0][i]++,a[1][i]++,a[1][i-1]++,a[1][i+1]++,a[2][i]++;
+        }
+        if(st2&amp;(1&lt;&lt;i)){
+            a[1][i]++,a[2][i]++,a[2][i-1]++,a[2][i+1]++;
+        }
+    }
+    for(int i=0;i&lt;8;i++){
+        if(a[0][i]&gt;1 || a[1][i]&gt;1 || a[2][i]&gt;1) return 0;
+    }
+    return 1;
+}
+
+inline bool Can2(int st1,int st2){//对于物体,第三行的状态和第一行的状态合法不
+    for(int i=0;i&lt;m;i++){
+        if(st1&amp;(1&lt;&lt;i)){
+            if(st2&amp;(1&lt;&lt;i)){
+                return 0;
+            }
+        }
+    }
+    return 1;
+}
+int main(){
+    scanf("%d",&amp;t);
+    while(t--){
+        scanf("%d%d",&amp;n,&amp;m);
+        for(int i=0;i&lt;n;i++) scanf("%s",map[i]);
+        if(n&lt;=2 || m&lt;=2 ) puts("0");
+        else{
+            init();
+            int now=0;
+            memset(dp[now],0,sizeof(dp[now]));
+            for(int i=2;i&lt;n;i++){
+                now^=1;
+                memset(dp[now],0,sizeof(dp[now]));
+                for(int j=0;j&lt;num;j++){
+                    int st1=ok[j];
+                    for(int k=0;k&lt;num;k++){
+                        int st2=ok[k];
+                        for(int r=0;r&lt;num;r++){
+                            int st3=ok[r];
+                            if(!suit(st3,i)) continue;
+                            if(!Can1(st3,st1)) continue;
+                            if(!Can2(st3,st2)) continue;
+                            dp[now][r][j]=max(dp[now][r][j],dp[1-now][j][k]+cnt[r]);
+                        }
+                    }
+                }
+            }
+            int ans=0;
+            for(int i=0;i&lt;num;i++)
+                for(int j=0;j&lt;num;j++)
+                    ans=max(ans,dp[now][i][j]);
+            printf("%d\n",ans);
+        }
+    }
+    return 0;
+}</pre>
+<p>解题转自：http://blog.csdn.net/zhuhuangjian/article/details/19077039</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-23607">
+<article class="comment" id="comment-23607">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">20122256</a></span> on <a href="http://www.acmerblog.com/hdu-2640-toy-bricks-4230.html#comment-23607" rel="nofollow"><time datetime="2015-06-30T23:58:59+00:00" pubdate="">2015年6月30日 at 下午11:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很赞的解答</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-23615">
+<article class="comment" id="comment-23615">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ycaxgjd</a></span> on <a href="http://www.acmerblog.com/hdu-2640-toy-bricks-4230.html#comment-23615" rel="nofollow"><time datetime="2015-06-28T21:36:00+00:00" pubdate="">2015年6月28日 at 下午9:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好。代码比书上的简练！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-23605">
+<article class="comment" id="comment-23605">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rewrite</a></span> on <a href="http://www.acmerblog.com/hdu-2640-toy-bricks-4230.html#comment-23605" rel="nofollow"><time datetime="2015-06-18T07:03:01+00:00" pubdate="">2015年6月18日 at 上午7:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>顶一个 赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-23610">
+<article class="comment" id="comment-23610">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ssjssh</a></span> on <a href="http://www.acmerblog.com/hdu-2640-toy-bricks-4230.html#comment-23610" rel="nofollow"><time datetime="2015-06-04T10:25:44+00:00" pubdate="">2015年6月4日 at 上午10:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>I like your publish. It is great to see you verbalize from the coronary heart and clarity on this essential subject matter can be easily noticed.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-23604">
+<article class="comment" id="comment-23604">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">crazymage</a></span> on <a href="http://www.acmerblog.com/hdu-2640-toy-bricks-4230.html#comment-23604" rel="nofollow"><time datetime="2015-04-23T08:03:56+00:00" pubdate="">2015年4月23日 at 上午8:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的模板</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-23603">
+<article class="comment" id="comment-23603">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zzzzzz</a></span> on <a href="http://www.acmerblog.com/hdu-2640-toy-bricks-4230.html#comment-23603" rel="nofollow"><time datetime="2015-04-07T07:42:29+00:00" pubdate="">2015年4月7日 at 上午7:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>找bug好专业的说</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-23606">
+<article class="comment" id="comment-23606">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">starcuan</a></span> on <a href="http://www.acmerblog.com/hdu-2640-toy-bricks-4230.html#comment-23606" rel="nofollow"><time datetime="2015-03-10T13:44:16+00:00" pubdate="">2015年3月10日 at 下午1:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算法是程序的灵魂，算法分简单和复杂，如果不搞大数据类，程序员了解一下简单点的算法也是可以的，但是会算法的一定要会编程才行，程序员不一定要会算法，利于自己项目需要的可以简单了解。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-23608">
+<article class="comment" id="comment-23608">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ycaxgjd</a></span> on <a href="http://www.acmerblog.com/hdu-2640-toy-bricks-4230.html#comment-23608" rel="nofollow"><time datetime="2015-02-22T13:53:10+00:00" pubdate="">2015年2月22日 at 下午1:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>“再把所有不和该节点相邻的节点着相同的颜色”，程序中没有进行不和该节点相邻的其他节点是否相邻进行判断。再说求出来的也不一样是颜色数最少的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-23609">
+<article class="comment" id="comment-23609">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tonight</a></span> on <a href="http://www.acmerblog.com/hdu-2640-toy-bricks-4230.html#comment-23609" rel="nofollow"><time datetime="2015-01-24T20:58:21+00:00" pubdate="">2015年1月24日 at 下午8:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>比较基础，找些自信</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-23613">
+<article class="comment" id="comment-23613">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Miracle-cc</a></span> on <a href="http://www.acmerblog.com/hdu-2640-toy-bricks-4230.html#comment-23613" rel="nofollow"><time datetime="2015-01-07T17:11:59+00:00" pubdate="">2015年1月7日 at 下午5:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>int half(int *array,int len,int key)<br/>
+{<br/>
+    int l=0,r=len;<br/>
+    while(l&lt;r)<br/>
+    {<br/>
+        int m=(l+r)&gt;&gt;1;<br/>
+        if(key&gt;array <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/98/weibom_org.gif"/> )l=m+1;<br/>
+        else if(key&lt;array <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/98/weibom_org.gif"/> )r=m;<br/>
+        else return m;<br/>
+    }<br/>
+    return -1;<br/>
+}<br/>
+这种就能避免一些Bug<br/>
+l,m,r<br/>
+左边是l,m;右边就是m+1,r;</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-23611">
+<article class="comment" id="comment-23611">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">samjustin</a></span> on <a href="http://www.acmerblog.com/hdu-2640-toy-bricks-4230.html#comment-23611" rel="nofollow"><time datetime="2014-10-17T11:15:21+00:00" pubdate="">2014年10月17日 at 上午11:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个才是我想要的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-23614">
+<article class="comment" id="comment-23614">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">leowww</a></span> on <a href="http://www.acmerblog.com/hdu-2640-toy-bricks-4230.html#comment-23614" rel="nofollow"><time datetime="2014-08-22T15:40:09+00:00" pubdate="">2014年8月22日 at 下午3:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这一题的代码这样提交时错误的~少考虑了很多情况</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-23612">
+<article class="comment" id="comment-23612">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">abguorui0928</a></span> on <a href="http://www.acmerblog.com/hdu-2640-toy-bricks-4230.html#comment-23612" rel="nofollow"><time datetime="2014-03-06T14:21:44+00:00" pubdate="">2014年3月6日 at 下午2:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我还有个问题想请教一下，就是感觉对于新手来说，递归理解起来有些困难，不知有没有什么好的方法或者什么好的建议？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-23602">
+<article class="comment" id="comment-23602">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">lsdtc1225</a></span> on <a href="http://www.acmerblog.com/hdu-2640-toy-bricks-4230.html#comment-23602" rel="nofollow"><time datetime="2014-03-03T03:57:56+00:00" pubdate="">2014年3月3日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>居然看懂了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

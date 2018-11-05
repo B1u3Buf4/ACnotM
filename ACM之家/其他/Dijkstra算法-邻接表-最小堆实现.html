@@ -1,0 +1,652 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>06-25</div>
+<div class="tit"><h1 class="entry-title">Dijkstra算法-邻接表-最小堆实现</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/graph/shortest-path" rel="category tag" title="查看最短路径中的全部文章">最短路径</a>, <a href="http://www.acmerblog.com/category/zhuanti/classic" rel="category tag" title="查看经典问题中的全部文章">经典问题</a></span><span class="i4">围观1810次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5882" href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comments" title="《Dijkstra算法-邻接表-最小堆实现》上的评论">36 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p>前面一篇 <a href="http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html">Dijkstra最短路径算法 </a>讲了基于邻接矩阵表示的Dijkstra算法。算法的时间复杂度为O(V^2)，其中V为顶点的个数。</p>
+<p>当一个图为稀疏图时，顶点个数相对比边的个数多。此时用邻接表来存储图，不仅节省存储空间，<br/>
+在算法实现上也会更高效。这里实现 O((E+V)*LogV) ，近似的 O(ELogV) 复杂度的Dijkstra算法。其中E为边的个数。</p>
+<p>正如在前面所讨论的,迪杰斯特拉算法的维护两组顶点集合，<br/>
+一组已经包含在SPT(最短路径树)中的顶点集合,另一组是未包含在SPT内的顶点集合。</p>
+<p>算法的优化在于使用最小堆作为一个优先队列。因为，每次迭代我们都要从<br/>
+未包含在SPT内的顶点集合中找到一个最小距离的节点，普通作为是遍历一边，复杂度为 O(V)，使用最小堆，可以降低到 O(1)，之家取出堆顶点即可。关于Dijkstra算法的具体描述不在详细解释。<br/>
+下面是C++的实现代码：</p>
+<pre class="brush:cpp">// C / C++实现的 Dijkstra最短路径，图的邻接表表示
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;limits.h&gt;
+
+// 邻接表的节点
+struct AdjListNode {
+	int dest;
+	int weight;
+	struct AdjListNode* next;
+};
+
+// 邻接表 结构体
+struct AdjList {
+	struct AdjListNode *head;  // 指向头节点
+};
+
+// 图结构体，V为顶点个数。array为所有的邻接表
+struct Graph {
+	int V;
+	struct AdjList* array;
+};
+
+//创建邻接表的节点
+struct AdjListNode* newAdjListNode(int dest, int weight) {
+	struct AdjListNode* newNode = (struct AdjListNode*) malloc(
+			sizeof(struct AdjListNode));
+	newNode-&gt;dest = dest;
+	newNode-&gt;weight = weight;
+	newNode-&gt;next = NULL;
+	return newNode;
+}
+
+//创建一个图，包含V的顶点
+struct Graph* createGraph(int V) {
+	struct Graph* graph = (struct Graph*) malloc(sizeof(struct Graph));
+	graph-&gt;V = V;
+
+	graph-&gt;array = (struct AdjList*) malloc(V * sizeof(struct AdjList));
+
+	for (int i = 0; i &lt; V; ++i)
+		graph-&gt;array[i].head = NULL;
+
+	return graph;
+}
+
+// 添加一个边(无向图)
+void addEdge(struct Graph* graph, int src, int dest, int weight) {
+
+	struct AdjListNode* newNode = newAdjListNode(dest, weight);
+	newNode-&gt;next = graph-&gt;array[src].head;
+	graph-&gt;array[src].head = newNode;
+
+	newNode = newAdjListNode(src, weight);
+	newNode-&gt;next = graph-&gt;array[dest].head;
+	graph-&gt;array[dest].head = newNode;
+}
+
+// 最小堆节点
+struct MinHeapNode {
+	int v;  //下标
+	int dist; //距离
+};
+
+// 最小堆
+struct MinHeap {
+	int size;
+	int capacity;
+	int *pos;     // pos[i]表示顶点i所在的下标
+	struct MinHeapNode **array;
+};
+
+// 创建一个最小堆节点
+struct MinHeapNode* newMinHeapNode(int v, int dist) {
+	struct MinHeapNode* minHeapNode = (struct MinHeapNode*) malloc(
+			sizeof(struct MinHeapNode));
+	minHeapNode-&gt;v = v;
+	minHeapNode-&gt;dist = dist;
+	return minHeapNode;
+}
+
+// A utility function to create a Min Heap
+struct MinHeap* createMinHeap(int capacity) {
+	struct MinHeap* minHeap = (struct MinHeap*) malloc(sizeof(struct MinHeap));
+	minHeap-&gt;pos = (int *) malloc(capacity * sizeof(int));
+	minHeap-&gt;size = 0;
+	minHeap-&gt;capacity = capacity;
+	minHeap-&gt;array = (struct MinHeapNode**) malloc(
+			capacity * sizeof(struct MinHeapNode*));
+	return minHeap;
+}
+
+// 交换两个最小堆的节点
+void swapMinHeapNode(struct MinHeapNode** a, struct MinHeapNode** b) {
+	struct MinHeapNode* t = *a;
+	*a = *b;
+	*b = t;
+}
+
+//在位置 idx 调整堆
+void minHeapify(struct MinHeap* minHeap, int idx) {
+	int smallest, left, right;
+	smallest = idx;
+	left = 2 * idx + 1;
+	right = 2 * idx + 2;
+
+	if (left &lt; minHeap-&gt;size
+			&amp;&amp; minHeap-&gt;array[left]-&gt;dist &lt; minHeap-&gt;array[smallest]-&gt;dist)
+		smallest = left;
+
+	if (right &lt; minHeap-&gt;size
+			&amp;&amp; minHeap-&gt;array[right]-&gt;dist &lt; minHeap-&gt;array[smallest]-&gt;dist)
+		smallest = right;
+
+	if (smallest != idx) {
+		// 需要交换的节点
+		MinHeapNode *smallestNode = minHeap-&gt;array[smallest];
+		MinHeapNode *idxNode = minHeap-&gt;array[idx];
+
+		//交换下标
+		minHeap-&gt;pos[smallestNode-&gt;v] = idx;
+		minHeap-&gt;pos[idxNode-&gt;v] = smallest;
+
+		//交换节点
+		swapMinHeapNode(&amp;minHeap-&gt;array[smallest], &amp;minHeap-&gt;array[idx]);
+
+		minHeapify(minHeap, smallest);
+	}
+}
+
+// 推是否为空
+int isEmpty(struct MinHeap* minHeap) {
+	return minHeap-&gt;size == 0;
+}
+
+// 弹出堆顶的节点(即最小的节点)
+struct MinHeapNode* extractMin(struct MinHeap* minHeap) {
+	if (isEmpty(minHeap))
+		return NULL;
+
+	struct MinHeapNode* root = minHeap-&gt;array[0];
+
+	struct MinHeapNode* lastNode = minHeap-&gt;array[minHeap-&gt;size - 1];
+	minHeap-&gt;array[0] = lastNode;
+
+	// 更新下标
+	minHeap-&gt;pos[root-&gt;v] = minHeap-&gt;size - 1;
+	minHeap-&gt;pos[lastNode-&gt;v] = 0;
+
+	// 记得减少堆的大小
+	--minHeap-&gt;size;
+	minHeapify(minHeap, 0);
+
+	return root;
+}
+
+// 当节点v的距离更新后(变小了)调整堆
+void decreaseKey(struct MinHeap* minHeap, int v, int dist) {
+	//获取节点 v 在 堆中的下标
+	int i = minHeap-&gt;pos[v];
+
+	minHeap-&gt;array[i]-&gt;dist = dist;
+
+	// 因为是变小了，自下向上调整堆即可。 O(Logn)
+	while (i &amp;&amp; minHeap-&gt;array[i]-&gt;dist &lt; minHeap-&gt;array[(i - 1) / 2]-&gt;dist) {
+		minHeap-&gt;pos[minHeap-&gt;array[i]-&gt;v] = (i - 1) / 2;
+		minHeap-&gt;pos[minHeap-&gt;array[(i - 1) / 2]-&gt;v] = i;
+		swapMinHeapNode(&amp;minHeap-&gt;array[i], &amp;minHeap-&gt;array[(i - 1) / 2]);
+
+		i = (i - 1) / 2;
+	}
+}
+
+// 判断节点v是否在堆中
+bool isInMinHeap(struct MinHeap *minHeap, int v) {
+	if (minHeap-&gt;pos[v] &lt; minHeap-&gt;size)
+		return true;
+	return false;
+}
+
+// 打印结果
+void printArr(int dist[], int n) {
+	printf("Vertex   Distance from Source\n");
+	for (int i = 0; i &lt; n; ++i)
+		printf("%d \t\t %d\n", i, dist[i]);
+}
+
+void dijkstra(struct Graph* graph, int src) {
+	int V = graph-&gt;V;
+	int dist[V];
+
+	struct MinHeap* minHeap = createMinHeap(V);
+
+	// 初始化堆包含所有的顶点
+	for (int v = 0; v &lt; V; ++v) {
+		dist[v] = INT_MAX;
+		minHeap-&gt;array[v] = newMinHeapNode(v, dist[v]);
+		minHeap-&gt;pos[v] = v;
+	}
+
+	// 把 源点 src 的距离设置为0，第一个取出的点即为源点
+	minHeap-&gt;array[src] = newMinHeapNode(src, dist[src]);
+	minHeap-&gt;pos[src] = src;
+	dist[src] = 0;
+	decreaseKey(minHeap, src, dist[src]);
+
+	minHeap-&gt;size = V;
+
+	// 这个循环中，minHeap包含的是所有未在SPT中的顶点
+	while (!isEmpty(minHeap)) {
+		// 取得堆顶节点，即最小距离的顶点
+		struct MinHeapNode* minHeapNode = extractMin(minHeap);
+		int u = minHeapNode-&gt;v;
+
+		// 只需要遍历和u相邻的顶点进行更新
+		struct AdjListNode* pCrawl = graph-&gt;array[u].head;
+		while (pCrawl != NULL) {
+			int v = pCrawl-&gt;dest;
+			// 松弛操作，更新距离
+			if (isInMinHeap(minHeap, v) &amp;&amp; dist[u] != INT_MAX
+					&amp;&amp; pCrawl-&gt;weight + dist[u] &lt; dist[v]) {
+				dist[v] = dist[u] + pCrawl-&gt;weight;
+				//距离更新了之后，要调整最小堆
+				decreaseKey(minHeap, v, dist[v]);
+			}
+			pCrawl = pCrawl-&gt;next;
+		}
+	}
+
+	// 打印
+	printArr(dist, V);
+}
+
+// 测试
+int main() {
+	// 创建上一讲：http://www.acmerblog.com/dijkstra-shortest-path-algorithm-5876.html 例子中的图
+	int V = 9;
+	struct Graph* graph = createGraph(V);
+	addEdge(graph, 0, 1, 4);
+	addEdge(graph, 0, 7, 8);
+	addEdge(graph, 1, 2, 8);
+	addEdge(graph, 1, 7, 11);
+	addEdge(graph, 2, 3, 7);
+	addEdge(graph, 2, 8, 2);
+	addEdge(graph, 2, 5, 4);
+	addEdge(graph, 3, 4, 9);
+	addEdge(graph, 3, 5, 14);
+	addEdge(graph, 4, 5, 10);
+	addEdge(graph, 5, 6, 2);
+	addEdge(graph, 6, 7, 1);
+	addEdge(graph, 6, 8, 6);
+	addEdge(graph, 7, 8, 7);
+
+	dijkstra(graph, 0);
+
+	return 0;
+}</pre>
+<p>时间复杂度：</p>
+<p>虽然有两层循环，但内部代码执行了O(V+E) 次(和图的BFS类似).  decreaseKey()的复杂度为 log(V). 因此总的复杂度为：</p>
+<p>O((E+V)*LogV) = O(ELogV)</p>
+<p>参考：http://www.geeksforgeeks.org/greedy-algorithms-set-7-dijkstras-algorithm-for-adjacency-list-representation/</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75395">
+<article class="comment" id="comment-75395">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516232" rel="external nofollow">新用户165403</a></span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-75395" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>大日本特效全球第一 垃圾中国猪一万年都拍不出来</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75394">
+<article class="comment" id="comment-75394">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516232" rel="external nofollow">新用户165403</a></span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-75394" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>大日本特效全球第一 垃圾中国猪一万年都拍不出来</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75393">
+<article class="comment" id="comment-75393">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516232" rel="external nofollow">新用户165403</a></span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-75393" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>大日本特效全球第一 垃圾中国猪一万年都拍不出来</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75392">
+<article class="comment" id="comment-75392">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516232" rel="external nofollow">新用户165403</a></span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-75392" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>大日本特效全球第一 垃圾中国猪一万年都拍不出来</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75391">
+<article class="comment" id="comment-75391">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516232" rel="external nofollow">新用户165403</a></span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-75391" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>大日本特效全球第一 垃圾中国猪一万年都拍不出来</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75390">
+<article class="comment" id="comment-75390">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516232" rel="external nofollow">新用户165403</a></span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-75390" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>大日本特效全球第一 垃圾中国猪一万年都拍不出来</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75389">
+<article class="comment" id="comment-75389">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516232" rel="external nofollow">新用户165403</a></span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-75389" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>大日本特效全球第一 垃圾中国猪一万年都拍不出来</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75388">
+<article class="comment" id="comment-75388">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516232" rel="external nofollow">新用户165403</a></span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-75388" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>大日本特效全球第一 垃圾中国猪一万年都拍不出来</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75387">
+<article class="comment" id="comment-75387">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516232" rel="external nofollow">新用户165403</a></span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-75387" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>大日本特效全球第一 垃圾中国猪一万年都拍不出来</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75386">
+<article class="comment" id="comment-75386">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516232" rel="external nofollow">新用户165403</a></span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-75386" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>大日本特效全球第一 垃圾中国猪一万年都拍不出来</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75385">
+<article class="comment" id="comment-75385">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516232" rel="external nofollow">新用户165403</a></span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-75385" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>大日本特效全球第一 垃圾中国猪一万年都拍不出来</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65009">
+<article class="comment" id="comment-65009">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.kaixin001.com/home/?uid=175175150" rel="external nofollow">可可</a></span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-65009" rel="nofollow"><time datetime="2017-01-06T22:04:09+00:00" pubdate="">2017年1月6日 at 下午10:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个更刺ｃ激，准备好手纸哦 A 片。。 ２８８ｄ．ｐｗ <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64885">
+<article class="comment" id="comment-64885">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">eTXwo</span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-64885" rel="nofollow"><time datetime="2016-11-23T07:52:17+00:00" pubdate="">2016年11月23日 at 上午7:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>打开 ｕｖｕ.ｃｃ/ir7p都是 浪美眉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64870">
+<article class="comment" id="comment-64870">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">nwEIC</span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-64870" rel="nofollow"><time datetime="2016-11-12T06:00:36+00:00" pubdate="">2016年11月12日 at 上午6:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个更刺ｃ激，准备好手纸哦 A 片。。 ２８８ｄ．ｐｗ <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64847">
+<article class="comment" id="comment-64847">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">tkGlp</span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-64847" rel="nofollow"><time datetime="2016-11-12T03:34:36+00:00" pubdate="">2016年11月12日 at 上午3:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>精彩大片你懂，htTP://uVU.Cc/ijW6 <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64846">
+<article class="comment" id="comment-64846">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">tkGlp</span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-64846" rel="nofollow"><time datetime="2016-11-12T03:34:36+00:00" pubdate="">2016年11月12日 at 上午3:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>精彩大片你懂，htTP://uVU.Cc/ijW6 <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64815">
+<article class="comment" id="comment-64815">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">MQIpq</span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-64815" rel="nofollow"><time datetime="2016-10-29T12:01:42+00:00" pubdate="">2016年10月29日 at 下午12:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个更C刺j激，准备好手纸哦 A 片。HTTp://T.Cn/Rc4PF3o <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64773">
+<article class="comment" id="comment-64773">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">JqtmN</span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-64773" rel="nofollow"><time datetime="2016-10-21T05:47:07+00:00" pubdate="">2016年10月21日 at 上午5:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>万 ｃ部 A 片　高ｃ清 国产.日韩 <a href="http://uVU.cc/ir7q" rel="nofollow">http://uVU.cc/ir7q</a></p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64747">
+<article class="comment" id="comment-64747">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">UbZcG</span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-64747" rel="nofollow"><time datetime="2016-10-11T23:22:04+00:00" pubdate="">2016年10月11日 at 下午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个更C刺j激，准备好手纸哦 A 片。HTTp://T.Cn/Rc4PF3o <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64714">
+<article class="comment" id="comment-64714">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">XvwKs</span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-64714" rel="nofollow"><time datetime="2016-10-10T07:11:43+00:00" pubdate="">2016年10月10日 at 上午7:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>万 ｃ部 A 片　高ｃ清 国产.日韩 <a href="http://uVU.cc/ir7q" rel="nofollow">http://uVU.cc/ir7q</a></p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64682">
+<article class="comment" id="comment-64682">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">jFidH</span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-64682" rel="nofollow"><time datetime="2016-09-17T07:02:10+00:00" pubdate="">2016年9月17日 at 上午7:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个更C刺j激，准备好手纸哦 A 片。HTTp://T.Cn/Rc4PF3o <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64651">
+<article class="comment" id="comment-64651">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">fdxgB</span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-64651" rel="nofollow"><time datetime="2016-08-25T23:12:10+00:00" pubdate="">2016年8月25日 at 下午11:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>万 部 A 片高清 国产日韩 <a href="http://uVU.cc/igwI" rel="nofollow">http://uVU.cc/igwI</a> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49412">
+<article class="comment" id="comment-49412">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangdilj</a></span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-49412" rel="nofollow"><time datetime="2015-07-14T22:40:52+00:00" pubdate="">2015年7月14日 at 下午10:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>思路二可以用一个长度为k的队列来实现，入队后判断下队尾元素的next指针是否为空，若为空，则出队指针即为所求。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30458">
+<article class="comment" id="comment-30458">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ssjssh</a></span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-30458" rel="nofollow"><time datetime="2015-06-14T18:56:52+00:00" pubdate="">2015年6月14日 at 下午6:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好吧~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30457">
+<article class="comment" id="comment-30457">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">g29tony</a></span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-30457" rel="nofollow"><time datetime="2015-06-11T18:18:01+00:00" pubdate="">2015年6月11日 at 下午6:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>看似简单，还是不少坑的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-3413">
+<article class="comment" id="comment-3413">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://wnjxyk.cn/" rel="external nofollow">WNJXYK</a></span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-3413" rel="nofollow"><time datetime="2015-05-16T23:36:23+00:00" pubdate="">2015年5月16日 at 下午11:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈呀！这个Dijkstra模板好长OwQ！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-3412">
+<article class="comment" id="comment-3412">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://wnjxyk.cn/" rel="external nofollow">WNJXYK</a></span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-3412" rel="nofollow"><time datetime="2015-05-16T23:36:23+00:00" pubdate="">2015年5月16日 at 下午11:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈呀！这个Dijkstra模板好长OwQ！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-3406">
+<article class="comment" id="comment-3406">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://t.qq.com/beizaibeifang299593" rel="external nofollow">北在北方</a></span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-3406" rel="nofollow"><time datetime="2015-05-12T15:35:31+00:00" pubdate="">2015年5月12日 at 下午3:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚开始学习，为啥会报错了，你试过了吗</p>
+</div>
+</article><!-- #comment-## -->
+<ul class="children">
+<li class="comment byuser comment-author-admin bypostauthor even depth-2" id="li-comment-3408">
+<article class="comment" id="comment-3408">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.acmerblog.com/" rel="external nofollow">管理员</a></span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-3408" rel="nofollow"><time datetime="2015-05-12T15:45:57+00:00" pubdate="">2015年5月12日 at 下午3:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>必须试过啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment byuser comment-author-admin bypostauthor odd alt depth-2" id="li-comment-3409">
+<article class="comment" id="comment-3409">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.acmerblog.com/" rel="external nofollow">管理员</a></span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-3409" rel="nofollow"><time datetime="2015-05-12T15:46:30+00:00" pubdate="">2015年5月12日 at 下午3:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>gcc环境</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ul><!-- .children -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30456">
+<article class="comment" id="comment-30456">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Dick</a></span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-30456" rel="nofollow"><time datetime="2015-03-25T12:08:57+00:00" pubdate="">2015年3月25日 at 下午12:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>神奇的网站</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30459">
+<article class="comment" id="comment-30459">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fiftyonejiao</a></span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-30459" rel="nofollow"><time datetime="2015-03-10T15:00:34+00:00" pubdate="">2015年3月10日 at 下午3:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>.net中char类型不是两个字节么</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49409">
+<article class="comment" id="comment-49409">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">chengleisheng</a></span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-49409" rel="nofollow"><time datetime="2015-01-07T08:59:00+00:00" pubdate="">2015年1月7日 at 上午8:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，再多来的CF上面的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30460">
+<article class="comment" id="comment-30460">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">binqi_ren</a></span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-30460" rel="nofollow"><time datetime="2014-09-07T16:46:03+00:00" pubdate="">2014年9月7日 at 下午4:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法好！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49411">
+<article class="comment" id="comment-49411">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangdilj</a></span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-49411" rel="nofollow"><time datetime="2014-08-21T23:26:24+00:00" pubdate="">2014年8月21日 at 下午11:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>int L[m+1][n+1];这样定义出错，这个在gcc上可以编译通过  在VS上不行 应该改为new 或者vector</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49410">
+<article class="comment" id="comment-49410">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mysteriousAngel_love</a></span> on <a href="http://www.acmerblog.com/dijkstras-algorithm-adjacency-list-5882.html#comment-49410" rel="nofollow"><time datetime="2014-08-11T10:31:14+00:00" pubdate="">2014年8月11日 at 上午10:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>顶一个 赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

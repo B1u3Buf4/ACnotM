@@ -1,0 +1,430 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>04-13</div>
+<div class="tit"><h1 class="entry-title">HDU 3804-Query on a tree-DFS-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/dfs" rel="category tag" title="查看DFS搜索中的全部文章">DFS搜索</a>, <a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/data-struct/linear" rel="category tag" title="查看线性结构中的全部文章">线性结构</a></span><span class="i4">围观401次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6804" href="http://www.acmerblog.com/hdu-3804-query-on-a-tree-6804.html#comments" title="《HDU 3804-Query on a tree-DFS-[解题报告]HOJ》上的评论">23 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Query on a tree</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+  There are some queries on a tree which has n nodes. Every query is described as two integers (X, Y).For each query, you should find the maximum weight of the edges in set E, which satisfies the following two conditions.<br/> 1) The edge must on the path from node X to node 1.<br/> 2) The edge’s weight should be lower or equal to Y.<br/>  Now give you the tree and queries. Can you find out the answer for each query? </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+  The first line of the input is an integer T, indicating the number of test cases. For each case, the first line contains an integer n indicates the number of nodes in the tree. Then n-1 lines follows, each line contains three integers X, Y, W indicate an edge between node X and node Y whose value is W. Then one line has one integer Q indicates the number of queries. In the next Q lines, each line contains two integers X and Y as said above. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+  The first line of the input is an integer T, indicating the number of test cases. For each case, the first line contains an integer n indicates the number of nodes in the tree. Then n-1 lines follows, each line contains three integers X, Y, W indicate an edge between node X and node Y whose value is W. Then one line has one integer Q indicates the number of queries. In the next Q lines, each line contains two integers X and Y as said above.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+3
+1 2 7
+2 3 5
+4
+3 10
+3 7
+3 6
+3 4</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+7
+7
+5
+-1
+<div style="font-family:Times New Roman;font-size:14px;background-color:F4FBFF;border:#B7CBFF 1px dashed;padding:6px"><div style="font-family:Arial;font-weight:bold;color:#7CA9ED;border-bottom:#B7CBFF 1px dashed"><i>Hint</i></div>
+2&lt;=n&lt;=10^5
+2&lt;=Q&lt;=10^5
+1&lt;=W,Y&lt;=10^9
+The data is guaranteed that your program will overflow if you use recursion.
+</div><i style="font-size:1px"> </i></pre>
+<p> <!-- problem end --></p>
+<p>离线查找，蛋疼的是DFS居然要用栈….</p>
+<pre class="brush:cpp" name="code">#include &lt;iostream&gt;<br/>
+#include &lt;set&gt;<br/>
+#include &lt;stack&gt;<br/>
+using namespace std;<br/>
+const int maxn = 100005;<br/>
+struct Graph<br/>
+{<br/>
+    int pnt[maxn*2], val[maxn*2], nxt[maxn*2];<br/>
+    int head[maxn], idx;<br/>
+    bool sign[maxn];<br/>
+    void Init(int n)<br/>
+    {<br/>
+        memset(head, -1, 4 * (n + 1));<br/>
+        memset(sign, 0, n + 1);<br/>
+        idx = 0;<br/>
+    }<br/>
+    void Addedge(int x, int y, int v)<br/>
+    {<br/>
+        pnt[idx] = y; val[idx] = v; nxt[idx] = head[x]; head[x] = idx++;<br/>
+        pnt[idx] = x; val[idx] = v; nxt[idx] = head[y]; head[y] = idx++;<br/>
+    }<br/>
+} graph;<br/>
+struct Query<br/>
+{<br/>
+    int x[maxn], top[maxn], ans[maxn];<br/>
+    int nxt[maxn], head[maxn], idx;<br/>
+    void Init(int n)<br/>
+    {<br/>
+        memset(head, -1, 4 * (n + 1));<br/>
+        idx = 0;<br/>
+    }<br/>
+    void Addquery(int tx, int tt)<br/>
+    {<br/>
+        if (tx == 1) ans[idx] = -1;<br/>
+        x[idx] = tx; top[idx] = tt;<br/>
+        nxt[idx] = head[tx]; head[tx] = idx++;<br/>
+    }<br/>
+} query;<br/>
+struct Node<br/>
+{<br/>
+    int p, v;<br/>
+};<br/>
+multiset&lt;int&gt; mset;<br/>
+multiset&lt;int&gt;::iterator it;<br/>
+stack&lt; pair&lt;int, int&gt; &gt; stac;<br/>
+pair&lt;int, int&gt; par;<br/>
+void Init(int n)<br/>
+{<br/>
+    graph.Init(n);<br/>
+    query.Init(n);<br/>
+}<br/>
+void Solve()<br/>
+{<br/>
+    mset.insert(-1);<br/>
+    graph.sign[1] = 1;<br/>
+    stac.push(make_pair(graph.head[1], -1));<br/>
+    while (!stac.empty())<br/>
+    {<br/>
+        par = stac.top();<br/>
+        stac.pop();<br/>
+        int &amp;p = par.first;<br/>
+        if (p == -1)<br/>
+        {<br/>
+            mset.erase(mset.find(par.second));<br/>
+        }<br/>
+        else<br/>
+        {<br/>
+            int &amp;y = graph.pnt[p];<br/>
+            if (!graph.sign[y])<br/>
+            {<br/>
+                graph.sign[y] = 1;<br/>
+                int tp = p;<br/>
+                p = graph.nxt[p];<br/>
+                stac.push(par);<br/>
+                par.first = graph.head[y];<br/>
+                par.second = graph.val[tp];<br/>
+                stac.push(par);<br/>
+                mset.insert(par.second);<br/>
+                for (int i = query.head[y]; i != -1; i = query.nxt[i])<br/>
+                {<br/>
+                    it = mset.upper_bound(query.top[i]);<br/>
+                    it--;<br/>
+                    query.ans[i] = (*it);<br/>
+                }<br/>
+            }<br/>
+            else<br/>
+            {<br/>
+                p = graph.nxt[p];<br/>
+                stac.push(par);<br/>
+            }<br/>
+        }<br/>
+    }<br/>
+}<br/>
+int main()<br/>
+{<br/>
+    int test, cas;<br/>
+    scanf("%d", &amp;test);
+<p>    for (cas = 1; cas &lt;= test; cas++)<br/>
+    {<br/>
+        int n, m;<br/>
+        int x, y, v, t;<br/>
+        scanf("%d", &amp;n);<br/>
+        Init(n);<br/>
+        for (int i = 1; i &lt; n; i++)<br/>
+        {<br/>
+            scanf("%d %d %d", &amp;x, &amp;y, &amp;v);<br/>
+            graph.Addedge(x, y, v);<br/>
+        }<br/>
+        scanf("%d", &amp;m);<br/>
+        for (int i = 0; i &lt; m; i++)<br/>
+        {<br/>
+            scanf("%d %d", &amp;x, &amp;t);<br/>
+            query.Addquery(x, t);<br/>
+        }<br/>
+        Solve();<br/>
+        for (int i = 0; i &lt; m; i++)<br/>
+        {<br/>
+            printf("%d/n", query.ans[i]);<br/>
+        }<br/>
+    }<br/>
+    return 0;<br/>
+}
+</p><pre> 
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/racebug2010/article/details/6428221</p>
+						                        
+<div>
+
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+ </div>
+
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+
+					</pre></pre></div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-72659">
+<article class="comment" id="comment-72659">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919462786" rel="external nofollow">新用户973220</a></span> on <a href="http://www.acmerblog.com/hdu-3804-query-on-a-tree-6804.html#comment-72659" rel="nofollow"><time datetime="2017-04-11T19:58:25+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>成功不是将来才有的，而是从决定去做的那一刻起，持续累积而成</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-72658">
+<article class="comment" id="comment-72658">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919462786" rel="external nofollow">新用户973220</a></span> on <a href="http://www.acmerblog.com/hdu-3804-query-on-a-tree-6804.html#comment-72658" rel="nofollow"><time datetime="2017-04-11T19:58:25+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>成功不是将来才有的，而是从决定去做的那一刻起，持续累积而成</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-72657">
+<article class="comment" id="comment-72657">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919462786" rel="external nofollow">新用户973220</a></span> on <a href="http://www.acmerblog.com/hdu-3804-query-on-a-tree-6804.html#comment-72657" rel="nofollow"><time datetime="2017-04-11T19:58:25+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>成功不是将来才有的，而是从决定去做的那一刻起，持续累积而成</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-72656">
+<article class="comment" id="comment-72656">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919462786" rel="external nofollow">新用户973220</a></span> on <a href="http://www.acmerblog.com/hdu-3804-query-on-a-tree-6804.html#comment-72656" rel="nofollow"><time datetime="2017-04-11T19:58:25+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>成功不是将来才有的，而是从决定去做的那一刻起，持续累积而成</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-72655">
+<article class="comment" id="comment-72655">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919462786" rel="external nofollow">新用户973220</a></span> on <a href="http://www.acmerblog.com/hdu-3804-query-on-a-tree-6804.html#comment-72655" rel="nofollow"><time datetime="2017-04-11T19:58:25+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>成功不是将来才有的，而是从决定去做的那一刻起，持续累积而成</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-72654">
+<article class="comment" id="comment-72654">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919462786" rel="external nofollow">新用户973220</a></span> on <a href="http://www.acmerblog.com/hdu-3804-query-on-a-tree-6804.html#comment-72654" rel="nofollow"><time datetime="2017-04-11T19:58:25+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>成功不是将来才有的，而是从决定去做的那一刻起，持续累积而成</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-72653">
+<article class="comment" id="comment-72653">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919462786" rel="external nofollow">新用户973220</a></span> on <a href="http://www.acmerblog.com/hdu-3804-query-on-a-tree-6804.html#comment-72653" rel="nofollow"><time datetime="2017-04-11T19:58:25+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>成功不是将来才有的，而是从决定去做的那一刻起，持续累积而成</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-72652">
+<article class="comment" id="comment-72652">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919462786" rel="external nofollow">新用户973220</a></span> on <a href="http://www.acmerblog.com/hdu-3804-query-on-a-tree-6804.html#comment-72652" rel="nofollow"><time datetime="2017-04-11T19:58:25+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>成功不是将来才有的，而是从决定去做的那一刻起，持续累积而成</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-72651">
+<article class="comment" id="comment-72651">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919462786" rel="external nofollow">新用户973220</a></span> on <a href="http://www.acmerblog.com/hdu-3804-query-on-a-tree-6804.html#comment-72651" rel="nofollow"><time datetime="2017-04-11T19:58:25+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>成功不是将来才有的，而是从决定去做的那一刻起，持续累积而成</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-72650">
+<article class="comment" id="comment-72650">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919462786" rel="external nofollow">新用户973220</a></span> on <a href="http://www.acmerblog.com/hdu-3804-query-on-a-tree-6804.html#comment-72650" rel="nofollow"><time datetime="2017-04-11T19:58:25+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>成功不是将来才有的，而是从决定去做的那一刻起，持续累积而成</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-72649">
+<article class="comment" id="comment-72649">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919462786" rel="external nofollow">新用户973220</a></span> on <a href="http://www.acmerblog.com/hdu-3804-query-on-a-tree-6804.html#comment-72649" rel="nofollow"><time datetime="2017-04-11T19:58:25+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>成功不是将来才有的，而是从决定去做的那一刻起，持续累积而成</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51168">
+<article class="comment" id="comment-51168">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">GordonTJ</a></span> on <a href="http://www.acmerblog.com/hdu-3804-query-on-a-tree-6804.html#comment-51168" rel="nofollow"><time datetime="2015-06-30T04:40:49+00:00" pubdate="">2015年6月30日 at 上午4:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这代码的输出格式不对阿，else语句的low=p移动一下位置，增加可读性</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51175">
+<article class="comment" id="comment-51175">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">linzzzz</a></span> on <a href="http://www.acmerblog.com/hdu-3804-query-on-a-tree-6804.html#comment-51175" rel="nofollow"><time datetime="2015-06-30T04:40:43+00:00" pubdate="">2015年6月30日 at 上午4:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>88行是多余的，可以删除</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33907">
+<article class="comment" id="comment-33907">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tangxiansheng</a></span> on <a href="http://www.acmerblog.com/hdu-3804-query-on-a-tree-6804.html#comment-33907" rel="nofollow"><time datetime="2015-06-27T01:23:25+00:00" pubdate="">2015年6月27日 at 上午1:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33905">
+<article class="comment" id="comment-33905">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">biantiao</a></span> on <a href="http://www.acmerblog.com/hdu-3804-query-on-a-tree-6804.html#comment-33905" rel="nofollow"><time datetime="2015-06-09T02:45:26+00:00" pubdate="">2015年6月9日 at 上午2:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为避免精度问题，PI值请使用arccos(-1)。应该是acos</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33906">
+<article class="comment" id="comment-33906">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NiKaWaLi2015</a></span> on <a href="http://www.acmerblog.com/hdu-3804-query-on-a-tree-6804.html#comment-33906" rel="nofollow"><time datetime="2015-06-03T14:14:13+00:00" pubdate="">2015年6月3日 at 下午2:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈呀！这个模板好长OwQ！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51172">
+<article class="comment" id="comment-51172">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wangzhenvs123</a></span> on <a href="http://www.acmerblog.com/hdu-3804-query-on-a-tree-6804.html#comment-51172" rel="nofollow"><time datetime="2015-06-03T00:05:34+00:00" pubdate="">2015年6月3日 at 上午12:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一句可以忽略不计了吧。从第二句开始分析，说明这个花色下的所有牌都会在其它里面出现，那么还剩下♠️和♦️。第三句，可以排除2和7，因为在两种花色里有。现在是第四句，因为♠️还剩下多个，只有是♦️B才能知道答案。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51169">
+<article class="comment" id="comment-51169">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Bernice1989</a></span> on <a href="http://www.acmerblog.com/hdu-3804-query-on-a-tree-6804.html#comment-51169" rel="nofollow"><time datetime="2015-05-16T07:19:24+00:00" pubdate="">2015年5月16日 at 上午7:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的模板</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64027">
+<article class="comment" id="comment-64027">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">usx13123</a></span> on <a href="http://www.acmerblog.com/hdu-3804-query-on-a-tree-6804.html#comment-64027" rel="nofollow"><time datetime="2015-05-03T15:40:14+00:00" pubdate="">2015年5月3日 at 下午3:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51174">
+<article class="comment" id="comment-51174">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaoriqiang</a></span> on <a href="http://www.acmerblog.com/hdu-3804-query-on-a-tree-6804.html#comment-51174" rel="nofollow"><time datetime="2015-05-02T03:17:42+00:00" pubdate="">2015年5月2日 at 上午3:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51170">
+<article class="comment" id="comment-51170">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">feifei003603</a></span> on <a href="http://www.acmerblog.com/hdu-3804-query-on-a-tree-6804.html#comment-51170" rel="nofollow"><time datetime="2015-04-26T10:55:33+00:00" pubdate="">2015年4月26日 at 上午10:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感觉我好像很多都不会做。。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51171">
+<article class="comment" id="comment-51171">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rewrite</a></span> on <a href="http://www.acmerblog.com/hdu-3804-query-on-a-tree-6804.html#comment-51171" rel="nofollow"><time datetime="2015-04-24T06:31:12+00:00" pubdate="">2015年4月24日 at 上午6:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为是要把从字符串s的start位到当前位在hash中重置，修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51173">
+<article class="comment" id="comment-51173">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">renke</a></span> on <a href="http://www.acmerblog.com/hdu-3804-query-on-a-tree-6804.html#comment-51173" rel="nofollow"><time datetime="2015-04-13T16:30:14+00:00" pubdate="">2015年4月13日 at 下午4:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>额，不对应吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

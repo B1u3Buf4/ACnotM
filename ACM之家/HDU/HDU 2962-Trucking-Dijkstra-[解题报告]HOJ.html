@@ -1,0 +1,717 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>02-24</div>
+<div class="tit"><h1 class="entry-title">HDU 2962-Trucking-Dijkstra-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph/shortest-path" rel="category tag" title="查看最短路径中的全部文章">最短路径</a>, <a href="http://www.acmerblog.com/category/basis/enumeration" rel="category tag" title="查看枚举中的全部文章">枚举</a></span><span class="i4">围观523次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4686" href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comments" title="《HDU 2962-Trucking-Dijkstra-[解题报告]HOJ》上的评论">32 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Trucking</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+A certain local trucking company would like to transport some goods on a cargo truck from one place to another. It is desirable to transport as much goods as possible each trip. Unfortunately, one cannot always use the roads in the shortest route: some roads may have obstacles (e.g. bridge overpass, tunnels) which limit heights of the goods transported. Therefore, the company would like to transport as much as possible each trip, and then choose the shortest route that can be used to transport that amount.
+<p>For the given cargo truck, maximizing the height of the goods transported is equivalent to maximizing the amount of goods transported. For safety reasons, there is a certain height limit for the cargo truck which cannot be exceeded. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input consists of a number of cases. Each case starts with two integers, separated by a space, on a line. These two integers are the number of cities (C) and the number of roads (R). There are at most 1000 cities, numbered from 1. This is followed by R lines each containing the city numbers of the cities connected by that road, the maximum height allowed on that road, and the length of that road. The maximum height for each road is a positive integer, except that a height of -1 indicates that there is no height limit on that road. The length of each road is a positive integer at most 1000. Every road can be travelled in both directions, and there is at most one road connecting each distinct pair of cities. Finally, the last line of each case consists of the start and end city numbers, as well as the height limit (a positive integer) of the cargo truck. The input terminates when C = R = 0. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input consists of a number of cases. Each case starts with two integers, separated by a space, on a line. These two integers are the number of cities (C) and the number of roads (R). There are at most 1000 cities, numbered from 1. This is followed by R lines each containing the city numbers of the cities connected by that road, the maximum height allowed on that road, and the length of that road. The maximum height for each road is a positive integer, except that a height of -1 indicates that there is no height limit on that road. The length of each road is a positive integer at most 1000. Every road can be travelled in both directions, and there is at most one road connecting each distinct pair of cities. Finally, the last line of each case consists of the start and end city numbers, as well as the height limit (a positive integer) of the cargo truck. The input terminates when C = R = 0.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+5 6
+1 2 7 5
+1 3 4 2
+2 4 -1 10
+2 5 2 4
+3 4 10 1
+4 5 8 5
+1 5 10
+5 6
+1 2 7 5
+1 3 4 2
+2 4 -1 10
+2 5 2 4
+3 4 10 1
+4 5 8 5
+1 5 4
+3 1
+1 2 -1 100
+1 3 10
+0 0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case 1:
+maximum height = 7
+length of shortest route = 20
+
+Case 2:
+maximum height = 4
+length of shortest route = 8
+
+Case 3:
+cannot reach destination</pre>
+<p> <!-- problem end --></p>
+<p> </p>
+<h2>Spfa 解法 </h2>
+<pre class="brush:cpp ">/* THE PROGRAM IS MADE BY PYY */
+/*----------------------------------------------------------------------------//
+	Copyright (c) 2011 panyanyany All rights reserved.
+
+	URL   : http://acm.hdu.edu.cn/showproblem.php?pid=2962
+	Name  : 2962 Trucking
+
+	Date  : Thursday, January 19, 2012
+	Time Stage : one hour
+
+	Result: 
+5276304	2012-01-19 18:31:14	Accepted	2962
+250MS	596K	2705 B
+C++	pyy
+
+
+Test Data :
+
+Review :
+根据华神指点，特用 spfa 做一次，发现邻接表要比矩阵快很多啊
+//----------------------------------------------------------------------------*/
+
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;vector&gt;
+#include &lt;queue&gt;
+
+using namespace std ;
+
+#define INF		0x3f3f3f3f
+#define MAXN	1002
+
+#define min(x, y)	((x) &lt; (y) ? (x) : (y))
+#define max(x, y)	((x) &gt; (y) ? (x) : (y))
+#define MEM(a, v)	memset (a, v, sizeof (a))
+
+struct EDGE {
+	int to ;
+	int hei, dis ;
+};
+
+bool	used[MAXN] ;
+
+int		c, r ;
+int		dist[MAXN] ;
+
+vector&lt;EDGE&gt;	map[MAXN] ;
+
+int spfa (const int beg, const int end, const int lim)
+{
+	queue&lt;int&gt;	q ;
+	EDGE		e ;
+
+	int i, t ;
+
+	MEM (dist, INF) ;
+	MEM (used, 0) ;
+
+	q.push (beg) ;
+	used[beg] = 1 ;
+	dist[beg] = 0 ;
+
+	while (!q.empty ())
+	{
+		t = q.front () ;
+		q.pop () ;
+
+		for (i = 0 ; i &lt; map[t].size() ; ++i)
+		{
+			e = map[t][i] ;
+			if (e.hei &gt;= lim &amp;&amp; dist[t] + e.dis &lt; dist[e.to])
+			{
+				// !used[e.to] 不能写到上面的判断里去。
+/*
+5 6
+1 2 7 5
+1 3 4 2
+2 4 -1 10
+2 5 2 4
+3 4 10 1
+4 5 8 5
+1 5 4
+
+在这个例子中，4 先被 3 入队，used[4] = 1，
+当 3 的所有边遍历完后，遍历 2 的所有边，此时发现 4 已经入队，则 dist[4] 就无法
+更新，而且 2 不会再次入队，所以 1--&gt;4 的最短路只能经过 3，而不能经过 2。
+*/
+
+				dist[e.to] = dist[t] + e.dis ;
+				if (!used[e.to])
+				{
+					used[e.to] = 1 ;
+					q.push (e.to) ;
+				}
+			}
+		}
+		used[t] = 0 ;
+	}
+	return dist[end] ;
+}
+
+void init ()
+{
+	int i ;
+	for (i = 1 ; i &lt;= c ; ++i)
+		map[i].clear () ;
+}
+
+int main ()
+{
+	int i ;
+	int x, y, h, d ;
+	int res, low, high, mid, ans ;
+	int tcase ;
+
+	tcase = 0 ;
+	while (scanf ("%d%d", &amp;c, &amp;r), c | r)
+	{
+		EDGE	e ;
+
+		init () ;
+
+		for (i = 1 ; i &lt;= r ; ++i)
+		{
+			scanf ("%d%d%d%d", &amp;x, &amp;y, &amp;h, &amp;d) ;
+			h = (h == -1 ? INF : h) ;
+			e.to  = y ;
+			e.hei = h ;
+			e.dis = d ;
+
+			map[x].push_back(e) ;
+			e.to  = x ;
+			map[y].push_back(e) ;
+		}
+		scanf ("%d%d%d", &amp;x, &amp;y, &amp;high) ;
+
+		// 二分查找，暴力枚举所有高度
+		low = 1 ;
+		res = INF ;
+		while (low &lt;= high)
+		{
+			mid = (low + high) / 2 ;
+			res = spfa (x, y, mid) ;
+			if (INF == res)
+				high = mid - 1 ;
+			else
+			{
+				low = mid + 1 ;
+				ans = res ;
+				h   = mid ;
+			}
+		}
+		if (tcase)
+			putchar ('\n') ;
+		printf ("Case %d:\n", ++tcase) ;
+		if (ans != INF)
+		{
+			printf ("maximum height = %d\nlength of shortest route = %d\n",
+				h, ans) ;
+		}
+		else
+			printf ("cannot reach destination\n") ;
+	}
+	return 0 ;
+}</pre>
+<p>
+ </p>
+<h2>Dijkstra 解法</h2>
+<pre class="brush:cpp ">/* THE PROGRAM IS MADE BY PYY */
+/*----------------------------------------------------------------------------//
+	Copyright (c) 2011 panyanyany All rights reserved.
+
+	URL   : http://acm.hdu.edu.cn/showproblem.php?pid=2962
+	Name  : 2962 Trucking
+
+	Date  : Thursday, January 19, 2012
+	Time Stage : 7 hours
+
+	Result: 
+5275934	2012-01-19 17:01:40	Accepted	2962
+1843MS	8076K	2663 B
+C++	pyy
+
+Test Data :
+
+Review :
+好吧，有点太浪费时间了……
+//----------------------------------------------------------------------------*/
+
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+
+#define INF		0x3f3f3f3f
+#define MAXN	1002
+
+#define min(x, y)	((x) &lt; (y) ? (x) : (y))
+#define max(x, y)	((x) &gt; (y) ? (x) : (y))
+#define MEM(a, v)	memset (a, v, sizeof (a))
+
+bool	used[MAXN] ;
+
+int		c, r ;
+int		map[MAXN][MAXN], heig[MAXN][MAXN], dist[MAXN], hi[MAXN] ;
+
+int dijkstra (const int beg, const int end, const int lim)
+{
+	int i, j ;
+	int iMinPath, MinPath ;
+
+	MEM (used, 0) ;
+	MEM (hi, 0) ;
+	MEM (dist, INF) ;
+
+	for (i = 1 ; i &lt;= c ; ++i)
+	{
+		// 根据华神指点，加了这里。
+		// 这里不加，屡次WA
+		// 虽然后面的更新操作也限制了高度，但万一起点到终点本来就有边，
+		// 高度却不合适呢？
+		if (heig[beg][i] &gt;= lim)	
+		{
+			dist[i] = map[beg][i] ;
+			hi[i] = heig[beg][i] ;
+		}
+	}
+
+	// 第一次 WA 后增加下两句
+	dist[beg] = 0 ;
+	hi[beg] = INF ;
+
+	for (i = 1 ; i &lt;= c ; ++i)
+	{
+		iMinPath = 0 ;
+		MinPath = INF ;
+
+		for (j = 1 ; j &lt;= c ; ++j)
+		{
+			if (!used[j] &amp;&amp; 
+				hi[j] &gt;= lim &amp;&amp;
+				dist[j] &lt; MinPath)
+			{
+				iMinPath = j ;
+				MinPath = dist[j] ;
+			}
+		}
+
+		used[iMinPath] = 1 ;
+
+		for (j = 1 ; j &lt;= c ; ++j)
+		{
+			if (!used[j] &amp;&amp; 
+				heig[iMinPath][j] &gt;= lim &amp;&amp;
+				dist[iMinPath] + map[iMinPath][j] &lt; dist[j])
+			{
+				dist[j] = dist[iMinPath] + map[iMinPath][j] ;
+				hi[j] = min(hi[iMinPath], heig[iMinPath][j]) ;
+			}
+		}
+	}
+
+	return dist[end] ;
+}
+
+int main ()
+{
+	int i, j ;
+	int x, y, h, d ;
+	int res, low, high, mid, tmp1, tmp2 ;
+	int tcase ;
+
+	tcase = 0 ;
+	while (scanf ("%d%d", &amp;c, &amp;r), c | r)
+	{
+		MEM(map, INF) ;
+		MEM(heig, 0) ;
+
+		for (i = 1 ; i &lt;= r ; ++i)
+		{
+			scanf ("%d%d%d%d", &amp;x, &amp;y, &amp;h, &amp;d) ;
+			map[x][y] = map[y][x] = d ;
+			heig[x][y] = heig[y][x] = (h == -1 ? INF : h) ;
+		}
+		scanf ("%d%d%d", &amp;x, &amp;y, &amp;h) ;
+		low = 1 ;	// 第四次 WA，改为 1
+		high = h ;
+		res = INF ;
+		while (low &lt;= high)
+		{
+			mid = (low + high) / 2 ;
+			tmp1 = dijkstra (x, y, mid) ;
+			if (INF == tmp1)
+				high = mid - 1 ;
+			else
+			{
+				low = mid + 1 ;
+				res = tmp1 ;
+				tmp2 = mid ;
+			}
+		}
+		if (tcase)
+			putchar ('\n') ;
+		printf ("Case %d:\n", ++tcase) ;
+		if (res != INF)
+		{
+			printf ("maximum height = %d\nlength of shortest route = %d\n",
+				tmp2, res) ;
+		}
+		else
+			printf ("cannot reach destination\n") ;
+	}
+	return 0 ;
+}</pre>
+<p>
+ </p>
+<p>解题参考：http://blog.csdn.net/panyanyany/article/details/7211266</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-80867">
+<article class="comment" id="comment-80867">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529970" rel="external nofollow">新用户968839</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-80867" rel="nofollow"><time datetime="2017-04-12T16:41:18+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>F-22被元老院枪毙了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80866">
+<article class="comment" id="comment-80866">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529970" rel="external nofollow">新用户968839</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-80866" rel="nofollow"><time datetime="2017-04-12T16:41:18+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>F-22被元老院枪毙了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80865">
+<article class="comment" id="comment-80865">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529970" rel="external nofollow">新用户968839</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-80865" rel="nofollow"><time datetime="2017-04-12T16:41:18+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>F-22被元老院枪毙了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80864">
+<article class="comment" id="comment-80864">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529970" rel="external nofollow">新用户968839</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-80864" rel="nofollow"><time datetime="2017-04-12T16:41:18+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>F-22被元老院枪毙了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80863">
+<article class="comment" id="comment-80863">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529970" rel="external nofollow">新用户968839</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-80863" rel="nofollow"><time datetime="2017-04-12T16:41:18+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>F-22被元老院枪毙了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80862">
+<article class="comment" id="comment-80862">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529970" rel="external nofollow">新用户968839</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-80862" rel="nofollow"><time datetime="2017-04-12T16:41:18+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>F-22被元老院枪毙了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80861">
+<article class="comment" id="comment-80861">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529970" rel="external nofollow">新用户968839</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-80861" rel="nofollow"><time datetime="2017-04-12T16:41:18+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>F-22被元老院枪毙了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80860">
+<article class="comment" id="comment-80860">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529970" rel="external nofollow">新用户968839</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-80860" rel="nofollow"><time datetime="2017-04-12T16:41:18+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>F-22被元老院枪毙了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80859">
+<article class="comment" id="comment-80859">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529970" rel="external nofollow">新用户968839</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-80859" rel="nofollow"><time datetime="2017-04-12T16:41:18+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>F-22被元老院枪毙了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80858">
+<article class="comment" id="comment-80858">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529970" rel="external nofollow">新用户968839</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-80858" rel="nofollow"><time datetime="2017-04-12T16:41:18+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>F-22被元老院枪毙了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80857">
+<article class="comment" id="comment-80857">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529970" rel="external nofollow">新用户968839</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-80857" rel="nofollow"><time datetime="2017-04-12T16:41:18+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>F-22被元老院枪毙了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80856">
+<article class="comment" id="comment-80856">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529970" rel="external nofollow">新用户968839</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-80856" rel="nofollow"><time datetime="2017-04-12T16:41:18+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>F-22被元老院枪毙了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80855">
+<article class="comment" id="comment-80855">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529970" rel="external nofollow">新用户968839</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-80855" rel="nofollow"><time datetime="2017-04-12T16:41:18+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>F-22被元老院枪毙了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80854">
+<article class="comment" id="comment-80854">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529970" rel="external nofollow">新用户968839</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-80854" rel="nofollow"><time datetime="2017-04-12T16:41:18+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>F-22被元老院枪毙了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80853">
+<article class="comment" id="comment-80853">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529970" rel="external nofollow">新用户968839</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-80853" rel="nofollow"><time datetime="2017-04-12T16:41:18+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>F-22被元老院枪毙了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80852">
+<article class="comment" id="comment-80852">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529970" rel="external nofollow">新用户968839</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-80852" rel="nofollow"><time datetime="2017-04-12T16:41:18+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>F-22被元老院枪毙了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80851">
+<article class="comment" id="comment-80851">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529970" rel="external nofollow">新用户968839</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-80851" rel="nofollow"><time datetime="2017-04-12T16:41:18+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>F-22被元老院枪毙了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80850">
+<article class="comment" id="comment-80850">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529970" rel="external nofollow">新用户968839</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-80850" rel="nofollow"><time datetime="2017-04-12T16:41:18+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>F-22被元老院枪毙了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80849">
+<article class="comment" id="comment-80849">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529970" rel="external nofollow">新用户968839</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-80849" rel="nofollow"><time datetime="2017-04-12T16:41:18+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>F-22被元老院枪毙了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-47156">
+<article class="comment" id="comment-47156">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ygxqqx</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-47156" rel="nofollow"><time datetime="2015-04-16T19:29:00+00:00" pubdate="">2015年4月16日 at 下午7:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为是要把从字符串s的start位到当前位在hash中重置，修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47149">
+<article class="comment" id="comment-47149">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fwhappy</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-47149" rel="nofollow"><time datetime="2015-03-17T18:24:18+00:00" pubdate="">2015年3月17日 at 下午6:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法挺不错。NewHead代表新的头节点，通过递归找到最后一个节点之后，就把这个节点赋给NewHead，然后一直返回返回，中途这个值是没有变化的，一边返回一边把相应的指针方向颠倒，最后结束时返回新的头节点到主函数。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63025">
+<article class="comment" id="comment-63025">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">OrangeGuy</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-63025" rel="nofollow"><time datetime="2015-02-11T16:09:26+00:00" pubdate="">2015年2月11日 at 下午4:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢提醒，是漏掉了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47151">
+<article class="comment" id="comment-47151">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">chengleisheng</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-47151" rel="nofollow"><time datetime="2015-01-25T09:09:01+00:00" pubdate="">2015年1月25日 at 上午9:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实就是DFS搜索，数据量较小，穷举了所有情况</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-47153">
+<article class="comment" id="comment-47153">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">CCCat</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-47153" rel="nofollow"><time datetime="2015-01-23T20:29:03+00:00" pubdate="">2015年1月23日 at 下午8:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>题本身没错，但是HDOJ放题目的时候，前面有个题目解释了什么是XXX定律。<br/>
+这里直接放了这个题目，肯定没几个人明白是干啥</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47154">
+<article class="comment" id="comment-47154">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gyouxu</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-47154" rel="nofollow"><time datetime="2015-01-22T16:46:51+00:00" pubdate="">2015年1月22日 at 下午4:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>额楼主能否在发布代码的同时对解题思路做个讲解呢？这样大家在学习的时候就方便多了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-57673">
+<article class="comment" id="comment-57673">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">binqi_ren</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-57673" rel="nofollow"><time datetime="2015-01-07T12:29:42+00:00" pubdate="">2015年1月7日 at 下午12:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嗯   分析得很到位，确实用模板编程能让面试官对你的印象更好。在设置辅助栈的时候可以这样：push时，比较要push的elem和辅助栈的栈顶，elem&lt;=min.top()，则min.push(elem).否则只要push（elem）就好。在pop的时候，比较stack.top()与min.top(),if(stack.top()&lt;=min.top()),则{stack.pop();min.pop();}，否则{stack.pop();}.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47155">
+<article class="comment" id="comment-47155">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">magichu</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-47155" rel="nofollow"><time datetime="2014-09-07T00:59:37+00:00" pubdate="">2014年9月7日 at 上午12:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>写的很好~~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63026">
+<article class="comment" id="comment-63026">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">linyanjin</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-63026" rel="nofollow"><time datetime="2014-08-14T21:28:44+00:00" pubdate="">2014年8月14日 at 下午9:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还真是，i7的cpu跑了3秒</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47152">
+<article class="comment" id="comment-47152">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Riddick</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-47152" rel="nofollow"><time datetime="2014-06-08T09:02:55+00:00" pubdate="">2014年6月8日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这种题解就相当于直接贴代码了，，想看的是思路</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-47157">
+<article class="comment" id="comment-47157">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sharp</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-47157" rel="nofollow"><time datetime="2014-05-22T15:39:03+00:00" pubdate="">2014年5月22日 at 下午3:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>先从简单的做起，归并排序，二叉树相关的遍历等</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47150">
+<article class="comment" id="comment-47150">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Riddick</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-47150" rel="nofollow"><time datetime="2014-03-28T01:27:30+00:00" pubdate="">2014年3月28日 at 上午1:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p><a href="https://coding.net/moon/miracle" rel="nofollow">https://coding.net/moon/miracle</a></p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-57672">
+<article class="comment" id="comment-57672">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">20134055016</a></span> on <a href="http://www.acmerblog.com/hdu-2962-trucking-4686.html#comment-57672" rel="nofollow"><time datetime="2014-03-09T07:52:11+00:00" pubdate="">2014年3月9日 at 上午7:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可是看了很多算法书什么的都是说的(start-end)/2哎。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

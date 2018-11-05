@@ -1,0 +1,425 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-13</div>
+<div class="tit"><h1 class="entry-title">HDU 3251-Being a Hero-网络流-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph/flow" rel="category tag" title="查看网络流中的全部文章">网络流</a>, <a href="http://www.acmerblog.com/category/graph/connectivity" rel="category tag" title="查看连通性问题中的全部文章">连通性问题</a></span><span class="i4">围观561次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5146" href="http://www.acmerblog.com/hdu-3251-being-a-hero-5146.html#comments" title="《HDU 3251-Being a Hero-网络流-[解题报告]HOJ》上的评论">18 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Being a Hero</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+You are the hero who saved your country. As promised, the king will give you some cities of the country, and you can choose which ones to own!
+<p>But don’t get too excited. The cities you take should NOT be reachable from the capital — the king does not want to accidentally enter your area. In order to satisfy this condition, you have to destroy some roads. What’s worse, you have to pay for that — each road is associated with some positive cost. That is, your final income is the total value of the cities you take, minus the total cost of destroyed roads.</p>
+<p>Note that each road is a unidirectional, i.e only one direction is available. Some cities are reserved for the king, so you cannot take any of them even if they’re unreachable from the capital. The capital city is always the city number 1. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line contains a single integer T (T &lt;= 20), the number of test cases. Each case begins with three integers n, m, f (1 &lt;= f &lt; n &lt;= 1000, 1 &lt;= m &lt; 100000), the number of cities, number of roads, and number of cities that you can take. Cities are numbered 1 to n. Each of the following m lines contains three integers u, v, w, denoting a road from city u to city v, with cost w. Each of the following f lines contains two integers u and w, denoting an available city u, with value w. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The first line contains a single integer T (T &lt;= 20), the number of test cases. Each case begins with three integers n, m, f (1 &lt;= f &lt; n &lt;= 1000, 1 &lt;= m &lt; 100000), the number of cities, number of roads, and number of cities that you can take. Cities are numbered 1 to n. Each of the following m lines contains three integers u, v, w, denoting a road from city u to city v, with cost w. Each of the following f lines contains two integers u and w, denoting an available city u, with value w.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+4 4 2
+1 2 2
+1 3 3
+3 2 4
+2 4 1
+2 3
+4 4
+4 4 2
+1 2 2
+1 3 3
+3 2 1
+2 4 1
+2 3
+4 4</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case 1: 3
+1 4
+Case 2: 4
+2 1 3</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">/*
+题意：给你f个可选城市，每个城市都有其价值w0,国王的城市在1,现在国王不想见到你（国王不想通过某种路径到达你选定的城市）——将你选的若干城市隔离出去，每条道路隔断都需要花费w1,现在问你可以达到的最大价值
+并要求输出你割断的路的编号
+题解：网络流模型题，将所有可选点连入超级汇点，求出最小割（等于最大流），最大价值为所有可选点的价值和减去最小割
+我们默认最小割靠近源点的为左侧，靠近汇点为右侧
+所有的割边的求法：最后一次求增广路的过程中，汇点不可达，此时从源点可增流的点都在记录路径的数组Qu里面
+枚举数组里的值x，求出以x为起点，终点不在Qu中的所有边，这些边就是组成最小割的边
+*/
+#include &lt;stdio.h&gt;
+#include &lt;time.h&gt;
+#include &lt;algorithm&gt;
+#include &lt;map&gt;
+#include &lt;string.h&gt;
+#include&lt;queue&gt;
+#include&lt;iostream&gt;
+#define N 60010
+using namespace std;
+const int maxn=1009;
+const int inf=1&lt;&lt;30;
+int n,m,f;
+//**************************************************  
+//为dinic求最大流模版  
+struct edge  
+{   
+    int v, next;   
+    int val;   
+} net[ 200010 ];   
+int Qnum;  //记录左侧点的数量
+int level[maxn], Qu[maxn], out[maxn],next[maxn],ins[maxn],first[maxn];  
+class Dinic {   
+public:   
+    int end;  
+	int now;
+	int low,high;
+    Dinic() {   
+        end = 0;   
+        memset( next, -1, sizeof(next) );   
+    }   
+    inline void insert( int x, int y, int c) {   
+        net[end].v = y, net[end].val = c,  
+        net[end].next = next[x],   
+        next[x] = end ++;   
+        net[end].v = x, net[end].val = 0,  
+        net[end].next = next[y],   
+        next[y] = end ++;   
+    }   
+    bool BFS( int S, int E ) {   
+        memset( level, -1, sizeof(level) );   
+        low = 0, high = 1;   
+        Qu[0] = S, level[S] = 0;   
+        for( ; low &lt; high; ) {   
+            int x = Qu[low];   
+            for( int i = next[x]; i != -1; i = net[i].next ) {   
+                if( net[i].val == 0 ) continue;   
+                int y = net[i].v;   
+                if( level[y] == -1 ) {   
+                    level[y] = level[x] + 1;   
+                    Qu[ high ++] = y;   
+                }   
+            }   
+            low ++;   
+        }   
+        return level[E] != -1;   
+    }    
+    
+    int MaxFlow( int S, int E ){   
+        int maxflow = 0;   
+        for( ; BFS(S, E) ; ) {   
+            memcpy( out, next, sizeof(out) );   
+            now = -1;   
+            for( ;; ) {   
+                if( now &lt; 0 ) {   
+                    int cur = out[S];   
+                    for(; cur != -1 ; cur = net[cur].next )    
+                        if( net[cur].val &amp;&amp; out[net[cur].v] != -1 &amp;&amp; level[net[cur].v] == 1 )   
+                            break;   
+                    if( cur &gt;= 0 ) Qu[ ++now ] = cur, out[S] = net[cur].next;   
+                    else break;   
+                }   
+                int u = net[ Qu[now] ].v;   
+                if( u == E ) {   
+                    int flow = inf;   
+                    int index = -1;   
+                    for( int i = 0; i &lt;= now; i ++ ) {   
+                        if( flow &gt; net[ Qu[i] ].val )   
+                            flow = net[ Qu[i] ].val, index = i;   
+                    }   
+                    maxflow += flow;   
+                    for( int i = 0; i &lt;= now; i ++ )   
+                        net[Qu[i]].val -= flow, net[Qu[i]^1].val += flow;   
+                    for( int i = 0; i &lt;= now; i ++ ) {   
+                        if( net[ Qu[i] ].val == 0 ) {   
+                            now = index - 1;   
+                            break;   
+                        }   
+                    }   
+                }   
+                else{   
+                    int cur = out[u];   
+                    for(; cur != -1; cur = net[cur].next )    
+                        if (net[cur].val &amp;&amp; out[net[cur].v] != -1 &amp;&amp; level[u] + 1 == level[net[cur].v])   
+                            break;   
+                    if( cur != -1 )   
+                        Qu[++ now] = cur, out[u] = net[cur].next;   
+                    else out[u] = -1, now --;   
+                }   
+            }   
+        }   
+		Qnum=high;//一定要记录此时在Qu数组里点的个数，方便后面枚举
+        return maxflow;   
+    }   
+};   
+  
+struct E
+{
+	int v,next;
+}edg[200011];
+int ans;
+void init(int k)
+{
+	int u,v,w;
+	scanf("%d%d%d",&amp;n,&amp;m,&amp;f);
+	memset(ins,0,sizeof(ins));
+	memset(first,-1,sizeof(first));
+	Dinic my;
+	int edg_num=1;
+	for(int i=1;i&lt;=m;i++)
+	{
+		scanf("%d%d%d",&amp;u,&amp;v,&amp;w);
+		edg[i].v=v;
+		edg[i].next=first[u];
+		first[u]=i;
+		my.insert(u,v,w);
+	}
+	int sum=0;
+	for(int i=0;i&lt;f;i++)
+	{
+		scanf("%d%d",&amp;u,&amp;w);
+		my.insert(u,n+1,w);
+		sum+=w;
+	}
+	printf("Case %d: %d\n",k,sum-my.MaxFlow(1,n+1));
+	sum=0;
+	for(int i=0;i&lt;Qnum;i++)
+	ins[Qu[i]]=1;//标记所有左侧的点
+	ans=0;
+	//dfs(1);
+	for(int i=0;i&lt;Qnum;i++)
+	{
+		int x=Qu[i];
+		for(int j=first[x];j!=-1;j=edg[j].next)
+		{
+			if(!ins[edg[j].v])
+			out[ans++]=j;
+		}
+	}
+	printf("%d",ans);
+	for(int i=0;i&lt;ans;i++)
+	{
+		printf(" %d",out[i]);
+	}
+	printf("\n");
+}
+int main() 
+{
+    int Case;
+	scanf("%d",&amp;Case);
+	for(int i=1;i&lt;=Case;i++)
+	{
+		init(i);
+		//solve();
+	}
+    return 0;
+}</pre>
+<p></p>
+<p>参考：http://blog.csdn.net/wsniyufang/article/details/6719760</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-78274">
+<article class="comment" id="comment-78274">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527066" rel="external nofollow">新用户066686</a></span> on <a href="http://www.acmerblog.com/hdu-3251-being-a-hero-5146.html#comment-78274" rel="nofollow"><time datetime="2017-04-12T10:53:29+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>越看妹妹越好看</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78273">
+<article class="comment" id="comment-78273">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527066" rel="external nofollow">新用户066686</a></span> on <a href="http://www.acmerblog.com/hdu-3251-being-a-hero-5146.html#comment-78273" rel="nofollow"><time datetime="2017-04-12T10:53:29+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>越看妹妹越好看</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-78272">
+<article class="comment" id="comment-78272">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527066" rel="external nofollow">新用户066686</a></span> on <a href="http://www.acmerblog.com/hdu-3251-being-a-hero-5146.html#comment-78272" rel="nofollow"><time datetime="2017-04-12T10:53:29+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>越看妹妹越好看</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78271">
+<article class="comment" id="comment-78271">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527066" rel="external nofollow">新用户066686</a></span> on <a href="http://www.acmerblog.com/hdu-3251-being-a-hero-5146.html#comment-78271" rel="nofollow"><time datetime="2017-04-12T10:53:29+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>越看妹妹越好看</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48187">
+<article class="comment" id="comment-48187">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">admin</a></span> on <a href="http://www.acmerblog.com/hdu-3251-being-a-hero-5146.html#comment-48187" rel="nofollow"><time datetime="2015-05-15T20:29:35+00:00" pubdate="">2015年5月15日 at 下午8:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>遍历了所有的情况(2^n)，tmp数组就是由当前遍历的状态s推算出的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48194">
+<article class="comment" id="comment-48194">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lanifer</a></span> on <a href="http://www.acmerblog.com/hdu-3251-being-a-hero-5146.html#comment-48194" rel="nofollow"><time datetime="2015-05-06T04:13:14+00:00" pubdate="">2015年5月6日 at 上午4:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为要修改链表头(指针)，所以要用指针的指针</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48190">
+<article class="comment" id="comment-48190">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dongxi</a></span> on <a href="http://www.acmerblog.com/hdu-3251-being-a-hero-5146.html#comment-48190" rel="nofollow"><time datetime="2015-04-28T17:35:56+00:00" pubdate="">2015年4月28日 at 下午5:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48188">
+<article class="comment" id="comment-48188">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">la0bei</a></span> on <a href="http://www.acmerblog.com/hdu-3251-being-a-hero-5146.html#comment-48188" rel="nofollow"><time datetime="2015-03-31T03:17:52+00:00" pubdate="">2015年3月31日 at 上午3:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>写的好·····  Pollard Rho快速因数分解</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48196">
+<article class="comment" id="comment-48196">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jxfactor</a></span> on <a href="http://www.acmerblog.com/hdu-3251-being-a-hero-5146.html#comment-48196" rel="nofollow"><time datetime="2015-03-14T07:30:49+00:00" pubdate="">2015年3月14日 at 上午7:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈呀！这个Dijkstra模板好长OwQ！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48191">
+<article class="comment" id="comment-48191">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">feifei003603</a></span> on <a href="http://www.acmerblog.com/hdu-3251-being-a-hero-5146.html#comment-48191" rel="nofollow"><time datetime="2015-02-25T00:32:49+00:00" pubdate="">2015年2月25日 at 上午12:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很棒的网站，加油！⛽️</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48189">
+<article class="comment" id="comment-48189">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">a997930294</a></span> on <a href="http://www.acmerblog.com/hdu-3251-being-a-hero-5146.html#comment-48189" rel="nofollow"><time datetime="2014-12-22T08:47:56+00:00" pubdate="">2014年12月22日 at 上午8:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>88行是多余的，可以删除</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48195">
+<article class="comment" id="comment-48195">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mnmlist</a></span> on <a href="http://www.acmerblog.com/hdu-3251-being-a-hero-5146.html#comment-48195" rel="nofollow"><time datetime="2014-12-14T17:46:32+00:00" pubdate="">2014年12月14日 at 下午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可以用公式。主要为了说明动态规划，如果要打表的话，这种方法也是较简单和高效的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48197">
+<article class="comment" id="comment-48197">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hao555sky</a></span> on <a href="http://www.acmerblog.com/hdu-3251-being-a-hero-5146.html#comment-48197" rel="nofollow"><time datetime="2014-08-26T12:34:57+00:00" pubdate="">2014年8月26日 at 下午12:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>问题3是不是应该为1/4  .因为截取的三段，无论是否能组成三角形， x， y-x ，1-y,都应大于0，所以  x&lt;y,基础应该是一个大三角形。小三角是大三角的 1/4.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48199">
+<article class="comment" id="comment-48199">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">abguorui0928</a></span> on <a href="http://www.acmerblog.com/hdu-3251-being-a-hero-5146.html#comment-48199" rel="nofollow"><time datetime="2014-08-03T03:19:09+00:00" pubdate="">2014年8月3日 at 上午3:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很有意思，可惜我很菜啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48200">
+<article class="comment" id="comment-48200">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">daisyleedq</a></span> on <a href="http://www.acmerblog.com/hdu-3251-being-a-hero-5146.html#comment-48200" rel="nofollow"><time datetime="2014-07-19T23:57:42+00:00" pubdate="">2014年7月19日 at 下午11:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算法还停留在大学的知识中</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48193">
+<article class="comment" id="comment-48193">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zclzcllove</a></span> on <a href="http://www.acmerblog.com/hdu-3251-being-a-hero-5146.html#comment-48193" rel="nofollow"><time datetime="2014-06-18T05:14:56+00:00" pubdate="">2014年6月18日 at 上午5:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>非常不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48198">
+<article class="comment" id="comment-48198">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">slowlight</a></span> on <a href="http://www.acmerblog.com/hdu-3251-being-a-hero-5146.html#comment-48198" rel="nofollow"><time datetime="2014-06-16T18:55:54+00:00" pubdate="">2014年6月16日 at 下午6:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不同的编译器，printf(),执行的顺序不同，所以结果也就不同，建议不要那么写</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48192">
+<article class="comment" id="comment-48192">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zjd1988</a></span> on <a href="http://www.acmerblog.com/hdu-3251-being-a-hero-5146.html#comment-48192" rel="nofollow"><time datetime="2014-05-30T12:50:22+00:00" pubdate="">2014年5月30日 at 下午12:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我得邮箱cwqbupt@qq.com</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

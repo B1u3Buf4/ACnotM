@@ -1,0 +1,529 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-20</div>
+<div class="tit"><h1 class="entry-title">并查集(2)-按秩合并和路径压缩</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/data-struct/union-find" rel="category tag" title="查看并查集中的全部文章">并查集</a>, <a href="http://www.acmerblog.com/category/zhuanti/algorithm" rel="category tag" title="查看算法分析中的全部文章">算法分析</a>, <a href="http://www.acmerblog.com/category/zhuanti/classic" rel="category tag" title="查看经典问题中的全部文章">经典问题</a></span><span class="i4">围观1629次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5220" href="http://www.acmerblog.com/union-find-rank-5220.html#comments" title="《并查集(2)-按秩合并和路径压缩》上的评论">25 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p>在上面一讲是<a href="http://www.acmerblog.com/union-find-graph-5216.html">并查集(1)-判断无向图是否存在环</a>. 我们使用了并查集的两个操作： <em>union()</em> 和 <em>find()</em></p>
+<pre class="brush:cpp">//  find 的原始实现
+int find(int parent[], int i)
+{
+    if (parent[i] == -1)
+        return i;
+    return find(parent, parent[i]);
+}
+
+// union()的原始实现
+void Union(int parent[], int x, int y)
+{
+    int xset = find(parent, x);
+    int yset = find(parent, y);
+    parent[xset] = yset;
+}</pre>
+<p>上述union()和find()是直接的，最坏的情况下的时间复杂度是线性的。表示子集的树可能会倾斜，像一个链表。下面是一个例子最坏情况的场景。</p>
+<pre class="brush:other">假设有4个元素 0, 1, 2, 3
+初始化
+0 1 2 3 
+
+Do Union(0, 1)
+   1   2   3  
+  /
+ 0
+
+Do Union(1, 2)
+     2   3   
+    /
+   1
+ /
+0
+
+Do Union(2, 3)
+         3    
+        /
+      2
+     /
+   1
+ /
+0</pre>
+<p>以上操作可以优化到O(Log n)在最糟糕的情况下。方法就是在每次合并都把深度较小的集合合并在深度较大的集合下面 。这种技术被称为按秩合并。这样可以防止树的退化，最坏情况不会出现。</p>
+<pre class="brush:other">继续用上面的例子
+0 1 2 3 
+
+Do Union(0, 1)
+   1   2   3  
+  /
+ 0
+
+Do Union(1, 2)
+   1    3
+ /  \
+0    2
+
+Do Union(2, 3)
+    1    
+ /  |  \
+0   2   3</pre>
+<p>第二个要优化的就是find(). 路径压缩实际上是在找完根结点之后，在递归回来的时候顺便把路径上元素的父亲指针都指向根结点。</p>
+<pre class="brush:other">假设集合{0, 1, .. 9} 的树表示如下所示：  当调用 find(3)时
+
+              9
+         /    |    \  
+        4     5      6
+     /     \        /  \
+    0        3     7    8
+            /  \
+           1    2  
+
+我们向上查找，找到是这个集合的根节点. 路径压缩就是：直接把 3的 父节点 设置为 9
+当下次再查找 1, 2 或 3 时，查找的路径就会变短。
+
+               9
+         /    /  \    \
+        4    5    6     3 
+     /           /  \   /  \
+    0           7    8  1   2</pre>
+<p>这两个优化方法互为补充。每个操作的时间复杂度比O(Logn)要小。事实上，摊销时间复杂度实际上变成了小的常数。</p>
+<pre class="brush:cpp">// 用并查集判断是否存在环
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+
+// 图中的边
+struct Edge
+{
+    int src, dest;
+};
+
+// 图结构体
+struct Graph
+{
+    // V-&gt; 顶点个数, E-&gt; 边的个数
+    int V, E;
+
+    // 每个图就是 边的集合
+    struct Edge* edge;
+};
+
+struct subset
+{
+    int parent;
+    int rank;
+};
+
+// 创建一个图
+struct Graph* createGraph(int V, int E)
+{
+    struct Graph* graph = (struct Graph*) malloc( sizeof(struct Graph) );
+    graph-&gt;V = V;
+    graph-&gt;E = E;
+
+    graph-&gt;edge = (struct Edge*) malloc( graph-&gt;E * sizeof( struct Edge ) );
+
+    return graph;
+}
+
+// 使用路径压缩
+int find(struct subset subsets[], int i)
+{
+    // 找到 root并使  root 作为 i 的父节点 
+    if (subsets[i].parent != i)
+        subsets[i].parent = find(subsets, subsets[i].parent);
+
+    return subsets[i].parent;
+}
+
+// 使用按秩合并
+void Union(struct subset subsets[], int x, int y)
+{
+    int xroot = find(subsets, x);
+    int yroot = find(subsets, y);
+
+    // 将深度较小的集合 合并到深度大的集合下面
+    if (subsets[xroot].rank &lt; subsets[yroot].rank)
+        subsets[xroot].parent = yroot;
+    else if (subsets[xroot].rank &gt; subsets[yroot].rank)
+        subsets[yroot].parent = xroot;
+    else //深度一样，任选一个，并增加另一个
+    {
+        subsets[yroot].parent = xroot;
+        subsets[xroot].rank++; 
+    }
+}
+
+int isCycle( struct Graph* graph )
+{
+    int V = graph-&gt;V;
+    int E = graph-&gt;E;
+
+    struct subset *subsets =
+        (struct subset*) malloc( V * sizeof(struct subset) );
+
+    for (int v = 0; v &lt; V; ++v)
+    {
+        subsets[v].parent = v;
+        subsets[v].rank = 0;
+    }
+
+    for(int e = 0; e &lt; E; ++e)
+    {
+        int x = find(subsets, graph-&gt;edge[e].src);
+        int y = find(subsets, graph-&gt;edge[e].dest);
+
+        if (x == y)
+            return 1;
+
+        Union(subsets, x, y);
+    }
+    return 0;
+}
+
+// Driver program to test above functions
+int main()
+{
+    /* 构造以下的图
+         0
+        |  \
+        |    \
+        1-----2 */
+
+    int V = 3, E = 3;
+    struct Graph* graph = createGraph(V, E);
+
+    // add edge 0-1
+    graph-&gt;edge[0].src = 0;
+    graph-&gt;edge[0].dest = 1;
+
+    // add edge 1-2
+    graph-&gt;edge[1].src = 1;
+    graph-&gt;edge[1].dest = 2;
+
+    // add edge 0-2
+    graph-&gt;edge[2].src = 0;
+    graph-&gt;edge[2].dest = 2;
+
+    if (isCycle(graph))
+        printf( "Graph contains cycle" );
+    else
+        printf( "Graph doesn't contain cycle" );
+
+    return 0;
+}</pre>
+<p>参考：http://www.geeksforgeeks.org/union-find-algorithm-set-2-union-by-rank/</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-77227">
+<article class="comment" id="comment-77227">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526571" rel="external nofollow">新用户840006</a></span> on <a href="http://www.acmerblog.com/union-find-rank-5220.html#comment-77227" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还好我们的孙悟空，玉皇大帝，王母娘娘，七仙女等都是长生不老</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77226">
+<article class="comment" id="comment-77226">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526571" rel="external nofollow">新用户840006</a></span> on <a href="http://www.acmerblog.com/union-find-rank-5220.html#comment-77226" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还好我们的孙悟空，玉皇大帝，王母娘娘，七仙女等都是长生不老</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77225">
+<article class="comment" id="comment-77225">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526571" rel="external nofollow">新用户840006</a></span> on <a href="http://www.acmerblog.com/union-find-rank-5220.html#comment-77225" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还好我们的孙悟空，玉皇大帝，王母娘娘，七仙女等都是长生不老</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77224">
+<article class="comment" id="comment-77224">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526571" rel="external nofollow">新用户840006</a></span> on <a href="http://www.acmerblog.com/union-find-rank-5220.html#comment-77224" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还好我们的孙悟空，玉皇大帝，王母娘娘，七仙女等都是长生不老</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77223">
+<article class="comment" id="comment-77223">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526571" rel="external nofollow">新用户840006</a></span> on <a href="http://www.acmerblog.com/union-find-rank-5220.html#comment-77223" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还好我们的孙悟空，玉皇大帝，王母娘娘，七仙女等都是长生不老</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77222">
+<article class="comment" id="comment-77222">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526571" rel="external nofollow">新用户840006</a></span> on <a href="http://www.acmerblog.com/union-find-rank-5220.html#comment-77222" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还好我们的孙悟空，玉皇大帝，王母娘娘，七仙女等都是长生不老</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77221">
+<article class="comment" id="comment-77221">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526571" rel="external nofollow">新用户840006</a></span> on <a href="http://www.acmerblog.com/union-find-rank-5220.html#comment-77221" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还好我们的孙悟空，玉皇大帝，王母娘娘，七仙女等都是长生不老</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77220">
+<article class="comment" id="comment-77220">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526571" rel="external nofollow">新用户840006</a></span> on <a href="http://www.acmerblog.com/union-find-rank-5220.html#comment-77220" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还好我们的孙悟空，玉皇大帝，王母娘娘，七仙女等都是长生不老</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77219">
+<article class="comment" id="comment-77219">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526571" rel="external nofollow">新用户840006</a></span> on <a href="http://www.acmerblog.com/union-find-rank-5220.html#comment-77219" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还好我们的孙悟空，玉皇大帝，王母娘娘，七仙女等都是长生不老</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64861">
+<article class="comment" id="comment-64861">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">wqotD</span> on <a href="http://www.acmerblog.com/union-find-rank-5220.html#comment-64861" rel="nofollow"><time datetime="2016-11-12T03:35:03+00:00" pubdate="">2016年11月12日 at 上午3:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是男L人L就L上的L网C战，A 片：htTP://uVU.Cc/ijW6 <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64787">
+<article class="comment" id="comment-64787">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">euYsQ</span> on <a href="http://www.acmerblog.com/union-find-rank-5220.html#comment-64787" rel="nofollow"><time datetime="2016-10-21T05:47:34+00:00" pubdate="">2016年10月21日 at 上午5:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>打开 ｕｖｕ.ｃｃ/ir7p都是 浪美眉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64728">
+<article class="comment" id="comment-64728">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">TQAmB</span> on <a href="http://www.acmerblog.com/union-find-rank-5220.html#comment-64728" rel="nofollow"><time datetime="2016-10-10T07:12:11+00:00" pubdate="">2016年10月10日 at 上午7:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>打开 ｕｖｕ.ｃｃ/ir7p都是 浪美眉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29262">
+<article class="comment" id="comment-29262">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tangxiansheng</a></span> on <a href="http://www.acmerblog.com/union-find-rank-5220.html#comment-29262" rel="nofollow"><time datetime="2015-05-27T15:26:36+00:00" pubdate="">2015年5月27日 at 下午3:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可是看了很多算法书什么的都是说的(start-end)/2哎。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29255">
+<article class="comment" id="comment-29255">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bcys</a></span> on <a href="http://www.acmerblog.com/union-find-rank-5220.html#comment-29255" rel="nofollow"><time datetime="2015-05-10T10:08:50+00:00" pubdate="">2015年5月10日 at 上午10:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>头文件的颜色是有意设成这种灰暗色的吗？感觉看不清</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48721">
+<article class="comment" id="comment-48721">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">20122256</a></span> on <a href="http://www.acmerblog.com/union-find-rank-5220.html#comment-48721" rel="nofollow"><time datetime="2015-05-01T01:08:00+00:00" pubdate="">2015年5月1日 at 上午1:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Good task for the group. Hold it up for every yeara??s winner. This is a excellent oppotunity for a lot more enhancement. Indeed, obtaining far better and much better is constantly the crucial. Just like my pal suggests on the truth about ab muscles, he just keeps obtaining much better.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29256">
+<article class="comment" id="comment-29256">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tangzhihua</a></span> on <a href="http://www.acmerblog.com/union-find-rank-5220.html#comment-29256" rel="nofollow"><time datetime="2015-02-07T03:48:15+00:00" pubdate="">2015年2月7日 at 上午3:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>思考人生吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29263">
+<article class="comment" id="comment-29263">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">chengleisheng</a></span> on <a href="http://www.acmerblog.com/union-find-rank-5220.html#comment-29263" rel="nofollow"><time datetime="2014-12-15T19:53:34+00:00" pubdate="">2014年12月15日 at 下午7:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>5.1处，反了；“上一个操作符的优先级比操作符ch的优先级大，或栈是空的就入栈。”如代码所述，应为“上一个操作符的优先级比操作符ch的优先级小，或栈是空的就入栈。”</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29259">
+<article class="comment" id="comment-29259">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">AcmDream</a></span> on <a href="http://www.acmerblog.com/union-find-rank-5220.html#comment-29259" rel="nofollow"><time datetime="2014-12-04T06:34:13+00:00" pubdate="">2014年12月4日 at 上午6:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实国内大部分公司对算法都不够重视。特别是中小型公司老板根本都不懂技术，也不懂什么是算法，从而也不要求程序员懂什么算法，做程序从来不考虑性能问题，只要页面能显示出来就是好程序，这是国内的现状，很无奈。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29258">
+<article class="comment" id="comment-29258">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fastislow</a></span> on <a href="http://www.acmerblog.com/union-find-rank-5220.html#comment-29258" rel="nofollow"><time datetime="2014-11-11T19:28:56+00:00" pubdate="">2014年11月11日 at 下午7:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，就是把这32位当成一个长度为32的数</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29254">
+<article class="comment" id="comment-29254">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">biantiao</a></span> on <a href="http://www.acmerblog.com/union-find-rank-5220.html#comment-29254" rel="nofollow"><time datetime="2014-09-15T07:27:21+00:00" pubdate="">2014年9月15日 at 上午7:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>/*<br/>
+ * =====================================================================================<br/>
+ *<br/>
+ *       Filename:  1366.cc<br/>
+ *<br/>
+ *    Description:<br/>
+ *<br/>
+ *        Version:  1.0<br/>
+ *        Created:  2014年01月06日 14时52分14秒<br/>
+ *       Revision:  none<br/>
+ *       Compiler:  gcc<br/>
+ *<br/>
+ *         Author:  Wenxian Ni (Hello World~), <a href="mailto:niwenxianq@qq.com">niwenxianq@qq.com</a><br/>
+ *   Organization:  AMS/ICT<br/>
+ *<br/>
+ * =====================================================================================<br/>
+ */</p>
+<p>#include<br/>
+#include </p>
+<p>using namespace std;</p>
+<p>int main()<br/>
+{<br/>
+    stack st;<br/>
+    int n,i,j;<br/>
+    int test;<br/>
+    int a[100001];<br/>
+    int b[100001];<br/>
+    while(cin&gt;&gt;n)<br/>
+    {<br/>
+       for(i=1;i&gt;a[i];<br/>
+       for(i=1;i&gt;b[i];<br/>
+        //st.clear();<br/>
+        while(!st.empty())<br/>
+            st.pop();<br/>
+        i = 1;<br/>
+        j = 1;</p>
+<p>        while(in)<br/>
+                break;<br/>
+            }<br/>
+            while(!st.empty()&amp;&amp;st.top()==b[j])<br/>
+            {<br/>
+                st.pop();<br/>
+                j++;<br/>
+            }<br/>
+        }<br/>
+        if(st.empty())<br/>
+            cout&lt;&lt;"YES"&lt;&lt;endl;<br/>
+        else<br/>
+            cout&lt;&lt;"NO"&lt;&lt;endl;<br/>
+    }<br/>
+    return 0;<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-686">
+<article class="comment" id="comment-686">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">非ACMer</span> on <a href="http://www.acmerblog.com/union-find-rank-5220.html#comment-686" rel="nofollow"><time datetime="2014-08-11T00:30:50+00:00" pubdate="">2014年8月11日 at 上午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>51行错了，改为：void Union(struct subset subsets[], int x, int y)</p>
+</div>
+</article><!-- #comment-## -->
+<ul class="children">
+<li class="comment byuser comment-author-admin bypostauthor odd alt depth-2" id="li-comment-690">
+<article class="comment" id="comment-690">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://weibo.com/itong2055" rel="external nofollow">管理员</a></span> on <a href="http://www.acmerblog.com/union-find-rank-5220.html#comment-690" rel="nofollow"><time datetime="2014-08-11T10:13:35+00:00" pubdate="">2014年8月11日 at 上午10:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已修正</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ul><!-- .children -->
+</li><!-- #comment-## -->
+<li class="comment even thread-odd thread-alt depth-1" id="li-comment-29261">
+<article class="comment" id="comment-29261">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaoriqiang</a></span> on <a href="http://www.acmerblog.com/union-find-rank-5220.html#comment-29261" rel="nofollow"><time datetime="2014-07-25T17:28:23+00:00" pubdate="">2014年7月25日 at 下午5:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>int L[m+1][n+1];这样定义出错，这个在gcc上可以编译通过  在VS上不行 应该改为new 或者vector</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-even depth-1" id="li-comment-29260">
+<article class="comment" id="comment-29260">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Amber</a></span> on <a href="http://www.acmerblog.com/union-find-rank-5220.html#comment-29260" rel="nofollow"><time datetime="2014-07-07T02:20:58+00:00" pubdate="">2014年7月7日 at 上午2:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一题还是比较考验智商~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-odd thread-alt depth-1" id="li-comment-29257">
+<article class="comment" id="comment-29257">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fastislow</a></span> on <a href="http://www.acmerblog.com/union-find-rank-5220.html#comment-29257" rel="nofollow"><time datetime="2014-04-20T15:18:57+00:00" pubdate="">2014年4月20日 at 下午3:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个解法好像不对</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

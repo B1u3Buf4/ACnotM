@@ -1,0 +1,594 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-01</div>
+<div class="tit"><h1 class="entry-title">HDU 3058-Generator-递推-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/math" rel="category tag" title="查看数学相关中的全部文章">数学相关</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a></span><span class="i4">围观597次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4837" href="http://www.acmerblog.com/hdu-3058-generator-4837.html#comments" title="《HDU 3058-Generator-递推-[解题报告]HOJ》上的评论">21 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Generator</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+We can generate a random string by generating a sequence of random characters and concatenating them together. Each character is chosen independently from the first n letters in the English alphabet with equal probability. Only capital letters are used in this problem. The generation is stopped as soon as one of specific patterns occurs in the random string.
+<p>Your task is to predict the expected length of the generated string. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+Standard input will contain multiple test cases.
+<p>First line is the number of case x.</p>
+<p>Each test case consists of integer N (1&lt;=N&lt;=8) which is the number of letters used, and M (1&lt;=M&lt;=10) which is the number of patterns used. The following M lines contain the patterns which are non-empty strings consisting of letters chosen from the first N upper case English letters. The length of any pattern will not exceed 10. </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+Standard input will contain multiple test cases.
+<p>First line is the number of case x.</p>
+<p>Each test case consists of integer N (1&lt;=N&lt;=8) which is the number of letters used, and M (1&lt;=M&lt;=10) which is the number of patterns used. The following M lines contain the patterns which are non-empty strings consisting of letters chosen from the first N upper case English letters. The length of any pattern will not exceed 10.</p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+4
+2 1
+A
+2 1
+ABA
+3 1
+AAAAA
+2 2
+A
+AA</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+2.00
+10.00
+363.00
+2.00</pre>
+<p> <!-- problem end --></p>
+<p><span style="font-size:18px"><br/>
+</span></p>
+<p><span style="font-size:18px">trie图上递推+高斯消元， 卡精度题，代码挫了，C++过不了<span style="font-size:18px">(long double也不行)</span>，G++可以过 , 对于结果比较大的数据会出错</span></p>
+<p><span style="font-size:18px">比如  </span></p>
+<p><span style="font-size:18px">8 1</span></p>
+<p><span style="font-size:18px">AAAAAAAAAAA</span></p>
+<p><span style="font-size:18px">这组数据我的代码在C++和G++输出就不同，还有就是有double中的运算尽量应尽量避免除法运算，精度损失较大 </span></p>
+<p><span style="font-size:18px"><br/>
+</span></p>
+<p><span style="font-size:18px"></span></p>
+<pre class="brush:cpp ">#include &lt;iostream&gt;
+#include &lt;cstdio&gt;
+#include &lt;cstdlib&gt;
+#include &lt;cmath&gt;
+#include &lt;queue&gt;
+#include &lt;algorithm&gt;
+#include &lt;vector&gt;
+#include &lt;cstring&gt;
+#include &lt;stack&gt;
+#include &lt;cctype&gt;
+#include &lt;utility&gt;   
+#include &lt;map&gt;
+#include &lt;string&gt;  
+#include &lt;climits&gt; 
+#include &lt;set&gt;
+#include &lt;string&gt;    
+#include &lt;sstream&gt;
+#include &lt;utility&gt;   
+#include &lt;ctime&gt;
+
+using std::priority_queue;
+using std::vector;
+using std::swap;
+using std::stack;
+using std::sort;
+using std::max;
+using std::min;
+using std::pair;
+using std::map;
+using std::string;
+using std::cin;
+using std::cout;
+using std::set;
+using std::queue;
+using std::string;
+using std::istringstream;
+using std::make_pair;
+using std::getline;
+using std::greater;
+using std::endl;
+using std::multimap;
+
+typedef long long LL;
+typedef unsigned long long ULL;
+typedef unsigned UNS;
+typedef pair&lt;int, int&gt; PAIR;
+typedef multimap&lt;int, int&gt; MMAP;
+
+const int MAXN(110);
+//const int SIGMA_SIZE(26);
+const int MAXM(110);
+const int MAXE(4000010);
+const int MAXH(18);
+const int INFI((INT_MAX-1) &gt;&gt; 1);
+const double EPS(1e-11);
+const int MOD(10007);
+const ULL LIM(1000000000000000ull);
+
+inline bool EZ(double temp)
+{
+    return fabs(temp) &lt; EPS;
+}
+
+struct MAT
+{
+    int r, c;
+    double arr[MAXN][MAXN];
+    MAT(int tr, int tc): r(tr), c(tc)
+    {}
+    MAT()
+    {}
+    void reset()
+    {
+        for(int i = 0; i &lt; r; ++i)
+            for(int j = 0; j &lt; c; ++j)
+                arr[i][j] = 0;
+    }
+    void identity()
+    {
+        reset();
+        for(int i = 0; i &lt; r; ++i)
+            arr[i][i] = 1;
+    }
+    
+    /* 模2方程组消元
+    int XOR_eliminate()
+    {
+        int rank = 0, temp;
+        for(int i = 0; i &lt; r; ++i)
+        {
+            temp = i;
+            for(int k = i; k &lt; r; ++k)
+                if(arr[k][i]){temp = k; break;}
+            if(arr[temp][i] == 0) 
+            { is_free[i] = true; continue;}
+            is_free[i] = false;
+            ++rank;
+            if(temp != i) 
+                for(int k = 0; k &lt; c; ++k) 
+                    swap(arr[i][k], arr[temp][k]);
+            for(int k = i+1; k &lt; r; ++k)
+                if(arr[k][i])
+                    for(int k2 = i; k2 &lt; c; ++k2)
+                        arr[k][k2] ^= arr[i][k2];
+        }
+        for(int i = r-1; i &gt;= 0; --i)
+        {
+            for(int j = i+1; j &lt; c-1; ++j)
+                arr[i][c-1] ^= arr[j][c-1]&amp;arr[i][j];
+            if(arr[i][i] == 0 &amp;&amp; arr[i][c-1] != 0)
+                return -1;                      //有矛盾解
+        }
+        return rank; //返回矩阵的秩
+    }
+	*/
+	void gauss_eliminate()
+    {
+        int temp;
+        double mmx;
+        for(int i = 0; i &lt; r; ++i)
+        {
+            temp = i;
+            mmx = fabs(arr[i][i]);
+            for(int j = i+1; j &lt; r; ++j)
+                if(fabs(arr[j][i]) &gt; mmx)
+                {
+                    mmx = fabs(arr[j][i]);
+                    temp = j;
+                }
+            if(temp != i) for(int j = 0; j &lt; c; ++j) swap(arr[temp][j],arr[i][j]);
+            for(int j = c-1; j &gt;= i; --j)
+                for(int k = i+1; k &lt; r;s ++k)
+                    arr[k][j] -= arr[k][i]/arr[i][i]*arr[i][j];
+        
+        }
+        for(int i = r-1; i &gt;= 0; --i)
+        {
+            for(int j = i+1; j &lt; c-1; ++j)
+                arr[i][c-1] -= arr[j][c-1]*arr[i][j];
+            arr[i][c-1] /= arr[i][i];
+        }
+    }
+
+
+    void gauss_jordan()
+    {
+        int temp;
+        for(int i = 0; i &lt; r; ++i)
+        {
+            temp = i;
+            for(int j = i+1; j &lt; r; ++j)
+                if(fabs(arr[j][i]) &gt; fabs(arr[temp][i])) temp = j;
+            if(EZ(arr[temp][i])) continue;
+            if(temp != i)
+                for(int j = 0; j &lt; c; ++j)
+                    swap(arr[temp][j], arr[i][j]);
+            for(int j = 0; j &lt; r; ++j)
+                if(j != i)
+                    for(int k = c-1; k &gt;= i; --k)
+                        arr[j][k] -= arr[j][i]/arr[i][i]*arr[i][k];
+        }
+    }
+};
+
+MAT mat;
+
+int SIGMA_SIZE;
+int que[MAXN];
+int front, back;
+
+struct AC
+{
+    int ch[MAXN][8];
+    int f[MAXN];
+    bool val[MAXN];
+    int size;
+    
+    void init()
+    {
+        memset(ch[0], 0, sizeof(ch[0]));
+        f[0] = 0;
+        val[0] = false;
+        size = 1;
+    }
+    inline int idx(char temp)
+    {
+        return temp-'A';        
+    }
+    
+    void insert(char *S)
+    {
+        int u = 0, id;
+        for(; *S; ++S)
+        {
+            id = idx(*S);
+            if(!ch[u][id])
+            {
+                memset(ch[size], 0, sizeof(ch[size]));
+                val[size] = false;
+                ch[u][id] = size++;
+            }
+            u = ch[u][id];
+        }
+        val[u] = true;
+    }  
+    void construct()
+    {
+        front = back = 0;
+        int cur, u;
+        for(int i = 0; i &lt; SIGMA_SIZE; ++i)
+        {
+            u = ch[0][i];
+            if(u)
+            {
+                que[back++] = u;
+                f[u] = 0;
+            }
+        }
+        while(front &lt; back)
+        {
+            cur = que[front++];
+            for(int i = 0; i &lt; SIGMA_SIZE; ++i)
+            {
+                u = ch[cur][i];
+                if(u)
+                {
+                    que[back++] = u;
+                    f[u] = ch[f[cur]][i];
+                    val[u] |= val[f[u]];
+                }
+                else
+                    ch[cur][i] = ch[f[cur]][i];
+            }
+        }
+    }
+};
+
+AC ac;
+
+bool vis[MAXN];
+
+void dfs(int cur)  //列方程时两边同时乘上SIGMA_SIZE,这样就可以避免处以SIGMA_SIZE，否则精度损失较大，G++也过不了
+{
+    if(vis[cur])
+        return;
+    vis[cur] = true;
+    mat.arr[cur][cur] = SIGMA_SIZE;
+    if(ac.val[cur])
+        mat.arr[cur][ac.size] = 0;
+    else
+        mat.arr[cur][ac.size] = SIGMA_SIZE;   
+    for(int i = 0; i &lt; SIGMA_SIZE; ++i)
+    {
+        int tv = ac.ch[cur][i];
+        if(!ac.val[cur])
+			mat.arr[cur][tv] -= 1.0;
+        dfs(tv);
+    }
+}
+
+char str[15];
+
+int main()
+{
+    int TC, n_case(0);
+    scanf("%d", &amp;TC);
+    while(TC--)
+    {
+        int m;
+        scanf("%d%d", &amp;SIGMA_SIZE, &amp;m);
+        ac.init();
+        for(int i = 0; i &lt; m; ++i)
+        {
+            scanf("%s", str);
+            ac.insert(str);
+        }
+        ac.construct();
+        mat.r = ac.size;
+        mat.c = ac.size+1;
+        mat.reset();
+        memset(vis, 0, sizeof(vis));
+        dfs(0);
+		mat.gauss_eliminate();
+		printf("%.2f\n", mat.arr[0][ac.size]);
+    }
+    return 0;
+}</pre>
+<p>
+</p>
+<p>
+</p>
+<p>参考：http://blog.csdn.net/gyarenas/article/details/8981187</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-79605">
+<article class="comment" id="comment-79605">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526558" rel="external nofollow">新用户545786</a></span> on <a href="http://www.acmerblog.com/hdu-3058-generator-4837.html#comment-79605" rel="nofollow"><time datetime="2017-04-12T14:00:09+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没看，给X，不谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79604">
+<article class="comment" id="comment-79604">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526558" rel="external nofollow">新用户545786</a></span> on <a href="http://www.acmerblog.com/hdu-3058-generator-4837.html#comment-79604" rel="nofollow"><time datetime="2017-04-12T14:00:09+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没看，给X，不谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79603">
+<article class="comment" id="comment-79603">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526558" rel="external nofollow">新用户545786</a></span> on <a href="http://www.acmerblog.com/hdu-3058-generator-4837.html#comment-79603" rel="nofollow"><time datetime="2017-04-12T14:00:09+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没看，给X，不谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79602">
+<article class="comment" id="comment-79602">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526558" rel="external nofollow">新用户545786</a></span> on <a href="http://www.acmerblog.com/hdu-3058-generator-4837.html#comment-79602" rel="nofollow"><time datetime="2017-04-12T14:00:09+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没看，给X，不谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79601">
+<article class="comment" id="comment-79601">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526558" rel="external nofollow">新用户545786</a></span> on <a href="http://www.acmerblog.com/hdu-3058-generator-4837.html#comment-79601" rel="nofollow"><time datetime="2017-04-12T14:00:09+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没看，给X，不谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79600">
+<article class="comment" id="comment-79600">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526558" rel="external nofollow">新用户545786</a></span> on <a href="http://www.acmerblog.com/hdu-3058-generator-4837.html#comment-79600" rel="nofollow"><time datetime="2017-04-12T14:00:09+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没看，给X，不谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79599">
+<article class="comment" id="comment-79599">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526558" rel="external nofollow">新用户545786</a></span> on <a href="http://www.acmerblog.com/hdu-3058-generator-4837.html#comment-79599" rel="nofollow"><time datetime="2017-04-12T14:00:09+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没看，给X，不谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79598">
+<article class="comment" id="comment-79598">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526558" rel="external nofollow">新用户545786</a></span> on <a href="http://www.acmerblog.com/hdu-3058-generator-4837.html#comment-79598" rel="nofollow"><time datetime="2017-04-12T14:00:09+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没看，给X，不谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79597">
+<article class="comment" id="comment-79597">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526558" rel="external nofollow">新用户545786</a></span> on <a href="http://www.acmerblog.com/hdu-3058-generator-4837.html#comment-79597" rel="nofollow"><time datetime="2017-04-12T14:00:09+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没看，给X，不谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79596">
+<article class="comment" id="comment-79596">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526558" rel="external nofollow">新用户545786</a></span> on <a href="http://www.acmerblog.com/hdu-3058-generator-4837.html#comment-79596" rel="nofollow"><time datetime="2017-04-12T14:00:09+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没看，给X，不谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47562">
+<article class="comment" id="comment-47562">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">daisyleedq</a></span> on <a href="http://www.acmerblog.com/hdu-3058-generator-4837.html#comment-47562" rel="nofollow"><time datetime="2015-05-25T02:40:30+00:00" pubdate="">2015年5月25日 at 上午2:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Excellent Web-site! I required to ask if I might webpages and use a component of the net web website and use a number of factors for just about any faculty process. Please notify me through email regardless of whether that would be excellent. Many thanks</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26819">
+<article class="comment" id="comment-26819">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Baifern</a></span> on <a href="http://www.acmerblog.com/hdu-3058-generator-4837.html#comment-26819" rel="nofollow"><time datetime="2015-02-17T01:00:06+00:00" pubdate="">2015年2月17日 at 上午1:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>大致看了下，算法的时间复杂度没有很本性的提升，算不上高效。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-57867">
+<article class="comment" id="comment-57867">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wkhuahuo</a></span> on <a href="http://www.acmerblog.com/hdu-3058-generator-4837.html#comment-57867" rel="nofollow"><time datetime="2015-01-15T19:09:57+00:00" pubdate="">2015年1月15日 at 下午7:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>怎么输入两个0程序还没退出</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26818">
+<article class="comment" id="comment-26818">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1832044043</a></span> on <a href="http://www.acmerblog.com/hdu-3058-generator-4837.html#comment-26818" rel="nofollow"><time datetime="2015-01-10T16:37:39+00:00" pubdate="">2015年1月10日 at 下午4:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很给力啊，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47563">
+<article class="comment" id="comment-47563">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wangzhenvs123</a></span> on <a href="http://www.acmerblog.com/hdu-3058-generator-4837.html#comment-47563" rel="nofollow"><time datetime="2014-09-27T22:27:18+00:00" pubdate="">2014年9月27日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>补充：此算法求出的不一定是最优解，之前理解错了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26817">
+<article class="comment" id="comment-26817">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">GordonTJ</a></span> on <a href="http://www.acmerblog.com/hdu-3058-generator-4837.html#comment-26817" rel="nofollow"><time datetime="2014-09-15T13:08:35+00:00" pubdate="">2014年9月15日 at 下午1:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>以了解 想問為甚麼 Tbl[6001] = {1} 初始化都是1<br/>
+為何不是Tbl[0]=1 其他為0</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47560">
+<article class="comment" id="comment-47560">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">daisyleedq</a></span> on <a href="http://www.acmerblog.com/hdu-3058-generator-4837.html#comment-47560" rel="nofollow"><time datetime="2014-08-20T12:12:15+00:00" pubdate="">2014年8月20日 at 下午12:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63099">
+<article class="comment" id="comment-63099">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NextLife</a></span> on <a href="http://www.acmerblog.com/hdu-3058-generator-4837.html#comment-63099" rel="nofollow"><time datetime="2014-08-11T07:14:26+00:00" pubdate="">2014年8月11日 at 上午7:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>int half(int *array,int len,int key)<br/>
+{<br/>
+    int l=0,r=len;<br/>
+    while(l&lt;r)<br/>
+    {<br/>
+        int m=(l+r)&gt;&gt;1;<br/>
+        if(key&gt;array <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/98/weibom_org.gif"/> )l=m+1;<br/>
+        else if(key&lt;array <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/98/weibom_org.gif"/> )r=m;<br/>
+        else return m;<br/>
+    }<br/>
+    return -1;<br/>
+}<br/>
+这种就能避免一些Bug<br/>
+l,m,r<br/>
+左边是l,m;右边就是m+1,r;</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47561">
+<article class="comment" id="comment-47561">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">reking</a></span> on <a href="http://www.acmerblog.com/hdu-3058-generator-4837.html#comment-47561" rel="nofollow"><time datetime="2014-06-29T15:16:27+00:00" pubdate="">2014年6月29日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算法，他认识我，我不认识他，后来有人告诉我你写的这段代码就是XXX算法。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-57866">
+<article class="comment" id="comment-57866">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">neil2wm</a></span> on <a href="http://www.acmerblog.com/hdu-3058-generator-4837.html#comment-57866" rel="nofollow"><time datetime="2014-06-24T10:14:38+00:00" pubdate="">2014年6月24日 at 上午10:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47564">
+<article class="comment" id="comment-47564">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">everos</a></span> on <a href="http://www.acmerblog.com/hdu-3058-generator-4837.html#comment-47564" rel="nofollow"><time datetime="2014-03-11T01:27:59+00:00" pubdate="">2014年3月11日 at 上午1:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>使用ListNodeWrapper很蹩脚的感觉，没有更好的解决办法？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

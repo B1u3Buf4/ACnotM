@@ -1,0 +1,357 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>04-10</div>
+<div class="tit"><h1 class="entry-title">HDU 3760-Ideal Path-最短路径-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/bfs" rel="category tag" title="查看BFS搜索中的全部文章">BFS搜索</a>, <a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/search" rel="category tag" title="查看搜索中的全部文章">搜索</a></span><span class="i4">围观318次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6753" href="http://www.acmerblog.com/hdu-3760-ideal-path-6753.html#comments" title="《HDU 3760-Ideal Path-最短路径-[解题报告]HOJ》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Ideal Path</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+New labyrinth attraction is open in New Lostland amusement park. The labyrinth consists of n rooms connected by m passages. Each passage is colored into some color ci. Visitors of the labyrinth are dropped from the helicopter to the room number 1 and their goal is to get to the labyrinth exit located in the room number n.<br/>Labyrinth owners are planning to run a contest tomorrow. Several runners will be dropped to the room number 1. They will run to the room number n writing down colors of passages as they run through them. The contestant with the shortest sequence of colors is the winner of the contest. If there are several contestants with the same sequence length, the one with the ideal path is the winner. The path is the ideal path if its color sequence is the lexicographically smallest among shortest paths.<br/>Andrew is preparing for the contest. He took a helicopter tour above New Lostland and made a picture of the labyrinth. Your task is to help him find the ideal path from the room number 1 to the room number n that would allow him to win the contest.<br/>Note<br/>A sequence (a1, a2, …, ak) is lexicographically smaller than a sequence (b1, b2, …, bk) if there exists i such that ai &lt; bi, and aj = bj for all j &lt; i. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input begins with an integer T. The next T blocks each represents a case. The first line of each case contains integers n and m – the number of rooms and passages, respectively (2 ≤ n ≤ 100 000, 1 ≤ m ≤ 200 000). The following m lines describe passages, each passage is described with three integer numbers: ai, bi, and ci – the numbers of rooms it connects and its color (1 ≤ ai, bi ≤ n, 1 ≤ ci ≤ 109). Each passage can be passed in either direction. Two rooms can be connected with more than one passage, there can be a passage from a room to itself. It is guaranteed that it is possible to reach the room number n from the room number 1. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input begins with an integer T. The next T blocks each represents a case. The first line of each case contains integers n and m – the number of rooms and passages, respectively (2 ≤ n ≤ 100 000, 1 ≤ m ≤ 200 000). The following m lines describe passages, each passage is described with three integer numbers: ai, bi, and ci – the numbers of rooms it connects and its color (1 ≤ ai, bi ≤ n, 1 ≤ ci ≤ 109). Each passage can be passed in either direction. Two rooms can be connected with more than one passage, there can be a passage from a room to itself. It is guaranteed that it is possible to reach the room number n from the room number 1.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+4 6
+1 2 1
+1 3 2
+3 4 3
+2 3 1
+2 4 4
+3 1 1</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+1 3</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp" name="code">// 这题我用的解法是3次BFS，前两次BFS分别从起点开始搜索和从终点开始搜索。<br/>
+// 这样就求出了每个点到起点和到终点的最短距离。假设某点x，它到起点的最短<br/>
+// 距离加上它到终点的最短距离等于起点到终点的最短距离，即<br/>
+// sdis[x] + edis[x] == len。则证明x是最短路径上的一个点。最后一次<br/>
+// BFS在最短路径上进行，从而求出IdeadPath。<br/>
+#include &lt;iostream&gt;<br/>
+using namespace std;<br/>
+const int maxn = 100005;<br/>
+const int maxm = 400005;<br/>
+const int inf  = 1000000005;<br/>
+int head[maxn], vert[maxm], colo[maxm], noxt[maxm], cunt;<br/>
+int sdis[maxn], edis[maxn], path[maxn], leng;<br/>
+int queue[maxn], qhead, qtail;<br/>
+bool vis[maxn], rit[maxn];<br/>
+void init(int n)<br/>
+{<br/>
+    cunt = 0;<br/>
+    for (int i = 0; i &lt;= n; i++)<br/>
+    {<br/>
+        head[i] = -1;<br/>
+        sdis[i] = -1;<br/>
+        edis[i] = -1;<br/>
+        vis[i] = 0;<br/>
+        rit[i] = 0;<br/>
+        path[i] = inf;<br/>
+    }<br/>
+}<br/>
+void addedge(int x, int y, int c)<br/>
+{<br/>
+    vert[cunt] = y;<br/>
+    colo[cunt] = c;<br/>
+    noxt[cunt] = head[x];<br/>
+    head[x] = cunt++;<br/>
+}<br/>
+void BFS(int start, int *dis)<br/>
+{<br/>
+    dis[start] = 0;<br/>
+    qhead = qtail = 0;<br/>
+    queue[qtail++] = start;<br/>
+    while (qhead &lt; qtail)<br/>
+    {<br/>
+        int x = queue[qhead++];<br/>
+        for (int p = head[x]; p != -1; p = noxt[p])<br/>
+        {<br/>
+            int y = vert[p];<br/>
+            if (-1 == dis[y])<br/>
+            {<br/>
+                dis[y] = dis[x] + 1;<br/>
+                queue[qtail++] = y;<br/>
+            }<br/>
+        }<br/>
+    }<br/>
+}<br/>
+void IdeadPath()<br/>
+{<br/>
+    qhead = qtail = 0;<br/>
+    queue[qtail++] = 1;<br/>
+    int step = 0;<br/>
+    while (qhead &lt; qtail)<br/>
+    {<br/>
+        int ttail = qtail;<br/>
+        while (qhead &lt; ttail)<br/>
+        {<br/>
+            int x = queue[qhead++];<br/>
+            for (int p = head[x]; p != -1; p = noxt[p])<br/>
+            {<br/>
+                int y = vert[p];<br/>
+                int c = colo[p];<br/>
+                if (rit[y] &amp;&amp; sdis[y] == step + 1)<br/>
+                {<br/>
+                    if (c &lt; path[step])<br/>
+                    {<br/>
+                        path[step] = c;<br/>
+                        for (int i = ttail; i &lt; qtail; i++)<br/>
+                            vis[queue[i]] = 0;<br/>
+                        qtail = ttail;<br/>
+                        vis[y] = 1;<br/>
+                        queue[qtail++] = y;<br/>
+                    }<br/>
+                    else if (c == path[step] &amp;&amp; !vis[y])<br/>
+                    {<br/>
+                        vis[y] = 1;<br/>
+                        queue[qtail++] = y;<br/>
+                    }<br/>
+                }<br/>
+            }<br/>
+        }<br/>
+        step++;<br/>
+    }<br/>
+}<br/>
+int main()<br/>
+{<br/>
+    int test, cas;<br/>
+    int n, m, a, b, c;<br/>
+    scanf("%d", &amp;test);<br/>
+    for (cas = 1; cas &lt;= test; cas++)<br/>
+    {<br/>
+        scanf("%d %d", &amp;n, &amp;m);<br/>
+        init(n);<br/>
+        for (int i = 0; i &lt; m; i++)<br/>
+        {<br/>
+            scanf("%d %d %d", &amp;a, &amp;b, &amp;c);<br/>
+            if (a == b) continue;<br/>
+            addedge(a, b, c);<br/>
+            addedge(b, a, c);<br/>
+        }<br/>
+        BFS(1, sdis);<br/>
+        BFS(n, edis);<br/>
+        leng = sdis[n];<br/>
+        for (int i = 1; i &lt;= n; i++)<br/>
+        {<br/>
+            if (sdis[i] + edis[i] == leng)<br/>
+                rit[i] = 1;<br/>
+        }<br/>
+        IdeadPath();<br/>
+        printf("%d/n", leng);<br/>
+        for (int i = 0; i &lt; leng; i++)<br/>
+        {<br/>
+            if (i) printf(" ");<br/>
+            printf("%d", path[i]);<br/>
+        }<br/>
+        printf("/n");<br/>
+    }<br/>
+    return 0;<br/>
+}
+<pre><span style="font-family: mceinline;"> </span>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/racebug2010/article/details/6267642</p>
+						                        
+<div>
+
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+ </div>
+
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+
+					</pre></pre></div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-73011">
+<article class="comment" id="comment-73011">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919458972" rel="external nofollow">新用户792310</a></span> on <a href="http://www.acmerblog.com/hdu-3760-ideal-path-6753.html#comment-73011" rel="nofollow"><time datetime="2017-04-11T19:58:26+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不粘锅 广告</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51051">
+<article class="comment" id="comment-51051">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zwj0571</a></span> on <a href="http://www.acmerblog.com/hdu-3760-ideal-path-6753.html#comment-51051" rel="nofollow"><time datetime="2015-06-23T17:46:42+00:00" pubdate="">2015年6月23日 at 下午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>示例程序中的代码不够稳健，没有考虑到输入了非法字符或者不合理输入的情况。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51050">
+<article class="comment" id="comment-51050">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Miracle-cc</a></span> on <a href="http://www.acmerblog.com/hdu-3760-ideal-path-6753.html#comment-51050" rel="nofollow"><time datetime="2015-06-21T00:00:26+00:00" pubdate="">2015年6月21日 at 上午12:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>问题3中，GetRightPosition()和GetLeftPosition()与STL中的upper_bound()和lower_boune()的代码实现一样吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33564">
+<article class="comment" id="comment-33564">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tonight</a></span> on <a href="http://www.acmerblog.com/hdu-3760-ideal-path-6753.html#comment-33564" rel="nofollow"><time datetime="2015-06-13T07:47:25+00:00" pubdate="">2015年6月13日 at 上午7:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好，找的就是这一题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33563">
+<article class="comment" id="comment-33563">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jdliyao</a></span> on <a href="http://www.acmerblog.com/hdu-3760-ideal-path-6753.html#comment-33563" rel="nofollow"><time datetime="2015-06-06T16:36:48+00:00" pubdate="">2015年6月6日 at 下午4:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>输入样例作为一个整体输入，带回车</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51049">
+<article class="comment" id="comment-51049">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Cloudy</a></span> on <a href="http://www.acmerblog.com/hdu-3760-ideal-path-6753.html#comment-51049" rel="nofollow"><time datetime="2015-05-30T13:12:38+00:00" pubdate="">2015年5月30日 at 下午1:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有谁知道直接遍历的方法中第8行是什么意思嘛？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64010">
+<article class="comment" id="comment-64010">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yelawolf</a></span> on <a href="http://www.acmerblog.com/hdu-3760-ideal-path-6753.html#comment-64010" rel="nofollow"><time datetime="2015-05-28T18:14:40+00:00" pubdate="">2015年5月28日 at 下午6:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>int L[m+1][n+1];这样定义出错，这个在gcc上可以编译通过 在VS上不行 应该改为new 或者vector</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51052">
+<article class="comment" id="comment-51052">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Ding Qiangyuan</a></span> on <a href="http://www.acmerblog.com/hdu-3760-ideal-path-6753.html#comment-51052" rel="nofollow"><time datetime="2015-05-26T08:19:12+00:00" pubdate="">2015年5月26日 at 上午8:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的题，还是能做出几道的，嘿嘿</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51047">
+<article class="comment" id="comment-51047">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangduanjing</a></span> on <a href="http://www.acmerblog.com/hdu-3760-ideal-path-6753.html#comment-51047" rel="nofollow"><time datetime="2015-05-21T08:44:02+00:00" pubdate="">2015年5月21日 at 上午8:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>.net中char类型不是两个字节么</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-59621">
+<article class="comment" id="comment-59621">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">cherry_odd</a></span> on <a href="http://www.acmerblog.com/hdu-3760-ideal-path-6753.html#comment-59621" rel="nofollow"><time datetime="2015-05-13T22:35:22+00:00" pubdate="">2015年5月13日 at 下午10:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51046">
+<article class="comment" id="comment-51046">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">admin</a></span> on <a href="http://www.acmerblog.com/hdu-3760-ideal-path-6753.html#comment-51046" rel="nofollow"><time datetime="2015-05-12T22:15:01+00:00" pubdate="">2015年5月12日 at 下午10:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好厉害～</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51045">
+<article class="comment" id="comment-51045">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">anthozoan77</a></span> on <a href="http://www.acmerblog.com/hdu-3760-ideal-path-6753.html#comment-51045" rel="nofollow"><time datetime="2015-05-11T15:11:34+00:00" pubdate="">2015年5月11日 at 下午3:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>从数学角度确实是C(n,r)，能给个递推关系式吗，从分治的角度不好理解</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51053">
+<article class="comment" id="comment-51053">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jamoeba</a></span> on <a href="http://www.acmerblog.com/hdu-3760-ideal-path-6753.html#comment-51053" rel="nofollow"><time datetime="2015-04-29T17:58:22+00:00" pubdate="">2015年4月29日 at 下午5:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>“再把所有不和该节点相邻的节点着相同的颜色”，程序中没有进行不和该节点相邻的其他节点是否相邻进行判断。再说求出来的也不一样是颜色数最少的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33565">
+<article class="comment" id="comment-33565">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hehe_snail</a></span> on <a href="http://www.acmerblog.com/hdu-3760-ideal-path-6753.html#comment-33565" rel="nofollow"><time datetime="2015-04-19T20:47:56+00:00" pubdate="">2015年4月19日 at 下午8:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>[…] 答案：http://www.acmerblog.com/interview-2-1549/ […]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51048">
+<article class="comment" id="comment-51048">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tufei</a></span> on <a href="http://www.acmerblog.com/hdu-3760-ideal-path-6753.html#comment-51048" rel="nofollow"><time datetime="2015-04-18T18:39:05+00:00" pubdate="">2015年4月18日 at 下午6:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#!/usr/bin/env  python<br/>
+def cou(n):<br/>
+        arr =  <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/82/one_org.gif"/><br/>
+        i = 1<br/>
+        while(i&lt;n):<br/>
+                arr.append(arr[i-1]+selfcount(i))<br/>
+                i+=1<br/>
+        return arr[n-1]</p>
+<p>def selfcount(n):<br/>
+        count = 0<br/>
+        while(n):<br/>
+                if n%10 == 1:<br/>
+                        count += 1<br/>
+                n /= 10<br/>
+        return count</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

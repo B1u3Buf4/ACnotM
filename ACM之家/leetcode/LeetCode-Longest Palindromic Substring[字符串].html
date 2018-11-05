@@ -1,0 +1,460 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>11-18</div>
+<div class="tit"><h1 class="entry-title">LeetCode-Longest Palindromic Substring[字符串]</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/basis/string" rel="category tag" title="查看字符串处理中的全部文章">字符串处理</a></span><span class="i4">围观1008次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6233" href="http://www.acmerblog.com/leetcode-solution-longest-palindromic-substring-6233.html#comments" title="《LeetCode-Longest Palindromic Substring[字符串]》上的评论">21 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<h3><strong>Longest Palindromic Substring</strong></h3>
+<div class="question-content">
+<p>Given a string <i>S</i>, find the longest palindromic substring in <i>S</i>. You may assume that the maximum length of <i>S</i> is 1000, and there exists one unique longest palindromic substring.</p>
+</div>
+<p> 标签: String<br/>
+<strong>分析</strong>
+</p><p>最长回文子串，非常经典的题。</p>
+<p>思路一：暴力枚举，以每个元素为中间元素，同时从左右出发，复杂度$O(n^2)$。</p>
+<p>思路二：记忆化搜索，复杂度$O(n^2)$。设{f[i][j]} 表示[i,j]之间的最长回文子串，递推方程如下：<br/>
+\begin{Code}<br/>
+f[i][j] = if (i == j) S[i]<br/>
+          if (S[i] == S[j] &amp;&amp; f[i+1][j-1] == S[i+1][j-1]) S[i][j]<br/>
+          else max(f[i+1][j-1], f[i][j-1], f[i+1][j])<br/>
+\end{Code}</p>
+<p>思路三：动规，复杂度$O(n^2)$。设状态为{f(i,j)}，表示区间[i,j]是否为回文串，则状态转移方程为<br/>
+$$<br/>
+f(i,j)=\begin{cases}<br/>
+true &amp; ,i=j\\<br/>
+S[i]=S[j] &amp; , j = i + 1 \\<br/>
+S[i]=S[j] \text{ and } f(i+1, j-1) &amp; , j &gt; i + 1<br/>
+\end{cases}<br/>
+$$</p>
+<p>思路三：Manacher’s Algorithm, 复杂度$O(n)$。详细解释见 {http://leetcode.com/2011/11/longest-palindromic-substring-part-ii.html} 。</p>
+<p>代码1
+</p><pre class="brush:cpp">
+// LeetCode, Longest Palindromic Substring
+// 备忘录法，会超时
+// 时间复杂度O(n^2)，空间复杂度O(n^2)
+typedef string::const_iterator Iterator;
+
+namespace std {
+template&lt;&gt;
+struct hash&lt;pair&lt;Iterator, Iterator&gt;&gt; {
+    size_t operator()(pair&lt;Iterator, Iterator&gt; const&amp; p) const {
+        return ((size_t) &amp;(*p.first)) ^ ((size_t) &amp;(*p.second));
+    }
+};
+}
+
+class Solution {
+public:
+    string longestPalindrome(string const&amp; s) {
+        cache.clear();
+        return cachedLongestPalindrome(s.begin(), s.end());
+    }
+
+private:
+    unordered_map&lt;pair&lt;Iterator, Iterator&gt;, string&gt; cache;
+
+    string longestPalindrome(Iterator first, Iterator last) {
+        size_t length = distance(first, last);
+
+        if (length &lt; 2) return string(first, last);
+
+        auto s = cachedLongestPalindrome(next(first), prev(last));
+
+        if (s.length() == length - 2 &amp;&amp; *first == *prev(last))
+            return string(first, last);
+
+        auto s1 = cachedLongestPalindrome(next(first), last);
+        auto s2 = cachedLongestPalindrome(first, prev(last));
+
+        // return max(s, s1, s2)
+        if (s.size() &gt; s1.size()) return s.size() &gt; s2.size() ? s : s2;
+        else return s1.size() &gt; s2.size() ? s1 : s2;
+    }
+
+    string cachedLongestPalindrome(Iterator first, Iterator last) {
+        auto key = make_pair(first, last);
+        auto pos = cache.find(key);
+
+        if (pos != cache.end()) return pos-&gt;second;
+        else return cache[key] = longestPalindrome(first, last);
+    }
+};
+</pre>
+<p>代码2
+</p><pre class="brush:cpp">
+// LeetCode, Longest Palindromic Substring
+// 动规，时间复杂度O(n^2)，空间复杂度O(n^2)
+class Solution {
+public:
+    string longestPalindrome(string s) {
+        const int n = s.size();
+        bool f[n][n];
+        fill_n(&amp;f[0][0], n * n, false);
+        // 用 vector 会超时
+        //vector&lt;vector&lt;bool&gt; &gt; f(n, vector&lt;bool&gt;(n, false));
+        size_t max_len = 1, start = 0;  // 最长回文子串的长度，起点
+
+        for (size_t i = 0; i &lt; s.size(); i++) {
+            f[i][i] = true;
+            for (size_t j = 0; j &lt; i; j++) {  // [j, i]
+                f[j][i] = (s[j] == s[i] &amp;&amp; (i - j &lt; 2 || f[j + 1][i - 1]));
+                if (f[j][i] &amp;&amp; max_len &lt; (i - j + 1)) {
+                    max_len = i - j + 1;
+                    start = j;
+                }
+            }
+        }
+        return s.substr(start, max_len);
+    }
+};
+</pre>
+<p>代码3
+</p><pre class="brush:cpp">
+// LeetCode, Longest Palindromic Substring
+// Manacher’s Algorithm
+// 时间复杂度O(n)，空间复杂度O(n)
+class Solution {
+public:
+    // Transform S into T.
+    // For example, S = "abba", T = "^#a#b#b#a#$".
+    // ^ and $ signs are sentinels appended to each end to avoid bounds checking
+    string preProcess(string s) {
+        int n = s.length();
+        if (n == 0) return "^$";
+
+        string ret = "^";
+        for (int i = 0; i &lt; n; i++) ret += "#" + s.substr(i, 1);
+
+        ret += "#$";
+        return ret;
+    }
+
+    string longestPalindrome(string s) {
+        string T = preProcess(s);
+        const int n = T.length();
+        // 以T[i]为中心，向左/右扩张的长度，不包含T[i]自己，
+        // 因此 P[i]是源字符串中回文串的长度
+        int P[n];
+        int C = 0, R = 0;
+
+        for (int i = 1; i &lt; n - 1; i++) {
+            int i_mirror = 2 * C - i; // equals to i' = C - (i-C)
+
+            P[i] = (R &gt; i) ? min(R - i, P[i_mirror]) : 0;
+
+            // Attempt to expand palindrome centered at i
+            while (T[i + 1 + P[i]] == T[i - 1 - P[i]])
+                P[i]++;
+
+            // If palindrome centered at i expand past R,
+            // adjust center based on expanded palindrome.
+            if (i + P[i] &gt; R) {
+                C = i;
+                R = i + P[i];
+            }
+        }
+
+        // Find the maximum element in P.
+        int max_len = 0;
+        int center_index = 0;
+        for (int i = 1; i &lt; n - 1; i++) {
+            if (P[i] &gt; max_len) {
+                max_len = P[i];
+                center_index = i;
+            }
+        }
+
+        return s.substr((center_index - 1 - max_len) / 2, max_len);
+    }
+};
+</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-74438">
+<article class="comment" id="comment-74438">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460864" rel="external nofollow">新用户574973</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-longest-palindromic-substring-6233.html#comment-74438" rel="nofollow"><time datetime="2017-04-12T01:59:37+00:00" pubdate="">2017年4月12日 at 上午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>什么？一亿人集齐福了？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-74437">
+<article class="comment" id="comment-74437">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460864" rel="external nofollow">新用户574973</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-longest-palindromic-substring-6233.html#comment-74437" rel="nofollow"><time datetime="2017-04-12T01:59:37+00:00" pubdate="">2017年4月12日 at 上午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>什么？一亿人集齐福了？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-74436">
+<article class="comment" id="comment-74436">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460864" rel="external nofollow">新用户574973</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-longest-palindromic-substring-6233.html#comment-74436" rel="nofollow"><time datetime="2017-04-12T01:59:37+00:00" pubdate="">2017年4月12日 at 上午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>什么？一亿人集齐福了？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-74435">
+<article class="comment" id="comment-74435">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460864" rel="external nofollow">新用户574973</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-longest-palindromic-substring-6233.html#comment-74435" rel="nofollow"><time datetime="2017-04-12T01:59:37+00:00" pubdate="">2017年4月12日 at 上午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>什么？一亿人集齐福了？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-74434">
+<article class="comment" id="comment-74434">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460864" rel="external nofollow">新用户574973</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-longest-palindromic-substring-6233.html#comment-74434" rel="nofollow"><time datetime="2017-04-12T01:59:37+00:00" pubdate="">2017年4月12日 at 上午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>什么？一亿人集齐福了？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-74433">
+<article class="comment" id="comment-74433">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460864" rel="external nofollow">新用户574973</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-longest-palindromic-substring-6233.html#comment-74433" rel="nofollow"><time datetime="2017-04-12T01:59:37+00:00" pubdate="">2017年4月12日 at 上午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>什么？一亿人集齐福了？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-74432">
+<article class="comment" id="comment-74432">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460864" rel="external nofollow">新用户574973</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-longest-palindromic-substring-6233.html#comment-74432" rel="nofollow"><time datetime="2017-04-12T01:59:37+00:00" pubdate="">2017年4月12日 at 上午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>什么？一亿人集齐福了？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-74431">
+<article class="comment" id="comment-74431">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460864" rel="external nofollow">新用户574973</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-longest-palindromic-substring-6233.html#comment-74431" rel="nofollow"><time datetime="2017-04-12T01:59:37+00:00" pubdate="">2017年4月12日 at 上午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>什么？一亿人集齐福了？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59026">
+<article class="comment" id="comment-59026">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jamoeba</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-longest-palindromic-substring-6233.html#comment-59026" rel="nofollow"><time datetime="2015-06-18T19:31:52+00:00" pubdate="">2015年6月18日 at 下午7:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>為甚麼fln*20+0.5f</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-31425">
+<article class="comment" id="comment-31425">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">final</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-longest-palindromic-substring-6233.html#comment-31425" rel="nofollow"><time datetime="2015-06-14T03:56:42+00:00" pubdate="">2015年6月14日 at 上午3:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>前排支持</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-31420">
+<article class="comment" id="comment-31420">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Rosamondwu</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-longest-palindromic-substring-6233.html#comment-31420" rel="nofollow"><time datetime="2015-06-03T15:43:44+00:00" pubdate="">2015年6月3日 at 下午3:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一题还是比较考验智商~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-31418">
+<article class="comment" id="comment-31418">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ruoshui</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-longest-palindromic-substring-6233.html#comment-31418" rel="nofollow"><time datetime="2015-04-16T05:27:15+00:00" pubdate="">2015年4月16日 at 上午5:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>哎，path[0]应该是从零开始吧，为什么是赋值1呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-31426">
+<article class="comment" id="comment-31426">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ruoshui</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-longest-palindromic-substring-6233.html#comment-31426" rel="nofollow"><time datetime="2015-02-09T14:30:28+00:00" pubdate="">2015年2月9日 at 下午2:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>值得分享！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-31423">
+<article class="comment" id="comment-31423">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">123456789_xd</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-longest-palindromic-substring-6233.html#comment-31423" rel="nofollow"><time datetime="2015-01-31T08:52:34+00:00" pubdate="">2015年1月31日 at 上午8:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>“可以发现,树将是满二叉树,”这句话不对吧，构造的树应该是“完全二叉树”，而非“满二叉树”。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49957">
+<article class="comment" id="comment-49957">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">20122256</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-longest-palindromic-substring-6233.html#comment-49957" rel="nofollow"><time datetime="2015-01-25T07:15:05+00:00" pubdate="">2015年1月25日 at 上午7:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>清华也会出这么无聊的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-59027">
+<article class="comment" id="comment-59027">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wynk0804</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-longest-palindromic-substring-6233.html#comment-59027" rel="nofollow"><time datetime="2015-01-16T10:53:31+00:00" pubdate="">2015年1月16日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>&amp;amp;这是C语言？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-31421">
+<article class="comment" id="comment-31421">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">we</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-longest-palindromic-substring-6233.html#comment-31421" rel="nofollow"><time datetime="2015-01-01T06:29:24+00:00" pubdate="">2015年1月1日 at 上午6:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不是有公式吗？何不直接计算</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49958">
+<article class="comment" id="comment-49958">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">kate19930802</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-longest-palindromic-substring-6233.html#comment-49958" rel="nofollow"><time datetime="2014-12-29T11:22:57+00:00" pubdate="">2014年12月29日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个也是算法导论的习题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-31424">
+<article class="comment" id="comment-31424">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaotong2055</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-longest-palindromic-substring-6233.html#comment-31424" rel="nofollow"><time datetime="2014-12-18T15:37:43+00:00" pubdate="">2014年12月18日 at 下午3:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>什么破题，题意好难懂啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-31422">
+<article class="comment" id="comment-31422">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">cyyuen</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-longest-palindromic-substring-6233.html#comment-31422" rel="nofollow"><time datetime="2014-12-06T11:18:21+00:00" pubdate="">2014年12月6日 at 上午11:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#!/usr/bin/env  python<br/>
+def cou(n):<br/>
+        arr =  <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/82/one_org.gif"/><br/>
+        i = 1<br/>
+        while(i&lt;n):<br/>
+                arr.append(arr[i-1]+selfcount(i))<br/>
+                i+=1<br/>
+        return arr[n-1]</p>
+<p>def selfcount(n):<br/>
+        count = 0<br/>
+        while(n):<br/>
+                if n%10 == 1:<br/>
+                        count += 1<br/>
+                n /= 10<br/>
+        return count</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-31419">
+<article class="comment" id="comment-31419">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">magicSky</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-longest-palindromic-substring-6233.html#comment-31419" rel="nofollow"><time datetime="2014-11-19T04:48:26+00:00" pubdate="">2014年11月19日 at 上午4:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>/*<br/>
+ * =====================================================================================<br/>
+ *<br/>
+ *       Filename:  1366.cc<br/>
+ *<br/>
+ *    Description:<br/>
+ *<br/>
+ *        Version:  1.0<br/>
+ *        Created:  2014年01月06日 14时52分14秒<br/>
+ *       Revision:  none<br/>
+ *       Compiler:  gcc<br/>
+ *<br/>
+ *         Author:  Wenxian Ni (Hello World~), <a href="mailto:niwenxianq@qq.com">niwenxianq@qq.com</a><br/>
+ *   Organization:  AMS/ICT<br/>
+ *<br/>
+ * =====================================================================================<br/>
+ */</p>
+<p>#include<br/>
+#include </p>
+<p>using namespace std;</p>
+<p>int main()<br/>
+{<br/>
+    stack st;<br/>
+    int n,i,j;<br/>
+    int test;<br/>
+    int a[100001];<br/>
+    int b[100001];<br/>
+    while(cin&gt;&gt;n)<br/>
+    {<br/>
+       for(i=1;i&gt;a[i];<br/>
+       for(i=1;i&gt;b[i];<br/>
+        //st.clear();<br/>
+        while(!st.empty())<br/>
+            st.pop();<br/>
+        i = 1;<br/>
+        j = 1;</p>
+<p>        while(in)<br/>
+                break;<br/>
+            }<br/>
+            while(!st.empty()&amp;&amp;st.top()==b[j])<br/>
+            {<br/>
+                st.pop();<br/>
+                j++;<br/>
+            }<br/>
+        }<br/>
+        if(st.empty())<br/>
+            cout&lt;&lt;"YES"&lt;&lt;endl;<br/>
+        else<br/>
+            cout&lt;&lt;"NO"&lt;&lt;endl;<br/>
+    }<br/>
+    return 0;<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

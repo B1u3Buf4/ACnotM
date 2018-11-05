@@ -1,0 +1,460 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-23</div>
+<div class="tit"><h1 class="entry-title">Hdu 1909 ‘JBC’-复杂模拟[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/basis/simulate" rel="category tag" title="查看模拟法中的全部文章">模拟法</a></span><span class="i4">围观741次</span><span class="i3"><a class="ds-thread-count" data-thread-key="2912" href="http://www.acmerblog.com/hdu-1909-jbc-2912.html#comments" title="《Hdu 1909 ‘JBC’-复杂模拟[解题报告] C++》上的评论">21 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">‘JBC’</h1>
+</div>
+<div>
+<p class="mytitle">问题描述 :</p>
+</div>
+<div class="mypanel">Life can be taught, but sometimes simple problems are just very well hidden among difficult ones. Once identifying those simple problems you are almost on a half way of solving them as well as making one big step towards winning the contest. Just be careful, this is NOT the simplest problem!Are you ready for that challenge?
+<p>Your task is to write a program that transforms numbers from various numeric systems to decade one (base=10).</p>
+</div>
+<div>
+<p class="mytitle">输入:</p>
+</div>
+<div class="mypanel">Input file consists from multiple data sets separated by one or more empty lines.First line of each set contains definition of digit ordering for some hypothetical numerical system. All ASCII printable characters (codes greater than 0×20 (space)) are allowed to appear as digits, and they are sorted according to increased decimal value (starting from zero).
+<p>Each line of the input data set (starting from second one) is one number coded with previously defined digits. Such numbers can have multiple decade interpretations (taking different base for hypothetical system) and your task is to find sum of all possible interpretations.</p>
+<p>Explanation: If we define digit ordering as “0123456789” possible bases are 2..10 but number “6201” can be decoded only in systems with base 7..10.</p>
+<p>Input lines can contain white space characters on both ends which should be ignored.</p>
+</div>
+<div>
+<p class="mytitle">输出:</p>
+</div>
+<div class="mypanel">You are required to output one decimal number per each number from input data sets. That number represents sum of decimal representations for all valid numeric system bases.Output data sets should be separated by one blank line.
+</div>
+<div>
+<p class="mytitle">样例输入:</p>
+</div>
+<pre class="mypanel iopanel">0123456789
+ 90763
+1
+
+.1&gt;C
+CC.
+&gt;.1
+1....</pre>
+<div>
+<p class="mytitle">样例输出:</p>
+</div>
+<pre class="mypanel iopanel">90763
+9
+
+60
+52
+353</pre>
+<p><!-- problem end --><br/>
+这是一道比较复杂的模拟题，注意：</p>
+<p>1、要用大数来做</p>
+<p>2、去除串的前导和后导空格</p>
+<p>3、要求的串中可能存在原来的串没有的符号，这些符号要省略</p>
+<p>4、貌似最后一个case没有换行，若果用fgets()，可能会出错，但用gets()和getline()没有问题</p>
+<p>程序代码：</p>
+<pre class="brush:cpp">#include &lt;cstdio&gt;
+#include &lt;iostream&gt;
+#include &lt;cstring&gt;
+#include &lt;string&gt;
+#include &lt;map&gt;
+#include &lt;limits&gt;
+#include &lt;algorithm&gt;
+using namespace std;
+const int maxn = 20000;
+struct bign{
+    int len, s[maxn];
+    bign(){memset(s, 0, sizeof(s)); len = 1;}
+    bign(int num){*this = num;}
+    bign(char *num){*this = num;}
+    bign operator = (const char* num){
+        len = strlen(num);
+        for(int i = 0; i &lt; len; i++)
+            s[i] = num[len - i - 1] - '0';//反转
+        return *this;
+    }
+    bign operator = (const int num){
+        char s[maxn];
+        sprintf(s, "%d", num);
+        *this = s;
+        return *this;
+    }
+    string str() const {
+        string res = "";
+        for(int i = 0; i &lt; len; i++)
+            res = (char)(s[i] + '0') + res;
+        if(res == "")
+            res = "0";
+        return res;
+    }
+    bign operator + (const bign &amp; b) const {
+        bign c;
+        c.len = 0;
+        for(int i = 0, g = 0; g || i &lt; max(len, b.len); i++){// g 只判断最后是否进位
+            int x = g;
+            if(i &lt; len) x += s[i];
+            if(i &lt; b.len) x += b.s[i];
+            c.s[c.len++] = x % 10;
+            g = x / 10;
+        }
+        return c;
+    }
+    bign operator += (const bign &amp; b) {
+        *this = *this + b;
+        return *this;
+    }
+    void clean(){
+        while(len &gt; 1 &amp;&amp; !s[len - 1])   len--;
+    }
+    bign operator - (const bign &amp; b){
+        bign c; c.len = 0;
+        for(int i = 0, g = 0; i &lt; len; i++){
+            int x = s[i] - g;
+            if(i &lt; b.len)   x -= b.s[i];
+            if(x &gt;= 0)  g = 0;
+            else {g = 1; x += 10;}
+            c.s[c.len++] = x;
+        }
+        c.clean();
+        return c;
+    }
+    bign operator -= (const bign &amp; b){
+        *this = *this - b;
+        return *this;
+    }
+    bign operator * (const bign &amp;b){
+        bign c;
+        c.len = len + b.len;
+        for(int i = 0; i &lt; len; i++)
+            for(int j = 0; j &lt; b.len; j++)
+                c.s[i + j] += s[i] * b.s[j];
+        for(int i = 0; i &lt; c.len - 1; i++){
+            c.s[i + 1] += c.s[i] / 10;
+            c.s[i] %= 10;
+        }
+        c.clean();
+        return c;
+    }
+    void digit_shift(bign &amp; n, int d) {
+        int i;
+        if(n == 0)
+            return;
+        for(i = n.len - 1; i &gt;= 0; i--)
+            n.s[i + d] = n.s[i];
+        for(i = 0; i &lt; d; i++)
+            n.s[i] = 0;
+        n.len = n.len + d;
+    }
+    bign operator / (const bign&amp; b){
+        bign row;
+        bign c;
+        c.len = len;
+        int i, j;
+        for(i = len - 1; i &gt;= 0; i--){
+            digit_shift(row, 1);
+            row += s[i];
+            c.s[i] = 0;
+            while(row &gt;= b){
+                c.s[i]++;
+                row -= b;
+            }
+        }
+        c.clean();
+        return c;
+    }
+    bool operator &lt; (const bign &amp; b) const{
+        if(len != b.len)    return len &lt; b.len;
+        for(int i = len - 1;i &gt;= 0; i--)
+            if(s[i] != b.s[i])  return s[i] &lt; b.s[i];
+        return false;
+    }
+    bool operator &gt; (const bign &amp; b) const { return b &lt; *this;}
+    bool operator &lt;= (const bign &amp; b) const {return !(b &lt; *this);}
+    bool operator &gt;= (const bign &amp; b) const {return !(*this &lt; b);}
+    bool operator != (const bign &amp; b) const {return b &lt; *this || *this &lt; b;}
+    bool operator == (const bign &amp; b) const {return !(b &lt; *this) &amp;&amp; !(*this &lt; b);}
+};
+istream &amp; operator &gt;&gt; (istream &amp; in, bign &amp; x){
+    string s;
+    in&gt;&gt;s;
+    x = s.c_str();
+    return in;
+}
+ostream &amp; operator &lt;&lt; (ostream &amp; out, const bign &amp; x){
+    out&lt;&lt;x.str();
+    return out;
+}
+map&lt;char, int&gt; mp;
+string input;
+int main()
+{
+    bool flag = false;
+    int k = 0, len, begin;
+    bign num, sum, mod;
+    //freopen("input.txt", "r", stdin);
+    while(true){
+        flag = false;
+        while(getline(cin, input)){
+            if(input.size() == 0 &amp;&amp; flag) break;
+            else if(input.size() == 0 &amp;&amp; !flag) continue;
+            else {
+                while(input[0] == ' ') input.erase(input.begin());
+                while(input[input.size() - 1] == ' ') input.erase(input.size() - 1, 1);
+                if(!flag){
+                    if(k) cout&lt;&lt;endl;
+                    mp.clear();
+                    k = 1;
+                    flag = true;
+                    len = input.size();
+                    for(int i = 0; i &lt; len; i++)
+                        mp[input[i]] = i;
+                }else {
+                    begin = 2;
+                    for(int i = 0; i &lt; input.size(); i++)
+                        if(mp.count(input[i]) &amp;&amp; begin &lt; mp[input[i]] + 1)
+                            begin = mp[input[i]] + 1;
+                    sum = 0;
+                    for(; begin &lt;= len; begin++){
+                        mod = 1; num = 0;
+                        for(int j = input.size() - 1; j &gt;= 0; j--){
+                            if(mp.count(input[j])){
+                                num = num + mod * mp[input[j]];
+                                mod =  mod * begin;
+                            }
+                        }
+                        sum = sum + num;
+                    }
+                    cout &lt;&lt; sum &lt;&lt; endl;
+                }
+            }
+        }
+        if(!flag) break;
+    }
+    return 0;
+}</pre>
+<p> </p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-88319">
+<article class="comment" id="comment-88319">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512540" rel="external nofollow">新用户822710</a></span> on <a href="http://www.acmerblog.com/hdu-1909-jbc-2912.html#comment-88319" rel="nofollow"><time datetime="2017-04-13T09:02:17+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>WNBA出身</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-88318">
+<article class="comment" id="comment-88318">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512540" rel="external nofollow">新用户822710</a></span> on <a href="http://www.acmerblog.com/hdu-1909-jbc-2912.html#comment-88318" rel="nofollow"><time datetime="2017-04-13T09:02:17+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>WNBA出身</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-88317">
+<article class="comment" id="comment-88317">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512540" rel="external nofollow">新用户822710</a></span> on <a href="http://www.acmerblog.com/hdu-1909-jbc-2912.html#comment-88317" rel="nofollow"><time datetime="2017-04-13T09:02:17+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>WNBA出身</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-88316">
+<article class="comment" id="comment-88316">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512540" rel="external nofollow">新用户822710</a></span> on <a href="http://www.acmerblog.com/hdu-1909-jbc-2912.html#comment-88316" rel="nofollow"><time datetime="2017-04-13T09:02:17+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>WNBA出身</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-88315">
+<article class="comment" id="comment-88315">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512540" rel="external nofollow">新用户822710</a></span> on <a href="http://www.acmerblog.com/hdu-1909-jbc-2912.html#comment-88315" rel="nofollow"><time datetime="2017-04-13T09:02:17+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>WNBA出身</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-88324">
+<article class="comment" id="comment-88324">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512540" rel="external nofollow">新用户822710</a></span> on <a href="http://www.acmerblog.com/hdu-1909-jbc-2912.html#comment-88324" rel="nofollow"><time datetime="2017-04-13T09:02:17+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>WNBA出身</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-88323">
+<article class="comment" id="comment-88323">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512540" rel="external nofollow">新用户822710</a></span> on <a href="http://www.acmerblog.com/hdu-1909-jbc-2912.html#comment-88323" rel="nofollow"><time datetime="2017-04-13T09:02:17+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>WNBA出身</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-88322">
+<article class="comment" id="comment-88322">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512540" rel="external nofollow">新用户822710</a></span> on <a href="http://www.acmerblog.com/hdu-1909-jbc-2912.html#comment-88322" rel="nofollow"><time datetime="2017-04-13T09:02:17+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>WNBA出身</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-88321">
+<article class="comment" id="comment-88321">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512540" rel="external nofollow">新用户822710</a></span> on <a href="http://www.acmerblog.com/hdu-1909-jbc-2912.html#comment-88321" rel="nofollow"><time datetime="2017-04-13T09:02:17+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>WNBA出身</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-88320">
+<article class="comment" id="comment-88320">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512540" rel="external nofollow">新用户822710</a></span> on <a href="http://www.acmerblog.com/hdu-1909-jbc-2912.html#comment-88320" rel="nofollow"><time datetime="2017-04-13T09:02:17+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>WNBA出身</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-17800">
+<article class="comment" id="comment-17800">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lint</a></span> on <a href="http://www.acmerblog.com/hdu-1909-jbc-2912.html#comment-17800" rel="nofollow"><time datetime="2015-05-25T02:34:22+00:00" pubdate="">2015年5月25日 at 上午2:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>We do not harbor that I couldn’t remove other individuals’ problems whenever this arrived at.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-17801">
+<article class="comment" id="comment-17801">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mysteriousAngel_love</a></span> on <a href="http://www.acmerblog.com/hdu-1909-jbc-2912.html#comment-17801" rel="nofollow"><time datetime="2015-03-15T18:21:50+00:00" pubdate="">2015年3月15日 at 下午6:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>题目需要求解的是最小值，而且没有考虑可能存在环</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-17802">
+<article class="comment" id="comment-17802">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Amber</a></span> on <a href="http://www.acmerblog.com/hdu-1909-jbc-2912.html#comment-17802" rel="nofollow"><time datetime="2015-03-08T22:51:59+00:00" pubdate="">2015年3月8日 at 下午10:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Java真是解决大数的利器</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-17797">
+<article class="comment" id="comment-17797">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">spiderMan</a></span> on <a href="http://www.acmerblog.com/hdu-1909-jbc-2912.html#comment-17797" rel="nofollow"><time datetime="2015-01-27T18:15:18+00:00" pubdate="">2015年1月27日 at 下午6:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为\n\n</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-17796">
+<article class="comment" id="comment-17796">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fanxianxian</a></span> on <a href="http://www.acmerblog.com/hdu-1909-jbc-2912.html#comment-17796" rel="nofollow"><time datetime="2014-10-05T08:08:36+00:00" pubdate="">2014年10月5日 at 上午8:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不同的编译器，printf(),执行的顺序不同，所以结果也就不同，建议不要那么写</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-62129">
+<article class="comment" id="comment-62129">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">silianbo</a></span> on <a href="http://www.acmerblog.com/hdu-1909-jbc-2912.html#comment-62129" rel="nofollow"><time datetime="2014-09-30T11:05:24+00:00" pubdate="">2014年9月30日 at 上午11:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为是要把从字符串s的start位到当前位在hash中重置，修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-17799">
+<article class="comment" id="comment-17799">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ozhfo</a></span> on <a href="http://www.acmerblog.com/hdu-1909-jbc-2912.html#comment-17799" rel="nofollow"><time datetime="2014-07-18T01:13:34+00:00" pubdate="">2014年7月18日 at 上午1:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个还不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-17795">
+<article class="comment" id="comment-17795">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">BGPY243956</a></span> on <a href="http://www.acmerblog.com/hdu-1909-jbc-2912.html#comment-17795" rel="nofollow"><time datetime="2014-07-05T19:52:07+00:00" pubdate="">2014年7月5日 at 下午7:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学习了！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-17798">
+<article class="comment" id="comment-17798">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">magicSky</a></span> on <a href="http://www.acmerblog.com/hdu-1909-jbc-2912.html#comment-17798" rel="nofollow"><time datetime="2014-05-21T11:07:45+00:00" pubdate="">2014年5月21日 at 上午11:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题别太纠结了，不同的编译器结果不一</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-17804">
+<article class="comment" id="comment-17804">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Baifern</a></span> on <a href="http://www.acmerblog.com/hdu-1909-jbc-2912.html#comment-17804" rel="nofollow"><time datetime="2014-05-05T15:06:35+00:00" pubdate="">2014年5月5日 at 下午3:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已修正</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-17803">
+<article class="comment" id="comment-17803">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">usx13123</a></span> on <a href="http://www.acmerblog.com/hdu-1909-jbc-2912.html#comment-17803" rel="nofollow"><time datetime="2014-03-03T07:07:33+00:00" pubdate="">2014年3月3日 at 上午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>顺利测试通过了，多谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

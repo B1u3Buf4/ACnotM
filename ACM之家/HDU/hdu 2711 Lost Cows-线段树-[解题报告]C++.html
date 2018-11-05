@@ -1,0 +1,351 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>02-14</div>
+<div class="tit"><h1 class="entry-title">hdu 2711 Lost Cows-线段树-[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/data-struct/trees" rel="category tag" title="查看树形结构中的全部文章">树形结构</a></span><span class="i4">围观467次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4310" href="http://www.acmerblog.com/hdu-2711-lost-cows-4310.html#comments" title="《hdu 2711 Lost Cows-线段树-[解题报告]C++》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Lost Cows</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+N (2 &lt;= N &lt;= 8,000) cows have unique brands in the range 1..N. In a spectacular display of poor judgment, they visited the neighborhood ‘watering hole’ and drank a few too many beers before dinner. When it was time to line up for their evening meal, they did not line up in the required ascending numerical order of their brands.
+<p>Regrettably, FJ does not have a way to sort them. Furthermore, he’s not very good at observing problems. Instead of writing down each cow’s brand, he determined a rather silly statistic: For each cow in line, he knows the number of cows that precede that cow in line that do, in fact, have smaller brands than that cow.</p>
+<p>Given this data, tell FJ the exact ordering of the cows. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+* Line 1: A single integer, N
+<p>* Lines 2..N: These N-1 lines describe the number of cows that precede a given cow in line and have brands smaller than that cow. Of course, no cows precede the first cow in line, so she is not listed. Line 2 of the input describes the number of preceding cows whose brands are smaller than the cow in slot #2; line 3 describes the number of preceding cows whose brands are smaller than the cow in slot #3; and so on. </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+* Line 1: A single integer, N
+<p>* Lines 2..N: These N-1 lines describe the number of cows that precede a given cow in line and have brands smaller than that cow. Of course, no cows precede the first cow in line, so she is not listed. Line 2 of the input describes the number of preceding cows whose brands are smaller than the cow in slot #2; line 3 describes the number of preceding cows whose brands are smaller than the cow in slot #3; and so on.</p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+5
+1
+2
+1
+0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+4
+5
+3
+1</pre>
+<p> <!-- problem end --></p>
+<p><span style="white-space:pre"></span>从后往前查第一个为0的奶牛肯定应该排在第一个。每次从后往前找到第一个为0的数，这个数应该插在第j位。查找之后，修改节点的值为极大值，当整棵树的最小值不为0的时候查找结束。</p>
+<p><span style="white-space:pre"></span>至于这种查找修改的操作，再没有比线段树效率更高的了。</p>
+<pre class="brush:cpp ">#include&lt;stdio.h&gt;
+#include&lt;string.h&gt;
+#include&lt;stdlib.h&gt;
+#define N 8005
+#define M 16100
+struct node
+{
+    int x,y;
+    int min;
+    int flag;
+}a[N*3];
+int b[N],c[N];
+int Min(int x,int y)
+{
+    if(x&lt;y)
+        return x;
+    else
+        return y;
+}
+void ChangeTree(int t,int k)
+{
+    a[t].flag+=k;
+    a[t].min+=k;
+    return ;
+}
+void CreatTree(int t,int x,int y)
+{
+    a[t].x=x;
+    a[t].y=y;
+    a[t].flag=0;
+    if(x==y)
+    {
+        a[t].min=b[x];
+        return ;
+    }
+    int temp=t*2;
+    int mid=(a[t].x+a[t].y)/2;
+    CreatTree(temp,x,mid);
+    CreatTree(temp+1,mid+1,y);
+    a[t].min=Min(a[temp].min,a[temp+1].min);
+    return ;
+}
+void InsertTree(int t,int x,int y,int k)
+{
+    if(a[t].x==x&amp;&amp;a[t].y==y)
+    {
+        ChangeTree(t,k);
+        return ;
+    }
+    int temp=t*2;
+    int mid=(a[t].x+a[t].y)/2;
+    if(a[t].flag)
+    {
+        ChangeTree(temp,a[t].flag);
+        ChangeTree(temp+1,a[t].flag);
+        a[t].flag=0;
+    }
+    if(y&lt;=mid)
+        InsertTree(temp,x,y,k);
+    else if(x&gt;mid)
+        InsertTree(temp+1,x,y,k);
+    else
+    {
+        InsertTree(temp,x,mid,k);
+        InsertTree(temp+1,mid+1,y,k);
+    }
+    a[t].min=Min(a[temp].min,a[temp+1].min);
+    return ;
+}
+int FindTree(int t)
+{
+    if(a[t].x==a[t].y)
+    {
+        if(a[t].min==0)
+            return a[t].x;
+        else
+            return 0;
+    }
+    int temp=t*2;
+    if(a[t].flag)
+    {
+        ChangeTree(temp,a[t].flag);
+        ChangeTree(temp+1,a[t].flag);
+        a[t].flag=0;
+    }
+    if(a[temp+1].min==0)
+        return FindTree(temp+1);
+    else
+        return FindTree(temp);
+}
+int main()
+{
+    int n;
+    while(scanf("%d",&amp;n)!=EOF)
+    {
+        int i,j;
+        b[1]=0;
+        for(i=2;i&lt;=n;i++)
+            scanf("%d",&amp;b[i]);
+        CreatTree(1,1,n);
+        j=1;
+        while(a[1].min==0)
+        {
+            int tt;
+            tt=FindTree(1);
+            if(!tt)
+                tt=1;
+            c[tt]=j++;
+            InsertTree(1,tt,tt,M);
+            InsertTree(1,tt,n,-1);
+        }
+        for(i=1;i&lt;=n;i++)
+            printf("%d\n",c[i]);
+    }
+    return 0;
+}</pre>
+<p>解题转自：http://blog.csdn.net/zizaimengzhongyue/article/details/9670633</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-82095">
+<article class="comment" id="comment-82095">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517847" rel="external nofollow">新用户202492</a></span> on <a href="http://www.acmerblog.com/hdu-2711-lost-cows-4310.html#comment-82095" rel="nofollow"><time datetime="2017-04-12T19:45:08+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我能出个HESON牌吗，我把你的改成实时的了··  </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46460">
+<article class="comment" id="comment-46460">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangduanjing</a></span> on <a href="http://www.acmerblog.com/hdu-2711-lost-cows-4310.html#comment-46460" rel="nofollow"><time datetime="2015-06-25T23:53:09+00:00" pubdate="">2015年6月25日 at 下午11:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算法还停留在大学的知识中</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-46459">
+<article class="comment" id="comment-46459">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Dick</a></span> on <a href="http://www.acmerblog.com/hdu-2711-lost-cows-4310.html#comment-46459" rel="nofollow"><time datetime="2015-04-23T22:27:09+00:00" pubdate="">2015年4月23日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>map[nodes <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .index][nodes <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> .index] == 0 就是判断不相邻的。这个是可以证明的。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-24607">
+<article class="comment" id="comment-24607">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hsp_77_abc</a></span> on <a href="http://www.acmerblog.com/hdu-2711-lost-cows-4310.html#comment-24607" rel="nofollow"><time datetime="2015-04-13T03:26:35+00:00" pubdate="">2015年4月13日 at 上午3:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一题是不是可以这样想，生了n孩子的家庭等价于n个家庭各生了一个1个孩子，这样最后男女的比例还是1:1</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-46454">
+<article class="comment" id="comment-46454">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">645198</a></span> on <a href="http://www.acmerblog.com/hdu-2711-lost-cows-4310.html#comment-46454" rel="nofollow"><time datetime="2015-03-27T07:36:21+00:00" pubdate="">2015年3月27日 at 上午7:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很全很强大！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46455">
+<article class="comment" id="comment-46455">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiaoliubuer</a></span> on <a href="http://www.acmerblog.com/hdu-2711-lost-cows-4310.html#comment-46455" rel="nofollow"><time datetime="2015-03-19T09:49:05+00:00" pubdate="">2015年3月19日 at 上午9:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第23行：<br/>
+hash <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = -1是否应该改成hash[s <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> ] = -1</p>
+<p>因为是要把从字符串s的start位到当前位在hash中重置</p>
+<p>修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-46458">
+<article class="comment" id="comment-46458">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mechine</a></span> on <a href="http://www.acmerblog.com/hdu-2711-lost-cows-4310.html#comment-46458" rel="nofollow"><time datetime="2015-03-17T11:10:49+00:00" pubdate="">2015年3月17日 at 上午11:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>写的好·····  Pollard Rho快速因数分解</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46456">
+<article class="comment" id="comment-46456">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">985836927</a></span> on <a href="http://www.acmerblog.com/hdu-2711-lost-cows-4310.html#comment-46456" rel="nofollow"><time datetime="2015-03-10T05:26:34+00:00" pubdate="">2015年3月10日 at 上午5:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#!/usr/bin/env python def cou(n): arr =  [1]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-46457">
+<article class="comment" id="comment-46457">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">michaelwen</a></span> on <a href="http://www.acmerblog.com/hdu-2711-lost-cows-4310.html#comment-46457" rel="nofollow"><time datetime="2015-03-05T21:07:38+00:00" pubdate="">2015年3月5日 at 下午9:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#include &lt;stdio.h&gt;<br/>
+int main()<br/>
+{<br/>
+    int n,p,t[100]={1};<br/>
+    for(int i=1;i&lt;100;i++)<br/>
+        t <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> =i;<br/>
+    while(scanf("%d",&amp;n)&amp;&amp;n!=0){<br/>
+        if(n==1)<br/>
+        printf("Printing order for 1 pages:nSheet 1, front: Blank, 1n");<br/>
+        else {<br/>
+        if(n%4) p=n/4+1;<br/>
+        else p=n/4;<br/>
+        int q=4*p;<br/>
+        printf("Printing order for %d pages:n",n);<br/>
+        for(int i=0;i&lt;p;i++){<br/>
+            printf("Sheet %d, front: ",i+1);<br/>
+            if(q&gt;n) {printf("Blank, %dn",t[2*i+1]);}<br/>
+            else {printf("%d, %dn",q,t[2*i+1]);}<br/>
+            q–;//打印表前<br/>
+            printf("Sheet %d, back : ",i+1);<br/>
+            if(q&gt;n) {printf("%d, Blankn",t[2*i+2]);}<br/>
+            else {printf("%d, %dn",t[2*i+2],q);}<br/>
+            q–;//打印表后<br/>
+           }<br/>
+        }<br/>
+    }<br/>
+    return 0;<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-57415">
+<article class="comment" id="comment-57415">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Baifern</a></span> on <a href="http://www.acmerblog.com/hdu-2711-lost-cows-4310.html#comment-57415" rel="nofollow"><time datetime="2015-01-05T10:54:16+00:00" pubdate="">2015年1月5日 at 上午10:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很强大啊，佩服</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-57416">
+<article class="comment" id="comment-57416">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">crazymage</a></span> on <a href="http://www.acmerblog.com/hdu-2711-lost-cows-4310.html#comment-57416" rel="nofollow"><time datetime="2014-11-28T23:22:49+00:00" pubdate="">2014年11月28日 at 下午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>写的好·····  Pollard Rh</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-57417">
+<article class="comment" id="comment-57417">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaotong2055</a></span> on <a href="http://www.acmerblog.com/hdu-2711-lost-cows-4310.html#comment-57417" rel="nofollow"><time datetime="2014-07-03T06:05:38+00:00" pubdate="">2014年7月3日 at 上午6:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>顶一个 赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-57414">
+<article class="comment" id="comment-57414">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">warriorbrant</a></span> on <a href="http://www.acmerblog.com/hdu-2711-lost-cows-4310.html#comment-57414" rel="nofollow"><time datetime="2014-05-11T03:58:44+00:00" pubdate="">2014年5月11日 at 上午3:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢提醒，是漏掉了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46461">
+<article class="comment" id="comment-46461">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hong0220</a></span> on <a href="http://www.acmerblog.com/hdu-2711-lost-cows-4310.html#comment-46461" rel="nofollow"><time datetime="2014-02-18T08:50:57+00:00" pubdate="">2014年2月18日 at 上午8:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>较好的写法是 start+(end-start)/2</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

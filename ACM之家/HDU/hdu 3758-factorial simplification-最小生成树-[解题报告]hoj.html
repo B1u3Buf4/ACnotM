@@ -1,0 +1,415 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>04-10</div>
+<div class="tit"><h1 class="entry-title">hdu 3758-factorial simplification-最小生成树-[解题报告]hoj</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph/mst" rel="category tag" title="查看最小生成树中的全部文章">最小生成树</a>, <a href="http://www.acmerblog.com/category/basis/recursion" rel="category tag" title="查看递归和分治中的全部文章">递归和分治</a></span><span class="i4">围观310次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6751" href="http://www.acmerblog.com/hdu-3758-factorial-simplification-6751.html#comments" title="《hdu 3758-factorial simplification-最小生成树-[解题报告]hoj》上的评论">17 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div align="left" class="panel_title">Problem Description</div>
+<div class="panel_content">Peter is working on a combinatorial problem. He has carried out quite lengthy derivations and got a resulting formula that is a ratio of two products of factorials like this:<br/>
+<center><img alt="" src="http://localhost/blog/img/1447143868832.png"/></center>
+<p>This does not surprise Peter, since factorials appear quite often in various combinatorial formulae, because n! represents the number of transpositions of n elements – one of the basic combinatorial objects.<br/>
+However, Peter might have made a mistake in his derivations. He knows that the result should be an integer number and he needs to check this first. For an integer result Peter wants to simplify this formula to get a better feeling of its actual combinatorial<br/>
+ significance. He wants to represent the same number as a product of factorials like this.</p>
+<p></p><center><img alt="" src="http://localhost/blog/img/1447143868942.png"/></center><br/>
+<br/>
+where all ri are distinct integer numbers greater than one in the descending order (r<sub>i</sub> &gt; r<sub>i+1</sub> &gt; 1), si and t are positive integers. Among all the possible representations in this form, Peter is interested in one where r<sub>1</sub> is<br/>
+ the largest possible number, among those in the one where s<sub>1</sub> is the largest possible number; among those in the one where r<sub>2</sub> is the largest possible number; among those in the one where s<sub>2</sub> is the largest possible number; etc,<br/>
+ until the remaining t cannot be further represented in this form. Peter does not care about the actual value of t. He wants to know what is the factorial-product part of his result.</div>
+<div class="panel_bottom"> </div>
+<p></p>
+<div align="left" class="panel_title">Input</div>
+<div class="panel_content">The input begins with an integer T. The next T blocks each represents a case. The first line of each case contains two integer numbers n and m (1 ≤ n, m ≤ 1000). The second line contains n integer numbers pi (1 ≤ pi ≤ 10 000) separated<br/>
+ by spaces. The third line contains m integer numbers qi (1 ≤ qi ≤ 10 000) separated by spaces.</div>
+<div class="panel_bottom"> </div>
+<p></p>
+<div align="left" class="panel_title">Output</div>
+<div class="panel_content">For each case, on the first line of the output write a single integer number k. Write k = -1 if the ratio of the given factorial products is not an integer. Write k = 0 if the ratio is an integer but it cannot be represented in the<br/>
+ desired form. Write k &gt; 0 followed by k lines if the ratio can be represented by a factorial product as described in the problem statement. On each of the following k lines write two integers ri and si (for i = 1 … k) separated by a space.</div>
+<div class="panel_bottom"> </div>
+<p></p>
+<div align="left" class="panel_title">Sample Input</div>
+<div class="panel_content">
+<pre><div style="font-family:Courier New,Courier,monospace">3
+1 2
+6
+4 4
+1 2
+6
+3 4
+4 2
+9 2 2 2
+3 4</div></pre>
+</div>
+<div class="panel_bottom"> </div>
+<p></p>
+<div align="left" class="panel_title">Sample Output</div>
+<div class="panel_content">
+<pre><div style="font-family:Courier New,Courier,monospace">-1
+0
+2
+7 1
+2 2</div></pre>
+</div>
+<div class="panel_bottom"> </div>
+<p></p>
+<div align="left" class="panel_title">Author</div>
+<div class="panel_content">Andrey Stankevich</div>
+<div class="panel_bottom"> </div>
+<p></p>
+<div align="left" class="panel_title">Source</div>
+<div class="panel_content"><a href="http://acm.hdu.edu.cn/search.php?field=problem&amp;key=2010%20Northeastern%20European%20Regional%20Contest&amp;source=1&amp;searchmode=source">2010 Northeastern European Regional Contest<br/>
+</a></div>
+<div class="panel_bottom"> </div>
+<p></p>
+<div align="left" class="panel_title">Recommend</div>
+<div class="panel_content">notonlysuccess</div>
+<p>
+</p>
+<p>这题想要化简分子和分母都是阶乘之积，即第一幅图，然后形成第二幅图的形式，让r尽量大，不管t</p>
+<p>预处理阶乘t中每个质数的幂，然后二分求每个r即可。</p>
+<pre class="brush:cpp" name="code">#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;algorithm&gt;
+#include &lt;vector&gt;
+using namespace std;
+
+#define MAXN 10010
+
+bool prime[MAXN+5];
+int p[1400];
+int up;
+int num[1400];
+int ans[MAXN][2];
+vector &lt;short&gt; init[MAXN+2];
+
+void Prime()
+{
+    int i,k;
+    up=0;
+    memset(prime,0,sizeof(prime));
+    for (i=2;i&lt;MAXN;i++)
+    {
+        if (prime[i]==1) continue;
+        k=i;
+        while(k*i&lt;MAXN)
+        {
+            prime[i*k]=1;
+            k++;
+        }
+        p[up++]=i;
+    }
+}
+
+int GetNum(int t,int k)
+{
+    if (t&lt;k) return 0;
+    return t/k+GetNum(t/k,k);
+}
+
+void Init()
+{
+    int i,j;
+    for (i=1;i&lt;MAXN;i++)
+    {
+        for (j=0;j&lt;up;j++)
+        {
+            if (i&lt;p[j]) break;
+            init[i].push_back(GetNum(i,p[j]));
+        }
+    }
+}
+
+bool Check(int t,int k)
+{
+    int i;
+    for (i=0;i&lt;k;i++)
+    {
+        if (t&lt;p[i]) break;
+        if (init[t][i]&gt;num[i]) return false;
+    }
+    return true;
+}
+
+int Count(int t,int &amp;k)
+{
+    int i,ss,tag;
+    ss=100000;
+    for (i=0;i&lt;k;i++)
+    {
+        if (t&lt;p[i]) break;
+        ss=min(ss,num[i]/init[t][i]);
+    }
+    tag=k;
+    for (i=0;i&lt;k;i++)
+    {
+        if (t&lt;p[i]) break;
+        num[i]-=ss*init[t][i];
+        if (num[i]==0) tag=min(tag,i);
+    }
+    k=tag;
+    return ss;
+}
+
+int main()
+{
+    int T,i,j,n,m,s,k,l,r,mid,now,x;
+    Prime();
+    Init();
+    scanf("%d",&amp;T);
+    while(T--)
+    {
+        scanf("%d%d",&amp;n,&amp;m);
+        memset(num,0,sizeof(num));
+        s=0;
+        for (i=0;i&lt;n;i++)
+        {
+            scanf("%d",&amp;x);
+            for (j=0;j&lt;up;j++)
+            {
+                if (x&lt;p[j]) break;
+                num[j]+=init[x][j];
+            }
+            s=max(s,j);
+        }
+        for (i=0;i&lt;m;i++)
+        {
+            scanf("%d",&amp;x);
+            for (j=0;j&lt;up;j++)
+            {
+                if (x&lt;p[j]) break;
+                num[j]-=init[x][j];
+            }
+            s=max(s,j);
+        }
+        k=s;
+        for (i=0;i&lt;s;i++)
+        {
+            if (num[i]&lt;0) break;
+            if (num[i]==0) k=min(k,i);
+        }
+        if (i&lt;s)
+        {
+            printf("-1\n");
+            continue;
+        }
+        now=0;
+        while(1)
+        {
+            if (k==0) break;
+            l=1;
+            r=p[k]-1;
+            while(l&lt;=r)
+            {
+                mid=(l+r)/2;
+                if (Check(mid,k)==true) l=mid+1;
+                else r=mid-1;
+            }
+            ans[now][0]=r;
+            ans[now++][1]=Count(r,k);
+        }
+        printf("%d\n",now);
+        for (i=0;i&lt;now;i++)
+        {
+            printf("%d %d\n",ans[i][0],ans[i][1]);
+        }
+    }
+    return 0;
+}
+</pre>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-72994">
+<article class="comment" id="comment-72994">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514427" rel="external nofollow">新用户844871</a></span> on <a href="http://www.acmerblog.com/hdu-3758-factorial-simplification-6751.html#comment-72994" rel="nofollow"><time datetime="2017-04-11T19:58:26+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>记者比我蠢不蠢我无法判断，但是你比我蠢这***是可以肯定的。但从这件事来说，不是只有科技日报一家报纸提问，但是只有他一家收到了警告。可见其他记者是知道底线的。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-72993">
+<article class="comment" id="comment-72993">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514427" rel="external nofollow">新用户844871</a></span> on <a href="http://www.acmerblog.com/hdu-3758-factorial-simplification-6751.html#comment-72993" rel="nofollow"><time datetime="2017-04-11T19:58:26+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>记者比我蠢不蠢我无法判断，但是你比我蠢这***是可以肯定的。但从这件事来说，不是只有科技日报一家报纸提问，但是只有他一家收到了警告。可见其他记者是知道底线的。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-72992">
+<article class="comment" id="comment-72992">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514427" rel="external nofollow">新用户844871</a></span> on <a href="http://www.acmerblog.com/hdu-3758-factorial-simplification-6751.html#comment-72992" rel="nofollow"><time datetime="2017-04-11T19:58:26+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>记者比我蠢不蠢我无法判断，但是你比我蠢这***是可以肯定的。但从这件事来说，不是只有科技日报一家报纸提问，但是只有他一家收到了警告。可见其他记者是知道底线的。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-72991">
+<article class="comment" id="comment-72991">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514427" rel="external nofollow">新用户844871</a></span> on <a href="http://www.acmerblog.com/hdu-3758-factorial-simplification-6751.html#comment-72991" rel="nofollow"><time datetime="2017-04-11T19:58:26+00:00" pubdate="">2017年4月11日 at 下午7:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>记者比我蠢不蠢我无法判断，但是你比我蠢这***是可以肯定的。但从这件事来说，不是只有科技日报一家报纸提问，但是只有他一家收到了警告。可见其他记者是知道底线的。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33554">
+<article class="comment" id="comment-33554">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Ailing</a></span> on <a href="http://www.acmerblog.com/hdu-3758-factorial-simplification-6751.html#comment-33554" rel="nofollow"><time datetime="2015-07-15T13:52:41+00:00" pubdate="">2015年7月15日 at 下午1:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>for(int i=1; i&lt;=m; i++){<br/>
+            for(int j=1; j&lt;=n; j++){<br/>
+                    dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> [j-1] + 1;<br/>
+                if(s1.charAt(i-1) == s3.charAt(i+j-1))<br/>
+                    dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = dp[i-1] <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  + 1;<br/>
+                if(s2.charAt(j-1) == s3.charAt(i+j-1))<br/>
+                    dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = Math.max(dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> [j - 1] + 1, dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> );<br/>
+            }<br/>
+        }<br/>
+这里的代码似乎有点问题？ dp(i)(j) = dp(i)(j-1) + 1;这个例子System.out.println(ils.isInterleave("aa","dbbca", "aadbbcb"));返回的应该是false</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33545">
+<article class="comment" id="comment-33545">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">MyHome</a></span> on <a href="http://www.acmerblog.com/hdu-3758-factorial-simplification-6751.html#comment-33545" rel="nofollow"><time datetime="2015-07-14T03:43:02+00:00" pubdate="">2015年7月14日 at 上午3:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这配图…..</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33551">
+<article class="comment" id="comment-33551">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bcys</a></span> on <a href="http://www.acmerblog.com/hdu-3758-factorial-simplification-6751.html#comment-33551" rel="nofollow"><time datetime="2015-07-06T21:29:09+00:00" pubdate="">2015年7月6日 at 下午9:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>先从简单的做起，归并排序，二叉树相关的遍历等</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33546">
+<article class="comment" id="comment-33546">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangdilj</a></span> on <a href="http://www.acmerblog.com/hdu-3758-factorial-simplification-6751.html#comment-33546" rel="nofollow"><time datetime="2015-06-21T04:17:26+00:00" pubdate="">2015年6月21日 at 上午4:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不是有公式吗？何不直接计算</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33547">
+<article class="comment" id="comment-33547">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sheyty</a></span> on <a href="http://www.acmerblog.com/hdu-3758-factorial-simplification-6751.html#comment-33547" rel="nofollow"><time datetime="2015-06-09T12:28:46+00:00" pubdate="">2015年6月9日 at 下午12:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法挺不错。NewHead代表新的头节点，通过递归找到最后一个节点之后，就把这个节点赋给NewHead，然后一直返回返回，中途这个值是没有变化的，一边返回一边把相应的指针方向颠倒，最后结束时返回新的头节点到主函数。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33543">
+<article class="comment" id="comment-33543">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">303589828</a></span> on <a href="http://www.acmerblog.com/hdu-3758-factorial-simplification-6751.html#comment-33543" rel="nofollow"><time datetime="2015-05-24T04:43:45+00:00" pubdate="">2015年5月24日 at 上午4:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不是有公式吗？何不直接计算</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33553">
+<article class="comment" id="comment-33553">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hunangangli</a></span> on <a href="http://www.acmerblog.com/hdu-3758-factorial-simplification-6751.html#comment-33553" rel="nofollow"><time datetime="2015-05-23T10:36:49+00:00" pubdate="">2015年5月23日 at 上午10:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正有此意，欢迎更多的建议~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33544">
+<article class="comment" id="comment-33544">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bobo</a></span> on <a href="http://www.acmerblog.com/hdu-3758-factorial-simplification-6751.html#comment-33544" rel="nofollow"><time datetime="2015-05-22T19:43:37+00:00" pubdate="">2015年5月22日 at 下午7:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>great!</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33550">
+<article class="comment" id="comment-33550">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaoriqiang</a></span> on <a href="http://www.acmerblog.com/hdu-3758-factorial-simplification-6751.html#comment-33550" rel="nofollow"><time datetime="2015-05-01T22:58:42+00:00" pubdate="">2015年5月1日 at 下午10:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>afsasfasfasf</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33542">
+<article class="comment" id="comment-33542">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Miracle-cc</a></span> on <a href="http://www.acmerblog.com/hdu-3758-factorial-simplification-6751.html#comment-33542" rel="nofollow"><time datetime="2015-04-27T09:39:33+00:00" pubdate="">2015年4月27日 at 上午9:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序是对的。有些地方用了C++的写法</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33549">
+<article class="comment" id="comment-33549">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">acmer29</a></span> on <a href="http://www.acmerblog.com/hdu-3758-factorial-simplification-6751.html#comment-33549" rel="nofollow"><time datetime="2015-04-23T05:02:42+00:00" pubdate="">2015年4月23日 at 上午5:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>simple, however efficient. A lot of instances it is difficult to get that a??perfect balancea?? among usability and appearance. I must say that youa??ve done a exceptional task with this. Also, the blog masses quite fast for me on Web explore.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33552">
+<article class="comment" id="comment-33552">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangduanjing</a></span> on <a href="http://www.acmerblog.com/hdu-3758-factorial-simplification-6751.html#comment-33552" rel="nofollow"><time datetime="2015-04-20T09:42:16+00:00" pubdate="">2015年4月20日 at 上午9:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>顺利测试通过了，多谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33548">
+<article class="comment" id="comment-33548">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">_Tree</a></span> on <a href="http://www.acmerblog.com/hdu-3758-factorial-simplification-6751.html#comment-33548" rel="nofollow"><time datetime="2015-04-14T12:18:46+00:00" pubdate="">2015年4月14日 at 下午12:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一个真的要比较两次吗，换成else if 不可以吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

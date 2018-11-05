@@ -1,0 +1,475 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>04-16</div>
+<div class="tit"><h1 class="entry-title">HDU 4042-Fireworks[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观354次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7045" href="http://www.acmerblog.com/hdu-4042-fireworks-7045.html#comments" title="《HDU 4042-Fireworks[解题报告]HOJ》上的评论">23 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Fireworks</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+2008 witnessed the magnificent opening ceremony of the 29th Beijing Olympic Games. The gorgeous fireworks shows during the ceremony have left deep impressions on millions of people all over the world.
+<p>Fireworks are always used to accompany many festivities. Today, in important events and festivities, fireworks are still guaranteed sights.</p>
+<p>Recently, a new advanced device for generating fireworks is put into use. This device can precisely control the shapes and the positions and the colors of fireworks easily and arbitrarily. To use this device, we just need to set up its range of targets, as well as the appearances of fireworks. However, this kind of devices have a fatal flaw – if two or more devices have common part(s) in their ranges of targets, even just a point, it may cause some unpredictable errors, and finally result in unexpected appearances.</p>
+<p>Now here comes your task: given the target ranges of two devices, please determine whether they have common part(s).</p>
+<p>Note that the target range of a device will always be a none hole and none self-intersecting polygon on a plane, and the edges are considered as a part of the range. To simplify the problem, it’s guaranteed that interior angles of polygon will never be straight angles. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input contains multiple test cases, and the number of test cases is less than 50. <br/>Each test case begins with two integers, m and n (3 &lt;= m, n &lt;= 500), indicating the numbers of the vertices of the ranges of two devices. Then m + n lines follow. Each line contains three float numbers (no more than 1000 in absolute value) indicating the coordinates of a point in 3D space. The first m points are the vertices of the range of the first device, and the other n points are the vertices of the range of the second device. The vertices of both polygonal ranges are given in clockwise order. 
+<p>Two consecutive cases are separated by a blank line.</p>
+<p>The input ends with m = 0 and n = 0 </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input contains multiple test cases, and the number of test cases is less than 50. <br/>Each test case begins with two integers, m and n (3 &lt;= m, n &lt;= 500), indicating the numbers of the vertices of the ranges of two devices. Then m + n lines follow. Each line contains three float numbers (no more than 1000 in absolute value) indicating the coordinates of a point in 3D space. The first m points are the vertices of the range of the first device, and the other n points are the vertices of the range of the second device. The vertices of both polygonal ranges are given in clockwise order. 
+<p>Two consecutive cases are separated by a blank line.</p>
+<p>The input ends with m = 0 and n = 0</p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+4 3
+3 3 0
+7 8 0
+8 7 0
+10 0 0
+5 3 -1
+3 2 9
+1 8 7
+
+4 3
+3 3 0
+7 8 0
+8 7 0
+10 0 0
+5 5 1
+3 2 9
+1 8 7
+
+0 0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+YES
+NO</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include &lt;cstdio&gt;
+#include &lt;cmath&gt;
+#include &lt;algorithm&gt;
+using namespace std;
+
+#define db double
+#define rt return
+#define cs const
+
+cs db eps = 1e-8 , PI = acos(-1.);
+inline int sig(db x){rt (x&gt;eps)-(x&lt;-eps);}
+
+#define cp const P&amp;
+#define op operator
+
+cs int N = 511;
+
+struct P {
+    db x , y , z;
+    P(db a = 0 , db b = 0 , db c = 0):x(a),y(b),z(c){}
+    void in(){scanf("%lf%lf%lf" , &amp;x , &amp;y , &amp;z);}
+    P op+(cp a)cs{rt P(x+a.x , y+a.y , z+a.z);}
+    P op-(cp a)cs{rt P(x-a.x , y-a.y , z-a.z);}
+    P op*(cs db&amp;k)cs{rt P(x*k , y*k , z*k);}
+    P op^(cp a)cs{rt P(y*a.z-a.y*z , z*a.x-a.z*x , x*a.y-a.x*y);}
+    db op*(cp a)cs{rt x*a.x + y*a.y + z*a.z;}
+    db L(){rt sqrt(x*x + y*y + z*z);}
+    db rela(P v){rt sig(*this * v) * L();}
+    P cross(P a , P b){rt a-*this ^ b-*this;}
+    db dot(P a , P b){rt (a-*this) * (b-*this);}
+    int on_seg(P a , P b){rt cross(a,b).L() &lt; eps &amp;&amp; dot(a , b) &lt; eps;}
+};
+
+P vp1[N] , vp2[N];
+int cnt1 , cnt2;
+
+struct face {
+    P a , b , c , v;
+    void init(){v = a.cross(b , c);}
+    int side(P p){rt sig(v*(p-a));}
+    int inter_line(P p , P vec , P &amp;x) {
+        if(!sig(v*vec)) rt 0;
+        x = p + vec * (v*(a-p) / (v*vec));
+        rt 1;
+    }
+};
+
+inline db get_angle(P o , P a , P b , P v) {
+    rt atan2(o.cross(a , b).rela(v) , o.dot(a , b));
+}
+
+int read() {
+    scanf("%d%d" , &amp;cnt1 , &amp;cnt2);
+    for(int i = 0 ; i &lt; cnt1 ; i++) vp1[i].in();
+    for(int i = 0 ; i &lt; cnt2 ; i++) vp2[i].in();
+    vp1[cnt1] = vp1[0] , vp2[cnt2] = vp2[0];
+    rt cnt1 + cnt2;
+}
+
+inline int in_poly(P p , P vp[] , int n) {
+    for(int i = 0 ;i &lt; n ; i++)
+        if(p.on_seg(vp[i] , vp[i+1])) rt 1;
+    P v;
+    for(int i = 2 ; i &lt; n ; i++)
+        if(sig(vp[0].cross(vp[1] , vp[i]).L())) {
+            v = vp[0].cross(vp[1] , vp[i]);
+            break;
+        }
+    db agl = 0.;
+    for(int i = 0 ; i &lt; n ; i++)
+        agl += get_angle(p , vp[i] , vp[i+1] , v);
+    rt !sig(agl-2.*PI) || !sig(agl+2.*PI);
+}
+
+inline int seg_seg(P a , P b , P c , P d) {
+    if(sig(a.cross(b , c) * (d-a))) rt 0;
+    P v = b - a ^ d - c;
+    db t = v.L();
+    if(sig(t) == 0)
+        rt a.on_seg(c , d) || b.on_seg(c , d) || c.on_seg(a , b) || d.on_seg(a , b);
+    db u1 = c.cross(d , a).rela(v) / t , u2 = a.cross(c , b).rela(v) / t;
+    rt sig(u1*(u1-1.)) &lt;= 0 &amp;&amp; sig(u2*(u2-1.)) &lt;= 0;
+}
+
+inline int seg_face(P a , P b , P vp[] , int n) {
+    face f;
+    for(int i = 2 ; i &lt; n ; i++)
+        if(sig(vp[0].cross(vp[1] , vp[i]).L())) {
+            f.a = vp[0] , f.b = vp[1] , f.c = vp[i] , f.init();
+            break;
+        }
+    int l = f.side(a) , r = f.side(b);
+    if(l * r &gt; 0) rt 0;
+    if(l || r) {
+        P xp;
+        f.inter_line(a , b - a , xp);
+        rt in_poly(xp , vp , n);
+    }
+    for(int i = 0 ; i &lt; n ; i++)
+        if(seg_seg(a , b , vp[i] , vp[i+1])) rt 1;
+    rt in_poly(a , vp , n) || in_poly(b , vp , n);
+}
+
+inline int face_face(P vp1[] , int cn1 , P vp2[] , int cnt2) {
+    for(int i = 0 ; i &lt; cnt1 ; i++) {
+        if(seg_face(vp1[i] , vp1[i+1] , vp2 , cnt2)) rt 1;
+    }
+    rt 0;
+}
+
+inline int test_data(P vp[] , int n) {
+    int line = 1;
+    for(int i = 2 ; line &amp;&amp; i &lt; n ; i++)
+        if(sig(vp[0].cross(vp[1] , vp[i]).L())) line = 0;
+    rt !line;
+}
+
+void solve() {
+    int pic1 = test_data(vp1 , cnt1) , pic2 = test_data(vp2 , cnt2);
+    int inter = 0;
+    if(pic1 == 0 &amp;&amp; pic2 == 0) {
+        for(int i = 0 ; inter == 0 &amp;&amp; i &lt; cnt1 ; i++)
+            for(int j = 0 ; inter == 0 &amp;&amp; j &lt; cnt2 ; j++)
+                inter = seg_seg(vp1[i] , vp1[i+1] , vp2[j] , vp2[j+1]);
+    }
+    if(pic1 == 0 &amp;&amp; pic2 == 1) {
+        for(int i = 0 ; inter == 0 &amp;&amp; i &lt; cnt1 ; i++)
+            inter = seg_face(vp1[i] , vp1[i+1] , vp2 , cnt2);
+    }
+    if(pic1 == 1 &amp;&amp; pic2 == 0) {
+        for(int i = 0 ; inter == 0 &amp;&amp; i &lt; cnt2 ; i++)
+            inter = seg_face(vp2[i] , vp2[i+1] , vp1 , cnt1);
+    }
+    if(pic1 == 1 &amp;&amp; pic2 == 1) {
+        inter = face_face(vp1 , cnt1 , vp2 , cnt2) ||
+                    face_face(vp2 , cnt2 , vp1 , cnt1);
+    }
+    puts(inter ? "YES" : "NO");
+}
+
+
+int main() {
+    while(read()) {
+        solve();
+    }
+    rt 0;
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-99973">
+<article class="comment" id="comment-99973">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919462265" rel="external nofollow">新用户588839</a></span> on <a href="http://www.acmerblog.com/hdu-4042-fireworks-7045.html#comment-99973" rel="nofollow"><time datetime="2017-04-20T21:02:02+00:00" pubdate="">2017年4月20日 at 下午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>马上就结局了吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-99972">
+<article class="comment" id="comment-99972">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919462265" rel="external nofollow">新用户588839</a></span> on <a href="http://www.acmerblog.com/hdu-4042-fireworks-7045.html#comment-99972" rel="nofollow"><time datetime="2017-04-20T21:02:02+00:00" pubdate="">2017年4月20日 at 下午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>马上就结局了吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-99971">
+<article class="comment" id="comment-99971">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919462265" rel="external nofollow">新用户588839</a></span> on <a href="http://www.acmerblog.com/hdu-4042-fireworks-7045.html#comment-99971" rel="nofollow"><time datetime="2017-04-20T21:02:02+00:00" pubdate="">2017年4月20日 at 下午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>马上就结局了吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-99970">
+<article class="comment" id="comment-99970">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919462265" rel="external nofollow">新用户588839</a></span> on <a href="http://www.acmerblog.com/hdu-4042-fireworks-7045.html#comment-99970" rel="nofollow"><time datetime="2017-04-20T21:02:02+00:00" pubdate="">2017年4月20日 at 下午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>马上就结局了吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-99969">
+<article class="comment" id="comment-99969">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919462265" rel="external nofollow">新用户588839</a></span> on <a href="http://www.acmerblog.com/hdu-4042-fireworks-7045.html#comment-99969" rel="nofollow"><time datetime="2017-04-20T21:02:02+00:00" pubdate="">2017年4月20日 at 下午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>马上就结局了吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-99968">
+<article class="comment" id="comment-99968">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919462265" rel="external nofollow">新用户588839</a></span> on <a href="http://www.acmerblog.com/hdu-4042-fireworks-7045.html#comment-99968" rel="nofollow"><time datetime="2017-04-20T21:02:02+00:00" pubdate="">2017年4月20日 at 下午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>马上就结局了吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-99967">
+<article class="comment" id="comment-99967">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919462265" rel="external nofollow">新用户588839</a></span> on <a href="http://www.acmerblog.com/hdu-4042-fireworks-7045.html#comment-99967" rel="nofollow"><time datetime="2017-04-20T21:02:02+00:00" pubdate="">2017年4月20日 at 下午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>马上就结局了吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-99966">
+<article class="comment" id="comment-99966">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919462265" rel="external nofollow">新用户588839</a></span> on <a href="http://www.acmerblog.com/hdu-4042-fireworks-7045.html#comment-99966" rel="nofollow"><time datetime="2017-04-20T21:02:02+00:00" pubdate="">2017年4月20日 at 下午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>马上就结局了吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-99965">
+<article class="comment" id="comment-99965">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919462265" rel="external nofollow">新用户588839</a></span> on <a href="http://www.acmerblog.com/hdu-4042-fireworks-7045.html#comment-99965" rel="nofollow"><time datetime="2017-04-20T21:02:02+00:00" pubdate="">2017年4月20日 at 下午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>马上就结局了吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51973">
+<article class="comment" id="comment-51973">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hunangangli</a></span> on <a href="http://www.acmerblog.com/hdu-4042-fireworks-7045.html#comment-51973" rel="nofollow"><time datetime="2015-07-13T05:15:24+00:00" pubdate="">2015年7月13日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51976">
+<article class="comment" id="comment-51976">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">room306</a></span> on <a href="http://www.acmerblog.com/hdu-4042-fireworks-7045.html#comment-51976" rel="nofollow"><time datetime="2015-07-08T02:10:05+00:00" pubdate="">2015年7月8日 at 上午2:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一个数表示数列的个数，5表示之后有5个数</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51975">
+<article class="comment" id="comment-51975">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">starcuan</a></span> on <a href="http://www.acmerblog.com/hdu-4042-fireworks-7045.html#comment-51975" rel="nofollow"><time datetime="2015-06-28T23:31:12+00:00" pubdate="">2015年6月28日 at 下午11:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>哎，path[0]应该是从零开始吧，为什么是赋值1呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35527">
+<article class="comment" id="comment-35527">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiaoliubuer</a></span> on <a href="http://www.acmerblog.com/hdu-4042-fireworks-7045.html#comment-35527" rel="nofollow"><time datetime="2015-06-22T05:58:02+00:00" pubdate="">2015年6月22日 at 上午5:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实不需要用LCA，用DFS+vector更简单</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35526">
+<article class="comment" id="comment-35526">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">didiaozuoren</a></span> on <a href="http://www.acmerblog.com/hdu-4042-fireworks-7045.html#comment-35526" rel="nofollow"><time datetime="2015-06-16T10:14:21+00:00" pubdate="">2015年6月16日 at 上午10:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真心不错，力顶作者</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51972">
+<article class="comment" id="comment-51972">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">AE</a></span> on <a href="http://www.acmerblog.com/hdu-4042-fireworks-7045.html#comment-51972" rel="nofollow"><time datetime="2015-06-09T14:34:42+00:00" pubdate="">2015年6月9日 at 下午2:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>漏了一个"不"，已修正:)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35520">
+<article class="comment" id="comment-35520">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jupiterhyun</a></span> on <a href="http://www.acmerblog.com/hdu-4042-fireworks-7045.html#comment-35520" rel="nofollow"><time datetime="2015-06-05T08:13:00+00:00" pubdate="">2015年6月5日 at 上午8:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>分析的很详细！赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35523">
+<article class="comment" id="comment-35523">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">21435048</a></span> on <a href="http://www.acmerblog.com/hdu-4042-fireworks-7045.html#comment-35523" rel="nofollow"><time datetime="2015-05-15T21:56:45+00:00" pubdate="">2015年5月15日 at 下午9:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>加了星号 (*) 表示跳过此数据不读入. 因为scanf是不读取本行回车的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35524">
+<article class="comment" id="comment-35524">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1173954900</a></span> on <a href="http://www.acmerblog.com/hdu-4042-fireworks-7045.html#comment-35524" rel="nofollow"><time datetime="2015-05-11T17:21:53+00:00" pubdate="">2015年5月11日 at 下午5:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这配图…..</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51971">
+<article class="comment" id="comment-51971">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Dick</a></span> on <a href="http://www.acmerblog.com/hdu-4042-fireworks-7045.html#comment-51971" rel="nofollow"><time datetime="2015-05-06T10:23:31+00:00" pubdate="">2015年5月6日 at 上午10:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个方法是错的，不信你试试：<br/>
+20 5<br/>
+1 A:9<br/>
+1 A:9<br/>
+1 A:9<br/>
+1 A:6<br/>
+1 A:4<br/>
+正确答案应该是19，这个答案是18</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35525">
+<article class="comment" id="comment-35525">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Happiness</a></span> on <a href="http://www.acmerblog.com/hdu-4042-fireworks-7045.html#comment-35525" rel="nofollow"><time datetime="2015-05-01T21:58:26+00:00" pubdate="">2015年5月1日 at 下午9:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>為甚麼fln*20+0.5f</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51974">
+<article class="comment" id="comment-51974">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiao597896577</a></span> on <a href="http://www.acmerblog.com/hdu-4042-fireworks-7045.html#comment-51974" rel="nofollow"><time datetime="2015-04-29T01:42:22+00:00" pubdate="">2015年4月29日 at 上午1:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35522">
+<article class="comment" id="comment-35522">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xuelanghu</a></span> on <a href="http://www.acmerblog.com/hdu-4042-fireworks-7045.html#comment-35522" rel="nofollow"><time datetime="2015-04-20T22:17:12+00:00" pubdate="">2015年4月20日 at 下午10:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>漂亮。佩服。<br/>
+P.S.  unsigned 应该去掉。换行符是n 不是/n<br/>
+还可以稍微优化一下，<br/>
+int main() {<br/>
+	int m,n,ai,aj,bi,bj,ak,bk;<br/>
+	while (scanf("%d%d",&amp;m,&amp;n)!=EOF) {<br/>
+		ai = sqrt(m-1);<br/>
+		bi = sqrt(n-1);<br/>
+		aj = (m-ai*ai-1)&gt;&gt;1;<br/>
+		bj = (n-bi*bi-1)&gt;&gt;1;<br/>
+		ak = ((ai+1)*(ai+1)-m)&gt;&gt;1;<br/>
+		bk = ((bi+1)*(bi+1)-n)&gt;&gt;1;<br/>
+		printf("%dn",abs(ai-bi)+abs(aj-bj)+abs(ak-bk));<br/>
+	}<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35521">
+<article class="comment" id="comment-35521">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">feifei003603</a></span> on <a href="http://www.acmerblog.com/hdu-4042-fireworks-7045.html#comment-35521" rel="nofollow"><time datetime="2015-04-20T14:29:14+00:00" pubdate="">2015年4月20日 at 下午2:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>C语言版本的代码好像有点问题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

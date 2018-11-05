@@ -1,0 +1,299 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>11-19</div>
+<div class="tit"><h1 class="entry-title">LeetCode-Surrounded Regions[BFS]</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/bfs" rel="category tag" title="查看BFS搜索中的全部文章">BFS搜索</a></span><span class="i4">围观487次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6330" href="http://www.acmerblog.com/leetcode-solution-surrounded-regions-6330.html#comments" title="《LeetCode-Surrounded Regions[BFS]》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<h3><strong>Surrounded Regions</strong></h3>
+<div class="question-content">
+<p>
+Given a 2D board containing <code>'X'</code> and <code>'O'</code>, capture all regions surrounded by <code>'X'</code>.</p>
+<p>A region is captured by flipping all <code>'O'</code>s into <code>'X'</code>s in that surrounded region.
+</p>
+<p>
+For example,
+</p>
+<pre>
+X X X X
+X O O X
+X X O X
+X O X X
+</pre>
+<p>
+After running your function, the board should be:
+</p>
+<pre>
+X X X X
+X X X X
+X X X X
+X O X X
+</pre>
+</div>
+<p> 标签: Breadth-first Search<br/>
+<strong>分析</strong>
+</p><p>广搜。从上下左右四个边界往里走，凡是能碰到的{‘O’}，都是跟边界接壤的，应该保留。</p>
+<p>代码1
+</p><pre class="brush:cpp">
+// LeetCode, Surrounded Regions
+// BFS，时间复杂度O(n)，空间复杂度O(n)
+class Solution {
+public:
+    void solve(vector&lt;vector&lt;char&gt;&gt; &amp;board) {
+        if (board.empty()) return;
+
+        const int m = board.size();
+        const int n = board[0].size();
+        for (int i = 0; i &lt; n; i++) {
+            bfs(board, 0, i);
+            bfs(board, m - 1, i);
+        }
+        for (int j = 1; j &lt; m - 1; j++) {
+            bfs(board, j, 0);
+            bfs(board, j, n - 1);
+        }
+        for (int i = 0; i &lt; m; i++)
+            for (int j = 0; j &lt; n; j++)
+                if (board[i][j] == 'O')
+                    board[i][j] = 'X';
+                else if (board[i][j] == '+')
+                    board[i][j] = 'O';
+    }
+private:
+    void bfs(vector&lt;vector&lt;char&gt;&gt; &amp;board, int i, int j) {
+        typedef pair&lt;int, int&gt; state_t;
+        queue&lt;state_t&gt; q;
+        const int m = board.size();
+        const int n = board[0].size();
+
+        auto is_valid = [&amp;](const state_t &amp;s) {
+            const int x = s.first;
+            const int y = s.second;
+            if (x &lt; 0 || x &gt;= m || y &lt; 0 || y &gt;= n || board[x][y] != 'O')
+                return false;
+            return true;
+        };
+
+        auto state_extend = [&amp;](const state_t &amp;s) {
+            vector&lt;state_t&gt; result;
+            const int x = s.first;
+            const int y = s.second;
+            // 上下左右
+            const state_t new_states[4] = {{x-1,y}, {x+1,y},
+                    {x,y-1}, {x,y+1}};
+            for (int k = 0; k &lt; 4;  ++k) {
+                if (is_valid(new_states[k])) {
+                    // 既有标记功能又有去重功能
+                    board[new_states[k].first][new_states[k].second] = '+';
+                    result.push_back(new_states[k]);
+                }
+            }
+
+            return result;
+        };
+
+        state_t start = { i, j };
+        if (is_valid(start)) {
+            board[i][j] = '+';
+            q.push(start);
+        }
+        while (!q.empty()) {
+            auto cur = q.front();
+            q.pop();
+            auto new_states = state_extend(cur);
+            for (auto s : new_states) q.push(s);
+        }
+    }
+};
+</pre>
+<p>Java代码:
+</p><pre class="brush:java">class Solution:
+    # @param board, a 2D array
+    # Capture all regions by modifying the input board in-place.
+    # Do not return any value.
+    def solve(self, board):
+        m = len(board)
+        if m == 0 or board is None:
+            return
+        n = len(board[0])
+        dir = ((1,0),(-1,0),(0,1),(0,-1))
+
+        visited = [False]*(n*m)
+        for i in range(m):
+            for j in range(n):
+                if board[i][j] == 'O' and visited[int(i*n + j)] is False:
+                    surrounded = True
+                    stack = [i*n + j] #用栈或队列并无太大区别
+                    visitedOs = [i*n + j]
+                    visited[i*n+j] = True
+                    while len(stack) &gt; 0:
+                        point = int(stack.pop())
+                        x = int(point/n)
+                        y = int(point%n)
+                        for k in range(4):
+                            nextx = x + dir[k][0]
+                            nexty = y + dir[k][1]
+                            if 0 &lt;= nexty &lt; n and 0 &lt;= nextx &lt; m:
+                                if board[nextx][nexty] == 'O' and visited[int(nextx*n + nexty)] is False:
+                                    stack.append(nextx*n + nexty)
+                                    visited[int(nextx*n + nexty)] = True
+                                    visitedOs.append(int(nextx*n + nexty))
+                            else:
+                                surrounded = False
+                    if surrounded:
+                        for p in visitedOs:
+                            board[int(p/n)][int(p%n)] = 'X'</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-64555">
+<article class="comment" id="comment-64555">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">Andy</span> on <a href="http://www.acmerblog.com/leetcode-solution-surrounded-regions-6330.html#comment-64555" rel="nofollow"><time datetime="2016-03-04T15:51:15+00:00" pubdate="">2016年3月4日 at 下午3:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>c++ 里面的for (int j = 1; j &lt; m – 1; j++)应该改成for (int j = 0; j &lt; m; j++) </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-32065">
+<article class="comment" id="comment-32065">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sum_tsai</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-surrounded-regions-6330.html#comment-32065" rel="nofollow"><time datetime="2015-07-12T11:38:12+00:00" pubdate="">2015年7月12日 at 上午11:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>补充：此算法求出的不一定是最优解，之前理解错了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50325">
+<article class="comment" id="comment-50325">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">nsoi_onion</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-surrounded-regions-6330.html#comment-50325" rel="nofollow"><time datetime="2015-06-25T15:25:58+00:00" pubdate="">2015年6月25日 at 下午3:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的方法，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50326">
+<article class="comment" id="comment-50326">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Tree</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-surrounded-regions-6330.html#comment-50326" rel="nofollow"><time datetime="2015-06-15T16:55:46+00:00" pubdate="">2015年6月15日 at 下午4:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>通不过。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50327">
+<article class="comment" id="comment-50327">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Emlar</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-surrounded-regions-6330.html#comment-50327" rel="nofollow"><time datetime="2015-05-11T19:09:27+00:00" pubdate="">2015年5月11日 at 下午7:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>非常不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-32063">
+<article class="comment" id="comment-32063">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jamoeba</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-surrounded-regions-6330.html#comment-32063" rel="nofollow"><time datetime="2015-04-08T05:11:43+00:00" pubdate="">2015年4月8日 at 上午5:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>失误失误，转载错了。已经改正，抱歉。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-32060">
+<article class="comment" id="comment-32060">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zcmu_sls</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-surrounded-regions-6330.html#comment-32060" rel="nofollow"><time datetime="2015-04-03T16:33:31+00:00" pubdate="">2015年4月3日 at 下午4:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>秒！~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-32062">
+<article class="comment" id="comment-32062">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lanifer</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-surrounded-regions-6330.html#comment-32062" rel="nofollow"><time datetime="2015-03-20T14:52:43+00:00" pubdate="">2015年3月20日 at 下午2:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这代码的输出格式不对阿，else语句的low=p移动一下位置，增加可读性</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-32059">
+<article class="comment" id="comment-32059">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">qq1005873807</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-surrounded-regions-6330.html#comment-32059" rel="nofollow"><time datetime="2015-03-18T03:49:02+00:00" pubdate="">2015年3月18日 at 上午3:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>mark, 备用</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-32061">
+<article class="comment" id="comment-32061">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">BGPY243956</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-surrounded-regions-6330.html#comment-32061" rel="nofollow"><time datetime="2015-03-05T07:08:26+00:00" pubdate="">2015年3月5日 at 上午7:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>思考人生吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-32058">
+<article class="comment" id="comment-32058">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">lintong</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-surrounded-regions-6330.html#comment-32058" rel="nofollow"><time datetime="2015-02-11T10:51:13+00:00" pubdate="">2015年2月11日 at 上午10:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-32064">
+<article class="comment" id="comment-32064">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Silence.L</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-surrounded-regions-6330.html#comment-32064" rel="nofollow"><time datetime="2015-02-09T17:22:36+00:00" pubdate="">2015年2月9日 at 下午5:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已修正</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50323">
+<article class="comment" id="comment-50323">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bobo</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-surrounded-regions-6330.html#comment-50323" rel="nofollow"><time datetime="2015-01-29T03:08:08+00:00" pubdate="">2015年1月29日 at 上午3:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#pragma pack(2) 这个用法太坑爹</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50324">
+<article class="comment" id="comment-50324">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gnipuohz</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-surrounded-regions-6330.html#comment-50324" rel="nofollow"><time datetime="2014-12-16T14:36:47+00:00" pubdate="">2014年12月16日 at 下午2:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>int L[m+1][n+1];这样定义出错，这个在gcc上可以编译通过  在VS上不行 应该改为new 或者vector</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,461 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-01</div>
+<div class="tit"><h1 class="entry-title">HDU 3085-Nightmare Ⅱ-BFS-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/bfs" rel="category tag" title="查看BFS搜索中的全部文章">BFS搜索</a>, <a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/search" rel="category tag" title="查看搜索中的全部文章">搜索</a></span><span class="i4">围观774次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4865" href="http://www.acmerblog.com/hdu-3085-nightmare-4865.html#comments" title="《HDU 3085-Nightmare Ⅱ-BFS-[解题报告]HOJ》上的评论">25 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Nightmare Ⅱ</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Last night, little erriyue had a horrible nightmare. He dreamed that he and his girl friend were trapped in a big maze separately. More terribly, there are two ghosts in the maze. They will kill the people. Now little erriyue wants to know if he could find his girl friend before the ghosts find them.<br/>You may suppose that little erriyue and his girl friend can move in 4 directions. In each second, little erriyue can move 3 steps and his girl friend can move 1 step. The ghosts are evil, every second they will divide into several parts to occupy the grids within 2 steps to them until they occupy the whole maze. You can suppose that at every second the ghosts divide firstly then the little erriyue and his girl friend start to move, and if little erriyue or his girl friend arrive at a grid with a ghost, they will die.<br/>Note: the new ghosts also can devide as the original ghost. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input starts with an integer T, means the number of test cases.<br/>Each test case starts with a line contains two integers n and m, means the size of the maze. (1&lt;n, m&lt;800)<br/>The next n lines describe the maze. Each line contains m characters. The characters may be:<br/>‘.’ denotes an empty place, all can walk on.<br/>‘X’ denotes a wall, only people can’t walk on.<br/>‘M’ denotes little erriyue<br/>‘G’ denotes the girl friend.<br/>‘Z’ denotes the ghosts.<br/>It is guaranteed that will contain exactly one letter M, one letter G and two letters Z.  </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input starts with an integer T, means the number of test cases.<br/>Each test case starts with a line contains two integers n and m, means the size of the maze. (1&lt;n, m&lt;800)<br/>The next n lines describe the maze. Each line contains m characters. The characters may be:<br/>‘.’ denotes an empty place, all can walk on.<br/>‘X’ denotes a wall, only people can’t walk on.<br/>‘M’ denotes little erriyue<br/>‘G’ denotes the girl friend.<br/>‘Z’ denotes the ghosts.<br/>It is guaranteed that will contain exactly one letter M, one letter G and two letters Z. </div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3
+5 6
+XXXXXX
+XZ..ZX
+XXXXXX
+M.G...
+......
+5 6
+XXXXXX
+XZZ..X
+XXXXXX
+M.....
+..G...
+
+10 10
+..........
+..X.......
+..M.X...X.
+X.........
+.X..X.X.X.
+.........X
+..XX....X.
+X....G...X
+...ZX.X...
+...Z..X..X</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+1
+-1</pre>
+<p> <!-- problem end --></p>
+<p>有个地方要注意，代码中有注释。</p>
+<p>AC代码如下：</p>
+<pre class="brush:cpp ">#include &lt;iostream&gt;
+#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+#include &lt;string&gt;
+#include &lt;queue&gt;
+#include &lt;cmath&gt;
+using namespace std;
+
+int N, M;
+bool visit[2][801][801];
+int maps[801][801];
+int gx, gy, mx, my;
+int z[2][2];
+int step;
+int moves[4][2] = { 1, 0, -1, 0, 0, 1, 0, -1 };
+queue&lt; pair&lt;int,int&gt; &gt; q[2];
+
+bool judge( int x, int y ){
+    if( x &gt;= 0 &amp;&amp; x &lt; N &amp;&amp; y &gt;= 0 &amp;&amp; y &lt; M &amp;&amp; maps[x][y] != 0 ){
+        for( int i = 0; i &lt; 2; i++ ){
+            if( abs( ( x - z[i][0] ) ) + abs( y - z[i][1] ) &lt;= 2 * step ){//这里不要把x-z[i][0]变成double 不然会超时
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+bool BFS( int num ){
+    int size = q[num].size();
+
+    while( size-- ){
+        int x = q[num].front().first;
+        int y = q[num].front().second;
+        q[num].pop();
+        if( !judge( x, y ) ){
+            continue;
+        }
+        for( int i = 0; i &lt; 4; i++ ){
+            int xx = x + moves[i][0];
+            int yy = y +  moves[i][1];
+            if( judge( xx, yy ) ){
+                if( visit[num][xx][yy] ){
+                    continue;
+                }
+                if( visit[num^1][xx][yy] ){
+                    return true;
+                }
+                visit[num][xx][yy] = true;
+                q[num].push( make_pair( xx, yy ) );
+            }
+        }
+    }
+    return false;
+}
+
+int solve(){
+    while( !q[0].empty() ){
+        q[0].pop();
+    }
+    while( !q[1].empty() ){
+        q[1].pop();
+    }
+    q[0].push( make_pair( mx, my ) );
+    q[1].push( make_pair( gx, gy ) );
+    visit[0][mx][my] = visit[1][gx][gy] = true;
+    step = 0;
+
+    while( !q[0].empty() || !q[1].empty() ){
+        step++;
+        if( BFS( 0 ) ) return step;
+        if( BFS( 0 ) ) return step;
+        if( BFS( 0 ) ) return step;
+        if( BFS( 1 ) ) return step;
+    }
+    return -1;
+}
+
+int main(){
+    int Case;
+    string s;
+
+    cin &gt;&gt; Case;
+    while( Case-- ){
+        cin &gt;&gt; N &gt;&gt; M;
+        int temp = 0;
+        for( int i = 0; i &lt; N; i++ ){
+            cin &gt;&gt; s;
+            for( int j = 0; j &lt; M; j++ ){
+                if( s[j] == 'X' ){
+                    maps[i][j] = 0;
+                }else if( s[j] == 'Z' ){
+                    maps[i][j] = 0;
+                    z[temp][0] = i;
+                    z[temp++][1] = j;
+                }else if( s[j] == '.' ){
+                    maps[i][j] = 1;
+                }else if( s[j] == 'M' ){
+                    mx = i;
+                    my = j;
+                    maps[i][j] = 1;
+                }else{
+                    gx = i;
+                    gy = j;
+                    maps[i][j] = 1;
+                }
+            }
+        }
+        memset( visit, false, sizeof( visit ) );
+
+        cout &lt;&lt; solve() &lt;&lt; endl;
+    }
+    return 0;
+}</pre>
+<p>
+ </p>
+<p>参考：http://blog.csdn.net/hzh_0000/article/details/11674991</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-79290">
+<article class="comment" id="comment-79290">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512955" rel="external nofollow">新用户960012</a></span> on <a href="http://www.acmerblog.com/hdu-3085-nightmare-4865.html#comment-79290" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>重量级差这么多，在不顾别人的颜面时，先考虑以下自己脆弱的生命吧。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79289">
+<article class="comment" id="comment-79289">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512955" rel="external nofollow">新用户960012</a></span> on <a href="http://www.acmerblog.com/hdu-3085-nightmare-4865.html#comment-79289" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>重量级差这么多，在不顾别人的颜面时，先考虑以下自己脆弱的生命吧。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79288">
+<article class="comment" id="comment-79288">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512955" rel="external nofollow">新用户960012</a></span> on <a href="http://www.acmerblog.com/hdu-3085-nightmare-4865.html#comment-79288" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>重量级差这么多，在不顾别人的颜面时，先考虑以下自己脆弱的生命吧。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79287">
+<article class="comment" id="comment-79287">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512955" rel="external nofollow">新用户960012</a></span> on <a href="http://www.acmerblog.com/hdu-3085-nightmare-4865.html#comment-79287" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>重量级差这么多，在不顾别人的颜面时，先考虑以下自己脆弱的生命吧。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79286">
+<article class="comment" id="comment-79286">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512955" rel="external nofollow">新用户960012</a></span> on <a href="http://www.acmerblog.com/hdu-3085-nightmare-4865.html#comment-79286" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>重量级差这么多，在不顾别人的颜面时，先考虑以下自己脆弱的生命吧。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79285">
+<article class="comment" id="comment-79285">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512955" rel="external nofollow">新用户960012</a></span> on <a href="http://www.acmerblog.com/hdu-3085-nightmare-4865.html#comment-79285" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>重量级差这么多，在不顾别人的颜面时，先考虑以下自己脆弱的生命吧。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79284">
+<article class="comment" id="comment-79284">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512955" rel="external nofollow">新用户960012</a></span> on <a href="http://www.acmerblog.com/hdu-3085-nightmare-4865.html#comment-79284" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>重量级差这么多，在不顾别人的颜面时，先考虑以下自己脆弱的生命吧。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79283">
+<article class="comment" id="comment-79283">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512955" rel="external nofollow">新用户960012</a></span> on <a href="http://www.acmerblog.com/hdu-3085-nightmare-4865.html#comment-79283" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>重量级差这么多，在不顾别人的颜面时，先考虑以下自己脆弱的生命吧。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79282">
+<article class="comment" id="comment-79282">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512955" rel="external nofollow">新用户960012</a></span> on <a href="http://www.acmerblog.com/hdu-3085-nightmare-4865.html#comment-79282" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>重量级差这么多，在不顾别人的颜面时，先考虑以下自己脆弱的生命吧。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79281">
+<article class="comment" id="comment-79281">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512955" rel="external nofollow">新用户960012</a></span> on <a href="http://www.acmerblog.com/hdu-3085-nightmare-4865.html#comment-79281" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>重量级差这么多，在不顾别人的颜面时，先考虑以下自己脆弱的生命吧。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79280">
+<article class="comment" id="comment-79280">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512955" rel="external nofollow">新用户960012</a></span> on <a href="http://www.acmerblog.com/hdu-3085-nightmare-4865.html#comment-79280" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>重量级差这么多，在不顾别人的颜面时，先考虑以下自己脆弱的生命吧。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79279">
+<article class="comment" id="comment-79279">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512955" rel="external nofollow">新用户960012</a></span> on <a href="http://www.acmerblog.com/hdu-3085-nightmare-4865.html#comment-79279" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>重量级差这么多，在不顾别人的颜面时，先考虑以下自己脆弱的生命吧。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79278">
+<article class="comment" id="comment-79278">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512955" rel="external nofollow">新用户960012</a></span> on <a href="http://www.acmerblog.com/hdu-3085-nightmare-4865.html#comment-79278" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>重量级差这么多，在不顾别人的颜面时，先考虑以下自己脆弱的生命吧。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-47678">
+<article class="comment" id="comment-47678">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rtaxa</a></span> on <a href="http://www.acmerblog.com/hdu-3085-nightmare-4865.html#comment-47678" rel="nofollow"><time datetime="2015-04-28T02:47:09+00:00" pubdate="">2015年4月28日 at 上午2:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不是有公式吗？何不直接计算</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47675">
+<article class="comment" id="comment-47675">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ygxqqx</a></span> on <a href="http://www.acmerblog.com/hdu-3085-nightmare-4865.html#comment-47675" rel="nofollow"><time datetime="2015-04-27T09:17:58+00:00" pubdate="">2015年4月27日 at 上午9:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的题，还是能做出几道的，嘿嘿</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63124">
+<article class="comment" id="comment-63124">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jlucky</a></span> on <a href="http://www.acmerblog.com/hdu-3085-nightmare-4865.html#comment-63124" rel="nofollow"><time datetime="2015-04-03T00:09:45+00:00" pubdate="">2015年4月3日 at 上午12:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>请不要灌水，多谢！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-26991">
+<article class="comment" id="comment-26991">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hsp_77_abc</a></span> on <a href="http://www.acmerblog.com/hdu-3085-nightmare-4865.html#comment-26991" rel="nofollow"><time datetime="2015-04-01T23:48:01+00:00" pubdate="">2015年4月1日 at 下午11:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>int half(int *array,int len,int key)<br/>
+{<br/>
+    int l=0,r=len;<br/>
+    while(l&lt;r)<br/>
+    {<br/>
+        int m=(l+r)&gt;&gt;1;<br/>
+        if(key&gt;array <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/98/weibom_org.gif"/> )l=m+1;<br/>
+        else if(key&lt;array <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/98/weibom_org.gif"/> )r=m;<br/>
+        else return m;<br/>
+    }<br/>
+    return -1;<br/>
+}<br/>
+这种就能避免一些Bug<br/>
+l,m,r<br/>
+左边是l,m;右边就是m+1,r;</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63127">
+<article class="comment" id="comment-63127">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Rocky</a></span> on <a href="http://www.acmerblog.com/hdu-3085-nightmare-4865.html#comment-63127" rel="nofollow"><time datetime="2015-03-19T07:31:40+00:00" pubdate="">2015年3月19日 at 上午7:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是什么鬼，怎么多头文件</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63128">
+<article class="comment" id="comment-63128">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">siaswj</a></span> on <a href="http://www.acmerblog.com/hdu-3085-nightmare-4865.html#comment-63128" rel="nofollow"><time datetime="2015-01-10T06:30:44+00:00" pubdate="">2015年1月10日 at 上午6:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>代码是给出了，但是解析的也太不清晰了吧！如 13 abejkcfghid jkebfghicda<br/>
+第一步拆分为 三部分 (bejk, cfghi, d) * C(13,3)，为什么要这样拆分，原则是什么？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-47673">
+<article class="comment" id="comment-47673">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Snarl_jsb</a></span> on <a href="http://www.acmerblog.com/hdu-3085-nightmare-4865.html#comment-47673" rel="nofollow"><time datetime="2014-12-20T03:54:32+00:00" pubdate="">2014年12月20日 at 上午3:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>使用ListNodeWrapper很蹩脚的感觉，没有更好的解决办法？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63126">
+<article class="comment" id="comment-63126">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">AcmDream</a></span> on <a href="http://www.acmerblog.com/hdu-3085-nightmare-4865.html#comment-63126" rel="nofollow"><time datetime="2014-11-01T02:54:18+00:00" pubdate="">2014年11月1日 at 上午2:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感谢分享 学习了`(*∩_∩*)′</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63125">
+<article class="comment" id="comment-63125">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">liuyuedeyu</a></span> on <a href="http://www.acmerblog.com/hdu-3085-nightmare-4865.html#comment-63125" rel="nofollow"><time datetime="2014-10-03T12:48:16+00:00" pubdate="">2014年10月3日 at 下午12:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很强大啊，佩服</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47674">
+<article class="comment" id="comment-47674">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">JcZ</a></span> on <a href="http://www.acmerblog.com/hdu-3085-nightmare-4865.html#comment-47674" rel="nofollow"><time datetime="2014-07-26T23:00:43+00:00" pubdate="">2014年7月26日 at 下午11:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>great!</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-47676">
+<article class="comment" id="comment-47676">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">spiderMan</a></span> on <a href="http://www.acmerblog.com/hdu-3085-nightmare-4865.html#comment-47676" rel="nofollow"><time datetime="2014-06-06T19:07:36+00:00" pubdate="">2014年6月6日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>厉害，支持</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47677">
+<article class="comment" id="comment-47677">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">winter</a></span> on <a href="http://www.acmerblog.com/hdu-3085-nightmare-4865.html#comment-47677" rel="nofollow"><time datetime="2014-03-10T15:32:58+00:00" pubdate="">2014年3月10日 at 下午3:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么for循环找到的i一定是素数叻，而且约数定理说的是n=p1^a1*p2^a2*p3^a3*…*pk^ak，而你每次取余都用的是原来的m，也就是n</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,901 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>09-18</div>
+<div class="tit"><h1 class="entry-title">HDU 4797-Graph Reconstruction[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观77次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7842" href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comments" title="《HDU 4797-Graph Reconstruction[解题报告]HOJ》上的评论">71 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p></p><center><span class="bigProblemTitle">Graph Reconstruction</span></center><br/>
+<hr/><center><span style="color: green;">Time Limit: </span>2 Seconds      <span style="color: green;">Memory Limit: </span>65536 KB      <span style="color: blue;">Special Judge</span></center><br/>
+<hr/>
+<p>Let there be a simple graph with <var>N</var> vertices but we just know the degree of each vertex. Is it possible to reconstruct the graph only by these information?</p>
+<p>A simple graph is an undirected graph that has no loops (edges connected at both ends to the same vertex) and no more than one edge between any two different vertices. The degree of a vertex is the number of edges that connect to it.</p>
+<h4>Input</h4>
+<p>There are multiple cases. Each case contains two lines. The first line contains one integer <var>N</var> (2 ≤ <var>N</var> ≤ 100), the number of vertices in the graph. The second line conrains <var>N</var> integers in which the i<sub>th</sub> item is the degree of i<sub>th</sub> vertex and each degree is between 0 and <var>N-1</var>(inclusive).</p>
+<h4>Output</h4>
+<p>If the graph can be uniquely determined by the vertex degree information, output “UNIQUE” in the first line. Then output the graph.</p>
+<p>If there are two or more different graphs can induce the same degree for all vertices, output “MULTIPLE” in the first line. Then output two different graphs in the following lines to proof.</p>
+<p>If the vertex degree sequence cannot deduced any graph, just output “IMPOSSIBLE”.</p>
+<p>The output format of graph is as follows:</p>
+<pre>N E
+u</pre>
+<p><sub>1</sub></p>
+<pre> u</pre>
+<p><sub>2</sub></p>
+<pre> ... u</pre>
+<p><sub>E</sub></p>
+<pre>v</pre>
+<p><sub>1</sub></p>
+<pre> v</pre>
+<p><sub>2</sub></p>
+<pre> ... v</pre>
+<p><sub>E</sub>Where <var>N</var> is the number of vertices and <var>E</var> is the number of edges, and {u<sub>i</sub>,v<sub>i</sub>} is the i<sub>th</sub> edge the the graph. The order of edges and the order of vertices in the edge representation is not important since we would use special judge to verify your answer. The number of each vertex is labeled from 1 to N. See sample output for more detail.</p>
+<h4>Sample Input</h4>
+<pre>1
+0
+6
+5 5 5 4 4 3
+6
+5 4 4 4 4 3
+6
+3 4 3 1 2 0
+</pre>
+<h4>Sample Output</h4>
+<pre>UNIQUE
+1 0
+
+
+UNIQUE
+6 13
+3 3 3 3 3 2 2 2 2 1 1 1 5
+2 1 5 4 6 1 5 4 6 5 4 6 4
+MULTIPLE
+6 12
+1 1 1 1 1 5 5 5 6 6 2 2
+5 4 3 2 6 4 3 2 4 3 4 3
+6 12
+1 1 1 1 1 5 5 5 6 6 3 3
+5 4 3 2 6 4 3 2 4 2 4 2
+IMPOSSIBLE<br/><br/>思路:这是一道坑题.......坑在格式的就不说了,可以原谅oj.如果hdu4797交不过,去zoj3732就能过了,(因为不能specail judge纯oj问题).<br/><br/></pre>
+<div class="cnblogs_Highlighter">
+<pre class="brush:cpp;gutter:true;">#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+#include &lt;algorithm&gt;
+using namespace std;
+const int maxn=111;
+int sum,n;
+typedef pair&lt;int ,int &gt; P;
+P deg[maxn];
+P tmpdeg[maxn];
+int ash1[maxn*maxn*2],ash2[maxn*maxn*2],alen;
+
+bool cmp(P A,P B)
+{
+   if(A.first==B.first) return A.second&lt;B.second;
+    return A.first&gt;B.first;
+}
+void prints(){
+    printf("%d %d\n",n,sum&gt;&gt;1);
+
+    if(alen&gt;0)printf("%d",ash1[0]);
+    for(int i=1;i&lt;alen;i++){
+        printf(" %d",ash1[i]);
+    }
+    puts("");
+    if(alen&gt;0)printf("%d",ash2[0]);
+    for(int i=1;i&lt;alen;i++){
+        printf(" %d",ash2[i]);
+    }
+    puts("");
+}
+
+void cpy(){
+    for(int i=0;i&lt;n;i++)tmpdeg[i]=deg[i];
+    sort(tmpdeg,tmpdeg+n,cmp);
+}
+
+bool single;
+bool rebuild(){
+    cpy();
+    alen=0;
+    single=true;
+    for(;tmpdeg[0].first&gt;0;){
+        int amount=0;
+        for(int j=1;j&lt;n;j++){
+            if(tmpdeg[j].first&gt;0){
+                amount++;
+            }
+        }
+        if(amount&lt;tmpdeg[0].first)return false;
+        if(single&amp;&amp;(tmpdeg[tmpdeg[0].first].first)==(tmpdeg[tmpdeg[0].first+1].first)&amp;&amp;tmpdeg[0].first+1&lt;n){
+                single=false;
+        }
+        for(int j=1;j&lt;=tmpdeg[0].first;j++){
+            tmpdeg[j].first--;
+            ash1[alen]=tmpdeg[0].second;
+            ash2[alen++]=tmpdeg[j].second;
+        }
+
+        tmpdeg[0].first=0;
+        sort(tmpdeg,tmpdeg+n,cmp);
+    }
+    return true;
+}
+
+bool rebuild2(){
+    cpy();
+    alen=0;
+    for(;tmpdeg[0].first&gt;0;){
+        int amount=0;
+        for(int j=1;j&lt;n;j++){
+            if(tmpdeg[j].first&gt;0){
+                amount++;
+            }
+        }
+        if(amount&lt;tmpdeg[0].first)return false;
+        if((tmpdeg[tmpdeg[0].first].first)==(tmpdeg[tmpdeg[0].first+1].first)&amp;&amp;tmpdeg[0].first+1&lt;n){
+                swap(tmpdeg[tmpdeg[0].first].second,tmpdeg[tmpdeg[0].first+1].second);
+        }
+        for(int j=1;j&lt;=tmpdeg[0].first;j++){
+            tmpdeg[j].first--;
+            ash1[alen]=tmpdeg[0].second;
+            ash2[alen++]=tmpdeg[j].second;
+        }
+        tmpdeg[0].first=0;
+        sort(tmpdeg,tmpdeg+n,cmp);
+    }
+    return true;
+}
+
+
+
+int main(){
+    while(scanf("%d",&amp;n)==1){
+        bool failed =false;
+        for(int i=1;i&lt;=n;i++){
+            scanf("%d",&amp;(deg[i-1].first));
+            deg[i-1].second=i;
+            if(deg[i-1].first&lt;0)failed=true;
+        }
+        sort(deg,deg+n,cmp);
+        sum=0;
+        for(int i=0;i&lt;n;i++){
+            if(deg[i].first&gt;=n)failed=true;
+            sum+=deg[i].first;
+        }
+        if(sum&amp;1)failed=true;
+        if(failed||!rebuild()){
+            puts("IMPOSSIBLE");
+        }
+        else if(single){
+            puts("UNIQUE");
+            prints();
+        }
+        else {
+            puts("MULTIPLE");
+            prints();
+            rebuild2();
+            prints();
+        }
+    }
+    return 0;
+}
+</pre>
+</div>
+<p>　　</p>
+<p>参考：http://www.cnblogs.com/xuesu/p/3979673.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-102212">
+<article class="comment" id="comment-102212">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456759" rel="external nofollow">新用户455643</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-102212" rel="nofollow"><time datetime="2017-04-24T13:59:02+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么会有倒钩这种设定？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-102211">
+<article class="comment" id="comment-102211">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456759" rel="external nofollow">新用户455643</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-102211" rel="nofollow"><time datetime="2017-04-24T13:59:02+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么会有倒钩这种设定？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-102210">
+<article class="comment" id="comment-102210">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456759" rel="external nofollow">新用户455643</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-102210" rel="nofollow"><time datetime="2017-04-24T13:59:02+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么会有倒钩这种设定？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-102209">
+<article class="comment" id="comment-102209">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456759" rel="external nofollow">新用户455643</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-102209" rel="nofollow"><time datetime="2017-04-24T13:59:02+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么会有倒钩这种设定？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-102208">
+<article class="comment" id="comment-102208">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456759" rel="external nofollow">新用户455643</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-102208" rel="nofollow"><time datetime="2017-04-24T13:59:02+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么会有倒钩这种设定？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-102207">
+<article class="comment" id="comment-102207">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456759" rel="external nofollow">新用户455643</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-102207" rel="nofollow"><time datetime="2017-04-24T13:59:02+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么会有倒钩这种设定？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-102206">
+<article class="comment" id="comment-102206">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456759" rel="external nofollow">新用户455643</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-102206" rel="nofollow"><time datetime="2017-04-24T13:59:02+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么会有倒钩这种设定？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-102205">
+<article class="comment" id="comment-102205">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456759" rel="external nofollow">新用户455643</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-102205" rel="nofollow"><time datetime="2017-04-24T13:59:02+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么会有倒钩这种设定？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-102204">
+<article class="comment" id="comment-102204">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456759" rel="external nofollow">新用户455643</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-102204" rel="nofollow"><time datetime="2017-04-24T13:59:02+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么会有倒钩这种设定？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-102203">
+<article class="comment" id="comment-102203">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919456759" rel="external nofollow">新用户455643</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-102203" rel="nofollow"><time datetime="2017-04-24T13:59:02+00:00" pubdate="">2017年4月24日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么会有倒钩这种设定？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101769">
+<article class="comment" id="comment-101769">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466685" rel="external nofollow">新用户729949</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-101769" rel="nofollow"><time datetime="2017-04-23T14:02:16+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101768">
+<article class="comment" id="comment-101768">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466685" rel="external nofollow">新用户729949</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-101768" rel="nofollow"><time datetime="2017-04-23T14:02:16+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101767">
+<article class="comment" id="comment-101767">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466685" rel="external nofollow">新用户729949</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-101767" rel="nofollow"><time datetime="2017-04-23T14:02:16+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101766">
+<article class="comment" id="comment-101766">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466685" rel="external nofollow">新用户729949</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-101766" rel="nofollow"><time datetime="2017-04-23T14:02:16+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101765">
+<article class="comment" id="comment-101765">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466685" rel="external nofollow">新用户729949</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-101765" rel="nofollow"><time datetime="2017-04-23T14:02:16+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101764">
+<article class="comment" id="comment-101764">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466685" rel="external nofollow">新用户729949</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-101764" rel="nofollow"><time datetime="2017-04-23T14:02:16+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101763">
+<article class="comment" id="comment-101763">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466685" rel="external nofollow">新用户729949</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-101763" rel="nofollow"><time datetime="2017-04-23T14:02:16+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101762">
+<article class="comment" id="comment-101762">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466685" rel="external nofollow">新用户729949</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-101762" rel="nofollow"><time datetime="2017-04-23T14:02:16+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101761">
+<article class="comment" id="comment-101761">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466685" rel="external nofollow">新用户729949</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-101761" rel="nofollow"><time datetime="2017-04-23T14:02:16+00:00" pubdate="">2017年4月23日 at 下午2:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101169">
+<article class="comment" id="comment-101169">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516977" rel="external nofollow">新用户938382</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-101169" rel="nofollow"><time datetime="2017-04-22T13:59:11+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>长得磕碜人不少你的错，但是出来恶心人就是肯定是你的不对，赶快会高老庄去吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101167">
+<article class="comment" id="comment-101167">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516977" rel="external nofollow">新用户938382</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-101167" rel="nofollow"><time datetime="2017-04-22T13:59:11+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>长得磕碜人不少你的错，但是出来恶心人就是肯定是你的不对，赶快会高老庄去吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101166">
+<article class="comment" id="comment-101166">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516977" rel="external nofollow">新用户938382</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-101166" rel="nofollow"><time datetime="2017-04-22T13:59:11+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>长得磕碜人不少你的错，但是出来恶心人就是肯定是你的不对，赶快会高老庄去吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101165">
+<article class="comment" id="comment-101165">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516977" rel="external nofollow">新用户938382</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-101165" rel="nofollow"><time datetime="2017-04-22T13:59:11+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>长得磕碜人不少你的错，但是出来恶心人就是肯定是你的不对，赶快会高老庄去吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101164">
+<article class="comment" id="comment-101164">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516977" rel="external nofollow">新用户938382</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-101164" rel="nofollow"><time datetime="2017-04-22T13:59:11+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>长得磕碜人不少你的错，但是出来恶心人就是肯定是你的不对，赶快会高老庄去吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101163">
+<article class="comment" id="comment-101163">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516977" rel="external nofollow">新用户938382</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-101163" rel="nofollow"><time datetime="2017-04-22T13:59:11+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>长得磕碜人不少你的错，但是出来恶心人就是肯定是你的不对，赶快会高老庄去吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101162">
+<article class="comment" id="comment-101162">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516977" rel="external nofollow">新用户938382</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-101162" rel="nofollow"><time datetime="2017-04-22T13:59:11+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>长得磕碜人不少你的错，但是出来恶心人就是肯定是你的不对，赶快会高老庄去吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101161">
+<article class="comment" id="comment-101161">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516977" rel="external nofollow">新用户938382</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-101161" rel="nofollow"><time datetime="2017-04-22T13:59:11+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>长得磕碜人不少你的错，但是出来恶心人就是肯定是你的不对，赶快会高老庄去吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101160">
+<article class="comment" id="comment-101160">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516977" rel="external nofollow">新用户938382</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-101160" rel="nofollow"><time datetime="2017-04-22T13:59:11+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>长得磕碜人不少你的错，但是出来恶心人就是肯定是你的不对，赶快会高老庄去吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101159">
+<article class="comment" id="comment-101159">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516977" rel="external nofollow">新用户938382</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-101159" rel="nofollow"><time datetime="2017-04-22T13:59:11+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>长得磕碜人不少你的错，但是出来恶心人就是肯定是你的不对，赶快会高老庄去吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101158">
+<article class="comment" id="comment-101158">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516977" rel="external nofollow">新用户938382</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-101158" rel="nofollow"><time datetime="2017-04-22T13:59:11+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>长得磕碜人不少你的错，但是出来恶心人就是肯定是你的不对，赶快会高老庄去吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101157">
+<article class="comment" id="comment-101157">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516977" rel="external nofollow">新用户938382</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-101157" rel="nofollow"><time datetime="2017-04-22T13:59:11+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>长得磕碜人不少你的错，但是出来恶心人就是肯定是你的不对，赶快会高老庄去吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101156">
+<article class="comment" id="comment-101156">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516977" rel="external nofollow">新用户938382</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-101156" rel="nofollow"><time datetime="2017-04-22T13:59:11+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>长得磕碜人不少你的错，但是出来恶心人就是肯定是你的不对，赶快会高老庄去吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101155">
+<article class="comment" id="comment-101155">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516977" rel="external nofollow">新用户938382</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-101155" rel="nofollow"><time datetime="2017-04-22T13:59:11+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>长得磕碜人不少你的错，但是出来恶心人就是肯定是你的不对，赶快会高老庄去吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-101153">
+<article class="comment" id="comment-101153">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516977" rel="external nofollow">新用户938382</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-101153" rel="nofollow"><time datetime="2017-04-22T13:59:11+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>长得磕碜人不少你的错，但是出来恶心人就是肯定是你的不对，赶快会高老庄去吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-101152">
+<article class="comment" id="comment-101152">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516977" rel="external nofollow">新用户938382</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-101152" rel="nofollow"><time datetime="2017-04-22T13:59:11+00:00" pubdate="">2017年4月22日 at 下午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>长得磕碜人不少你的错，但是出来恶心人就是肯定是你的不对，赶快会高老庄去吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100406">
+<article class="comment" id="comment-100406">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460441" rel="external nofollow">新用户256486</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-100406" rel="nofollow"><time datetime="2017-04-21T14:04:09+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>人是人TM生的，妖是妖TM生的，耶稣TM也得***</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100405">
+<article class="comment" id="comment-100405">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460441" rel="external nofollow">新用户256486</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-100405" rel="nofollow"><time datetime="2017-04-21T14:04:09+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>人是人TM生的，妖是妖TM生的，耶稣TM也得***</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100404">
+<article class="comment" id="comment-100404">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460441" rel="external nofollow">新用户256486</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-100404" rel="nofollow"><time datetime="2017-04-21T14:04:09+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>人是人TM生的，妖是妖TM生的，耶稣TM也得***</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100403">
+<article class="comment" id="comment-100403">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460441" rel="external nofollow">新用户256486</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-100403" rel="nofollow"><time datetime="2017-04-21T14:04:09+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>人是人TM生的，妖是妖TM生的，耶稣TM也得***</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100402">
+<article class="comment" id="comment-100402">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460441" rel="external nofollow">新用户256486</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-100402" rel="nofollow"><time datetime="2017-04-21T14:04:09+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>人是人TM生的，妖是妖TM生的，耶稣TM也得***</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100401">
+<article class="comment" id="comment-100401">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460441" rel="external nofollow">新用户256486</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-100401" rel="nofollow"><time datetime="2017-04-21T14:04:09+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>人是人TM生的，妖是妖TM生的，耶稣TM也得***</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100400">
+<article class="comment" id="comment-100400">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460441" rel="external nofollow">新用户256486</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-100400" rel="nofollow"><time datetime="2017-04-21T14:04:09+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>人是人TM生的，妖是妖TM生的，耶稣TM也得***</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100399">
+<article class="comment" id="comment-100399">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460441" rel="external nofollow">新用户256486</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-100399" rel="nofollow"><time datetime="2017-04-21T14:04:09+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>人是人TM生的，妖是妖TM生的，耶稣TM也得***</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100398">
+<article class="comment" id="comment-100398">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460441" rel="external nofollow">新用户256486</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-100398" rel="nofollow"><time datetime="2017-04-21T14:04:09+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>人是人TM生的，妖是妖TM生的，耶稣TM也得***</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-100397">
+<article class="comment" id="comment-100397">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460441" rel="external nofollow">新用户256486</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-100397" rel="nofollow"><time datetime="2017-04-21T14:04:09+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>人是人TM生的，妖是妖TM生的，耶稣TM也得***</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-100396">
+<article class="comment" id="comment-100396">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919460441" rel="external nofollow">新用户256486</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-100396" rel="nofollow"><time datetime="2017-04-21T14:04:09+00:00" pubdate="">2017年4月21日 at 下午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>人是人TM生的，妖是妖TM生的，耶稣TM也得***</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96659">
+<article class="comment" id="comment-96659">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520096" rel="external nofollow">新用户519779</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-96659" rel="nofollow"><time datetime="2017-04-19T19:07:51+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>b就已经很好了…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96657">
+<article class="comment" id="comment-96657">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520096" rel="external nofollow">新用户519779</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-96657" rel="nofollow"><time datetime="2017-04-19T19:07:51+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>b就已经很好了…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96656">
+<article class="comment" id="comment-96656">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520096" rel="external nofollow">新用户519779</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-96656" rel="nofollow"><time datetime="2017-04-19T19:07:51+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>b就已经很好了…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96655">
+<article class="comment" id="comment-96655">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520096" rel="external nofollow">新用户519779</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-96655" rel="nofollow"><time datetime="2017-04-19T19:07:51+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>b就已经很好了…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96654">
+<article class="comment" id="comment-96654">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520096" rel="external nofollow">新用户519779</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-96654" rel="nofollow"><time datetime="2017-04-19T19:07:51+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>b就已经很好了…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96653">
+<article class="comment" id="comment-96653">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520096" rel="external nofollow">新用户519779</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-96653" rel="nofollow"><time datetime="2017-04-19T19:07:51+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>b就已经很好了…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96652">
+<article class="comment" id="comment-96652">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520096" rel="external nofollow">新用户519779</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-96652" rel="nofollow"><time datetime="2017-04-19T19:07:51+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>b就已经很好了…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96651">
+<article class="comment" id="comment-96651">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520096" rel="external nofollow">新用户519779</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-96651" rel="nofollow"><time datetime="2017-04-19T19:07:51+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>b就已经很好了…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96650">
+<article class="comment" id="comment-96650">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520096" rel="external nofollow">新用户519779</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-96650" rel="nofollow"><time datetime="2017-04-19T19:07:51+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>b就已经很好了…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96649">
+<article class="comment" id="comment-96649">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520096" rel="external nofollow">新用户519779</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-96649" rel="nofollow"><time datetime="2017-04-19T19:07:51+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>b就已经很好了…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-96648">
+<article class="comment" id="comment-96648">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520096" rel="external nofollow">新用户519779</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-96648" rel="nofollow"><time datetime="2017-04-19T19:07:51+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>b就已经很好了…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-96647">
+<article class="comment" id="comment-96647">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520096" rel="external nofollow">新用户519779</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-96647" rel="nofollow"><time datetime="2017-04-19T19:07:51+00:00" pubdate="">2017年4月19日 at 下午7:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>b就已经很好了…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65656">
+<article class="comment" id="comment-65656">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516521" rel="external nofollow">新用户271835</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-65656" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>根本是散光，近视不是这样的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65655">
+<article class="comment" id="comment-65655">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516521" rel="external nofollow">新用户271835</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-65655" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>根本是散光，近视不是这样的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65654">
+<article class="comment" id="comment-65654">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516521" rel="external nofollow">新用户271835</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-65654" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>根本是散光，近视不是这样的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65653">
+<article class="comment" id="comment-65653">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516521" rel="external nofollow">新用户271835</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-65653" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>根本是散光，近视不是这样的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65652">
+<article class="comment" id="comment-65652">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516521" rel="external nofollow">新用户271835</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-65652" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>根本是散光，近视不是这样的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65651">
+<article class="comment" id="comment-65651">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516521" rel="external nofollow">新用户271835</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-65651" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>根本是散光，近视不是这样的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65650">
+<article class="comment" id="comment-65650">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516521" rel="external nofollow">新用户271835</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-65650" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>根本是散光，近视不是这样的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65649">
+<article class="comment" id="comment-65649">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516521" rel="external nofollow">新用户271835</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-65649" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>根本是散光，近视不是这样的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65648">
+<article class="comment" id="comment-65648">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516521" rel="external nofollow">新用户271835</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-65648" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>根本是散光，近视不是这样的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65647">
+<article class="comment" id="comment-65647">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516521" rel="external nofollow">新用户271835</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-65647" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>根本是散光，近视不是这样的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65646">
+<article class="comment" id="comment-65646">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516521" rel="external nofollow">新用户271835</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-65646" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>根本是散光，近视不是这样的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65645">
+<article class="comment" id="comment-65645">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516521" rel="external nofollow">新用户271835</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-65645" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>根本是散光，近视不是这样的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65644">
+<article class="comment" id="comment-65644">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516521" rel="external nofollow">新用户271835</a></span> on <a href="http://www.acmerblog.com/hdu-4797-graph-reconstruction-7842.html#comment-65644" rel="nofollow"><time datetime="2017-04-10T14:37:45+00:00" pubdate="">2017年4月10日 at 下午2:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>根本是散光，近视不是这样的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

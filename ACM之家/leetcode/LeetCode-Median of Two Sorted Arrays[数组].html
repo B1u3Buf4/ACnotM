@@ -1,0 +1,231 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>11-18</div>
+<div class="tit"><h1 class="entry-title">LeetCode-Median of Two Sorted Arrays[数组]</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/leetcode" rel="category tag" title="查看LeetCode中的全部文章">LeetCode</a></span><span class="i4">围观499次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6270" href="http://www.acmerblog.com/leetcode-solution-median-of-two-sorted-arrays-6270.html#comments" title="《LeetCode-Median of Two Sorted Arrays[数组]》上的评论">13 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<h3><strong>Median of Two Sorted Arrays</strong></h3>
+<div class="question-content">
+<p>There are two sorted arrays A and B of size m and n respectively. Find the median of the two sorted arrays. The overall run time complexity should be O(log (m+n)).</p>
+</div>
+<p> 标签: Divide and Conquer Array Binary Search<br/>
+<strong>分析</strong>
+</p><p>这是一道非常经典的题。这题更通用的形式是，给定两个已经排序好的数组，找到两者所有元素中第$k$大的元素。</p>
+<p>$O(m+n)$的解法比较直观，直接merge两个数组，然后求第$k$大的元素。</p>
+<p>不过我们仅仅需要第$k$大的元素，是不需要“排序”这么复杂的操作的。可以用一个计数器，记录当前已经找到第$m$大的元素了。同时我们使用两个指针{pA}和{pB}，分别指向A和B数组的第一个元素，使用类似于merge sort的原理，如果数组A当前元素小，那么{pA++}，同时{m++}；如果数组B当前元素小，那么{pB++}，同时{m++}。最终当$m$等于$k$的时候，就得到了我们的答案，$O(k)$时间，$O(1)$空间。但是，当$k$很接近$m+n$的时候，这个方法还是$O(m+n)$的。</p>
+<p>有没有更好的方案呢？我们可以考虑从$k$入手。如果我们每次都能够删除一个一定在第$k$大元素之前的元素，那么我们需要进行$k$次。但是如果每次我们都删除一半呢？由于A和B都是有序的，我们应该充分利用这里面的信息，类似于二分查找，也是充分利用了“有序”。</p>
+<p>假设A和B的元素个数都大于$k/2$，我们将A的第$k/2$个元素（即{A[k/2-1]}）和B的第$k/2$个元素（即{B[k/2-1]}）进行比较，有以下三种情况（为了简化这里先假设$k$为偶数，所得到的结论对于$k$是奇数也是成立的）：</p>
+<p>\item {A[k/2-1] == B[k/2-1]}<br/>
+\item {A[k/2-1] &gt; B[k/2-1]}<br/>
+\item {A[k/2-1] &lt; B[k/2-1]}</p>
+<p>如果{A[k/2-1] &lt; B[k/2-1]}，意味着{A[0]}到{A[k/2-1}的肯定在$A \cup B$的top k元素的范围内，换句话说，{A[k/2-1}不可能大于$A \cup B$的第$k$大元素。留给读者证明。</p>
+<p>因此，我们可以放心的删除A数组的这$k/2$个元素。同理，当{A[k/2-1] &gt; B[k/2-1]}时，可以删除B数组的$k/2$个元素。</p>
+<p>当{A[k/2-1] == B[k/2-1]}时，说明找到了第$k$大的元素，直接返回{A[k/2-1]}或{B[k/2-1]}即可。</p>
+<p>因此，我们可以写一个递归函数。那么函数什么时候应该终止呢？</p>
+<p>\item 当A或B是空时，直接返回{B[k-1]}或{A[k-1]}；<br/>
+\item 当{k=1}是，返回{min(A[0], B[0])}；<br/>
+\item 当{A[k/2-1] == B[k/2-1]}时，返回{A[k/2-1]}或{B[k/2-1]}</p>
+<p>代码1
+</p><pre class="brush:cpp">
+// LeetCode, Median of Two Sorted Arrays
+// 时间复杂度O(log(m+n))，空间复杂度O(log(m+n))
+class Solution {
+public:
+    double findMedianSortedArrays(int A[], int m, int B[], int n) {
+        int total = m + n;
+        if (total &amp; 0x1)
+            return find_kth(A, m, B, n, total / 2 + 1);
+        else
+            return (find_kth(A, m, B, n, total / 2)
+                    + find_kth(A, m, B, n, total / 2 + 1)) / 2.0;
+    }
+private:
+    static int find_kth(int A[], int m, int B[], int n, int k) {
+        //always assume that m is equal or smaller than n
+        if (m &gt; n) return find_kth(B, n, A, m, k);
+        if (m == 0) return B[k - 1];
+        if (k == 1) return min(A[0], B[0]);
+
+        //divide k into two parts
+        int ia = min(k / 2, m), ib = k - ia;
+        if (A[ia - 1] &lt; B[ib - 1])
+            return find_kth(A + ia, m - ia, B, n, k - ia);
+        else if (A[ia - 1] &gt; B[ib - 1])
+            return find_kth(A, m, B + ib, n - ib, k - ib);
+        else
+            return A[ia - 1];
+    }
+};
+</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-74341">
+<article class="comment" id="comment-74341">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919458315" rel="external nofollow">新用户647480</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-median-of-two-sorted-arrays-6270.html#comment-74341" rel="nofollow"><time datetime="2017-04-12T01:59:35+00:00" pubdate="">2017年4月12日 at 上午1:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>叮叮叮，叮叮叮=（1+1+1）+（1+1+1）=3+3=3*2；</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63763">
+<article class="comment" id="comment-63763">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">we</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-median-of-two-sorted-arrays-6270.html#comment-63763" rel="nofollow"><time datetime="2015-06-27T12:31:17+00:00" pubdate="">2015年6月27日 at 下午12:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为\n\n</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-31715">
+<article class="comment" id="comment-31715">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NextLife</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-median-of-two-sorted-arrays-6270.html#comment-31715" rel="nofollow"><time datetime="2015-05-07T01:15:07+00:00" pubdate="">2015年5月7日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是O(m+n)，不小心打错了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-31716">
+<article class="comment" id="comment-31716">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zwj0571</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-median-of-two-sorted-arrays-6270.html#comment-31716" rel="nofollow"><time datetime="2015-04-23T06:56:18+00:00" pubdate="">2015年4月23日 at 上午6:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个解法好像不对</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50086">
+<article class="comment" id="comment-50086">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1832044043</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-median-of-two-sorted-arrays-6270.html#comment-50086" rel="nofollow"><time datetime="2015-04-21T17:56:28+00:00" pubdate="">2015年4月21日 at 下午5:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>即为打印出的组合的个数C(n,r)，假设print函数复杂度为O(1)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-31713">
+<article class="comment" id="comment-31713">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">April</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-median-of-two-sorted-arrays-6270.html#comment-31713" rel="nofollow"><time datetime="2015-04-12T07:05:34+00:00" pubdate="">2015年4月12日 at 上午7:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这排版…你都打开来看看改改</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63762">
+<article class="comment" id="comment-63762">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yunyang088</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-median-of-two-sorted-arrays-6270.html#comment-63762" rel="nofollow"><time datetime="2015-04-04T15:32:39+00:00" pubdate="">2015年4月4日 at 下午3:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>您没有考虑 树的根节点是负数的情况， 若树的根节点是个很大的负数，那么就要考虑过不过另外一边子树了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-31711">
+<article class="comment" id="comment-31711">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">magicSky</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-median-of-two-sorted-arrays-6270.html#comment-31711" rel="nofollow"><time datetime="2015-03-26T16:38:51+00:00" pubdate="">2015年3月26日 at 下午4:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>afsasfasfasf</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-31712">
+<article class="comment" id="comment-31712">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gladuo</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-median-of-two-sorted-arrays-6270.html#comment-31712" rel="nofollow"><time datetime="2015-02-24T12:59:16+00:00" pubdate="">2015年2月24日 at 下午12:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>思考人生吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-31710">
+<article class="comment" id="comment-31710">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jade1827</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-median-of-two-sorted-arrays-6270.html#comment-31710" rel="nofollow"><time datetime="2015-01-20T04:01:09+00:00" pubdate="">2015年1月20日 at 上午4:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚开始学习，为啥会报错了，你试过了吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59083">
+<article class="comment" id="comment-59083">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">vincent_ynh</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-median-of-two-sorted-arrays-6270.html#comment-59083" rel="nofollow"><time datetime="2015-01-11T06:42:40+00:00" pubdate="">2015年1月11日 at 上午6:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是什么编译器啊，不通过</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-31714">
+<article class="comment" id="comment-31714">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangdilj</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-median-of-two-sorted-arrays-6270.html#comment-31714" rel="nofollow"><time datetime="2014-12-28T10:30:09+00:00" pubdate="">2014年12月28日 at 上午10:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#include &lt;stdio.h&gt;<br/>
+int main()<br/>
+{<br/>
+    int n,p,t[100]={1};<br/>
+    for(int i=1;i&lt;100;i++)<br/>
+        t <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> =i;<br/>
+    while(scanf("%d",&amp;n)&amp;&amp;n!=0){<br/>
+        if(n==1)<br/>
+        printf("Printing order for 1 pages:nSheet 1, front: Blank, 1n");<br/>
+        else {<br/>
+        if(n%4) p=n/4+1;<br/>
+        else p=n/4;<br/>
+        int q=4*p;<br/>
+        printf("Printing order for %d pages:n",n);<br/>
+        for(int i=0;i&lt;p;i++){<br/>
+            printf("Sheet %d, front: ",i+1);<br/>
+            if(q&gt;n) {printf("Blank, %dn",t[2*i+1]);}<br/>
+            else {printf("%d, %dn",q,t[2*i+1]);}<br/>
+            q–;//打印表前<br/>
+            printf("Sheet %d, back : ",i+1);<br/>
+            if(q&gt;n) {printf("%d, Blankn",t[2*i+2]);}<br/>
+            else {printf("%d, %dn",t[2*i+2],q);}<br/>
+            q–;//打印表后<br/>
+           }<br/>
+        }<br/>
+    }<br/>
+    return 0;<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63764">
+<article class="comment" id="comment-63764">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiao597896577</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-median-of-two-sorted-arrays-6270.html#comment-63764" rel="nofollow"><time datetime="2014-11-27T20:39:23+00:00" pubdate="">2014年11月27日 at 下午8:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个是python代码啊。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

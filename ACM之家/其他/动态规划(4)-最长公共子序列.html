@@ -1,0 +1,502 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-01</div>
+<div class="tit"><h1 class="entry-title">动态规划(4)-最长公共子序列</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/zhuanti/algorithm" rel="category tag" title="查看算法分析中的全部文章">算法分析</a>, <a href="http://www.acmerblog.com/category/zhuanti/classic" rel="category tag" title="查看经典问题中的全部文章">经典问题</a></span><span class="i4">围观2704次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4736" href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comments" title="《动态规划(4)-最长公共子序列》上的评论">35 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p>继续用典型问题来讨论动态规划的两个特性（重叠子问题和最优子结构）。最长公共子序列（LCS）问题描述:</p>
+<p>给定两个序列，找出在两个序列中同时出现的最长子序列的<strong>长度</strong>。一个子序列是出现在相对顺序的序列，<strong>但不一定是连续的</strong>。例如，“ABC”，“ABG”，“BDF”，“AEG”，“acefg“，..等都是”ABCDEFG“ 序列。因此，长度为n的字符串有2 ^ n个不同的可能的序列。</p>
+<p>注意最长公共子串（Longest CommonSubstring）和最长公共子序列（LongestCommon Subsequence, LCS）的区别：子串（Substring）是串的一个连续的部分，子序列（Subsequence）则是从不改变序列的顺序，而从序列中去掉任意的元素而获得的新序列；更简略地说，前者（子串）的字符的位置必须连续，后者（子序列LCS）则不必。比如字符串acdfg同akdfc的最长公共子串为df，而他们的最长公共子序列是adf。LCS可以使用动态规划法解决。</p>
+<p><span>这是一个典型的计算机科学问题，基础</span>差异<span>（即输出两个文件之间的差异文件比较程序），并在生物信息学有较多应用。</span></p>
+<h2><strong><span>例子：</span></strong><br/>
+<span><span>输入序列“ABCDGH”和“AEDFHR” 的LCS是“ADH”长度为3。</span></span><br/>
+<span><span>输入序列“AGGTAB”和“GXTXAYB”的LCS是“GTAB”长度为4。</span></span></h2>
+<p><span>这个问题的直观的解决方案是同时生成给定序列的所有子序列，找到最长匹配的子序列。</span><span>此解决方案的复杂性是指数的。</span><span>让我们来看看如何这个问题 （拥有动态规划（DP）问题的两个重要特性）：</span></p>
+<h2><strong><span>1）最优子结构：</span></strong><br/>
+<span>设输入序列是X [0 .. m-1]和Y [0 .. n-1]，长度分别为m和n。</span>和设序列 L(X [0 .. m-1]，Y[0 .. n-1]）是这两个序列的LCS的长度。</h2>
+<p>以下为L（X [0 .. M-1]，Y [0 .. N-1]）的递归定义：</p>
+<p><span>如果两个序列的最后一个元素匹配（即X [M-1] == Y [N-1]）</span><br/>
+<span>L（X [0 .. M-1]，Y [0 .. N-1]）= 1 + L（X [0 .. M-2]，Y [0 .. N-1]）</span></p>
+<p>如果两个序列的最后字符不匹配（即X [M-1]！= Y [N-1]）<br/>
+L（X [0 .. M-1]，Y [0 .. N-1]）= MAX（L（X [0 .. M-2]，Y [0 .. N-1]），L（X [0 .. M-1]，Y [0 .. N-2]）</p>
+<p>例子：</p>
+<p>1）考虑输入字符串“AGGTAB”和“GXTXAYB”。最后一个字符匹配的字符串。这样的LCS的长度可以写成：<br/>
+L(“AGGTAB”, “GXTXAYB”) = 1 + L(“AGGTA”, “GXTXAY”)</p>
+<p>2）考虑输入字符串“ABCDGH”和“AEDFHR。最后字符不为字符串相匹配。这样的LCS的长度可以写成：<br/>
+L(“ABCDGH”, “AEDFHR”) = MAX ( L(“ABCDG”, “AEDFH<strong>R</strong>”), L(“ABCDG<strong>H</strong>”, “AEDFH”) )</p>
+<p>因此，LCS问题有最优子结构性质！</p>
+<h2><strong><span>2）重叠子问题：</span></strong><br/>
+<span><span>以下是直接的递归实现，  遵循上面提到的递归结构。(有兴趣的读者可以按照前面讲的记忆化存储来实现)</span></span></h2>
+<pre class="brush:cpp">/* 简单的递归实现LCS问题 */
+#include&lt;stdio.h&gt;
+#include&lt;stdlib.h&gt;
+
+int max(int a, int b);
+
+/* Returns length of LCS for X[0..m-1], Y[0..n-1] */
+int lcs( char *X, char *Y, int m, int n )
+{
+   if (m == 0 || n == 0)
+     return 0;
+   if (X[m-1] == Y[n-1])
+     return 1 + lcs(X, Y, m-1, n-1);
+   else
+     return max(lcs(X, Y, m, n-1), lcs(X, Y, m-1, n));
+}
+
+/* Utility function to get max of 2 integers */
+int max(int a, int b)
+{
+    return (a &gt; b)? a : b;
+}
+
+/* 测试上面的函数 */
+int main()
+{
+  char X[] = "AGGTAB";
+  char Y[] = "GXTXAYB";
+
+  int m = strlen(X);
+  int n = strlen(Y);
+
+  printf("Length of LCS is %d\n", lcs( X, Y, m, n ) );
+
+  getchar();
+  return 0;
+}</pre>
+<p><span><span>上面直接的递归方法的时间复杂度为O（2 ^ n）.(在最坏的情况下。X和Y不匹配的所有字符即LCS的长度为0)。</span></span><br/>
+<span><span>按照到上述的实现，下面是对输入字符串“AXYT”和“AYZX”的部分递归树：</span></span></p>
+<pre class="brush:other">                         lcs("AXYT", "AYZX")
+                       /                 \
+         lcs("AXY", "AYZX")            lcs("AXYT", "AYZ")
+         /            \                  /               \
+lcs("AX", "AYZX") lcs("AXY", "AYZ")   lcs("AXY", "AYZ") lcs("AXYT", "AY")</pre>
+<p><span>在上述部分递归树，LCS（“AXY”，“AYZ”）被调用两次。</span><span>如果我们绘制完整的递归树，那么我们可以看到，我们可以看到很多重复的调用。</span><span>所以这个问题有重叠的子结构性质，可使用memoization的或打表来避免重新计算。</span><span>下面是用动态规划(打表)解决LCS问题:</span></p>
+<pre class="brush:cpp">/ *动态规划实现的LCS问题* /
+#include&lt;stdio.h&gt;
+#include&lt;stdlib.h&gt;
+
+int max(int a, int b);
+
+/* Returns length of LCS for X[0..m-1], Y[0..n-1] */
+int lcs( char *X, char *Y, int m, int n )
+{
+   int L[m+1][n+1];
+   int i, j;
+
+   /* Following steps build L[m+1][n+1] in bottom up fashion. Note 
+      that L[i][j] contains length of LCS of X[0..i-1] and Y[0..j-1] */
+   for (i=0; i&lt;=m; i++)
+   {
+     for (j=0; j&lt;=n; j++)
+     {
+       if (i == 0 || j == 0)
+         L[i][j] = 0;
+
+       else if (X[i-1] == Y[j-1])
+         L[i][j] = L[i-1][j-1] + 1;
+
+       else
+         L[i][j] = max(L[i-1][j], L[i][j-1]);
+     }
+   }
+
+   /* L[m][n] contains length of LCS for X[0..n-1] and Y[0..m-1] */
+   return L[m][n];
+}
+
+/* Utility function to get max of 2 integers */
+int max(int a, int b)
+{
+    return (a &gt; b)? a : b;
+}
+
+/*测试上面的函数 */
+int main()
+{
+  char X[] = "AGGTAB";
+  char Y[] = "GXTXAYB";
+
+  int m = strlen(X);
+  int n = strlen(Y);
+
+  printf("Length of LCS is %d\n", lcs( X, Y, m, n ) );
+
+  getchar();
+  return 0;
+}</pre>
+<p>参考：http://www.algorithmist.com/index.php/Longest_Common_Subsequence</p>
+<p>http://www.geeksforgeeks.org/dynamic-programming-set-4-longest-common-subsequence/</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-79673">
+<article class="comment" id="comment-79673">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513208" rel="external nofollow">新用户813010</a></span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-79673" rel="nofollow"><time datetime="2017-04-12T14:00:09+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不同的角度看待同一件事物</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79672">
+<article class="comment" id="comment-79672">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513208" rel="external nofollow">新用户813010</a></span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-79672" rel="nofollow"><time datetime="2017-04-12T14:00:09+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不同的角度看待同一件事物</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79671">
+<article class="comment" id="comment-79671">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513208" rel="external nofollow">新用户813010</a></span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-79671" rel="nofollow"><time datetime="2017-04-12T14:00:09+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不同的角度看待同一件事物</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79670">
+<article class="comment" id="comment-79670">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513208" rel="external nofollow">新用户813010</a></span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-79670" rel="nofollow"><time datetime="2017-04-12T14:00:09+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不同的角度看待同一件事物</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79669">
+<article class="comment" id="comment-79669">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513208" rel="external nofollow">新用户813010</a></span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-79669" rel="nofollow"><time datetime="2017-04-12T14:00:09+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不同的角度看待同一件事物</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79668">
+<article class="comment" id="comment-79668">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513208" rel="external nofollow">新用户813010</a></span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-79668" rel="nofollow"><time datetime="2017-04-12T14:00:09+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不同的角度看待同一件事物</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79667">
+<article class="comment" id="comment-79667">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513208" rel="external nofollow">新用户813010</a></span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-79667" rel="nofollow"><time datetime="2017-04-12T14:00:09+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不同的角度看待同一件事物</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79666">
+<article class="comment" id="comment-79666">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513208" rel="external nofollow">新用户813010</a></span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-79666" rel="nofollow"><time datetime="2017-04-12T14:00:09+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不同的角度看待同一件事物</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79665">
+<article class="comment" id="comment-79665">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513208" rel="external nofollow">新用户813010</a></span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-79665" rel="nofollow"><time datetime="2017-04-12T14:00:09+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不同的角度看待同一件事物</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79664">
+<article class="comment" id="comment-79664">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513208" rel="external nofollow">新用户813010</a></span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-79664" rel="nofollow"><time datetime="2017-04-12T14:00:09+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不同的角度看待同一件事物</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64951">
+<article class="comment" id="comment-64951">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">piNrs</span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-64951" rel="nofollow"><time datetime="2016-12-13T10:54:53+00:00" pubdate="">2016年12月13日 at 上午10:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个更C刺j激，准备好手纸哦 A 片。HTTp://T.Cn/Rc4PF3o <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64927">
+<article class="comment" id="comment-64927">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">CUwlB</span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-64927" rel="nofollow"><time datetime="2016-12-08T19:34:41+00:00" pubdate="">2016年12月8日 at 下午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>打开 ｕｖｕ.ｃｃ/ir7p都是 浪美眉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64917">
+<article class="comment" id="comment-64917">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">AWjhV</span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-64917" rel="nofollow"><time datetime="2016-12-02T04:38:33+00:00" pubdate="">2016年12月2日 at 上午4:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>打开 ｕｖｕ.ｃｃ/ir7p都是 浪美眉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64888">
+<article class="comment" id="comment-64888">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">MRswe</span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-64888" rel="nofollow"><time datetime="2016-11-24T03:45:33+00:00" pubdate="">2016年11月24日 at 上午3:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个更C刺j激，准备好手纸哦 A 片。HTTp://T.Cn/Rc4PF3o <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64875">
+<article class="comment" id="comment-64875">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">FWvUu</span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-64875" rel="nofollow"><time datetime="2016-11-15T12:33:00+00:00" pubdate="">2016年11月15日 at 下午12:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>打开 ｕｖｕ.ｃｃ/ir7p都是 浪美眉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64758">
+<article class="comment" id="comment-64758">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">UKgnP</span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-64758" rel="nofollow"><time datetime="2016-10-15T21:20:37+00:00" pubdate="">2016年10月15日 at 下午9:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个更刺ｃ激，准备好手纸哦 A 片。。 ２８８ｄ．ｐｗ <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64707">
+<article class="comment" id="comment-64707">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">ApUdq</span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-64707" rel="nofollow"><time datetime="2016-10-05T09:14:52+00:00" pubdate="">2016年10月5日 at 上午9:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个更C刺j激，准备好手纸哦 A 片。HTTp://T.Cn/Rc4PF3o <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64677">
+<article class="comment" id="comment-64677">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">NsezI</span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-64677" rel="nofollow"><time datetime="2016-09-11T22:41:31+00:00" pubdate="">2016年9月11日 at 下午10:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个更C刺j激，准备好手纸哦 A 片。HTTp://T.Cn/Rc4PF3o <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64676">
+<article class="comment" id="comment-64676">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">NsezI</span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-64676" rel="nofollow"><time datetime="2016-09-11T22:41:31+00:00" pubdate="">2016年9月11日 at 下午10:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个更C刺j激，准备好手纸哦 A 片。HTTp://T.Cn/Rc4PF3o <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64675">
+<article class="comment" id="comment-64675">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">NsezI</span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-64675" rel="nofollow"><time datetime="2016-09-11T22:41:31+00:00" pubdate="">2016年9月11日 at 下午10:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个更C刺j激，准备好手纸哦 A 片。HTTp://T.Cn/Rc4PF3o <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64663">
+<article class="comment" id="comment-64663">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">TtmdR</span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-64663" rel="nofollow"><time datetime="2016-09-01T11:10:36+00:00" pubdate="">2016年9月1日 at 上午11:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>万 部 A 片高清 国产日韩 <a href="http://T.cN/RtswVdh" rel="nofollow">http://T.cN/RtswVdh</a> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment byuser comment-author-bgpy odd alt thread-odd thread-alt depth-1" id="li-comment-3148">
+<article class="comment" id="comment-3148">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://t.qq.com/BGPY1049564215" rel="external nofollow">敛之</a></span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-3148" rel="nofollow"><time datetime="2015-03-31T16:20:00+00:00" pubdate="">2015年3月31日 at 下午4:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>int L[m+1][n+1];这样定义出错，这个在gcc上可以编译通过  在VS上不行 应该改为new 或者vector</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment byuser comment-author-bgpy even thread-even depth-1" id="li-comment-3147">
+<article class="comment" id="comment-3147">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">BGPY</span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-3147" rel="nofollow"><time datetime="2015-03-31T15:42:04+00:00" pubdate="">2015年3月31日 at 下午3:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>L（X [0 .. M-1]，Y [0 .. N-1]）= 1 + L（X [0 .. M-2]，Y [0 .. N-1]）这个地方也也有笔误<br/>
+应改为L（X [0 .. M-1]，Y [0 .. N-1]）= 1 + L（X [0 .. M-2]，Y [0 .. N-2]）</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27067">
+<article class="comment" id="comment-27067">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">H.Watson</a></span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-27067" rel="nofollow"><time datetime="2015-02-27T10:57:15+00:00" pubdate="">2015年2月27日 at 上午10:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这一题的代码这样提交时错误的~少考虑了很多情况</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-27068">
+<article class="comment" id="comment-27068">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">HenrryCheng</a></span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-27068" rel="nofollow"><time datetime="2015-01-19T09:09:48+00:00" pubdate="">2015年1月19日 at 上午9:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这排版…你都打开来看看改改</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27070">
+<article class="comment" id="comment-27070">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bobo</a></span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-27070" rel="nofollow"><time datetime="2014-11-11T03:05:21+00:00" pubdate="">2014年11月11日 at 上午3:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>L（X [0 .. M-1]，Y [0 .. N-1]）= 1 + L（X [0 .. M-2]，Y [0 .. N-1]）这个地方也也有笔误<br/>
+应改为L（X [0 .. M-1]，Y [0 .. N-1]）= 1 + L（X [0 .. M-2]，Y [0 .. N-2]）</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47721">
+<article class="comment" id="comment-47721">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">blogpick</a></span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-47721" rel="nofollow"><time datetime="2014-11-05T04:36:39+00:00" pubdate="">2014年11月5日 at 上午4:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>抱歉，确实是弄错了，原来的代码是错误的，删掉了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27065">
+<article class="comment" id="comment-27065">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yelawolf</a></span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-27065" rel="nofollow"><time datetime="2014-09-12T22:03:47+00:00" pubdate="">2014年9月12日 at 下午10:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>21行中，j&lt;10可改为j&lt;10-i，减少比较次数</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47720">
+<article class="comment" id="comment-47720">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ycaxgjd</a></span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-47720" rel="nofollow"><time datetime="2014-07-08T08:28:31+00:00" pubdate="">2014年7月8日 at 上午8:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这一题的代码这样提交时错误的~少考虑了很多情况</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27069">
+<article class="comment" id="comment-27069">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">litao</a></span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-27069" rel="nofollow"><time datetime="2014-06-20T02:52:56+00:00" pubdate="">2014年6月20日 at 上午2:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#pragma pack(2) 这个用法太坑爹</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-27066">
+<article class="comment" id="comment-27066">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zcmu_sls</a></span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-27066" rel="nofollow"><time datetime="2014-05-03T14:33:21+00:00" pubdate="">2014年5月3日 at 下午2:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>非常好，初学者就应该先理解递归</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-181">
+<article class="comment" id="comment-181">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://t.qq.com/p570031875" rel="external nofollow">panyu</a></span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-181" rel="nofollow"><time datetime="2014-03-01T21:28:42+00:00" pubdate="">2014年3月1日 at 下午9:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个程序编译都通不过， int L[m+1][n+1];这样定义出错，应该换成具体的数字ac</p>
+</div>
+</article><!-- #comment-## -->
+<ul class="children">
+<li class="comment byuser comment-author-admin bypostauthor even depth-2" id="li-comment-182">
+<article class="comment" id="comment-182">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://weibo.com/u/3222801010" rel="external nofollow">从此醉</a></span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-182" rel="nofollow"><time datetime="2014-03-01T21:36:48+00:00" pubdate="">2014年3月1日 at 下午9:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>和编译器有关吧，我用的g++正常。头文件可能还需要一个&lt;string.h&gt;</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ul><!-- .children -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-even depth-1" id="li-comment-180">
+<article class="comment" id="comment-180">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://t.qq.com/p570031875" rel="external nofollow">panyu</a></span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-180" rel="nofollow"><time datetime="2014-03-01T20:47:49+00:00" pubdate="">2014年3月1日 at 下午8:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>如果两个序列的最后字符不匹配（即X [M-1]！= Y [N-1]）<br/>
+L（X [0 .. M-1]，Y [0 .. N-1]）= MAX（L（X [0 .. M-2]，Y [0 .. N-1]），L（X [0 .. M-1]，Y [0 .. N-1]）<br/>
+这里写错了吧。</p>
+</div>
+</article><!-- #comment-## -->
+<ul class="children">
+<li class="comment byuser comment-author-admin bypostauthor even depth-2" id="li-comment-183">
+<article class="comment" id="comment-183">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://weibo.com/u/3222801010" rel="external nofollow">从此醉</a></span> on <a href="http://www.acmerblog.com/dp4-4-longest-common-subsequence-4736.html#comment-183" rel="nofollow"><time datetime="2014-03-01T21:42:06+00:00" pubdate="">2014年3月1日 at 下午9:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嗯，是写错了，文中以更改。MAX ( L(X[0..m-2], Y[0..n-1]), L(X[0..m-1], Y[0..n-2])</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ul><!-- .children -->
+</li><!-- #comment-## -->
+</ol>

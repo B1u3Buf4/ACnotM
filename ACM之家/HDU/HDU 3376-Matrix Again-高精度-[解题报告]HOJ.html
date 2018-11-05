@@ -1,0 +1,506 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-16</div>
+<div class="tit"><h1 class="entry-title">HDU 3376-Matrix Again-高精度-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/data-struct/linear" rel="category tag" title="查看线性结构中的全部文章">线性结构</a>, <a href="http://www.acmerblog.com/category/graph/flow" rel="category tag" title="查看网络流中的全部文章">网络流</a></span><span class="i4">围观508次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5308" href="http://www.acmerblog.com/hdu-3376-matrix-again-5308.html#comments" title="《HDU 3376-Matrix Again-高精度-[解题报告]HOJ》上的评论">27 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Matrix Again</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Starvae very like play a number game in the n*n Matrix. A positive integer number is put in each area of the Matrix.<br/>Every time starvae should to do is that choose a detour which from the top left point to the bottom right point and than back to the top left point with the maximal values of sum integers that area of Matrix starvae choose. But from the top to the bottom can only choose right and down, from the bottom to the top can only choose left and up. And starvae can not pass the same area of the Matrix except the start and end..<br/>Do you know why call this problem as “Matrix Again”? AS it is like the problem 2686 of HDU. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input contains multiple test cases.<br/>Each case first line given the integer n (2&lt;=n&lt;=600) <br/>Then n lines, each line include n positive integers. (&lt;100) </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input contains multiple test cases.<br/>Each case first line given the integer n (2&lt;=n&lt;=600) <br/>Then n lines, each line include n positive integers. (&lt;100)</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+10 3
+5 10
+3
+10 3 3
+2 5 3
+6 7 10
+5
+1 2 3 4 5
+2 3 4 5 6
+3 4 5 6 7
+4 5 6 7 8
+5 6 7 8 9</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+28
+46
+80</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include&lt;iostream&gt;
+#include&lt;algorithm&gt;
+#include&lt;cstring&gt;
+/*
+题目大意是给定一个n*n的矩阵，yifenfei从起点(1, 1)这个位置一直取数到(n,n)，
+每取完一个数，下一个只能取当前数右方或者下方的一个数，
+（注意两个数之间的距离应该是1，之前以为下方或者右方任何一个数都可以取），
+就这样取到(n,n)，然后再从(n,n)取回(1,1)，这次每取完一个数，
+下一个只能取当前数左方或者右方的一个数，最后回到（1,1），
+每个数只能被取一次，求这样进行取数之后能取到的最大数
+*/
+#include&lt;queue&gt;
+#include&lt;cstdio&gt;
+using namespace std;
+const int MAXN=610*610*2+2;
+const int inf=1&lt;&lt;29;
+int pre[MAXN];          // pre[v] = k：在增广路上，到达点v的边的编号为k
+int dis[MAXN];          // dis[u] = d：从起点s到点u的路径长为d
+int vis[MAXN];         // inq[u]：点u是否在队列中
+int path[MAXN];
+int head[MAXN];
+int NE,tot,ans,max_flow,map[666][666];
+struct node
+{
+    int u,v,cap,cost,next;
+} Edge[MAXN&lt;&lt;2];
+void addEdge(int u,int v,int cap,int cost)
+{
+    Edge[NE].u=u;
+    Edge[NE].v=v;
+    Edge[NE].cap=cap;
+    Edge[NE].cost=cost;
+    Edge[NE].next=head[u];
+    head[u]=NE++;
+    Edge[NE].v=u;
+    Edge[NE].u=v;
+    Edge[NE].cap=0;
+    Edge[NE].cost=-cost;
+    Edge[NE].next=head[v];
+    head[v]=NE++;
+}
+int SPFA(int s,int t)                   //  源点为0，汇点为sink。
+{
+    int i;
+    for(i=s;i&lt;=t;i++) dis[i]=inf;
+    memset(vis,0,sizeof(vis));
+    memset(pre,-1,sizeof(pre));
+    dis[s] = 0;
+    queue&lt;int&gt;q;
+    q.push(s);
+    vis[s] =1;
+ while(!q.empty())        //  这里最好用队列，有广搜的意思，堆栈像深搜。
+    {
+        int u =q.front();
+        q.pop();
+        for(i=head[u]; i!=-1;i=Edge[i].next)
+        {
+            int v=Edge[i].v;
+            if(Edge[i].cap &gt;0&amp;&amp; dis[v]&gt;dis[u]+Edge[i].cost)
+            {
+                dis[v] = dis[u] + Edge[i].cost;
+                pre[v] = u;
+                path[v]=i;
+                if(!vis[v])
+                {
+                    vis[v] =1;
+                    q.push(v);
+                }
+            }
+        }
+        vis[u] =0;
+    }
+    if(pre[t]==-1)
+        return 0;
+    return 1;
+}
+void end(int s,int t)
+{
+    int u, sum = inf;
+    for(u=t; u!=s; u=pre[u])
+    {
+        sum = min(sum,Edge[path[u]].cap);
+    }
+    max_flow+=sum;
+    for(u = t; u != s; u=pre[u])
+    {
+        Edge[path[u]].cap -= sum;
+        Edge[path[u]^1].cap += sum;
+        ans += sum*Edge[path[u]].cost;     //  cost记录的为单位流量费用，必须得乘以流量。
+    }
+}
+int main()
+{
+    int i,j,n,s,t;
+    while(scanf("%d",&amp;n)!=EOF)
+    {
+        memset(head,-1,sizeof(head));
+        NE=ans=max_flow=s=0;
+        for(i=1;i&lt;=n;i++)
+        {
+            for(j=1;j&lt;=n;j++)
+            {
+                scanf("%d",&amp;map[i][j]);
+            }
+        }
+        int k=n*n;
+        t=2*k+1;
+         for(i=1;i&lt;=n;i++)
+        {
+            for(j=1;j&lt;=n;j++)
+            {
+                addEdge(j+(i-1)*n,k+j+(i-1)*n,1,-map[i][j]);
+              if(j!=n) addEdge(k+j+(i-1)*n,j+1+(i-1)*n,inf,0);///右边
+              if(i!=n) addEdge(k+j+(i-1)*n,i*n+j,inf,0);///下边
+            }
+        }
+        addEdge(s,1,2,0);
+        addEdge(1,k+1,1,0);
+        addEdge(2*k,t,2,0);
+        addEdge(k,2*k,1,0);
+        while(SPFA(s,t))
+        {
+            end(s,t);
+        }
+        printf("%d\n",-ans);
+    }
+    return 0;
+}
+/*
+2
+10 3
+5 10
+3
+10 3 3
+2 5 3
+6 7 10
+5
+1 2 3 4 5
+2 3 4 5 6
+3 4 5 6 7
+4 5 6 7 8
+5 6 7 8 9
+
+*/</pre>
+<p>参考：http://blog.csdn.net/azheng51714/article/details/8148333</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-77427">
+<article class="comment" id="comment-77427">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522553" rel="external nofollow">新用户316349</a></span> on <a href="http://www.acmerblog.com/hdu-3376-matrix-again-5308.html#comment-77427" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是挺好看的     就是晚上看   有点吓人</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77426">
+<article class="comment" id="comment-77426">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522553" rel="external nofollow">新用户316349</a></span> on <a href="http://www.acmerblog.com/hdu-3376-matrix-again-5308.html#comment-77426" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是挺好看的     就是晚上看   有点吓人</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77425">
+<article class="comment" id="comment-77425">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522553" rel="external nofollow">新用户316349</a></span> on <a href="http://www.acmerblog.com/hdu-3376-matrix-again-5308.html#comment-77425" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是挺好看的     就是晚上看   有点吓人</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77424">
+<article class="comment" id="comment-77424">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522553" rel="external nofollow">新用户316349</a></span> on <a href="http://www.acmerblog.com/hdu-3376-matrix-again-5308.html#comment-77424" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是挺好看的     就是晚上看   有点吓人</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77423">
+<article class="comment" id="comment-77423">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522553" rel="external nofollow">新用户316349</a></span> on <a href="http://www.acmerblog.com/hdu-3376-matrix-again-5308.html#comment-77423" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是挺好看的     就是晚上看   有点吓人</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77422">
+<article class="comment" id="comment-77422">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522553" rel="external nofollow">新用户316349</a></span> on <a href="http://www.acmerblog.com/hdu-3376-matrix-again-5308.html#comment-77422" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是挺好看的     就是晚上看   有点吓人</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77421">
+<article class="comment" id="comment-77421">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522553" rel="external nofollow">新用户316349</a></span> on <a href="http://www.acmerblog.com/hdu-3376-matrix-again-5308.html#comment-77421" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是挺好看的     就是晚上看   有点吓人</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77420">
+<article class="comment" id="comment-77420">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522553" rel="external nofollow">新用户316349</a></span> on <a href="http://www.acmerblog.com/hdu-3376-matrix-again-5308.html#comment-77420" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是挺好看的     就是晚上看   有点吓人</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77419">
+<article class="comment" id="comment-77419">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522553" rel="external nofollow">新用户316349</a></span> on <a href="http://www.acmerblog.com/hdu-3376-matrix-again-5308.html#comment-77419" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是挺好看的     就是晚上看   有点吓人</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77418">
+<article class="comment" id="comment-77418">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522553" rel="external nofollow">新用户316349</a></span> on <a href="http://www.acmerblog.com/hdu-3376-matrix-again-5308.html#comment-77418" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是挺好看的     就是晚上看   有点吓人</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77417">
+<article class="comment" id="comment-77417">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522553" rel="external nofollow">新用户316349</a></span> on <a href="http://www.acmerblog.com/hdu-3376-matrix-again-5308.html#comment-77417" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是挺好看的     就是晚上看   有点吓人</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77416">
+<article class="comment" id="comment-77416">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522553" rel="external nofollow">新用户316349</a></span> on <a href="http://www.acmerblog.com/hdu-3376-matrix-again-5308.html#comment-77416" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是挺好看的     就是晚上看   有点吓人</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77415">
+<article class="comment" id="comment-77415">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522553" rel="external nofollow">新用户316349</a></span> on <a href="http://www.acmerblog.com/hdu-3376-matrix-again-5308.html#comment-77415" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是挺好看的     就是晚上看   有点吓人</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29159">
+<article class="comment" id="comment-29159">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fastislow</a></span> on <a href="http://www.acmerblog.com/hdu-3376-matrix-again-5308.html#comment-29159" rel="nofollow"><time datetime="2015-07-12T11:52:23+00:00" pubdate="">2015年7月12日 at 上午11:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>居然看懂了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29160">
+<article class="comment" id="comment-29160">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">AcmDream</a></span> on <a href="http://www.acmerblog.com/hdu-3376-matrix-again-5308.html#comment-29160" rel="nofollow"><time datetime="2015-06-04T16:16:29+00:00" pubdate="">2015年6月4日 at 下午4:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#include &lt;stdio.h&gt;<br/>
+int main()<br/>
+{<br/>
+    int n,p,t[100]={1};<br/>
+    for(int i=1;i&lt;100;i++)<br/>
+        t <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> =i;<br/>
+    while(scanf("%d",&amp;n)&amp;&amp;n!=0){<br/>
+        if(n==1)<br/>
+        printf("Printing order for 1 pages:nSheet 1, front: Blank, 1n");<br/>
+        else {<br/>
+        if(n%4) p=n/4+1;<br/>
+        else p=n/4;<br/>
+        int q=4*p;<br/>
+        printf("Printing order for %d pages:n",n);<br/>
+        for(int i=0;i&lt;p;i++){<br/>
+            printf("Sheet %d, front: ",i+1);<br/>
+            if(q&gt;n) {printf("Blank, %dn",t[2*i+1]);}<br/>
+            else {printf("%d, %dn",q,t[2*i+1]);}<br/>
+            q–;//打印表前<br/>
+            printf("Sheet %d, back : ",i+1);<br/>
+            if(q&gt;n) {printf("%d, Blankn",t[2*i+2]);}<br/>
+            else {printf("%d, %dn",t[2*i+2],q);}<br/>
+            q–;//打印表后<br/>
+           }<br/>
+        }<br/>
+    }<br/>
+    return 0;<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48653">
+<article class="comment" id="comment-48653">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zwj0571</a></span> on <a href="http://www.acmerblog.com/hdu-3376-matrix-again-5308.html#comment-48653" rel="nofollow"><time datetime="2015-05-28T22:40:11+00:00" pubdate="">2015年5月28日 at 下午10:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一题是不是可以这样想，生了n孩子的家庭等价于n个家庭各生了一个1个孩子，这样最后男女的比例还是1:1</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29164">
+<article class="comment" id="comment-29164">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">everos</a></span> on <a href="http://www.acmerblog.com/hdu-3376-matrix-again-5308.html#comment-29164" rel="nofollow"><time datetime="2015-05-18T15:28:45+00:00" pubdate="">2015年5月18日 at 下午3:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个差别应该不会太大，或许编辑器就自动优化成内联函数了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48654">
+<article class="comment" id="comment-48654">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">130920099</a></span> on <a href="http://www.acmerblog.com/hdu-3376-matrix-again-5308.html#comment-48654" rel="nofollow"><time datetime="2015-01-09T07:14:21+00:00" pubdate="">2015年1月9日 at 上午7:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>赞一个！权限已更新:）</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58415">
+<article class="comment" id="comment-58415">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">aaa</a></span> on <a href="http://www.acmerblog.com/hdu-3376-matrix-again-5308.html#comment-58415" rel="nofollow"><time datetime="2014-11-19T11:33:23+00:00" pubdate="">2014年11月19日 at 上午11:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没有对题目进行一番分析，真是美中不足啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48652">
+<article class="comment" id="comment-48652">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jlucky</a></span> on <a href="http://www.acmerblog.com/hdu-3376-matrix-again-5308.html#comment-48652" rel="nofollow"><time datetime="2014-11-17T12:22:30+00:00" pubdate="">2014年11月17日 at 下午12:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>居然看懂了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29163">
+<article class="comment" id="comment-29163">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jandk</a></span> on <a href="http://www.acmerblog.com/hdu-3376-matrix-again-5308.html#comment-29163" rel="nofollow"><time datetime="2014-10-29T16:21:14+00:00" pubdate="">2014年10月29日 at 下午4:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>具体实现上有所差别，但思路是一样的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29166">
+<article class="comment" id="comment-29166">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ycaxgjd</a></span> on <a href="http://www.acmerblog.com/hdu-3376-matrix-again-5308.html#comment-29166" rel="nofollow"><time datetime="2014-10-18T15:40:34+00:00" pubdate="">2014年10月18日 at 下午3:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>代码过于复杂了吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29162">
+<article class="comment" id="comment-29162">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">20122256</a></span> on <a href="http://www.acmerblog.com/hdu-3376-matrix-again-5308.html#comment-29162" rel="nofollow"><time datetime="2014-09-12T00:13:56+00:00" pubdate="">2014年9月12日 at 上午12:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你指的哪个问题？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29165">
+<article class="comment" id="comment-29165">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">reking</a></span> on <a href="http://www.acmerblog.com/hdu-3376-matrix-again-5308.html#comment-29165" rel="nofollow"><time datetime="2014-08-10T13:44:59+00:00" pubdate="">2014年8月10日 at 下午1:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58417">
+<article class="comment" id="comment-58417">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">489365227</a></span> on <a href="http://www.acmerblog.com/hdu-3376-matrix-again-5308.html#comment-58417" rel="nofollow"><time datetime="2014-08-01T20:46:50+00:00" pubdate="">2014年8月1日 at 下午8:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可以根据二叉排序树的定义进行严格的排序树创建和后序遍历操作。如果形成的排序树相同，其树的前、中、后序遍历是相同的，但在此处不能使用中序遍历，因为，中序遍历的结果就是排序的结果。经在九度测试，运行时间90ms，比楼主的要快。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58416">
+<article class="comment" id="comment-58416">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wawa</a></span> on <a href="http://www.acmerblog.com/hdu-3376-matrix-again-5308.html#comment-58416" rel="nofollow"><time datetime="2014-06-19T06:34:21+00:00" pubdate="">2014年6月19日 at 上午6:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这代码的输出格式不对阿，else语句的low=p移动一下位置，增加可读性</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29161">
+<article class="comment" id="comment-29161">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Anne</a></span> on <a href="http://www.acmerblog.com/hdu-3376-matrix-again-5308.html#comment-29161" rel="nofollow"><time datetime="2014-03-31T23:11:14+00:00" pubdate="">2014年3月31日 at 下午11:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很不错！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

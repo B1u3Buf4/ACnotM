@@ -1,0 +1,497 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>05-23</div>
+<div class="tit"><h1 class="entry-title">HDU 4351-Digital root[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观151次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7362" href="http://www.acmerblog.com/hdu-4351-digital-root-7362.html#comments" title="《HDU 4351-Digital root[解题报告]HOJ》上的评论">21 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Digital root</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+The digital root (also repeated digital sum) of a number is the (single digit) value obtained by an iterative process of summing digits, on each iteration using the result from the previous iteration to compute a digit sum. The process continues until a single-digit number is reached.<br/>For example, the digital root of 65536 is 7, because 6+5+5+3+6=25 and 2+5=7.<br/>The digital root of an interval is digital root of the sum of all numbers in that interval.
+<p>Consider a sequence A<sub>1</sub>,A<sub>2</sub>,A<sub>3</sub>……A<sub>n</sub>, your task is to answer some queries[l,r]. For each query, tell the biggest five different digital roots among all continuous subintervals of interval[l,r] </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+In the first line of the input , we have one integer T indicating the number of test cases. (1 &lt;= T &lt;= 10) Then T cases follows. For each test case, the first line is an integer n indicating the length of sequence(1&lt;=n&lt;=100000); following one line containing n integer A<sub>i</sub>(0&lt;=A<sub>i</sub>&lt;=1000000000); the third line is an integer Q indicating the number of queries(1&lt;=Q&lt;=100000); following Q lines, each line indicating one query [l,r],(1&lt;=l&lt;=r&lt;=n). </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+In the first line of the input , we have one integer T indicating the number of test cases. (1 &lt;= T &lt;= 10) Then T cases follows. For each test case, the first line is an integer n indicating the length of sequence(1&lt;=n&lt;=100000); following one line containing n integer A<sub>i</sub>(0&lt;=A<sub>i</sub>&lt;=1000000000); the third line is an integer Q indicating the number of queries(1&lt;=Q&lt;=100000); following Q lines, each line indicating one query [l,r],(1&lt;=l&lt;=r&lt;=n).</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+5
+101 240 331 4 52
+3
+1 3
+4 5
+1 5</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case #1:
+8 7 6 4 2
+7 4 2 -1 -1
+9 8 7 6 4
+<div style="font-family:Times New Roman;font-size:14px;background-color:F4FBFF;border:#B7CBFF 1px dashed;padding:6px"><div style="font-family:Arial;font-weight:bold;color:#7CA9ED;border-bottom:#B7CBFF 1px dashed"><i>Hint</i></div>
+For the first query, [1,3] has six subintervals: [1,1],[2,2],[3,3],[1,2],[2,3],[1,3]. Interval sums are 101,240,331,341,571,672, correspondence digital roots are 2,6,7
+,8,4,6,the most biggest five are 8,7,6,4,2
+</div><i style="font-size:1px"> </i></pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include &lt;iostream&gt;
+#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+#include &lt;algorithm&gt;
+#define lson l , mid , dex&lt;&lt;1
+#define rson mid + 1 , r , dex&lt;&lt;1|1
+#define havemid int mid = (l + r) &gt;&gt; 1
+
+using namespace std;
+const int Max = 100100;
+int add[1025][1025];
+int pass[10][1025];
+//int root_l[Max];
+//int root_r[Max];
+//int root_a[Max];
+//int root[Max&lt;&lt;2];
+
+struct se
+{
+    int root_l , root_r , root_a , root , dex;
+    se(int a = 0 , int b = 0 , int c = 0 , int d = 0 , int e = 0):root_l(a) , root_r(b) , root_a(c) , root(d) , dex(e) {}
+    bool check()
+    {
+        if(!root_l &amp;&amp; !root_r &amp;&amp; !root_a &amp;&amp; !root)
+            return true;
+        else
+            return false;
+    }
+} seg[Max&lt;&lt;2];
+
+void out_root(int x)
+{
+    for(int i = 0 ; i &lt;= 9 ; i++)
+        if(x &amp; (1 &lt;&lt; i))
+            printf("%d " , i);
+}
+
+int Find_root(int x)
+{
+    int tem = 0;
+    while(x)
+    {
+        tem += x%10;
+        x /= 10;
+    }
+    if(tem &lt; 10)
+        return tem;
+    else
+        Find_root(tem);
+}
+inline int handle(int add , int root)
+{
+    int tem = 0;
+    for(int i = 9 ; i &gt;= 0 ; i--)
+    {
+        if(root &amp; (1&lt;&lt;i))
+            tem |= (1 &lt;&lt; Find_root(i + add));
+    }
+    return tem;
+}
+inline int handle2(int one , int second)
+{
+    int tem = 0;
+    for(int i = 9 ; i &gt;= 0 ; i--)
+        if(one &amp; (1 &lt;&lt; i))
+            tem |= pass[i][second];
+    return tem;
+}
+void init()
+{
+//    memset(pass , 0 , sizeof(pass));
+//    for(int i = 0 ; i &lt;= 9 ; i ++)
+//        for(int j = 1 ; j &lt;= 1024 ; j ++)
+//            pass[i][j] = j | handle(i , j);
+
+//    for(int i = 0 ; i &lt;= 1024 ; i++)
+//        for(int j = i ; j &lt;= 1024 ; j++)
+//            add[i][j] = add[j][i] = j | i | handle2(i , j);
+
+    memset(pass , 0 , sizeof(pass));
+    for(int i = 0 ; i &lt;= 9 ; i ++)//pay attention! "i" is the root number  "j" is the value of the root number in binary system
+        for(int j = 1 ; j &lt;= 1024 ; j ++)
+            pass[i][j] = handle(i , j);
+
+//    for(int i = 1 ; i &lt;= 9 ; i ++).
+//    {
+//        printf("pass[%d][%d]\n" , 1 , (1&lt;&lt;i|1));
+//        out_root(pass[1][(1&lt;&lt;i|1)]);
+//        printf("\n");
+//    }
+
+    for(int i = 0 ; i &lt;= 1024 ; i++)
+        for(int j = i ; j &lt;= 1024 ; j++)
+            add[i][j] = add[j][i] = handle2(i , j);
+//
+//    for(int i = 1 ; i &lt;= 9 ; i ++)
+//    {
+//        printf("add[%d][%d]\n" , 2 , (1&lt;&lt;i|1));
+//        out_root(add[2][(1&lt;&lt;i|1)]);
+//        printf("\n");
+//    }
+}
+
+//void Push_up(int dex)
+//{
+//    seg[dex].root_a = add[seg[dex&lt;&lt;1].root_a][seg[dex&lt;&lt;1|1].root_a];
+//    seg[dex].root_l = seg[dex&lt;&lt;1].root_l | add[seg[dex&lt;&lt;1].root_a][seg[dex&lt;&lt;1|1].root_l];
+//    seg[dex].root_r = seg[dex&lt;&lt;1|1].root_r | add[seg[dex&lt;&lt;1|1].root_a][seg[dex&lt;&lt;1].root_r];
+//    seg[dex].root = seg[dex].root_l | seg[dex].root_r | add[seg[dex&lt;&lt;1].root_r][seg[dex&lt;&lt;1|1].root_l];
+//
+////    root_a[dex] = add[root_a[dex&lt;&lt;1]][root_a[dex&lt;&lt;1|1]];
+////    root_l[dex] = root_l[dex&lt;&lt;1] | add[root_a[dex&lt;&lt;1]][root_l[dex&lt;&lt;1|1]];
+////    root_r[dex] = root_r[dex&lt;&lt;1|1] | add[root_a[dex&lt;&lt;1|1]][root_r[dex&lt;&lt;1]];
+////    root[dex] = root_l[dex] | root_r[dex] | add[root_r[dex&lt;&lt;1]][root_l[dex&lt;&lt;1|1]];
+//}
+se Push_up(se lsn , se rsn)
+{
+    se father;
+    if(lsn.check() &amp;&amp; !rsn.check()) return father = rsn;
+    else if(!lsn.check() &amp;&amp; rsn.check()) return father = lsn;
+    else if(lsn.check() &amp;&amp; rsn.check())   return father;
+    father.root_a = add[lsn.root_a][rsn.root_a];
+    father.root_l = lsn.root_l | add[lsn.root_a][rsn.root_l];
+    father.root_r = rsn.root_r | add[rsn.root_a][lsn.root_r];
+    father.root   = father.root_l | father.root_r | add[lsn.root_r][rsn.root_l] | lsn.root | rsn.root;
+    return father;
+}
+
+void build(int l , int r , int dex)
+{
+    if(l == r)
+    {
+        int tem;
+        scanf("%d" , &amp;tem);
+        seg[dex].root_a = seg[dex].root_l = seg[dex].root_r = seg[dex].root |= (1 &lt;&lt; Find_root(tem));
+//        root_a[dex] = root_l[dex] = root_r[dex] = root[dex] |= (1 &lt;&lt; Find_root(tem));
+        return;
+    }
+    havemid;
+    build(lson);
+    build(rson);
+    seg[dex] = Push_up(seg[dex&lt;&lt;1] , seg[dex&lt;&lt;1|1]);
+}
+
+inline void m_out(int x)
+{
+    int counter = 0;
+    int ans[5];
+    for(int i = 9 ; i &gt;= 0 ; i--)
+    {
+        if(counter == 5)    break;
+        if(x &amp; (1&lt;&lt;i))
+            ans[counter++] = i;
+    }
+    if(!counter)
+        printf("-1 -1 -1 -1 -1");
+    else
+    {
+        printf("%d" , ans[0]);
+        for(int i = 1 ; i &lt; counter ; i++)
+            printf(" %d" , ans[i]);
+        for(int i = counter ; i &lt; 5 ; i++)
+            printf(" -1");
+    }
+    printf("\n");
+}
+
+se query(int L , int R , int l , int r , int dex)
+{
+    if(L &lt;= l &amp;&amp; R &gt;= r)
+        return seg[dex];
+    havemid;
+    se tem_L , tem_R , tem_ans;
+    if(L &lt;= mid)    tem_L = query(L , R , lson);
+    if(R &gt;  mid)    tem_R = query(L , R , rson);
+    tem_ans = Push_up(tem_L , tem_R);
+    return tem_ans;
+}
+
+void out_build(int l , int r , int dex)
+{
+    if(l == r)
+    {
+        printf("root[%d]:\n" , dex);
+        out_root(seg[dex].root);
+        printf("\n");
+        return;
+    }
+    havemid;
+    out_build(lson);
+    out_build(rson);
+    printf("root[%d]:\n" , dex);
+    out_root(seg[dex].root);
+    printf("\n");
+}
+int main()
+{
+//    freopen("DG.txt","r",stdin);
+    int t , cases = 1;
+    scanf("%d" , &amp;t);
+    init();
+    while(t--)
+    {
+        printf("Case #%d:\n" , cases++);
+        memset(seg , 0 , sizeof(seg));
+        int n;
+        scanf("%d" , &amp;n);
+        build(1 , n , 1);
+//        out_build(1 , n , 1);
+        int m;
+        scanf("%d" , &amp;m);
+        for(int i = 1 ; i &lt;= m ; i++)
+        {
+            int a , b;
+            scanf("%d %d" , &amp;a , &amp;b);
+//            cout&lt;&lt;"Bingo"&lt;&lt;endl;
+            se ans = query(a , b , 1 , n , 1);
+            m_out(ans.root);
+        }
+        if(t != 0)
+            printf("\n");
+    }
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-98390">
+<article class="comment" id="comment-98390">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512004" rel="external nofollow">新用户621063</a></span> on <a href="http://www.acmerblog.com/hdu-4351-digital-root-7362.html#comment-98390" rel="nofollow"><time datetime="2017-04-20T11:47:13+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好喜欢啊！！女主很可耐啊~~求更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98389">
+<article class="comment" id="comment-98389">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512004" rel="external nofollow">新用户621063</a></span> on <a href="http://www.acmerblog.com/hdu-4351-digital-root-7362.html#comment-98389" rel="nofollow"><time datetime="2017-04-20T11:47:13+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好喜欢啊！！女主很可耐啊~~求更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98388">
+<article class="comment" id="comment-98388">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512004" rel="external nofollow">新用户621063</a></span> on <a href="http://www.acmerblog.com/hdu-4351-digital-root-7362.html#comment-98388" rel="nofollow"><time datetime="2017-04-20T11:47:13+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好喜欢啊！！女主很可耐啊~~求更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98387">
+<article class="comment" id="comment-98387">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512004" rel="external nofollow">新用户621063</a></span> on <a href="http://www.acmerblog.com/hdu-4351-digital-root-7362.html#comment-98387" rel="nofollow"><time datetime="2017-04-20T11:47:13+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好喜欢啊！！女主很可耐啊~~求更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98386">
+<article class="comment" id="comment-98386">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512004" rel="external nofollow">新用户621063</a></span> on <a href="http://www.acmerblog.com/hdu-4351-digital-root-7362.html#comment-98386" rel="nofollow"><time datetime="2017-04-20T11:47:13+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好喜欢啊！！女主很可耐啊~~求更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98385">
+<article class="comment" id="comment-98385">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512004" rel="external nofollow">新用户621063</a></span> on <a href="http://www.acmerblog.com/hdu-4351-digital-root-7362.html#comment-98385" rel="nofollow"><time datetime="2017-04-20T11:47:13+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好喜欢啊！！女主很可耐啊~~求更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98384">
+<article class="comment" id="comment-98384">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512004" rel="external nofollow">新用户621063</a></span> on <a href="http://www.acmerblog.com/hdu-4351-digital-root-7362.html#comment-98384" rel="nofollow"><time datetime="2017-04-20T11:47:13+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好喜欢啊！！女主很可耐啊~~求更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98383">
+<article class="comment" id="comment-98383">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512004" rel="external nofollow">新用户621063</a></span> on <a href="http://www.acmerblog.com/hdu-4351-digital-root-7362.html#comment-98383" rel="nofollow"><time datetime="2017-04-20T11:47:13+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好喜欢啊！！女主很可耐啊~~求更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98382">
+<article class="comment" id="comment-98382">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512004" rel="external nofollow">新用户621063</a></span> on <a href="http://www.acmerblog.com/hdu-4351-digital-root-7362.html#comment-98382" rel="nofollow"><time datetime="2017-04-20T11:47:13+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好喜欢啊！！女主很可耐啊~~求更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98381">
+<article class="comment" id="comment-98381">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512004" rel="external nofollow">新用户621063</a></span> on <a href="http://www.acmerblog.com/hdu-4351-digital-root-7362.html#comment-98381" rel="nofollow"><time datetime="2017-04-20T11:47:13+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好喜欢啊！！女主很可耐啊~~求更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98380">
+<article class="comment" id="comment-98380">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512004" rel="external nofollow">新用户621063</a></span> on <a href="http://www.acmerblog.com/hdu-4351-digital-root-7362.html#comment-98380" rel="nofollow"><time datetime="2017-04-20T11:47:13+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好喜欢啊！！女主很可耐啊~~求更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98379">
+<article class="comment" id="comment-98379">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512004" rel="external nofollow">新用户621063</a></span> on <a href="http://www.acmerblog.com/hdu-4351-digital-root-7362.html#comment-98379" rel="nofollow"><time datetime="2017-04-20T11:47:13+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好喜欢啊！！女主很可耐啊~~求更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98378">
+<article class="comment" id="comment-98378">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512004" rel="external nofollow">新用户621063</a></span> on <a href="http://www.acmerblog.com/hdu-4351-digital-root-7362.html#comment-98378" rel="nofollow"><time datetime="2017-04-20T11:47:13+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好喜欢啊！！女主很可耐啊~~求更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98377">
+<article class="comment" id="comment-98377">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512004" rel="external nofollow">新用户621063</a></span> on <a href="http://www.acmerblog.com/hdu-4351-digital-root-7362.html#comment-98377" rel="nofollow"><time datetime="2017-04-20T11:47:13+00:00" pubdate="">2017年4月20日 at 上午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好喜欢啊！！女主很可耐啊~~求更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68365">
+<article class="comment" id="comment-68365">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919463364" rel="external nofollow">新用户086482</a></span> on <a href="http://www.acmerblog.com/hdu-4351-digital-root-7362.html#comment-68365" rel="nofollow"><time datetime="2017-04-11T03:57:04+00:00" pubdate="">2017年4月11日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>装疯卖傻演智障就当是喜剧了？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68364">
+<article class="comment" id="comment-68364">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919463364" rel="external nofollow">新用户086482</a></span> on <a href="http://www.acmerblog.com/hdu-4351-digital-root-7362.html#comment-68364" rel="nofollow"><time datetime="2017-04-11T03:57:04+00:00" pubdate="">2017年4月11日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>装疯卖傻演智障就当是喜剧了？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68363">
+<article class="comment" id="comment-68363">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919463364" rel="external nofollow">新用户086482</a></span> on <a href="http://www.acmerblog.com/hdu-4351-digital-root-7362.html#comment-68363" rel="nofollow"><time datetime="2017-04-11T03:57:04+00:00" pubdate="">2017年4月11日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>装疯卖傻演智障就当是喜剧了？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68362">
+<article class="comment" id="comment-68362">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919463364" rel="external nofollow">新用户086482</a></span> on <a href="http://www.acmerblog.com/hdu-4351-digital-root-7362.html#comment-68362" rel="nofollow"><time datetime="2017-04-11T03:57:04+00:00" pubdate="">2017年4月11日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>装疯卖傻演智障就当是喜剧了？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68361">
+<article class="comment" id="comment-68361">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919463364" rel="external nofollow">新用户086482</a></span> on <a href="http://www.acmerblog.com/hdu-4351-digital-root-7362.html#comment-68361" rel="nofollow"><time datetime="2017-04-11T03:57:04+00:00" pubdate="">2017年4月11日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>装疯卖傻演智障就当是喜剧了？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-68360">
+<article class="comment" id="comment-68360">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919463364" rel="external nofollow">新用户086482</a></span> on <a href="http://www.acmerblog.com/hdu-4351-digital-root-7362.html#comment-68360" rel="nofollow"><time datetime="2017-04-11T03:57:04+00:00" pubdate="">2017年4月11日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>装疯卖傻演智障就当是喜剧了？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68359">
+<article class="comment" id="comment-68359">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919463364" rel="external nofollow">新用户086482</a></span> on <a href="http://www.acmerblog.com/hdu-4351-digital-root-7362.html#comment-68359" rel="nofollow"><time datetime="2017-04-11T03:57:04+00:00" pubdate="">2017年4月11日 at 上午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>装疯卖傻演智障就当是喜剧了？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

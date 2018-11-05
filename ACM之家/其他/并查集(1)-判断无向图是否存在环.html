@@ -1,0 +1,388 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-20</div>
+<div class="tit"><h1 class="entry-title">并查集(1)-判断无向图是否存在环</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/data-struct/union-find" rel="category tag" title="查看并查集中的全部文章">并查集</a>, <a href="http://www.acmerblog.com/category/zhuanti/algorithm" rel="category tag" title="查看算法分析中的全部文章">算法分析</a>, <a href="http://www.acmerblog.com/category/zhuanti/classic" rel="category tag" title="查看经典问题中的全部文章">经典问题</a></span><span class="i4">围观2838次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5216" href="http://www.acmerblog.com/union-find-graph-5216.html#comments" title="《并查集(1)-判断无向图是否存在环》上的评论">24 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p>并查集是一种树型的数据结构，用于处理一些不相交集合（Disjoint Sets）的合并及查询问题。常常在使用中以森林来表示。集就是让每个元素构成一个单元素的集合，也就是按一定顺序将属于同一组的元素所在的集合合并。</p>
+<ul>
+<li>Find：确定元素属于哪一个子集。它可以被用来确定两个元素是否属于同一子集合。</li>
+<li>Union：将两个子集合并成同一个集合。</li>
+</ul>
+<p>其实判断一个图是否存在环已经有相应的算法，此文用并查集来判断一个图是否有环。</p>
+<p>我们可以用一个一维数组parent[] 来记录子集合。</p>
+<p>看下面这个图：</p>
+<pre class="brush:other">        0
+        |  \
+        |    \
+        1-----2</pre>
+<p>对每一条边的两个顶点加入集合，发现两个相同的顶点在一个子集合中，就说明存在环。</p>
+<p>初始化：parent[n] 的每个元素都为-1，共有n个子集合，表示集合只有当前顶点一个元素。</p>
+<pre class="brush:other">0 1 2
+-1 -1 -1</pre>
+<p>然后逐个处理每条边。</p>
+<p><em>边0-1：</em>我们找到两个子集合 0 和1，因为他们在不同的子集合，现在需要合并他们(Union). 把其中一个子集合作为对方的父集合.</p>
+<pre class="brush:other">0   1   2    &lt;----- 1 成为 0 的 父集合 (1 现在代表集合 {0, 1})
+1  -1  -1</pre>
+<p><em> 边0-2:</em>1属于属于子集合1,2属于子集合2，因此合并他们。</p>
+<pre class="brush:other">0   1   2    &lt;----- 2 作为 1的父集合 (2 现在代表集合 {0, 1, 2})
+1   2  -1</pre>
+<p><em> 边0-2:</em> <span>0是在子集和2和2也是在子集合2， 因为 0-&gt;1-&gt;2 // 1 是0 父集合 并且  2 是1的父集合 。</span><span>因此，找到了环。</span></p>
+<p>代码：</p>
+<pre class="brush:cpp">// 用并查集判断是否存在环
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+
+// 图中的边
+struct Edge
+{
+    int src, dest;
+};
+
+// 图结构体
+struct Graph
+{
+    // V-&gt; 顶点个数, E-&gt; 边的个数
+    int V, E;
+
+    // 每个图就是 边的集合
+    struct Edge* edge;
+};
+
+// 创建一个图
+struct Graph* createGraph(int V, int E)
+{
+    struct Graph* graph = (struct Graph*) malloc( sizeof(struct Graph) );
+    graph-&gt;V = V;
+    graph-&gt;E = E;
+
+    graph-&gt;edge = (struct Edge*) malloc( graph-&gt;E * sizeof( struct Edge ) );
+
+    return graph;
+}
+
+// 查找元素i 所在的集合( 根 )
+int find(int parent[], int i)
+{
+    if (parent[i] == -1)
+        return i;
+    return find(parent, parent[i]);
+}
+
+// 合并两个集合
+void Union(int parent[], int x, int y)
+{
+    int xset = find(parent, x);
+    int yset = find(parent, y);
+    parent[xset] = yset;
+}
+
+// 检测环
+int isCycle( struct Graph* graph )
+{
+    int *parent = (int*) malloc( graph-&gt;V * sizeof(int) );
+
+    // 初始化所有集合
+    memset(parent, -1, sizeof(int) * graph-&gt;V);
+
+    // 遍历所有边
+    for(int i = 0; i &lt; graph-&gt;E; ++i)
+    {
+        int x = find(parent, graph-&gt;edge[i].src);
+        int y = find(parent, graph-&gt;edge[i].dest);
+
+        if (x == y) //如果在一个集合，就找到了环
+            return 1;
+
+        Union(parent, x, y);
+    }
+    return 0;
+}
+
+// 测试
+int main()
+{
+    /* 创建一些的图
+         0
+        |  \
+        |    \
+        1-----2 */
+    struct Graph* graph = createGraph(3, 3);
+
+    // 添加边 0-1
+    graph-&gt;edge[0].src = 0;
+    graph-&gt;edge[0].dest = 1;
+
+    // 添加边 1-2
+    graph-&gt;edge[1].src = 1;
+    graph-&gt;edge[1].dest = 2;
+
+    // 添加边 0-2
+    graph-&gt;edge[2].src = 0;
+    graph-&gt;edge[2].dest = 2;
+
+    if (isCycle(graph))
+        printf( "Graph contains cycle" );
+    else
+        printf( "Graph doesn't contain cycle" );
+
+    return 0;
+}</pre>
+<p>参考：http://www.geeksforgeeks.org/union-find/</p>
+<p> </p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-77276">
+<article class="comment" id="comment-77276">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529749" rel="external nofollow">新用户051007</a></span> on <a href="http://www.acmerblog.com/union-find-graph-5216.html#comment-77276" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>苍天啊大地啊，叨叨千万不要让我上墙</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77275">
+<article class="comment" id="comment-77275">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529749" rel="external nofollow">新用户051007</a></span> on <a href="http://www.acmerblog.com/union-find-graph-5216.html#comment-77275" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>苍天啊大地啊，叨叨千万不要让我上墙</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77274">
+<article class="comment" id="comment-77274">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529749" rel="external nofollow">新用户051007</a></span> on <a href="http://www.acmerblog.com/union-find-graph-5216.html#comment-77274" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>苍天啊大地啊，叨叨千万不要让我上墙</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77273">
+<article class="comment" id="comment-77273">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529749" rel="external nofollow">新用户051007</a></span> on <a href="http://www.acmerblog.com/union-find-graph-5216.html#comment-77273" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>苍天啊大地啊，叨叨千万不要让我上墙</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77272">
+<article class="comment" id="comment-77272">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529749" rel="external nofollow">新用户051007</a></span> on <a href="http://www.acmerblog.com/union-find-graph-5216.html#comment-77272" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>苍天啊大地啊，叨叨千万不要让我上墙</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77271">
+<article class="comment" id="comment-77271">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529749" rel="external nofollow">新用户051007</a></span> on <a href="http://www.acmerblog.com/union-find-graph-5216.html#comment-77271" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>苍天啊大地啊，叨叨千万不要让我上墙</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77270">
+<article class="comment" id="comment-77270">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529749" rel="external nofollow">新用户051007</a></span> on <a href="http://www.acmerblog.com/union-find-graph-5216.html#comment-77270" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>苍天啊大地啊，叨叨千万不要让我上墙</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77269">
+<article class="comment" id="comment-77269">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529749" rel="external nofollow">新用户051007</a></span> on <a href="http://www.acmerblog.com/union-find-graph-5216.html#comment-77269" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>苍天啊大地啊，叨叨千万不要让我上墙</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77268">
+<article class="comment" id="comment-77268">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529749" rel="external nofollow">新用户051007</a></span> on <a href="http://www.acmerblog.com/union-find-graph-5216.html#comment-77268" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>苍天啊大地啊，叨叨千万不要让我上墙</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77267">
+<article class="comment" id="comment-77267">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919529749" rel="external nofollow">新用户051007</a></span> on <a href="http://www.acmerblog.com/union-find-graph-5216.html#comment-77267" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>苍天啊大地啊，叨叨千万不要让我上墙</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63422">
+<article class="comment" id="comment-63422">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Aifan</a></span> on <a href="http://www.acmerblog.com/union-find-graph-5216.html#comment-63422" rel="nofollow"><time datetime="2015-06-02T03:48:54+00:00" pubdate="">2015年6月2日 at 上午3:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不太懂呀，乡亲们。原理知道代码不会</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48718">
+<article class="comment" id="comment-48718">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yelawolf</a></span> on <a href="http://www.acmerblog.com/union-find-graph-5216.html#comment-48718" rel="nofollow"><time datetime="2015-05-15T15:02:08+00:00" pubdate="">2015年5月15日 at 下午3:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>.net中char类型不是两个字节么</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48719">
+<article class="comment" id="comment-48719">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">09291010</a></span> on <a href="http://www.acmerblog.com/union-find-graph-5216.html#comment-48719" rel="nofollow"><time datetime="2015-03-12T19:25:43+00:00" pubdate="">2015年3月12日 at 下午7:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，现在就缺少新的资料</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48716">
+<article class="comment" id="comment-48716">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zhuliyan</a></span> on <a href="http://www.acmerblog.com/union-find-graph-5216.html#comment-48716" rel="nofollow"><time datetime="2015-02-21T01:58:42+00:00" pubdate="">2015年2月21日 at 上午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实就是DFS搜索，数据量较小，穷举了所有情况</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48712">
+<article class="comment" id="comment-48712">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">123zxc</a></span> on <a href="http://www.acmerblog.com/union-find-graph-5216.html#comment-48712" rel="nofollow"><time datetime="2015-01-24T05:02:07+00:00" pubdate="">2015年1月24日 at 上午5:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>I like your publish. It is great to see you verbalize from the coronary heart and clarity on this essential subject matter can be easily noticed.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48715">
+<article class="comment" id="comment-48715">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">feifei003603</a></span> on <a href="http://www.acmerblog.com/union-find-graph-5216.html#comment-48715" rel="nofollow"><time datetime="2015-01-07T22:09:41+00:00" pubdate="">2015年1月7日 at 下午10:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>网站不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63421">
+<article class="comment" id="comment-63421">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jandk</a></span> on <a href="http://www.acmerblog.com/union-find-graph-5216.html#comment-63421" rel="nofollow"><time datetime="2015-01-04T07:03:33+00:00" pubdate="">2015年1月4日 at 上午7:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有点意思</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48713">
+<article class="comment" id="comment-48713">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jiakcstudio</a></span> on <a href="http://www.acmerblog.com/union-find-graph-5216.html#comment-48713" rel="nofollow"><time datetime="2014-10-07T11:03:03+00:00" pubdate="">2014年10月7日 at 上午11:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感觉第二种方法其实也不是很好，不过的确要比第一种方法要好一点。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48720">
+<article class="comment" id="comment-48720">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mr_zhang2011</a></span> on <a href="http://www.acmerblog.com/union-find-graph-5216.html#comment-48720" rel="nofollow"><time datetime="2014-09-21T19:03:26+00:00" pubdate="">2014年9月21日 at 下午7:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这道题目虽然简单，但是小编做的很到位，应该会给很多人启发吧！对于面试当中不给开辟额外空间的问题不是绝对的，实际上至少是允许少数变量存在的。之前遇到相似的问题也是恍然大悟，今天看到小编这篇文章相见恨晚。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58434">
+<article class="comment" id="comment-58434">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">renke</a></span> on <a href="http://www.acmerblog.com/union-find-graph-5216.html#comment-58434" rel="nofollow"><time datetime="2014-09-18T04:00:22+00:00" pubdate="">2014年9月18日 at 上午4:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>非常不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48711">
+<article class="comment" id="comment-48711">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jdliyao</a></span> on <a href="http://www.acmerblog.com/union-find-graph-5216.html#comment-48711" rel="nofollow"><time datetime="2014-08-15T07:21:41+00:00" pubdate="">2014年8月15日 at 上午7:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>I like your publish. It is great to see you verbalize from the coronary heart and clarity on this essential subject matter can be easily noticed.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58435">
+<article class="comment" id="comment-58435">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">litaotao</a></span> on <a href="http://www.acmerblog.com/union-find-graph-5216.html#comment-58435" rel="nofollow"><time datetime="2014-06-28T09:44:40+00:00" pubdate="">2014年6月28日 at 上午9:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好。代码比书上的简练！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48714">
+<article class="comment" id="comment-48714">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">beizhiwu</a></span> on <a href="http://www.acmerblog.com/union-find-graph-5216.html#comment-48714" rel="nofollow"><time datetime="2014-06-25T06:00:45+00:00" pubdate="">2014年6月25日 at 上午6:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢支持！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48717">
+<article class="comment" id="comment-48717">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">slowlight</a></span> on <a href="http://www.acmerblog.com/union-find-graph-5216.html#comment-48717" rel="nofollow"><time datetime="2014-03-30T01:42:59+00:00" pubdate="">2014年3月30日 at 上午1:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>网站不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

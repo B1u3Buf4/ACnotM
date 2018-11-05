@@ -1,0 +1,429 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>07-02</div>
+<div class="tit"><h1 class="entry-title">有向无环图的最短路径</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/graph/shortest-path" rel="category tag" title="查看最短路径中的全部文章">最短路径</a>, <a href="http://www.acmerblog.com/category/zhuanti/classic" rel="category tag" title="查看经典问题中的全部文章">经典问题</a></span><span class="i4">围观2333次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5891" href="http://www.acmerblog.com/shortest-path-for-directed-acyclic-graphs-5891.html#comments" title="《有向无环图的最短路径》上的评论">26 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p><strong>问题</strong></p>
+<p>给定一个有向无环图和一个源点，求从该源点到其他所有的顶点的最短路径。我们已经知道了如何通过Dijkstra算法在非负权图中找到最短路径。即使图中有负权边，我们也知道通过Bellman-Ford算法找到一个从给定的源点到其它所有节点的最短路径。现在我们将看到一个在线性时间内运行得更快的算法，它可以在有向无环图中找到从一个给定的源点到其它所有可达顶点的最短路径。基本思想是利用拓扑排序。</p>
+<p><strong>分析</strong></p>
+<p>关于有向无环图（DAG）我们首先要知道，它们可以很容易地进行拓扑排序。拓扑排序应用范围非常之广，其中最常用的或许就是用于安排依赖任务（依赖任务是同属于一个工作中相同任务的实体，这些实体是保证互连的，它们解决共同的问题）。</p>
+<p>下图即为对一个有向图的<a href="http://www.acmerblog.com/topological-sorting-5896.html">拓扑排序</a>：</p>
+<p><a href="http://cdn.acmerblog.com/wp-content/uploads/2014/06/topsort01.png"><img alt="topsort01" class="alignnone wp-image-5893" height="319" src="http://cdn.acmerblog.com/wp-content/uploads/2014/06/topsort01.png" width="496"/></a></p>
+<p>拓扑排序通常是用来“排序”依赖任务的！</p>
+<p>经过拓扑排序，我们最终会得到一张DAG图的顶点列表，我们确信在拓扑排序列表中如果存在一条边（u，v），那么顶点u会先于顶点v进入列表中。</p>
+<p><a href="http://cdn.acmerblog.com/wp-content/uploads/2014/06/topsort02.png"><img alt="topsort02" class="alignnone wp-image-5894" height="319" src="http://cdn.acmerblog.com/wp-content/uploads/2014/06/topsort02.png" width="496"/></a></p>
+<p> </p>
+<p>如果有一条边（u，v），那么顶点u一定在顶点v前面。这个结果通过这张图片变得更加通俗易懂。其中B和D之间没有边，但在列表中B在D前面！</p>
+<p>此信息异常重要，我们唯一需要做的事情就是通过这个排序列表来计算距离最短的路径，这和Dijkstra算法比较相似。</p>
+<p>好了，让我们来总结一下这个算法：</p>
+<p>-首先，我们必须对有向无环图进行拓扑排序;</p>
+<p>-其次，我们将到源点的距离初始化为0并将到其它所有顶点的距离设置为无穷大;</p>
+<p>-最后，对于列表中的每一个顶点，我们从它的所有邻节点中找到最短路径的那个顶点;</p>
+<p>这很像Dijkstra算法，但是其主要区别是我们使用的是经过拓扑排序的列表。</p>
+<p>以下的图从这里的英文讲义拿来的：http://www.utdallas.edu/~sizheng/CS4349.d/l-notes.d/L17.pdf。演示了逐步找到最短路径的过程：</p>
+<p><a href="http://cdn.acmerblog.com/wp-content/uploads/2014/06/TopologicalSort.png"><img alt="TopologicalSort" class="alignnone wp-image-5895" height="774" src="http://cdn.acmerblog.com/wp-content/uploads/2014/06/TopologicalSort.png" width="797"/></a></p>
+<p>伪代码描述如下：</p>
+<p>1) Initialize dist[] = {INF, INF, ….} and dist[s] = 0 where s is the source vertex.<br/>
+2) Create a toplogical order of all vertices.<br/>
+3) Do following for every vertex u in topological order.<br/>
+………..Do following for every adjacent vertex v of u<br/>
+………………if (dist[v] &gt; dist[u] + weight(u, v))<br/>
+………………………dist[v] = dist[u] + weight(u, v)</p>
+<p>C++代码实现如下：</p>
+<p> </p>
+<pre class="brush:cpp">#include&lt;iostream&gt;
+#include &lt;list&gt;
+#include &lt;stack&gt;
+#include &lt;limits.h&gt;
+#define INF INT_MAX
+using namespace std;
+
+// 邻接表节点
+class AdjListNode
+{
+    int v;
+    int weight;
+public:
+    AdjListNode(int _v, int _w)  { v = _v;  weight = _w;}
+    int getV()       {  return v;  }
+    int getWeight()  {  return weight; }
+};
+
+// 图
+class Graph
+{
+    int V;    // 顶点个数
+
+    list&lt;AdjListNode&gt; *adj;
+
+    void topologicalSortRecall(int v, bool visited[], stack&lt;int&gt; &amp;stk);
+public:
+    Graph(int V);
+
+    void addEdge(int u, int v, int weight);
+
+    void shortestPath(int s);
+};
+
+Graph::Graph(int V)
+{
+    this-&gt;V = V;
+    adj = new list&lt;AdjListNode&gt;[V];
+}
+
+void Graph::addEdge(int u, int v, int weight)
+{
+    AdjListNode node(v, weight);
+    adj[u].push_back(node);
+}
+
+// 拓扑排序，递归调用。详细解释参考这里：
+void Graph::topologicalSortRecall(int v, bool visited[], stack&lt;int&gt; &amp;stk)
+{
+    // 标记当前节点是访问过的
+    visited[v] = true;
+
+    list&lt;AdjListNode&gt;::iterator i;
+    for (i = adj[v].begin(); i != adj[v].end(); ++i)
+    {
+        AdjListNode node = *i;
+        if (!visited[node.getV()])
+            topologicalSortRecall(node.getV(), visited, stk);
+    }
+    stk.push(v);
+}
+
+// 从给定的源点s 找出到其它顶点的最短距离.
+void Graph::shortestPath(int s)
+{
+    stack&lt;int&gt; stk;
+    int dist[V];
+
+    //标记所有顶点为未访问过的
+    bool *visited = new bool[V];
+    for (int i = 0; i &lt; V; i++)
+        visited[i] = false;
+
+    // 拓扑排序，结果存入stk中
+    for (int i = 0; i &lt; V; i++)
+        if (visited[i] == false)
+            topologicalSortRecall(i, visited, stk);
+
+    // 初始化距离
+    for (int i = 0; i &lt; V; i++)
+        dist[i] = INF;
+    dist[s] = 0;
+
+    // 按照拓扑排序的顺序处理 各个顶点
+    while (stk.empty() == false)
+    {
+        // 获得拓扑排序的下一个顶点
+        int u = stk.top();
+        stk.pop();
+
+        // 更新所有相邻的顶点
+        list&lt;AdjListNode&gt;::iterator i;
+        if (dist[u] != INF)
+        {
+          for (i = adj[u].begin(); i != adj[u].end(); ++i)
+             if (dist[i-&gt;getV()] &gt; dist[u] + i-&gt;getWeight())
+                dist[i-&gt;getV()] = dist[u] + i-&gt;getWeight();
+        }
+    }
+
+    // 打印结果
+    for (int i = 0; i &lt; V; i++)
+        (dist[i] == INF)? cout &lt;&lt; "INF ": cout &lt;&lt; dist[i] &lt;&lt; " ";
+}
+
+// 测试
+int main()
+{
+
+    Graph g(6);
+    g.addEdge(0, 1, 5);
+    g.addEdge(0, 2, 3);
+    g.addEdge(1, 3, 6);
+    g.addEdge(1, 2, 2);
+    g.addEdge(2, 4, 4);
+    g.addEdge(2, 5, 2);
+    g.addEdge(2, 3, 7);
+    g.addEdge(3, 4, -1);
+    g.addEdge(4, 5, -2);
+    int s = 1;
+    cout &lt;&lt; "Following are shortest distances from source " &lt;&lt; s &lt;&lt;" \n";
+    g.shortestPath(s);
+
+    return 0;
+}</pre>
+<p><strong>时间复杂度</strong></p>
+<p>拓扑排序的时间复杂度是O(V + E)。找到拓扑顺序后，算法依次处理所有顶和其相邻顶点的顶点。总相邻顶点的个数是O(E)。因此,内循环运行O(V + E)。所以，这个算法的总体时间复杂度是O(V + E)。</p>
+<p>参考：http://www.geeksforgeeks.org/shortest-path-for-directed-acyclic-graphs/</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75307">
+<article class="comment" id="comment-75307">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461829" rel="external nofollow">新用户824064</a></span> on <a href="http://www.acmerblog.com/shortest-path-for-directed-acyclic-graphs-5891.html#comment-75307" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75306">
+<article class="comment" id="comment-75306">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461829" rel="external nofollow">新用户824064</a></span> on <a href="http://www.acmerblog.com/shortest-path-for-directed-acyclic-graphs-5891.html#comment-75306" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75305">
+<article class="comment" id="comment-75305">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461829" rel="external nofollow">新用户824064</a></span> on <a href="http://www.acmerblog.com/shortest-path-for-directed-acyclic-graphs-5891.html#comment-75305" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75304">
+<article class="comment" id="comment-75304">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461829" rel="external nofollow">新用户824064</a></span> on <a href="http://www.acmerblog.com/shortest-path-for-directed-acyclic-graphs-5891.html#comment-75304" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75303">
+<article class="comment" id="comment-75303">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461829" rel="external nofollow">新用户824064</a></span> on <a href="http://www.acmerblog.com/shortest-path-for-directed-acyclic-graphs-5891.html#comment-75303" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75302">
+<article class="comment" id="comment-75302">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461829" rel="external nofollow">新用户824064</a></span> on <a href="http://www.acmerblog.com/shortest-path-for-directed-acyclic-graphs-5891.html#comment-75302" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75301">
+<article class="comment" id="comment-75301">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461829" rel="external nofollow">新用户824064</a></span> on <a href="http://www.acmerblog.com/shortest-path-for-directed-acyclic-graphs-5891.html#comment-75301" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75300">
+<article class="comment" id="comment-75300">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461829" rel="external nofollow">新用户824064</a></span> on <a href="http://www.acmerblog.com/shortest-path-for-directed-acyclic-graphs-5891.html#comment-75300" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75299">
+<article class="comment" id="comment-75299">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461829" rel="external nofollow">新用户824064</a></span> on <a href="http://www.acmerblog.com/shortest-path-for-directed-acyclic-graphs-5891.html#comment-75299" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75298">
+<article class="comment" id="comment-75298">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461829" rel="external nofollow">新用户824064</a></span> on <a href="http://www.acmerblog.com/shortest-path-for-directed-acyclic-graphs-5891.html#comment-75298" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75297">
+<article class="comment" id="comment-75297">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919461829" rel="external nofollow">新用户824064</a></span> on <a href="http://www.acmerblog.com/shortest-path-for-directed-acyclic-graphs-5891.html#comment-75297" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"></div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65027">
+<article class="comment" id="comment-65027">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">追</span> on <a href="http://www.acmerblog.com/shortest-path-for-directed-acyclic-graphs-5891.html#comment-65027" rel="nofollow"><time datetime="2017-02-02T16:47:55+00:00" pubdate="">2017年2月2日 at 下午4:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好,学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30502">
+<article class="comment" id="comment-30502">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Bob</a></span> on <a href="http://www.acmerblog.com/shortest-path-for-directed-acyclic-graphs-5891.html#comment-30502" rel="nofollow"><time datetime="2015-04-22T15:49:54+00:00" pubdate="">2015年4月22日 at 下午3:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p><strong>Gucci New Fall Arrivals</strong></p>
+<p>This is really nice to know. I hope it will be successful in the future. Good job on this and keep up the good work.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30498">
+<article class="comment" id="comment-30498">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zwj0571</a></span> on <a href="http://www.acmerblog.com/shortest-path-for-directed-acyclic-graphs-5891.html#comment-30498" rel="nofollow"><time datetime="2015-04-16T01:06:55+00:00" pubdate="">2015年4月16日 at 上午1:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嗯，尽量吧。题目太多了，很多解题报告是用程序自动发布的，所以就只有代码了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49420">
+<article class="comment" id="comment-49420">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">753951</a></span> on <a href="http://www.acmerblog.com/shortest-path-for-directed-acyclic-graphs-5891.html#comment-49420" rel="nofollow"><time datetime="2015-04-08T03:32:31+00:00" pubdate="">2015年4月8日 at 上午3:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>沙发呢，我抢到了沙发</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30495">
+<article class="comment" id="comment-30495">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bluesky</a></span> on <a href="http://www.acmerblog.com/shortest-path-for-directed-acyclic-graphs-5891.html#comment-30495" rel="nofollow"><time datetime="2015-02-01T00:35:31+00:00" pubdate="">2015年2月1日 at 上午12:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>顺利测试通过了，多谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30492">
+<article class="comment" id="comment-30492">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Cloudy</a></span> on <a href="http://www.acmerblog.com/shortest-path-for-directed-acyclic-graphs-5891.html#comment-30492" rel="nofollow"><time datetime="2015-01-29T17:26:29+00:00" pubdate="">2015年1月29日 at 下午5:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>通不过。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30493">
+<article class="comment" id="comment-30493">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">actlea</a></span> on <a href="http://www.acmerblog.com/shortest-path-for-directed-acyclic-graphs-5891.html#comment-30493" rel="nofollow"><time datetime="2015-01-17T01:33:59+00:00" pubdate="">2015年1月17日 at 上午1:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>方法4中使用hash表，只要用出现次数作为Value，就可以解决重复元素的问题了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30494">
+<article class="comment" id="comment-30494">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">slowlight</a></span> on <a href="http://www.acmerblog.com/shortest-path-for-directed-acyclic-graphs-5891.html#comment-30494" rel="nofollow"><time datetime="2014-12-20T06:59:35+00:00" pubdate="">2014年12月20日 at 上午6:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还真是，i7的cpu跑了3秒</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-1690">
+<article class="comment" id="comment-1690">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">码呀码</span> on <a href="http://www.acmerblog.com/shortest-path-for-directed-acyclic-graphs-5891.html#comment-1690" rel="nofollow"><time datetime="2014-12-17T19:53:00+00:00" pubdate="">2014年12月17日 at 下午7:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>站长，你好！<br/>
+         你创办的的网站非常好，为我们学习算法练习编程提供了一个很好的平台，我想给你提个小建议，就是要能把每道题目的难度标出来就好了，这样我们学习起来会有一个循序渐进的过程！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30496">
+<article class="comment" id="comment-30496">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">123456789_xd</a></span> on <a href="http://www.acmerblog.com/shortest-path-for-directed-acyclic-graphs-5891.html#comment-30496" rel="nofollow"><time datetime="2014-12-15T01:19:04+00:00" pubdate="">2014年12月15日 at 上午1:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>simple, however efficient. A lot of instances it is difficult to get that a??perfect balancea?? among usability and appearance. I must say that youa??ve done a exceptional task with this. Also, the blog masses quite fast for me on Web explore.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30499">
+<article class="comment" id="comment-30499">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dongxi</a></span> on <a href="http://www.acmerblog.com/shortest-path-for-directed-acyclic-graphs-5891.html#comment-30499" rel="nofollow"><time datetime="2014-10-23T10:00:21+00:00" pubdate="">2014年10月23日 at 上午10:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Thanks i enjoy your write-up about Why We Keep track of | J Squared Consulting</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30497">
+<article class="comment" id="comment-30497">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">CCCat</a></span> on <a href="http://www.acmerblog.com/shortest-path-for-directed-acyclic-graphs-5891.html#comment-30497" rel="nofollow"><time datetime="2014-09-16T02:22:43+00:00" pubdate="">2014年9月16日 at 上午2:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>great!</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30503">
+<article class="comment" id="comment-30503">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaoriqiang2</a></span> on <a href="http://www.acmerblog.com/shortest-path-for-directed-acyclic-graphs-5891.html#comment-30503" rel="nofollow"><time datetime="2014-08-30T08:33:13+00:00" pubdate="">2014年8月30日 at 上午8:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>神奇的网站</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30500">
+<article class="comment" id="comment-30500">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Rosamondwu</a></span> on <a href="http://www.acmerblog.com/shortest-path-for-directed-acyclic-graphs-5891.html#comment-30500" rel="nofollow"><time datetime="2014-08-29T19:45:25+00:00" pubdate="">2014年8月29日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>换句话说，A[k/2-1]不可能大于两数组合并之后的第k小值，所以我们可以将其抛弃。<br/>
+应该是，不可能小于合并后的第K小值吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30501">
+<article class="comment" id="comment-30501">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zcmu_sls</a></span> on <a href="http://www.acmerblog.com/shortest-path-for-directed-acyclic-graphs-5891.html#comment-30501" rel="nofollow"><time datetime="2014-07-18T07:33:49+00:00" pubdate="">2014年7月18日 at 上午7:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Excellent Web-site! I required to ask if I might webpages and use a component of the net web website and use a number of factors for just about any faculty process. Please notify me through email regardless of whether that would be excellent. Many thanks</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

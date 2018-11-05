@@ -1,0 +1,491 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>04-14</div>
+<div class="tit"><h1 class="entry-title">HDU 3978-Evil teacher’s Final Problem-数论-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/dfs" rel="category tag" title="查看DFS搜索中的全部文章">DFS搜索</a>, <a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/math/number-theory" rel="category tag" title="查看数论应用中的全部文章">数论应用</a></span><span class="i4">围观241次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6981" href="http://www.acmerblog.com/hdu-3978-evil-teachers-final-problem-6981.html#comments" title="《HDU 3978-Evil teacher’s Final Problem-数论-[解题报告]HOJ》上的评论">25 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Evil teacher’s Final Problem</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+In the math class, the evil teacher gave you one unprecedented problem!
+<p>Here f(n) is the n-th fibonacci number (n &gt;= 0)! Where f(0) = f(1) = 1 and for any n &gt; 1, f(n) = f(n – 1) + f(n – 2). For example, f(2) = 2, f(3) = 3, f(4) = 5 …</p>
+<p>The teacher used to let you calculate f(n) mod p where n &lt;= 10^18 and p &lt;= 10^9, however , as an ACMER, you may just kill it in seconds! The evil teacher is mad about this. As you kill the Evil teacher.s problem in second too!!! now he let you calculate G(n,k) .Here G(n,0) = f(n) , G(n,i) = f( G(n,i-1) ) (k &gt;= i &gt;= 1). However the G(n,k) may be so large ,so you just need to output the remainder of the answer after divided by p.</p>
+<p>Note: This problem is the evil teacher’s final problem, it is really hard ! If you could solve this problem during the competition, you will be reward in the ACM_DIY gathering. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line is one integer T indicates the number of the test cases. (T &lt;=500000)
+<p>Then for every case, three integers n k and p . (0 &lt;= n &lt;= 10^9,0 &lt;= k &lt;= 10^4, 1 &lt;= p &lt;= 10^8) </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The first line is one integer T indicates the number of the test cases. (T &lt;=500000)
+<p>Then for every case, three integers n k and p . (0 &lt;= n &lt;= 10^9,0 &lt;= k &lt;= 10^4, 1 &lt;= p &lt;= 10^8)</p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+10 
+1 10000 100000000 
+2 3 10000 
+3 97 98 
+4 2 10 
+5 1 29 
+1234 5678 100000000 
+3344 5566 77889900 
+10000 10000 100000000 
+1111 10000 90000000 
+999 876 10000000</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case #1: 1 
+Case #2: 2 
+Case #3: 3 
+Case #4: 4 
+Case #5: 5 
+Case #6: 17835789 
+Case #7: 5381861 
+Case #8: 71647609 
+Case #9: 43710337
+Case #10: 9102595</pre>
+<p> <!-- problem end --></p>
+<p><span style="font-size:14px">题意：给出f(f(f…f(n)…)) 总共嵌套k次。问最后模p的值是多少。</span></p>
+<p><span style="font-size:14px">首先应该明白的是这个题有循环节的。一个数模N的循环节就是这个数分解成素因子乘积的形式p1^a1*p2^a2*p3^a3…后，斐波那契模pi^ai的循环节的最大公约数。</span></p>
+<p><span style="font-size:14px">那么一个素数的k次幂的循环节=斐波那契模上这个素数的循环节乘上p^(k-1)。</span></p>
+<p><span style="font-size:14px">而一个素数p的循环节 如果p&gt;5并且是5的二次剩余，那么循环节就是(p-1)的因子，否则就是2*(p+1)的因子。所以2 3 5 的时候需要特判一下。</span></p>
+<p><span style="font-size:14px">知道这些就能求每一次嵌套的循环节了，通过矩阵连乘即可得出答案。</span></p>
+<p><span style="font-size:14px"></span></p>
+<pre class="brush:cpp" name="code">#include &lt;iostream&gt;
+#include&lt;cstdio&gt;
+#include&lt;cstring&gt;
+#include&lt;algorithm&gt;
+#include&lt;cmath&gt;
+using namespace std;
+#define maxn 20050
+bool isprime[maxn];
+int prime[maxn],nprime,mod[maxn],M;
+int primeloop[maxn];
+void getprime()
+{
+    long long i,j;
+    memset(isprime,1,sizeof(isprime));
+    nprime=0;
+    for(i=2; i&lt;maxn; i++)
+        if(isprime[i])
+        {
+            prime[nprime++]=i;
+            for(j=i*i; j&lt;maxn; j+=i) isprime[j]=0;
+        }
+}
+int factor[100][2],tol,fac[100][2],numfac;
+void findfac(int n,int f[][2],int &amp;t)
+{
+    int x=n,l=(int)sqrt(1.0*n);
+    t=0;
+    for(int i=0; i&lt;50; i++) f[i][0]=f[i][1]=0;
+    for(int i=0; prime[i]&lt;=l; i++)
+        if(x%prime[i]==0)
+        {
+            f[t][0]=prime[i];
+            while(x%prime[i]==0) f[t][1]++,x/=prime[i];
+            t++;
+        }
+    if(x&gt;1) f[t][0]=x,f[t++][1]++;
+}
+const int MAX=2;
+typedef struct
+{
+    long long m[MAX][MAX];
+} Matrix;
+Matrix P,I;
+Matrix matrixmul(Matrix a,Matrix b) //矩阵乘法
+{
+    int i,j,k;
+    Matrix c;
+    for (i=0; i&lt;MAX; i++)
+        for (j=0; j&lt;MAX; j++)
+        {
+            c.m[i][j]=0;
+            for(k=0; k&lt;MAX; k++)
+                c.m[i][j]+=((a.m[i][k]%M)*(b.m[k][j]%M))%M;
+            c.m[i][j]%=M;
+        }
+    return c;
+}
+void quickpow(int n,int &amp;x,int &amp;y)
+{
+    Matrix m=P,b=I;
+    while(n)
+    {
+        if(n&amp;1) b=matrixmul(b,m);
+        n&gt;&gt;=1,m=matrixmul(m,m);
+    }
+    x=b.m[0][0],y=b.m[1][0];
+}
+int gcd(int a,int b)
+{
+    return b?gcd(b,a%b):a;
+}
+int exp_mod(int a,int b,int c)
+{
+    int ans=1;
+    a%=c;
+    while(b)
+    {
+        if(b&amp;1) ans=ans*a%c;
+        b&gt;&gt;=1,a=a*a%c;
+    }
+    return ans;
+}
+int minloop,ff[maxn],numff;
+void dfs(int num,int s=1)
+{
+    if(num==numfac)
+    {
+        ff[numff++]=s;
+        return;
+    }
+    for(int i=0; i&lt;=fac[num][1]; i++)
+        dfs(num+1,s),s*=fac[num][0];
+}
+int getPrimeLoop(int p)
+{
+    if(p==2) return 3;
+    if(p==3) return 8;
+    if(p==5) return 20;
+    M=p;
+    if(exp_mod(5,(p-1)&gt;&gt;1,p)==1) p--;
+    else p=2*p+2;
+    findfac(p,fac,numfac);
+    minloop=1e9;
+    numff=0;
+    dfs(0,1);
+    sort(ff,ff+numff);
+    int x,y;
+    for(int i=1; i&lt;numff; i++)
+    {
+        quickpow(ff[i]-1,x,y);
+        if(x==0&amp;&amp;y==1) return ff[i];
+    }
+}
+int getLoop(int p,int k)
+{
+    int ret;
+    if(p&gt;19583)
+        ret=getPrimeLoop(p);
+    else
+        ret=primeloop[p];
+    for(int i=0; i&lt;k-1; i++) ret*=p;
+    return ret;
+}
+int getmod(int n)
+{
+    findfac(n,factor,tol);
+    int ret=1,tem;
+    for(int i=0; i&lt;tol; i++)
+        tem=getLoop(factor[i][0],factor[i][1]),ret=ret/gcd(ret,tem)*tem;
+    return ret;
+}
+int main()
+{
+    int t,ca=0,p,n,k,x,y;
+    getprime();
+    P.m[0][0]=P.m[0][1]=P.m[1][0]=1,P.m[1][1]=0;
+    I.m[0][0]=I.m[1][1]=1,I.m[1][0]=I.m[0][1]=0;
+    for(int i=0; i&lt;2250; i++)
+        primeloop[prime[i]]=getPrimeLoop(prime[i]);
+    scanf("%d",&amp;t);
+    while(t--)
+    {
+        scanf("%d%d%d",&amp;n,&amp;k,&amp;p);
+        mod[0]=p;
+        for(int i=1; i&lt;=k; i++) mod[i]=getmod(mod[i-1]);
+        for(int i=k; i&gt;=0; i--)
+        {
+            if(i&lt;k) n%=mod[i+1];
+            M=mod[i],quickpow(n,x,y),n=x;
+        }
+        printf("Case #%d: %d\n",++ca,n);
+    }
+    return 0;
+}
+</pre>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/prime7/article/details/11376653</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-100051">
+<article class="comment" id="comment-100051">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533473" rel="external nofollow">新用户704360</a></span> on <a href="http://www.acmerblog.com/hdu-3978-evil-teachers-final-problem-6981.html#comment-100051" rel="nofollow"><time datetime="2017-04-20T21:02:06+00:00" pubdate="">2017年4月20日 at 下午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>一开始我发现自己是基佬的时候也是特别纠结</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-71152">
+<article class="comment" id="comment-71152">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919459858" rel="external nofollow">新用户324210</a></span> on <a href="http://www.acmerblog.com/hdu-3978-evil-teachers-final-problem-6981.html#comment-71152" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>估计快了吧。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-71151">
+<article class="comment" id="comment-71151">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919459858" rel="external nofollow">新用户324210</a></span> on <a href="http://www.acmerblog.com/hdu-3978-evil-teachers-final-problem-6981.html#comment-71151" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>估计快了吧。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-71150">
+<article class="comment" id="comment-71150">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919459858" rel="external nofollow">新用户324210</a></span> on <a href="http://www.acmerblog.com/hdu-3978-evil-teachers-final-problem-6981.html#comment-71150" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>估计快了吧。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-71149">
+<article class="comment" id="comment-71149">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919459858" rel="external nofollow">新用户324210</a></span> on <a href="http://www.acmerblog.com/hdu-3978-evil-teachers-final-problem-6981.html#comment-71149" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>估计快了吧。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-71148">
+<article class="comment" id="comment-71148">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919459858" rel="external nofollow">新用户324210</a></span> on <a href="http://www.acmerblog.com/hdu-3978-evil-teachers-final-problem-6981.html#comment-71148" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>估计快了吧。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-71147">
+<article class="comment" id="comment-71147">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919459858" rel="external nofollow">新用户324210</a></span> on <a href="http://www.acmerblog.com/hdu-3978-evil-teachers-final-problem-6981.html#comment-71147" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>估计快了吧。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-71146">
+<article class="comment" id="comment-71146">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919459858" rel="external nofollow">新用户324210</a></span> on <a href="http://www.acmerblog.com/hdu-3978-evil-teachers-final-problem-6981.html#comment-71146" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>估计快了吧。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-71145">
+<article class="comment" id="comment-71145">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919459858" rel="external nofollow">新用户324210</a></span> on <a href="http://www.acmerblog.com/hdu-3978-evil-teachers-final-problem-6981.html#comment-71145" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>估计快了吧。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-71144">
+<article class="comment" id="comment-71144">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919459858" rel="external nofollow">新用户324210</a></span> on <a href="http://www.acmerblog.com/hdu-3978-evil-teachers-final-problem-6981.html#comment-71144" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>估计快了吧。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-71143">
+<article class="comment" id="comment-71143">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919459858" rel="external nofollow">新用户324210</a></span> on <a href="http://www.acmerblog.com/hdu-3978-evil-teachers-final-problem-6981.html#comment-71143" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>估计快了吧。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51746">
+<article class="comment" id="comment-51746">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">howhaw</a></span> on <a href="http://www.acmerblog.com/hdu-3978-evil-teachers-final-problem-6981.html#comment-51746" rel="nofollow"><time datetime="2015-06-28T20:39:24+00:00" pubdate="">2015年6月28日 at 下午8:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>博主的C++功底真是好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51743">
+<article class="comment" id="comment-51743">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">usx13123</a></span> on <a href="http://www.acmerblog.com/hdu-3978-evil-teachers-final-problem-6981.html#comment-51743" rel="nofollow"><time datetime="2015-06-24T11:42:46+00:00" pubdate="">2015年6月24日 at 上午11:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有没有C++语言的代码？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51751">
+<article class="comment" id="comment-51751">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">renke</a></span> on <a href="http://www.acmerblog.com/hdu-3978-evil-teachers-final-problem-6981.html#comment-51751" rel="nofollow"><time datetime="2015-06-23T11:28:03+00:00" pubdate="">2015年6月23日 at 上午11:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错的代码！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51752">
+<article class="comment" id="comment-51752">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">weijieut</a></span> on <a href="http://www.acmerblog.com/hdu-3978-evil-teachers-final-problem-6981.html#comment-51752" rel="nofollow"><time datetime="2015-06-23T04:16:06+00:00" pubdate="">2015年6月23日 at 上午4:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>想问下computeLSPArray那里，if(len!=0) len=lps[len-1]是什么意思</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35119">
+<article class="comment" id="comment-35119">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">didiaozuoren</a></span> on <a href="http://www.acmerblog.com/hdu-3978-evil-teachers-final-problem-6981.html#comment-35119" rel="nofollow"><time datetime="2015-06-08T23:14:47+00:00" pubdate="">2015年6月8日 at 下午11:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Dijkstra 不适合有负权值的边吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51748">
+<article class="comment" id="comment-51748">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">verycourage</a></span> on <a href="http://www.acmerblog.com/hdu-3978-evil-teachers-final-problem-6981.html#comment-51748" rel="nofollow"><time datetime="2015-06-01T12:14:25+00:00" pubdate="">2015年6月1日 at 下午12:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是什么编译器啊，不通过</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35120">
+<article class="comment" id="comment-35120">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">la0bei</a></span> on <a href="http://www.acmerblog.com/hdu-3978-evil-teachers-final-problem-6981.html#comment-35120" rel="nofollow"><time datetime="2015-05-31T06:33:09+00:00" pubdate="">2015年5月31日 at 上午6:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是研发类的题还是算法类？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51747">
+<article class="comment" id="comment-51747">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">slowlight</a></span> on <a href="http://www.acmerblog.com/hdu-3978-evil-teachers-final-problem-6981.html#comment-51747" rel="nofollow"><time datetime="2015-05-19T07:00:18+00:00" pubdate="">2015年5月19日 at 上午7:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已修改。一些字符在编辑的时候转义了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51749">
+<article class="comment" id="comment-51749">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Rocky</a></span> on <a href="http://www.acmerblog.com/hdu-3978-evil-teachers-final-problem-6981.html#comment-51749" rel="nofollow"><time datetime="2015-05-19T02:50:36+00:00" pubdate="">2015年5月19日 at 上午2:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这道题目的核心一句话是：取还是不取。<br/>
+如果当前取，则index+1作为参数。如果当前不取，则任用index作为参数。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51745">
+<article class="comment" id="comment-51745">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">warriorbrant</a></span> on <a href="http://www.acmerblog.com/hdu-3978-evil-teachers-final-problem-6981.html#comment-51745" rel="nofollow"><time datetime="2015-05-08T05:14:30+00:00" pubdate="">2015年5月8日 at 上午5:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>mark, 备用</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51744">
+<article class="comment" id="comment-51744">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">keyyuanxin</a></span> on <a href="http://www.acmerblog.com/hdu-3978-evil-teachers-final-problem-6981.html#comment-51744" rel="nofollow"><time datetime="2015-04-27T02:45:38+00:00" pubdate="">2015年4月27日 at 上午2:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>换句话说，A[k/2-1]不可能大于两数组合并之后的第k小值，所以我们可以将其抛弃。<br/>
+应该是，不可能小于合并后的第K小值吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35121">
+<article class="comment" id="comment-35121">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hanyi</a></span> on <a href="http://www.acmerblog.com/hdu-3978-evil-teachers-final-problem-6981.html#comment-35121" rel="nofollow"><time datetime="2015-04-20T13:29:33+00:00" pubdate="">2015年4月20日 at 下午1:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实不需要用LCA，用DFS+vector更简单</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51750">
+<article class="comment" id="comment-51750">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sgx_go</a></span> on <a href="http://www.acmerblog.com/hdu-3978-evil-teachers-final-problem-6981.html#comment-51750" rel="nofollow"><time datetime="2015-04-19T12:13:05+00:00" pubdate="">2015年4月19日 at 下午12:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35118">
+<article class="comment" id="comment-35118">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jamoeba</a></span> on <a href="http://www.acmerblog.com/hdu-3978-evil-teachers-final-problem-6981.html#comment-35118" rel="nofollow"><time datetime="2015-04-16T23:25:00+00:00" pubdate="">2015年4月16日 at 下午11:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>helpful！！ mark</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

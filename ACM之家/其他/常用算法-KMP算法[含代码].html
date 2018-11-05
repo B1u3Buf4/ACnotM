@@ -1,0 +1,358 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>02-19</div>
+<div class="tit"><h1 class="entry-title">常用算法-KMP算法[含代码]</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/basis/string" rel="category tag" title="查看字符串处理中的全部文章">字符串处理</a>, <a href="http://www.acmerblog.com/category/zhuanti/algorithm" rel="category tag" title="查看算法分析中的全部文章">算法分析</a></span><span class="i4">围观2098次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4407" href="http://www.acmerblog.com/kmp-algorithm-4407.html#comments" title="《常用算法-KMP算法[含代码]》上的评论">20 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p>KMP算法的基础部分不再多说，详细大家都Google过了。这里做一些总结。</p>
+<p>对于KMP算法来说，重点就是 <strong>next数组 （也有叫覆盖函数，部分匹配表，lps数组等）。</strong></p>
+<p>总之就是 对模式串做预处理，而且该预处理只和 模式串(pattern)本身有关！</p>
+<p>假设有模式串 pattern = “abababca”;  则有匹配表：</p>
+<pre class="brush:other">char:  | a | b | a | b | a | b | c | a |
+index: | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 
+value: | 0 | 0 | 1 | 2 | 3 | 4 | 0 | 1 |</pre>
+<p> </p>
+<p>下面介绍《部分匹配表》是如何产生的。</p>
+<p>首先，要了解两个概念：”前缀”和”后缀”。 “前缀”指除了最后一个字符以外，一个字符串的全部头部组合；”后缀”指除了第一个字符以外，一个字符串的全部尾部组合。</p>
+<pre class="brush:other">字符串:   "bread"
+
+前缀： b , br, bre, brea
+
+后缀:  read, ead, ad ,  d</pre>
+<p> </p>
+<p>关于 <strong>next数组 （也有叫覆盖函数，部分匹配表，lps数组） 的</strong></p>
+<p>通俗解释：”部分匹配值”就是”前缀”和”后缀”的最长的共有元素的长度。以”ABCDABD”为例，</p>
+<pre class="brush:cpp">　  －　"A"的前缀和后缀都为空集，共有元素的长度为0；
+　　－　"AB"的前缀为[A]，后缀为[B]，共有元素的长度为0；
+　　－　"ABC"的前缀为[A, AB]，后缀为[BC, C]，共有元素的长度0；
+　　－　"ABCD"的前缀为[A, AB, ABC]，后缀为[BCD, CD, D]，共有元素的长度为0；
+　　－　"ABCDA"的前缀为[A, AB, ABC, ABCD]，后缀为[BCDA, CDA, DA, A]，共有元素为"A"，长度为1；
+　　－　"ABCDAB"的前缀为[A, AB, ABC, ABCD, ABCDA]，后缀为[BCDAB, CDAB, DAB, AB, B]，共有元素为"AB"，长度为2；
+　　－　"ABCDABD"的前缀为[A, AB, ABC, ABCD, ABCDA, ABCDAB]，后缀为[BCDABD, CDABD, DABD, ABD, BD, D]，共有元素的长度为0。</pre>
+<p><a href="http://cdn.acmerblog.com/wp-content/uploads/2014/02/20295924K-0.jpg"><img alt="20295924K-0" class="alignnone size-full wp-image-4408" height="152" src="http://cdn.acmerblog.com/wp-content/uploads/2014/02/20295924K-0.jpg" width="147"/></a></p>
+<pre class="brush:other">pattern “AABAACAABAA”, next[] is [0, 1, 0, 1, 2, 0, 1, 2, 3, 4, 5]
+pattern “ABCDE”, next[] is [0, 0, 0, 0, 0]
+pattern “AAAAA”, next[] is [0, 1, 2, 3, 4]
+pattern “AAABAAA”, next[] is [0, 1, 2, 0, 1, 2, 3]
+pattern “AAACAAAAAC”, next[] is [0, 1, 2, 0, 1, 2, 3, 3, 3, 4]</pre>
+<p>下面的代码实现中，lps(longest prefix suffix )数组就是我们说的next数组。这个是最原创的实现，和网上很多优化的next数组的算法不同，但是基本原理是一样的：</p>
+<pre class="brush:cpp">#include&lt;stdio.h&gt;
+#include&lt;string.h&gt;
+#include&lt;stdlib.h&gt;
+
+void computeLPSArray(char *pat, int M, int *lps);
+
+void KMPSearch(char *pat, char *txt)
+{
+    int M = strlen(pat);
+    int N = strlen(txt);
+
+    // 预处理pattern，计算出 lps[]数组记录前缀和后缀的最长匹配
+    int *lps = (int *)malloc(sizeof(int)*M);
+    int j  = 0;  // index for pat[]
+
+    // Preprocess the pattern (calculate lps[] array)
+    computeLPSArray(pat, M, lps);
+
+    int i = 0;  // index for txt[]
+    while(i &lt; N)
+    {
+      if(pat[j] == txt[i])
+      {
+        j++;
+        i++;
+      }
+
+      if (j == M)
+      {
+        printf("Found pattern at index %d \n", i-j);
+        j = lps[j-1];
+      }
+
+      // mismatch after j matches
+      else if(pat[j] != txt[i])
+      {
+        // Do not match lps[0..lps[j-1]] characters,
+        // they will match anyway
+        if(j != 0)
+         j = lps[j-1];
+        else
+         i = i+1;
+      }
+    }
+    free(lps); // to avoid memory leak
+}
+
+void computeLPSArray(char *pat, int M, int *lps)
+{
+    int len = 0;  // 记录前一个[最长匹配的前缀和后缀]的长度
+    int i;
+
+    lps[0] = 0; // lps[0] 必须是 0
+    i = 1;
+
+    // the loop calculates lps[i] for i = 1 to M-1
+    while(i &lt; M)
+    {
+       if(pat[i] == pat[len])
+       {
+         len++;
+         lps[i] = len;
+         i++;
+       }
+       else // (pat[i] != pat[len])
+       {
+         if( len != 0 )
+         {
+           // 这个地方有陷阱. 考虑这个例子 AAACAAAA ,i = 7.
+           len = lps[len-1];
+
+           // 另外, 注意 i 在这个地方并没有增加
+         }
+         else // 如果 (len == 0)
+         {
+           lps[i] = 0; //没有一个匹配的
+           i++;
+         }
+       }
+    }
+}
+
+// 测试
+int main()
+{
+   char *txt = "ABABDABACDABABCABAB";
+   char *pat = "ABABCABAB";
+   KMPSearch(pat, txt);
+   return 0;
+}</pre>
+<p>测试数据如下:</p>
+<p><strong>1)</strong> Input:</p>
+<pre class="brush:other">txt[] =  "THIS IS A TEST TEXT"
+pat[] = "TEST"</pre>
+<p>Output:</p>
+<pre class="brush:other">Pattern found at index 10</pre>
+<p><strong>2)</strong> Input:</p>
+<pre class="brush:other">txt[] =  "AABAACAADAABAAABAA"
+pat[] = "AABA"</pre>
+<p>Output:</p>
+<pre class="brush:other">Pattern found at index 0
+Pattern found at index 9
+Pattern found at index 13</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-81484">
+<article class="comment" id="comment-81484">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522173" rel="external nofollow">新用户477524</a></span> on <a href="http://www.acmerblog.com/kmp-algorithm-4407.html#comment-81484" rel="nofollow"><time datetime="2017-04-12T18:13:49+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你可以改行当胡扯专家了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-81483">
+<article class="comment" id="comment-81483">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522173" rel="external nofollow">新用户477524</a></span> on <a href="http://www.acmerblog.com/kmp-algorithm-4407.html#comment-81483" rel="nofollow"><time datetime="2017-04-12T18:13:49+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你可以改行当胡扯专家了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-81482">
+<article class="comment" id="comment-81482">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522173" rel="external nofollow">新用户477524</a></span> on <a href="http://www.acmerblog.com/kmp-algorithm-4407.html#comment-81482" rel="nofollow"><time datetime="2017-04-12T18:13:49+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你可以改行当胡扯专家了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-81481">
+<article class="comment" id="comment-81481">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522173" rel="external nofollow">新用户477524</a></span> on <a href="http://www.acmerblog.com/kmp-algorithm-4407.html#comment-81481" rel="nofollow"><time datetime="2017-04-12T18:13:49+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你可以改行当胡扯专家了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-81480">
+<article class="comment" id="comment-81480">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919522173" rel="external nofollow">新用户477524</a></span> on <a href="http://www.acmerblog.com/kmp-algorithm-4407.html#comment-81480" rel="nofollow"><time datetime="2017-04-12T18:13:49+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你可以改行当胡扯专家了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64645">
+<article class="comment" id="comment-64645">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">geekplus001</span> on <a href="http://www.acmerblog.com/kmp-algorithm-4407.html#comment-64645" rel="nofollow"><time datetime="2016-08-19T12:39:42+00:00" pubdate="">2016年8月19日 at 下午12:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我也没明白  我觉得应该len = 0；</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-57594">
+<article class="comment" id="comment-57594">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">daisyleedq</a></span> on <a href="http://www.acmerblog.com/kmp-algorithm-4407.html#comment-57594" rel="nofollow"><time datetime="2015-05-29T19:34:29+00:00" pubdate="">2015年5月29日 at 下午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-3304">
+<article class="comment" id="comment-3304">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">hex-uha</span> on <a href="http://www.acmerblog.com/kmp-algorithm-4407.html#comment-3304" rel="nofollow"><time datetime="2015-04-24T18:42:00+00:00" pubdate="">2015年4月24日 at 下午6:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>想问下computeLSPArray那里，if(len!=0) len=lps[len-1]是什么意思</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-62981">
+<article class="comment" id="comment-62981">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rick</a></span> on <a href="http://www.acmerblog.com/kmp-algorithm-4407.html#comment-62981" rel="nofollow"><time datetime="2015-01-31T09:16:39+00:00" pubdate="">2015年1月31日 at 上午9:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这怎么用Catalan数啊？求解答！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46946">
+<article class="comment" id="comment-46946">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">slowlight</a></span> on <a href="http://www.acmerblog.com/kmp-algorithm-4407.html#comment-46946" rel="nofollow"><time datetime="2015-01-24T11:48:25+00:00" pubdate="">2015年1月24日 at 上午11:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>看见的晚了，只能提交一次唉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-46943">
+<article class="comment" id="comment-46943">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fastislow</a></span> on <a href="http://www.acmerblog.com/kmp-algorithm-4407.html#comment-46943" rel="nofollow"><time datetime="2014-11-30T14:31:47+00:00" pubdate="">2014年11月30日 at 下午2:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Thanks for using the time to examine this, I truly feel strongly about it and enjoy finding out far more on this subject matter. If achievable, as you achieve knowledge</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46945">
+<article class="comment" id="comment-46945">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hongfieyu</a></span> on <a href="http://www.acmerblog.com/kmp-algorithm-4407.html#comment-46945" rel="nofollow"><time datetime="2014-04-28T07:47:39+00:00" pubdate="">2014年4月28日 at 上午7:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>比较基础，找些自信</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-46942">
+<article class="comment" id="comment-46942">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sum_tsai</a></span> on <a href="http://www.acmerblog.com/kmp-algorithm-4407.html#comment-46942" rel="nofollow"><time datetime="2014-04-23T04:57:26+00:00" pubdate="">2014年4月23日 at 上午4:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，值得借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-308">
+<article class="comment" id="comment-308">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">Name</span> on <a href="http://www.acmerblog.com/kmp-algorithm-4407.html#comment-308" rel="nofollow"><time datetime="2014-04-19T21:04:31+00:00" pubdate="">2014年4月19日 at 下午9:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>目前为止见过的最易懂的一个，多谢分享</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-301">
+<article class="comment" id="comment-301">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">口木有点呆</span> on <a href="http://www.acmerblog.com/kmp-algorithm-4407.html#comment-301" rel="nofollow"><time datetime="2014-04-13T16:59:34+00:00" pubdate="">2014年4月13日 at 下午4:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个应该是最朴素的KMP实现</p>
+</div>
+</article><!-- #comment-## -->
+<ul class="children">
+<li class="comment odd alt depth-2" id="li-comment-303">
+<article class="comment" id="comment-303">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">tekenuo</span> on <a href="http://www.acmerblog.com/kmp-algorithm-4407.html#comment-303" rel="nofollow"><time datetime="2014-04-16T12:59:29+00:00" pubdate="">2014年4月16日 at 下午12:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，还是这种实现比较好理解。虽然效率有点低</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ul><!-- .children -->
+</li><!-- #comment-## -->
+<li class="comment even thread-odd thread-alt depth-1" id="li-comment-62979">
+<article class="comment" id="comment-62979">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">liuk</a></span> on <a href="http://www.acmerblog.com/kmp-algorithm-4407.html#comment-62979" rel="nofollow"><time datetime="2014-03-31T00:23:22+00:00" pubdate="">2014年3月31日 at 上午12:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>great work！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-even depth-1" id="li-comment-57595">
+<article class="comment" id="comment-57595">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tangxiansheng</a></span> on <a href="http://www.acmerblog.com/kmp-algorithm-4407.html#comment-57595" rel="nofollow"><time datetime="2014-03-22T15:08:20+00:00" pubdate="">2014年3月22日 at 下午3:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这张页面太松散拉，重新编辑一下，弄紧凑一点。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-odd thread-alt depth-1" id="li-comment-46944">
+<article class="comment" id="comment-46944">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">JcZ</a></span> on <a href="http://www.acmerblog.com/kmp-algorithm-4407.html#comment-46944" rel="nofollow"><time datetime="2014-03-16T14:17:26+00:00" pubdate="">2014年3月16日 at 下午2:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-even depth-1" id="li-comment-62980">
+<article class="comment" id="comment-62980">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mcitdkj</a></span> on <a href="http://www.acmerblog.com/kmp-algorithm-4407.html#comment-62980" rel="nofollow"><time datetime="2014-02-20T14:15:31+00:00" pubdate="">2014年2月20日 at 下午2:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法挺不错。NewHead代表新的头节点，通过递归找到最后一个节点之后，就把这个节点赋给NewHead，然后一直返回返回，中途这个值是没有变化的，一边返回一边把相应的指针方向颠倒，最后结束时返回新的头节点到主函数。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

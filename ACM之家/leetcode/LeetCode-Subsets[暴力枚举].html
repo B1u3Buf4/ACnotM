@@ -1,0 +1,404 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>11-18</div>
+<div class="tit"><h1 class="entry-title">LeetCode-Subsets[暴力枚举]</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/leetcode" rel="category tag" title="查看LeetCode中的全部文章">LeetCode</a></span><span class="i4">围观1502次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6227" href="http://www.acmerblog.com/leetcode-solution-subsets-6227.html#comments" title="《LeetCode-Subsets[暴力枚举]》上的评论">22 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<h3><strong>Subsets</strong></h3>
+<div class="question-content">
+<p>Given a set of distinct integers, <i>S</i>, return all possible subsets.</p>
+<p><b>Note:</b></p>
+<ul>
+<li>Elements in a subset must be in non-descending order.</li>
+<li>The solution set must not contain duplicate subsets.</li>
+</ul>
+<p>For example,<br/>
+If <b><i>S</i></b> = <code>[1,2,3]</code>, a solution is:</p>
+<pre>[
+  [3],
+  [1],
+  [2],
+  [1,2,3],
+  [1,3],
+  [2,3],
+  [1,2],
+  []
+]</pre>
+</div>
+<p>标签: Array Backtracking Bit Manipulation<br/>
+<strong>分析</strong></p>
+<p>每个元素，都有两种选择，选或者不选。</p>
+<p><strong>增量构造法</strong></p>
+<pre class="brush:cpp">// LeetCode, Subsets
+// 增量构造法，深搜，时间复杂度O(2^n)，空间复杂度O(n)
+class Solution {
+public:
+    vector&lt;vector&lt;int&gt; &gt; subsets(vector&lt;int&gt; &amp;S) {
+        sort(S.begin(), S.end());  // 输出要求有序
+        vector&lt;vector&lt;int&gt; &gt; result;
+        vector&lt;int&gt; path;
+        subsets(S, path, 0, result);
+        return result;
+    }
+
+private:
+    static void subsets(const vector&lt;int&gt; &amp;S, vector&lt;int&gt; &amp;path, int step,
+            vector&lt;vector&lt;int&gt; &gt; &amp;result) {
+        if (step == S.size()) {
+            result.push_back(path);
+            return;
+        }
+        // 不选S[step]
+        subsets(S, path, step + 1, result);
+        // 选S[step]
+        path.push_back(S[step]);
+        subsets(S, path, step + 1, result);
+        path.pop_back();
+    }
+};</pre>
+<p><strong> 位向量法</strong></p>
+<p>开一个位向量bool selected[n]，每个元素可以选或者不选。</p>
+<pre class="brush:cpp">// LeetCode, Subsets
+// 位向量法，深搜，时间复杂度O(2^n)，空间复杂度O(n)
+class Solution {
+public:
+    vector&lt;vector&lt;int&gt; &gt; subsets(vector&lt;int&gt; &amp;S) {
+        sort(S.begin(), S.end());  // 输出要求有序
+
+        vector&lt;vector&lt;int&gt; &gt; result;
+        vector&lt;bool&gt; selected(S.size(), false);
+        subsets(S, selected, 0, result);
+        return result;
+    }
+
+private:
+    static void subsets(const vector&lt;int&gt; &amp;S, vector&lt;bool&gt; &amp;selected, int step,
+            vector&lt;vector&lt;int&gt; &gt; &amp;result) {
+        if (step == S.size()) {
+            vector&lt;int&gt; subset;
+            for (int i = 0; i &lt; S.size(); i++) {
+                if (selected[i]) subset.push_back(S[i]);
+            }
+            result.push_back(subset);
+            return;
+        }
+        // 不选S[step]
+        selected[step] = false;
+        subsets(S, selected, step + 1, result);
+        // 选S[step]
+        selected[step] = true;
+        subsets(S, selected, step + 1, result);
+    }
+};</pre>
+<p><strong> 迭代</strong></p>
+<p>增量构造法</p>
+<pre class="brush:cpp">// LeetCode, Subsets
+// 迭代版，时间复杂度O(2^n)，空间复杂度O(1)
+class Solution {
+public:
+    vector&lt;vector&lt;int&gt; &gt; subsets(vector&lt;int&gt; &amp;S) {
+        sort(S.begin(), S.end()); // 输出要求有序
+        vector&lt;vector&lt;int&gt; &gt; result(1);
+        for (auto elem : S) {
+            result.reserve(result.size() * 2);
+            auto half = result.begin() + result.size();
+            copy(result.begin(), half, back_inserter(result));
+            for_each(half, result.end(), [&amp;elem](decltype(result[0]) &amp;e){
+                e.push_back(elem);
+            });
+        }
+        return result;
+    }
+};</pre>
+<p><strong> 二进制法</strong></p>
+<p>本方法的前提是：集合的元素不超过int 位数。用一个int 整数表示位向量，第i 位为1，则表示<br/>
+选择S[i]，为0 则不选择。例如S={A,B,C,D}，则0110=6 表示子集{B,C}。这种方法最巧妙。因为它不仅能生成子集，还能方便的表示集合的并、交、差等集合运算。设两个集合的位向量分别为B1 和B2，则$B_1\cup B_2, B_1 \cap B_2, B_1 \triangle B_2$分别对应集合的并、交、对称差。<br/>
+二进制法，也可以看做是位向量法，只不过更加优化。</p>
+<pre class="brush:cpp">// LeetCode, Subsets
+// 二进制法，时间复杂度O(2^n)，空间复杂度O(1)
+class Solution {
+public:
+    vector&lt;vector&lt;int&gt; &gt; subsets(vector&lt;int&gt; &amp;S) {
+        sort(S.begin(), S.end()); // 输出要求有序
+        vector&lt;vector&lt;int&gt; &gt; result;
+        const size_t n = S.size();
+        vector&lt;int&gt; v;
+
+        for (size_t i = 0; i &lt; 1 &lt;&lt; n; i++) {
+            for (size_t j = 0; j &lt; n; j++) {
+                if (i &amp; 1 &lt;&lt; j) v.push_back(S[j]);
+            }
+            result.push_back(v);
+            v.clear();
+        }
+        return result;
+    }
+};</pre>
+<p>Java代码:</p>
+<pre class="brush:java">public class Solution {
+    public static List&lt;List&lt;Integer&gt;&gt; subsets(int[] S) {
+		int all = 1 &lt;&lt; S.length;
+		Arrays.sort(S);
+		List&lt;List&lt;Integer&gt;&gt; subsetsList = new ArrayList();
+		for (int i = 0; i &lt; all; i++) {
+			int b = 1;
+			List&lt;Integer&gt; tmpList = new ArrayList();
+			for (int j = 0; j &lt; S.length; j++) {
+				if ((i &amp; b) != 0) {
+					tmpList.add(S[j]);
+				}
+				b &lt;&lt;= 1;
+			}
+			subsetsList.add(tmpList);
+		}
+		return subsetsList;
+	}
+}</pre>
+<p><strong>相关题目</strong></p>
+<p><a href="http://www.acmerblog.com/leetcode-solution-subsets-ii-6250.html">Subsets II</a></p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-74478">
+<article class="comment" id="comment-74478">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515383" rel="external nofollow">新用户221642</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-6227.html#comment-74478" rel="nofollow"><time datetime="2017-04-12T03:53:48+00:00" pubdate="">2017年4月12日 at 上午3:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跟我一起唱：“六神合体滴雷霆王 呜呜呜呜呜.保卫地球的安全,我当先“….</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-74477">
+<article class="comment" id="comment-74477">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515383" rel="external nofollow">新用户221642</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-6227.html#comment-74477" rel="nofollow"><time datetime="2017-04-12T03:53:48+00:00" pubdate="">2017年4月12日 at 上午3:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跟我一起唱：“六神合体滴雷霆王 呜呜呜呜呜.保卫地球的安全,我当先“….</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-74476">
+<article class="comment" id="comment-74476">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515383" rel="external nofollow">新用户221642</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-6227.html#comment-74476" rel="nofollow"><time datetime="2017-04-12T03:53:48+00:00" pubdate="">2017年4月12日 at 上午3:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跟我一起唱：“六神合体滴雷霆王 呜呜呜呜呜.保卫地球的安全,我当先“….</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-74475">
+<article class="comment" id="comment-74475">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515383" rel="external nofollow">新用户221642</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-6227.html#comment-74475" rel="nofollow"><time datetime="2017-04-12T03:53:48+00:00" pubdate="">2017年4月12日 at 上午3:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跟我一起唱：“六神合体滴雷霆王 呜呜呜呜呜.保卫地球的安全,我当先“….</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-74474">
+<article class="comment" id="comment-74474">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515383" rel="external nofollow">新用户221642</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-6227.html#comment-74474" rel="nofollow"><time datetime="2017-04-12T03:53:48+00:00" pubdate="">2017年4月12日 at 上午3:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跟我一起唱：“六神合体滴雷霆王 呜呜呜呜呜.保卫地球的安全,我当先“….</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-74473">
+<article class="comment" id="comment-74473">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515383" rel="external nofollow">新用户221642</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-6227.html#comment-74473" rel="nofollow"><time datetime="2017-04-12T03:53:48+00:00" pubdate="">2017年4月12日 at 上午3:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跟我一起唱：“六神合体滴雷霆王 呜呜呜呜呜.保卫地球的安全,我当先“….</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-74472">
+<article class="comment" id="comment-74472">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515383" rel="external nofollow">新用户221642</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-6227.html#comment-74472" rel="nofollow"><time datetime="2017-04-12T03:53:48+00:00" pubdate="">2017年4月12日 at 上午3:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跟我一起唱：“六神合体滴雷霆王 呜呜呜呜呜.保卫地球的安全,我当先“….</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-74471">
+<article class="comment" id="comment-74471">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515383" rel="external nofollow">新用户221642</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-6227.html#comment-74471" rel="nofollow"><time datetime="2017-04-12T03:53:48+00:00" pubdate="">2017年4月12日 at 上午3:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跟我一起唱：“六神合体滴雷霆王 呜呜呜呜呜.保卫地球的安全,我当先“….</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-31387">
+<article class="comment" id="comment-31387">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">AC_Grazy</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-6227.html#comment-31387" rel="nofollow"><time datetime="2015-07-07T13:38:50+00:00" pubdate="">2015年7月7日 at 下午1:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正有此意，欢迎更多的建议~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-31388">
+<article class="comment" id="comment-31388">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">21435048</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-6227.html#comment-31388" rel="nofollow"><time datetime="2015-07-01T16:43:02+00:00" pubdate="">2015年7月1日 at 下午4:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正在练习，很有帮助</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-31389">
+<article class="comment" id="comment-31389">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">H.Watson</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-6227.html#comment-31389" rel="nofollow"><time datetime="2015-06-27T19:36:36+00:00" pubdate="">2015年6月27日 at 下午7:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>3，求得所有的为的总和sum—-&gt;所有数的总和<br/>
+printf( "Not Possible" );—-&gt;printf("impossible");<br/>
+对吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-31397">
+<article class="comment" id="comment-31397">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">michaelwen</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-6227.html#comment-31397" rel="nofollow"><time datetime="2015-04-17T20:59:25+00:00" pubdate="">2015年4月17日 at 下午8:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-31393">
+<article class="comment" id="comment-31393">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">211206421</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-6227.html#comment-31393" rel="nofollow"><time datetime="2015-04-06T15:01:42+00:00" pubdate="">2015年4月6日 at 下午3:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>漏了一个"不"，已修正:)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-31398">
+<article class="comment" id="comment-31398">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ForgetVay</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-6227.html#comment-31398" rel="nofollow"><time datetime="2015-03-22T17:49:31+00:00" pubdate="">2015年3月22日 at 下午5:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>&amp;amp;这是C语言？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-31396">
+<article class="comment" id="comment-31396">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">winter</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-6227.html#comment-31396" rel="nofollow"><time datetime="2015-03-22T10:11:19+00:00" pubdate="">2015年3月22日 at 上午10:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49931">
+<article class="comment" id="comment-49931">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">aaa</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-6227.html#comment-49931" rel="nofollow"><time datetime="2015-03-20T18:17:32+00:00" pubdate="">2015年3月20日 at 下午6:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个 。。。。不是动态规划吧？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-31390">
+<article class="comment" id="comment-31390">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">becool456</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-6227.html#comment-31390" rel="nofollow"><time datetime="2015-03-19T21:19:34+00:00" pubdate="">2015年3月19日 at 下午9:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>赞一个！权限已更新:）</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-59011">
+<article class="comment" id="comment-59011">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sheyty</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-6227.html#comment-59011" rel="nofollow"><time datetime="2015-03-03T20:30:17+00:00" pubdate="">2015年3月3日 at 下午8:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>…. 配图居然是没方向的。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-31395">
+<article class="comment" id="comment-31395">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">TimeFight</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-6227.html#comment-31395" rel="nofollow"><time datetime="2015-02-15T08:47:49+00:00" pubdate="">2015年2月15日 at 上午8:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>for(int i=1; i&lt;=m; i++){<br/>
+            for(int j=1; j&lt;=n; j++){<br/>
+                    dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> [j-1] + 1;<br/>
+                if(s1.charAt(i-1) == s3.charAt(i+j-1))<br/>
+                    dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = dp[i-1] <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  + 1;<br/>
+                if(s2.charAt(j-1) == s3.charAt(i+j-1))<br/>
+                    dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = Math.max(dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> [j - 1] + 1, dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> );<br/>
+            }<br/>
+        }<br/>
+这里的代码似乎有点问题？ dp(i)(j) = dp(i)(j-1) + 1;这个例子System.out.println(ils.isInterleave("aa","dbbca", "aadbbcb"));返回的应该是false</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-31391">
+<article class="comment" id="comment-31391">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">howhaw</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-6227.html#comment-31391" rel="nofollow"><time datetime="2015-01-29T08:23:38+00:00" pubdate="">2015年1月29日 at 上午8:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不太明白DFS的方法</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-31392">
+<article class="comment" id="comment-31392">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ygxqqx</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-6227.html#comment-31392" rel="nofollow"><time datetime="2015-01-10T10:20:35+00:00" pubdate="">2015年1月10日 at 上午10:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>,,,,,,,,,,,,,,,</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-31394">
+<article class="comment" id="comment-31394">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fastislow</a></span> on <a href="http://www.acmerblog.com/leetcode-solution-subsets-6227.html#comment-31394" rel="nofollow"><time datetime="2015-01-07T02:15:27+00:00" pubdate="">2015年1月7日 at 上午2:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢支持！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

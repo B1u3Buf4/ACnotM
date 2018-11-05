@@ -1,0 +1,554 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>02-24</div>
+<div class="tit"><h1 class="entry-title">HDU 2983-Integer Transmission-栈-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph/shortest-path" rel="category tag" title="查看最短路径中的全部文章">最短路径</a>, <a href="http://www.acmerblog.com/category/data-struct/linear" rel="category tag" title="查看线性结构中的全部文章">线性结构</a></span><span class="i4">围观539次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4707" href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comments" title="《HDU 2983-Integer Transmission-栈-[解题报告]HOJ》上的评论">31 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Integer Transmission</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+You’re transmitting an n -bits unsigned integer k  through a simulated network. The i -th bit counting from left is transmitted at time i  (e.g. 4-bit unsigned integer 5 is transmitted in this order: 0-1-0-1). The network delay is modeled as follows: if a bit is transmitted at time i , it may arrive at as early as i + 1  and as late is i + d + 1 , where d  represents the maximal network delay. If more than one bit arrived at the same time, they could be received in any order.
+<p>For example, if you’re transmitting a 3-bit unsigned integer 2 (010) for d = 1 , you may receive 010, 100 (first bit is delayed) or 001 (second bit is delayed).</p>
+<p>Write a program to find the number of different integers that could be received, and the smallest/largest ones among them. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input contains several test cases. Each case consists of three integers n, d, k  (1&lt;=n&lt;=64, 0&lt;=d&lt;=n, 0&lt;=k &lt; 2^n) , the number of bits transmitted, the maximal network delay, and the integer transmitted. The last test case is followed by a single zero, which should not be processed. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input contains several test cases. Each case consists of three integers n, d, k  (1&lt;=n&lt;=64, 0&lt;=d&lt;=n, 0&lt;=k &lt; 2^n) , the number of bits transmitted, the maximal network delay, and the integer transmitted. The last test case is followed by a single zero, which should not be processed.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3 0 2 
+3 1 2 
+10 2 888 
+7 3 107 
+0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case 1: 1 2 2 
+Case 2: 3 1 4 
+Case 3: 25 490 984 
+Case 4: 19 47 122</pre>
+<p> <!-- problem end --></p>
+<p>唉，这明明也是一道差不多的题目，为什么构图完之后，还是错了很久，我很不解呀，一直改，一直改，但是时间还是很慢，2766ms，SPFA+队列实现</p>
+<p>所以很想改一下，用栈来实现，可结果却是给了我一个TLE，无语呀，不知道怎么回事，看了大牛的很快呀，差不多500ms，用SPFA+栈实现，难道是我在预处理，构图的时候，慢了？</p>
+<p>不解呀？我自己的加边操作很方便，可是很慢吗？= =！</p>
+<p>郁闷，看来得改改习惯了</p>
+<p>额，都没讲下题目：</p>
+<p>分析题意：</p>
+<p>输入有两种形式：</p>
+<p>1：P A B X  即 B + X = A 转化一下： B – A &lt;= -X,  A – B &lt;= X  构造边和权：(A, B, -X)， (B, A, X)</p>
+<p>2：V A B    即  B +１&lt;= A 转化一下：B – A &lt;= -1                     构造边和权：(A, B, -1) </p>
+<p>先贴下我这个比较水，比较慢的代码</p>
+<pre class="brush:cpp ">#include&lt;iostream&gt;
+#include&lt;string&gt;
+#include&lt;queue&gt;
+#define MAXINT 9999999
+#define MAXN 1100
+using namespace std;
+int dis[MAXN],n,m,num,p[MAXN];
+int vis[MAXN],cou[MAXN];
+queue&lt;int&gt; Q;
+struct edge
+{
+	int v,w,next;
+	edge(int _next=0,int _v=0,int _w=0):next(_next),v(_v),w(_w){};
+}e[MAXN*201];
+bool spfa()
+{
+	for(int i=1;i&lt;=n;i++)
+		dis[i]=0;
+	while(!Q.empty()) Q.pop();
+	for(int i=1;i&lt;=n;i++)
+	{
+		Q.push(i);
+		vis[i]=1;
+		cou[i]=1;
+	}
+	while(!Q.empty())
+	{
+		int t=Q.front();
+		Q.pop();vis[t]=0;
+		for(int j=p[t];j!=-1;j=e[j].next)
+		{
+			if(dis[e[j].v]&gt;e[j].w+dis[t])
+			{
+				dis[e[j].v]=e[j].w+dis[t];
+				if(!vis[e[j].v])
+				{
+					vis[e[j].v]=1;
+					cou[e[j].v]++;					
+					if(cou[e[j].v]&gt;n)
+						return false;
+					Q.push(e[j].v);
+				}
+			}
+		}
+	}
+	return true;
+}
+int main()
+{
+	char str;
+	int a,b,c;
+	while(cin&gt;&gt;n&gt;&gt;m)
+	{
+		 num=0;
+		 memset(p,-1,sizeof(p));
+		for(int i=0;i&lt;m;i++)
+		{
+			cin&gt;&gt;str;
+			if(str=='P')
+			{
+				cin&gt;&gt;a&gt;&gt;b&gt;&gt;c;
+				e[num]=edge(p[a],b,c);
+				p[a]=num++;
+				e[num]=edge(p[b],a,-c);
+				p[b]=num++;
+			}
+			else {
+				cin&gt;&gt;a&gt;&gt;b;
+				e[num]=edge(p[b],a,-1);
+				p[b]=num++;
+			}
+		}
+		if(spfa())
+			cout&lt;&lt;"Reliable"&lt;&lt;endl;
+		else cout&lt;&lt;"Unreliable"&lt;&lt;endl;
+	}
+	return 0;
+}</pre>
+<p>看下用栈实现的代码：</p>
+<pre class="brush:cpp ">#include&lt;stdio.h&gt;
+#include&lt;stdlib.h&gt;
+#define INF 0xfffffff
+#define NN 1004
+#define MM 200004
+
+int edNum, N;
+int next[MM];
+int root[NN];
+int mark[NN];
+int cnt[NN];
+int dis[NN];
+int stack[NN];
+
+struct node{
+int e, v;
+}edge[MM];
+void add(int a, int b, int c){
+edge[edNum].e = b;
+edge[edNum].v = c;
+next[edNum] = root[a];
+root[a] = edNum++;
+}
+
+int Spfa()
+{
+int i, top, cur, tmp, nxt;
+top = 0;
+//初始化的时候没有加源点，直接将所有有根的点入栈，也很不错
+for (i = 1; i &lt;= N; i++){
+dis[i] = INF;
+// key1
+if (root[i] != -1){
+stack[++top] = i;
+cnt[i]++;
+mark[i] = 1;
+}
+}
+
+while (top){
+cur = stack[top--];
+tmp = root[cur];
+mark[cur] = 0;
+while (tmp != -1){
+nxt = edge[tmp].e;
+//key2
+if (dis[nxt] &gt; dis[cur] + edge[tmp].v){
+dis[nxt] = dis[cur] + edge[tmp].v;
+if (!mark[nxt]){
+cnt[nxt]++;
+if (cnt[nxt] &gt; N + 1){
+return 1;
+}
+mark[nxt] = 1;
+stack[++top] = nxt;
+}
+}
+tmp = next[tmp];
+}
+}
+return 0;
+}
+int main()
+{
+int i, a, b, c, M;
+char str[2];
+
+while (scanf("%d%d", &amp;N, &amp;M) != EOF)
+{
+
+edNum = 0;
+for (i = 0; i &lt;= N; i++){
+root[i] = -1;
+mark[i] = 0;
+cnt[i] = 0;
+}
+
+while (M--){
+scanf("%s%d%d", str, &amp;a, &amp;b);
+if (str[0] == 'P'){
+scanf("%d", &amp;c);
+add(b, a, c);
+add(a, b, -c);
+}else{
+add(a, b, -1);
+}
+}
+if (Spfa()){
+puts("Unreliable");
+}else{
+puts("Reliable");
+}
+}
+return 0;
+}</pre>
+<p>解题参考：http://www.cnblogs.com/nanke/archive/2011/08/14/2137679.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-80563">
+<article class="comment" id="comment-80563">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516782" rel="external nofollow">新用户372283</a></span> on <a href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comment-80563" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是什么网站啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80562">
+<article class="comment" id="comment-80562">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516782" rel="external nofollow">新用户372283</a></span> on <a href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comment-80562" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是什么网站啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80561">
+<article class="comment" id="comment-80561">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516782" rel="external nofollow">新用户372283</a></span> on <a href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comment-80561" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是什么网站啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80560">
+<article class="comment" id="comment-80560">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516782" rel="external nofollow">新用户372283</a></span> on <a href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comment-80560" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是什么网站啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80559">
+<article class="comment" id="comment-80559">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516782" rel="external nofollow">新用户372283</a></span> on <a href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comment-80559" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是什么网站啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80558">
+<article class="comment" id="comment-80558">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516782" rel="external nofollow">新用户372283</a></span> on <a href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comment-80558" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是什么网站啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80557">
+<article class="comment" id="comment-80557">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516782" rel="external nofollow">新用户372283</a></span> on <a href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comment-80557" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是什么网站啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80556">
+<article class="comment" id="comment-80556">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516782" rel="external nofollow">新用户372283</a></span> on <a href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comment-80556" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是什么网站啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80555">
+<article class="comment" id="comment-80555">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516782" rel="external nofollow">新用户372283</a></span> on <a href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comment-80555" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是什么网站啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80554">
+<article class="comment" id="comment-80554">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516782" rel="external nofollow">新用户372283</a></span> on <a href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comment-80554" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是什么网站啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80553">
+<article class="comment" id="comment-80553">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516782" rel="external nofollow">新用户372283</a></span> on <a href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comment-80553" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是什么网站啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80552">
+<article class="comment" id="comment-80552">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516782" rel="external nofollow">新用户372283</a></span> on <a href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comment-80552" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是什么网站啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80551">
+<article class="comment" id="comment-80551">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516782" rel="external nofollow">新用户372283</a></span> on <a href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comment-80551" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是什么网站啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80550">
+<article class="comment" id="comment-80550">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516782" rel="external nofollow">新用户372283</a></span> on <a href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comment-80550" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是什么网站啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80549">
+<article class="comment" id="comment-80549">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516782" rel="external nofollow">新用户372283</a></span> on <a href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comment-80549" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是什么网站啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80548">
+<article class="comment" id="comment-80548">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516782" rel="external nofollow">新用户372283</a></span> on <a href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comment-80548" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是什么网站啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80547">
+<article class="comment" id="comment-80547">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516782" rel="external nofollow">新用户372283</a></span> on <a href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comment-80547" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是什么网站啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-80546">
+<article class="comment" id="comment-80546">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516782" rel="external nofollow">新用户372283</a></span> on <a href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comment-80546" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是什么网站啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-80545">
+<article class="comment" id="comment-80545">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919516782" rel="external nofollow">新用户372283</a></span> on <a href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comment-80545" rel="nofollow"><time datetime="2017-04-12T16:41:17+00:00" pubdate="">2017年4月12日 at 下午4:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是什么网站啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26207">
+<article class="comment" id="comment-26207">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hehe_snail</a></span> on <a href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comment-26207" rel="nofollow"><time datetime="2015-06-29T11:29:12+00:00" pubdate="">2015年6月29日 at 上午11:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>惊艳了，没想到代码如此简洁</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-26208">
+<article class="comment" id="comment-26208">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hao555sky</a></span> on <a href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comment-26208" rel="nofollow"><time datetime="2015-06-27T14:25:47+00:00" pubdate="">2015年6月27日 at 下午2:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>大致看了下，算法的时间复杂度没有很本性的提升，算不上高效。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26209">
+<article class="comment" id="comment-26209">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">OrangeGuy</a></span> on <a href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comment-26209" rel="nofollow"><time datetime="2015-06-14T17:20:03+00:00" pubdate="">2015年6月14日 at 下午5:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-57723">
+<article class="comment" id="comment-57723">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiao597896577</a></span> on <a href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comment-57723" rel="nofollow"><time datetime="2015-05-03T18:19:24+00:00" pubdate="">2015年5月3日 at 下午6:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二种解法如果数组有重复元素 就不正确</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26212">
+<article class="comment" id="comment-26212">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zhiqiang</a></span> on <a href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comment-26212" rel="nofollow"><time datetime="2015-03-10T23:51:17+00:00" pubdate="">2015年3月10日 at 下午11:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已修正</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-26213">
+<article class="comment" id="comment-26213">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jiakcstudio</a></span> on <a href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comment-26213" rel="nofollow"><time datetime="2015-03-10T01:09:02+00:00" pubdate="">2015年3月10日 at 上午1:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26211">
+<article class="comment" id="comment-26211">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">oneal</a></span> on <a href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comment-26211" rel="nofollow"><time datetime="2014-09-25T11:13:02+00:00" pubdate="">2014年9月25日 at 上午11:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>swap写成内联函数会不会好一些</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-26210">
+<article class="comment" id="comment-26210">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Ailing</a></span> on <a href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comment-26210" rel="nofollow"><time datetime="2014-06-08T17:30:50+00:00" pubdate="">2014年6月8日 at 下午5:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>受益匪浅！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26215">
+<article class="comment" id="comment-26215">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bobo</a></span> on <a href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comment-26215" rel="nofollow"><time datetime="2014-05-15T16:55:44+00:00" pubdate="">2014年5月15日 at 下午4:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>大哥，你复制也看看是不是这题的答案才复制吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-26206">
+<article class="comment" id="comment-26206">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">room306</a></span> on <a href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comment-26206" rel="nofollow"><time datetime="2014-05-15T14:01:25+00:00" pubdate="">2014年5月15日 at 下午2:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>helpful！！ mark</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-26214">
+<article class="comment" id="comment-26214">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiaoliubuer</a></span> on <a href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comment-26214" rel="nofollow"><time datetime="2014-05-04T02:21:06+00:00" pubdate="">2014年5月4日 at 上午2:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>楼主 为什么输入的形式都不对  题目是不是弄错了？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-26216">
+<article class="comment" id="comment-26216">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1520006273</a></span> on <a href="http://www.acmerblog.com/hdu-2983-integer-transmission-4707.html#comment-26216" rel="nofollow"><time datetime="2014-03-13T15:18:02+00:00" pubdate="">2014年3月13日 at 下午3:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错的代码！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

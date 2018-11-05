@@ -1,0 +1,503 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>02-21</div>
+<div class="tit"><h1 class="entry-title">HDU 3712-Detector Placement-计算几何-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/basis/simulate" rel="category tag" title="查看模拟法中的全部文章">模拟法</a>, <a href="http://www.acmerblog.com/category/geometry/analytic-geometry" rel="category tag" title="查看解析几何中的全部文章">解析几何</a></span><span class="i4">围观400次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6692" href="http://www.acmerblog.com/hdu-3712-detector-placement-6692.html#comments" title="《HDU 3712-Detector Placement-计算几何-[解题报告]HOJ》上的评论">20 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Detector Placement</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Dr. Gale is testing his laser system. He uses a detector to collect the signals from a fixed laser generator. He also puts a special prism in the system so that he can filter the noise. But he is not sure where to put the detector to collect the signals. Can you help him with this problem?
+<p></p><center><img alt="Binary Number" src="http://www.acmerblog.com/img/1435341194957.jpg"/></center>
+<p>Here n1 and n2 are the refractive indices of the two media. In order to simplify the problem, here we assume the prism is a triangle. The laser generator will not be placed on the surface of the prism or inside the prism. The laser goes in one direction and the detector can receive signals from any direction. The detector is place on the ground where th y-coordinate is zero. There is no energy lost in the refraction. That is to say, there is no reflection in the signal transmission. You can assume that there is no total reflection or the situation that the laser passes the vertex of the prism. Given the position and the direction of the laser generator and the prism, you are asked to find the position of detector so that it can receive the signals from the laser generator. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input contains multiple test cases. The first line is the total number of cases T (T ≤ 100). The first line of each test case contains 2 integers, indicating the x and y coordinates of the laser generator respectively.The second line contains 2 integers describing a point the laser will go through when the prism is not placed. The third line contains 6 integers describing the three vertices of the prism. The fourth line contains a real number u, the refractive index of the prism (1 &lt; u ≤ 10). We assume the refractive index of the air is always 1.0. The absolute value of the coordinates will not exceed 1000. The y coordinates are all nonnegative. The prism and the laser generator are strictly above the ground. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input contains multiple test cases. The first line is the total number of cases T (T ≤ 100). The first line of each test case contains 2 integers, indicating the x and y coordinates of the laser generator respectively.The second line contains 2 integers describing a point the laser will go through when the prism is not placed. The third line contains 6 integers describing the three vertices of the prism. The fourth line contains a real number u, the refractive index of the prism (1 &lt; u ≤ 10). We assume the refractive index of the air is always 1.0. The absolute value of the coordinates will not exceed 1000. The y coordinates are all nonnegative. The prism and the laser generator are strictly above the ground.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+0 10
+0 0
+-1 3 1 2 -1 1
+1.325
+0 10
+0 20
+-1 3 1 2 -1 1
+1.325</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+-0.658
+Error</pre>
+<p> <!-- problem end --></p>
+<p>题意：给一束激光，一个三棱柱，三棱柱会折射光，问这束激光最终是否会和y = 0相交；</p>
+<p>分析：模拟题，为了方便处理折射角，事先求出每条边的向内和向外的法向量；</p>
+<p>findpoint : 找第一交点</p>
+<p>step1:  判断激光是否和三角形有规范相交；</p>
+<p>step2: 第一次折射；</p>
+<p>step3:第二次折射，可能无法折射；</p>
+<pre class="brush:cpp"> #include&lt;cstdio&gt;
+ #include&lt;cstring&gt;
+ #include&lt;cstdlib&gt;
+ #include&lt;iostream&gt;
+ #include&lt;algorithm&gt;
+ #include&lt;cmath&gt;
+ #include&lt;vector&gt;
+ using namespace std;
+ const int N = 100+10;
+ const double eps = 1e-8;
+ const double pi = acos(-1.0);
+ inline int dcmp(double x) {
+     return x &lt; -eps ? -1 : x &gt; eps;
+ }
+ inline double sqr(double x) {
+     return x * x;
+ }
+ 
+ struct Point{
+     double x,y;
+     Point(){}
+     Point(double _x,double _y):x(_x),y(_y){}
+     bool operator == (const Point &amp;p) const{
+         return dcmp(x - p.x) == 0 &amp;&amp; dcmp(y - p.y) == 0;
+     }
+     Point operator + (const Point &amp;p) const{
+         return Point(x + p.x, y + p.y);
+     }
+     Point operator - (const Point &amp;p) const{
+         return Point (x - p.x, y - p.y);
+     }
+     Point operator * (const double &amp;k) const{
+         return Point (x * k, y * k);
+     }
+     Point operator / (const double &amp;k) const{
+         return Point (x / k, y / k);
+     }
+     double operator * (const Point &amp;p) const{
+         return x * p.y - y * p.x;
+     }
+     double operator / (const Point &amp;p) const{
+         return x * p.x + y * p.y;
+     }
+     double len2() {
+         return x * x + y * y;
+     }
+     double len() {
+         return sqrt(len2());
+     }
+     Point scale(const double &amp;k) {
+         return dcmp( len() ) ? (*this) * (k / len()) : (*this);
+     }
+     Point turnLeft() {
+         return Point(-y,x);
+     }
+     Point turnRight(){
+         return Point(y,-x);
+     }
+     double Distance(const Point &amp;p) {
+         return sqrt(sqr(x - p.x) + sqr(y - p.y));
+     }
+     Point rotate(const Point &amp;p,double angle, double k = 1) {
+         Point vec = (*this) - p;
+         double c = cos(angle * k)  , s =sin(angle * k) ;
+         return p + Point(vec.x * c - vec.y * s, vec.x * s + vec.y * c);
+     }
+     void input(){
+         scanf("%lf%lf",&amp;x,&amp;y);
+     }
+     void ot() {
+         printf("%.3lf %.3lf\n",x,y);
+     }
+ };
+ double Angle(Point a,Point b) {
+     return (a/b) / a.len() / b.len();
+ }
+ struct Line{
+     Point a,b;
+     Line(){}
+     Line(Point a,Point b):a(a),b(b){}
+     double operator * (const Point &amp;p) const{
+         return (b - a) * (p - a);
+     }
+     double operator / (const Point &amp;p) const{
+         return (p - a) / (p - b);
+     }
+     bool IsPointOnSeg(const Point &amp;p) {
+         return dcmp( (a - p) * (b - p) ) == 0 &amp;&amp; dcmp( (p - a) / (p - b) ) &lt;= 0;
+     }
+     int LineCrossSeg(const Line &amp;v) {//2jiao, 1 dian ,0 wu
+         int d1 = dcmp( (*this) * v.a), d2 = dcmp((*this) * v.b);
+         if ((d1 ^ d2) == -2) return 2;
+         return (d1 == 0 || d2 == 0);
+     }
+     Point CrossPoint(const Line &amp;v) {
+         double s1 = v * a, s2 = v * b;
+         return ( a * s2 - b * s1 ) / (s2 - s1);
+     }
+ };
+ Line li[3];
+ int d[3];
+ Point a[3],b[3],c[3];
+ Point st,en;
+ 
+ double u;
+ int check(int i) {
+     if (dcmp( (li[i].b - li[i].a) * (a[d[i]] - li[i].a) ) &gt; 0) {
+         return 1;
+     }
+     return 0;
+ }
+ void init(){
+     for (int i = 0; i &lt; 3; i++) {
+         if (check(i)) {
+             b[i] = (li[i].b - li[i].a).turnLeft();
+             c[i] = (li[i].b - li[i].a).turnRight();
+         }else {
+             b[i] = (li[i].b - li[i].a).turnRight();
+             c[i] = (li[i].b - li[i].a).turnLeft();
+         }
+     }
+ }
+ int ond(Point a,Point b,Point p) {
+     if (dcmp((p - a) / (b - a)) &gt;= 0) return 1;
+     return 0;
+ }
+ int step1() {
+     int fg = 0;
+     Line line = Line(st,en);
+     for (int i = 0; i &lt; 3; i++) {
+         if (line.LineCrossSeg(li[i]) == 2) {
+             Point p = line.CrossPoint(li[i]);
+             if (ond(st,en,p)) fg = 1;
+         }
+     }
+     if (fg == 0) {
+ 
+         Point p = line.CrossPoint(Line(Point(0,0),Point(1,0)));
+         if (ond(st,en,p)) printf("%.3lf\n",p.x+eps);
+         else printf("Error\n");
+         return 0;
+     }
+     return 1;
+ 
+ }
+ void findPoint(Point &amp;p,int &amp;id) {
+     Line line = Line(st,en);
+     double dis = 1e50;
+     for (int i = 0; i &lt; 3; i++) {
+         if (line.LineCrossSeg(li[i])) {
+             Point tp = line.CrossPoint(li[i]);
+             if (!ond(st,en,tp)) continue;
+             double tdis = tp.Distance(st);
+             if (tdis &lt; dis &amp;&amp; dcmp(tdis) != 0) {
+                 dis = tdis;
+                 p = tp;
+                 id = i;
+             }
+         }
+     }
+ }
+ void step2() {
+     Point p;
+     int id = -1;
+     findPoint(p,id);
+     Point vec = en - st;
+     double cs = Angle(vec,b[id]);
+     double sn1 = sqrt(1 - cs * cs);
+     double sn2 = sn1 / u;
+     double ag = asin(sn1) - asin(sn2);
+     if (dcmp(vec * b[id]) &lt;= 0) {
+         vec = (p + vec).rotate(p,-ag);
+     }else vec = (p + vec).rotate(p,ag);
+     st = p; en = vec;
+ }
+ void step3() {
+     Point p;
+     int id = -1;
+     findPoint(p,id);
+     Point vec = en - st;
+     double cs = Angle(vec,c[id]);
+     double sn1 = sqrt(1 - cs * cs);
+     double sn2 = sn1 * u;
+     if (sn2 &gt; 1) {
+         if (dcmp(p.y) == 0) printf("%.3lf\n",p.x+eps);
+         else printf("Error\n");
+         return;
+     }
+     double ag = asin(sn2) - asin(sn1);
+     if (dcmp(vec * c[id]) &gt;= 0) {
+         vec = (p + vec).rotate(p,-ag);
+     }else vec = (p + vec).rotate(p,ag);
+     st = p; en = vec;
+     Point an = Line(st,en).CrossPoint(Line(Point(0,0),Point(1,0)));
+     if (ond(st,en,an)) {
+         printf("%.3lf\n",an.x+eps);
+     }else printf("Error\n");
+ }
+ void solve(){
+     init();
+     if (!step1()) return;
+     step2();
+     step3();
+ }
+ int main(){
+    // cout&lt;&lt;Line(Point(0,0),Point(1,0)).LineCrossSeg(Line(Point(0,0),Point(1,0)))&lt;&lt;endl;
+     int T; scanf("%d",&amp;T);
+     while (T--) {
+         st.input(); en.input();
+         for (int i = 0; i &lt; 3; i++) a[i].input();
+         li[0] = Line(a[0],a[1]); d[0] = 2;
+         li[1] = Line(a[1],a[2]); d[1] = 0;
+         li[2] = Line(a[2],a[0]); d[2] = 1;
+         scanf("%lf",&amp;u);
+         solve();
+     }
+     return 0;
+ }
+ /*
+ 3
+ 0 10
+ 0 20
+ -1 3 1 2 -1 1
+ 1.325
+ 0 10
+ 0 0
+ -1 3 1 2 -1 1
+ 1.325
+ 
+ 0 10 0 9
+ 0 0 0 1 1 0
+ 1.0
+ */
+</pre>
+<p> </p>
+<p>参考：http://www.cnblogs.com/Rlemon/archive/2013/10/30/3398254.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-73181">
+<article class="comment" id="comment-73181">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919468153" rel="external nofollow">新用户700066</a></span> on <a href="http://www.acmerblog.com/hdu-3712-detector-placement-6692.html#comment-73181" rel="nofollow"><time datetime="2017-04-11T22:05:32+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我一直很奇怪网文奇长无底你们看的不累吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-73180">
+<article class="comment" id="comment-73180">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919468153" rel="external nofollow">新用户700066</a></span> on <a href="http://www.acmerblog.com/hdu-3712-detector-placement-6692.html#comment-73180" rel="nofollow"><time datetime="2017-04-11T22:05:32+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我一直很奇怪网文奇长无底你们看的不累吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-73179">
+<article class="comment" id="comment-73179">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919468153" rel="external nofollow">新用户700066</a></span> on <a href="http://www.acmerblog.com/hdu-3712-detector-placement-6692.html#comment-73179" rel="nofollow"><time datetime="2017-04-11T22:05:32+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我一直很奇怪网文奇长无底你们看的不累吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-73178">
+<article class="comment" id="comment-73178">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919468153" rel="external nofollow">新用户700066</a></span> on <a href="http://www.acmerblog.com/hdu-3712-detector-placement-6692.html#comment-73178" rel="nofollow"><time datetime="2017-04-11T22:05:32+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我一直很奇怪网文奇长无底你们看的不累吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-73177">
+<article class="comment" id="comment-73177">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919468153" rel="external nofollow">新用户700066</a></span> on <a href="http://www.acmerblog.com/hdu-3712-detector-placement-6692.html#comment-73177" rel="nofollow"><time datetime="2017-04-11T22:05:32+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我一直很奇怪网文奇长无底你们看的不累吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-73176">
+<article class="comment" id="comment-73176">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919468153" rel="external nofollow">新用户700066</a></span> on <a href="http://www.acmerblog.com/hdu-3712-detector-placement-6692.html#comment-73176" rel="nofollow"><time datetime="2017-04-11T22:05:32+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我一直很奇怪网文奇长无底你们看的不累吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33207">
+<article class="comment" id="comment-33207">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tzf888888</a></span> on <a href="http://www.acmerblog.com/hdu-3712-detector-placement-6692.html#comment-33207" rel="nofollow"><time datetime="2015-07-01T08:27:38+00:00" pubdate="">2015年7月1日 at 上午8:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这配图…..</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33211">
+<article class="comment" id="comment-33211">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Mayboy</a></span> on <a href="http://www.acmerblog.com/hdu-3712-detector-placement-6692.html#comment-33211" rel="nofollow"><time datetime="2015-07-01T06:44:55+00:00" pubdate="">2015年7月1日 at 上午6:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33216">
+<article class="comment" id="comment-33216">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fanxianxian</a></span> on <a href="http://www.acmerblog.com/hdu-3712-detector-placement-6692.html#comment-33216" rel="nofollow"><time datetime="2015-06-23T07:46:09+00:00" pubdate="">2015年6月23日 at 上午7:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Thanks i enjoy your write-up about Why We Keep track of | J Squared Consulting</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33219">
+<article class="comment" id="comment-33219">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">calvert1991</a></span> on <a href="http://www.acmerblog.com/hdu-3712-detector-placement-6692.html#comment-33219" rel="nofollow"><time datetime="2015-06-15T21:35:03+00:00" pubdate="">2015年6月15日 at 下午9:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>约瑟夫也用说这么长……很成熟的一个问题了，分治的方法解起来o(n)就可以了，有兴趣可以看看具体数学的第一章，关于约瑟夫问题推导出了一系列的结论，很漂亮</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33210">
+<article class="comment" id="comment-33210">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Miracle-cc</a></span> on <a href="http://www.acmerblog.com/hdu-3712-detector-placement-6692.html#comment-33210" rel="nofollow"><time datetime="2015-06-15T07:15:47+00:00" pubdate="">2015年6月15日 at 上午7:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真考人啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33218">
+<article class="comment" id="comment-33218">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zwj0571</a></span> on <a href="http://www.acmerblog.com/hdu-3712-detector-placement-6692.html#comment-33218" rel="nofollow"><time datetime="2015-06-04T13:08:46+00:00" pubdate="">2015年6月4日 at 下午1:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>信息不全</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33214">
+<article class="comment" id="comment-33214">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">GDUTtian</a></span> on <a href="http://www.acmerblog.com/hdu-3712-detector-placement-6692.html#comment-33214" rel="nofollow"><time datetime="2015-05-30T01:08:14+00:00" pubdate="">2015年5月30日 at 上午1:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>华为这题目略显简单啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33209">
+<article class="comment" id="comment-33209">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">943965021</a></span> on <a href="http://www.acmerblog.com/hdu-3712-detector-placement-6692.html#comment-33209" rel="nofollow"><time datetime="2015-05-13T08:22:01+00:00" pubdate="">2015年5月13日 at 上午8:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>从数学角度确实是C(n,r)，能给个递推关系式吗，从分治的角度不好理解</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33213">
+<article class="comment" id="comment-33213">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bcys</a></span> on <a href="http://www.acmerblog.com/hdu-3712-detector-placement-6692.html#comment-33213" rel="nofollow"><time datetime="2015-05-01T11:25:16+00:00" pubdate="">2015年5月1日 at 上午11:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是往年的笔试题，非在线，主要考察基础，Java会在面试时问到</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33220">
+<article class="comment" id="comment-33220">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">calvert1991</a></span> on <a href="http://www.acmerblog.com/hdu-3712-detector-placement-6692.html#comment-33220" rel="nofollow"><time datetime="2015-04-14T20:11:20+00:00" pubdate="">2015年4月14日 at 下午8:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>“可以发现,树将是满二叉树,”这句话不对吧，构造的树应该是“完全二叉树”，而非“满二叉树”。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33212">
+<article class="comment" id="comment-33212">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">magichu</a></span> on <a href="http://www.acmerblog.com/hdu-3712-detector-placement-6692.html#comment-33212" rel="nofollow"><time datetime="2015-03-28T17:18:41+00:00" pubdate="">2015年3月28日 at 下午5:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>顺利测试通过了，多谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33208">
+<article class="comment" id="comment-33208">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">liuyuedeyu</a></span> on <a href="http://www.acmerblog.com/hdu-3712-detector-placement-6692.html#comment-33208" rel="nofollow"><time datetime="2015-03-27T02:57:52+00:00" pubdate="">2015年3月27日 at 上午2:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>看似简单，还是不少坑的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33215">
+<article class="comment" id="comment-33215">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">H.Watson</a></span> on <a href="http://www.acmerblog.com/hdu-3712-detector-placement-6692.html#comment-33215" rel="nofollow"><time datetime="2015-03-23T10:14:29+00:00" pubdate="">2015年3月23日 at 上午10:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，就是把这32位当成一个长度为32的数</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33217">
+<article class="comment" id="comment-33217">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">2013283119</a></span> on <a href="http://www.acmerblog.com/hdu-3712-detector-placement-6692.html#comment-33217" rel="nofollow"><time datetime="2015-02-25T00:04:01+00:00" pubdate="">2015年2月25日 at 上午12:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真心不错，力顶作者</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

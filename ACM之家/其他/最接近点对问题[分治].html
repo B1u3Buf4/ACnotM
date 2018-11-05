@@ -1,0 +1,445 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>04-15</div>
+<div class="tit"><h1 class="entry-title">最接近点对问题[分治]</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/gaotong2055" rel="author" title="由dragon发布">dragon</a></span><span class="i1"><a href="http://www.acmerblog.com/category/zhuanti/classic" rel="category tag" title="查看经典问题中的全部文章">经典问题</a>, <a href="http://www.acmerblog.com/category/basis/recursion" rel="category tag" title="查看递归和分治中的全部文章">递归和分治</a></span><span class="i4">围观2279次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5688" href="http://www.acmerblog.com/closest-pair-of-points-5688.html#comments" title="《最接近点对问题[分治]》上的评论">29 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<h3>问题描述</h3>
+<p>给定平面S上n个点，找其中的一对点，使得在n(n-1)/2 个点对中，该点对的距离最小。</p>
+<p><span><span>这个问题出现在许多应用中。</span></span><span><span>例如，在空中交通管制，您可能要监视飞机以免靠得太近而发生碰撞事故。</span><span>两点间p和q的距离的公式：</span></span></p>
+<p><img alt="" src="http://d2o58evtke57tz.cloudfront.net/wp-content/uploads/dist_formula.png"/></p>
+<h3><strong>分析</strong></h3>
+<p>暴力的解决方法是O(n^2)，计算每个点对间的距离，返回最小值。我们可以使用分治的策略降低复杂度。下面讨论的算法复杂度为 O(n (Logn)^2)</p>
+<p>算法思路：</p>
+<pre class="brush:other">  1) n较小时直接求 (n=2).                                                         
+  2) 将S上的n个点分成大致相等的2个子集S1和S2    
+  3) 分别求S1和S2中的最接近点对
+ 4) 求一点在S1、另一点在S2中的最近点对
+  5) 从上述三对点中找距离最近的一对.</pre>
+<p>仔细分析上面的过程，只有第4步有些困难，其它几个步骤只要递归下去就行了。看下面这个图，我们把点分成了左右两部分S1和S2，并且分别求得了最小距离为dl，dr。 令 d = min(dl,dr)：</p>
+<p><a href="http://cdn.acmerblog.com/wp-content/uploads/2014/04/divide_points_new1.png"><img alt="divide_points_new1" class="alignnone size-medium wp-image-5689" height="183" src="http://cdn.acmerblog.com/wp-content/uploads/2014/04/divide_points_new1-300x183.png" width="300"/></a></p>
+<p>接下来要考虑的就是 两个端点分别在左右两部分中的点对。已经知道最小距离不会超过d。我们在拆分两部分的时候把 <strong><em>P [N/2] </em></strong><span><span>作为中间点。做一条过P的垂直线，并找到所有距离垂直线距离在d以内的点，把这些点放在数组strip[] 中，如下图所示。其它点就可以不用考虑了。</span></span></p>
+<p><a href="http://cdn.acmerblog.com/wp-content/uploads/2014/04/strip_closesr1.png"><img alt="strip_closesr1" class="alignnone size-medium wp-image-5690" height="298" src="http://cdn.acmerblog.com/wp-content/uploads/2014/04/strip_closesr1-300x228.png" width="394"/></a></p>
+<p>接下来计算strip[]中的最小距离点对。按照y坐标排序，这一步需要O(nLogn)的复杂度，其实可以 通过递归和归并优化到O(n)。由于已经排序，我们可以再O(n)内找到最小距离点对d3（这里其实需要一些几何知识来证明，参考：http://people.csail.mit.edu/indyk/6.838-old/handouts/lec17.pdf）。</p>
+<p>C语言实现：</p>
+<pre class="brush:cpp">// 分治法解决最小点对问题
+#include &lt;stdio.h&gt;
+#include &lt;float.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;math.h&gt;
+struct Point
+{
+    int x, y;
+};
+
+//使用qsort 来排序。参考：http://www.cplusplus.com/reference/clibrary/cstdlib/qsort/
+// 根据X坐标排序
+int compareX(const void* a, const void* b)
+{
+    Point *p1 = (Point *)a,  *p2 = (Point *)b;
+    return (p1-&gt;x - p2-&gt;x);
+}
+// 根据Y坐标排序
+int compareY(const void* a, const void* b)
+{
+    Point *p1 = (Point *)a,   *p2 = (Point *)b;
+    return (p1-&gt;y - p2-&gt;y);
+}
+
+// 返回距离
+float dist(Point p1, Point p2)
+{
+    return sqrt( (p1.x - p2.x)*(p1.x - p2.x) +
+                 (p1.y - p2.y)*(p1.y - p2.y)
+               );
+}
+
+// 暴力方法找到最小的点对
+float bruteForce(Point P[], int n)
+{
+    float min = FLT_MAX;
+    for (int i = 0; i &lt; n; ++i)
+        for (int j = i+1; j &lt; n; ++j)
+            if (dist(P[i], P[j]) &lt; min)
+                min = dist(P[i], P[j]);
+    return min;
+}
+
+float min(float x, float y)
+{
+    return (x &lt; y)? x : y;
+}
+
+// d就是min(dl,dr) 这个是上限。
+//就是上面的第4步。找出 strip[] 数组中的最小点对。看似复杂度O(n^2)
+//实际上O(n)，因为内层循环最多执行6次。
+float stripClosest(Point strip[], int size, float d)
+{
+    float min = d; 
+    qsort(strip, size, sizeof(Point), compareY); 
+    // 可以证明这个循环最多执行6次
+    for (int i = 0; i &lt; size; ++i)
+        for (int j = i+1; j &lt; size &amp;&amp; (strip[j].y - strip[i].y) &lt; min; ++j)
+            if (dist(strip[i],strip[j]) &lt; min)
+                min = dist(strip[i], strip[j]);
+
+    return min;
+}
+
+//递归的计算最小点对
+float closestUtil(Point P[], int n)
+{
+    // 如果点较少，用暴力解决
+    if (n &lt;= 3)
+        return bruteForce(P, n);
+
+    // 找到中间点
+    int mid = n/2;
+    Point midPoint = P[mid];
+
+    // 分成两个部分，分别计算
+    float dl = closestUtil(P, mid);
+    float dr = closestUtil(P + mid, n-mid);
+
+    float d = min(dl, dr);
+
+    //所有距离垂直线距离在d以内的点
+    Point strip[n];
+    int j = 0;
+    for (int i = 0; i &lt; n; i++)
+        if (abs(P[i].x - midPoint.x) &lt; d)
+            strip[j] = P[i], j++;
+
+    // 找出strip 数组中的最小点对
+    return min(d, stripClosest(strip, j, d) );
+}
+
+float closest(Point P[], int n)
+{
+    qsort(P, n, sizeof(Point), compareX);
+    return closestUtil(P, n);
+}
+
+// 测试
+int main()
+{
+    Point P[] = {{2, 3}, {12, 30}, {40, 50}, {5, 1}, {12, 10}, {3, 4}};
+    int n = sizeof(P) / sizeof(P[0]);
+    printf("The smallest distance is %f ", closest(P, n));
+    return 0;
+}</pre>
+<p>输出：</p>
+<pre class="brush:other">The smallest distance is 1.414214</pre>
+<p><strong>时间复杂度</strong></p>
+<p>在上面分成两部分后，需要找到 strip[] 数组，需要的时间为O(n)，排序strip[]的时间为 O(nLogn)，在strip[] 在找到最小点对的时间为 O(n)。</p>
+<p>总时间 T(n) =  2T(n/2) + O(n) + O(nLogn) + O(n)</p>
+<p>T(n) = 2T(n/2) + O(nLogn)<br/>
+T(n) = T(n x Logn x Logn)</p>
+<p>即复杂度为  O(n (Logn)^2)</p>
+<p>参考：http://www.geeksforgeeks.org/closest-pair-of-points/</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75810">
+<article class="comment" id="comment-75810">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530001" rel="external nofollow">新用户133049</a></span> on <a href="http://www.acmerblog.com/closest-pair-of-points-5688.html#comment-75810" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>10块钱一个月？千橡穷疯了吧。大家看看我的网站怎么样，叨客网</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75809">
+<article class="comment" id="comment-75809">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530001" rel="external nofollow">新用户133049</a></span> on <a href="http://www.acmerblog.com/closest-pair-of-points-5688.html#comment-75809" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>10块钱一个月？千橡穷疯了吧。大家看看我的网站怎么样，叨客网</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75808">
+<article class="comment" id="comment-75808">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530001" rel="external nofollow">新用户133049</a></span> on <a href="http://www.acmerblog.com/closest-pair-of-points-5688.html#comment-75808" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>10块钱一个月？千橡穷疯了吧。大家看看我的网站怎么样，叨客网</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75807">
+<article class="comment" id="comment-75807">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530001" rel="external nofollow">新用户133049</a></span> on <a href="http://www.acmerblog.com/closest-pair-of-points-5688.html#comment-75807" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>10块钱一个月？千橡穷疯了吧。大家看看我的网站怎么样，叨客网</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75806">
+<article class="comment" id="comment-75806">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530001" rel="external nofollow">新用户133049</a></span> on <a href="http://www.acmerblog.com/closest-pair-of-points-5688.html#comment-75806" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>10块钱一个月？千橡穷疯了吧。大家看看我的网站怎么样，叨客网</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75805">
+<article class="comment" id="comment-75805">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530001" rel="external nofollow">新用户133049</a></span> on <a href="http://www.acmerblog.com/closest-pair-of-points-5688.html#comment-75805" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>10块钱一个月？千橡穷疯了吧。大家看看我的网站怎么样，叨客网</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75804">
+<article class="comment" id="comment-75804">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530001" rel="external nofollow">新用户133049</a></span> on <a href="http://www.acmerblog.com/closest-pair-of-points-5688.html#comment-75804" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>10块钱一个月？千橡穷疯了吧。大家看看我的网站怎么样，叨客网</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75803">
+<article class="comment" id="comment-75803">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530001" rel="external nofollow">新用户133049</a></span> on <a href="http://www.acmerblog.com/closest-pair-of-points-5688.html#comment-75803" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>10块钱一个月？千橡穷疯了吧。大家看看我的网站怎么样，叨客网</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75802">
+<article class="comment" id="comment-75802">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530001" rel="external nofollow">新用户133049</a></span> on <a href="http://www.acmerblog.com/closest-pair-of-points-5688.html#comment-75802" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>10块钱一个月？千橡穷疯了吧。大家看看我的网站怎么样，叨客网</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75801">
+<article class="comment" id="comment-75801">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530001" rel="external nofollow">新用户133049</a></span> on <a href="http://www.acmerblog.com/closest-pair-of-points-5688.html#comment-75801" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>10块钱一个月？千橡穷疯了吧。大家看看我的网站怎么样，叨客网</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75800">
+<article class="comment" id="comment-75800">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530001" rel="external nofollow">新用户133049</a></span> on <a href="http://www.acmerblog.com/closest-pair-of-points-5688.html#comment-75800" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>10块钱一个月？千橡穷疯了吧。大家看看我的网站怎么样，叨客网</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75799">
+<article class="comment" id="comment-75799">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530001" rel="external nofollow">新用户133049</a></span> on <a href="http://www.acmerblog.com/closest-pair-of-points-5688.html#comment-75799" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>10块钱一个月？千橡穷疯了吧。大家看看我的网站怎么样，叨客网</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75798">
+<article class="comment" id="comment-75798">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530001" rel="external nofollow">新用户133049</a></span> on <a href="http://www.acmerblog.com/closest-pair-of-points-5688.html#comment-75798" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>10块钱一个月？千橡穷疯了吧。大家看看我的网站怎么样，叨客网</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75797">
+<article class="comment" id="comment-75797">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919530001" rel="external nofollow">新用户133049</a></span> on <a href="http://www.acmerblog.com/closest-pair-of-points-5688.html#comment-75797" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>10块钱一个月？千橡穷疯了吧。大家看看我的网站怎么样，叨客网</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64589">
+<article class="comment" id="comment-64589">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">在你的纵容里放肆</span> on <a href="http://www.acmerblog.com/closest-pair-of-points-5688.html#comment-64589" rel="nofollow"><time datetime="2016-04-25T20:25:00+00:00" pubdate="">2016年4月25日 at 下午8:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我再Dev C++上运行您的程序也是错的。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30268">
+<article class="comment" id="comment-30268">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NiKaWaLi</a></span> on <a href="http://www.acmerblog.com/closest-pair-of-points-5688.html#comment-30268" rel="nofollow"><time datetime="2015-06-25T23:55:19+00:00" pubdate="">2015年6月25日 at 下午11:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我又来学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49306">
+<article class="comment" id="comment-49306">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NiKaWaLi2015</a></span> on <a href="http://www.acmerblog.com/closest-pair-of-points-5688.html#comment-49306" rel="nofollow"><time datetime="2015-06-07T23:18:51+00:00" pubdate="">2015年6月7日 at 下午11:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p><strong>Gucci New Fall Arrivals</strong></p>
+<p>This is really nice to know. I hope it will be successful in the future. Good job on this and keep up the good work.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30270">
+<article class="comment" id="comment-30270">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">litao</a></span> on <a href="http://www.acmerblog.com/closest-pair-of-points-5688.html#comment-30270" rel="nofollow"><time datetime="2015-05-22T02:15:36+00:00" pubdate="">2015年5月22日 at 上午2:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好，解决了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30273">
+<article class="comment" id="comment-30273">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">211206421</a></span> on <a href="http://www.acmerblog.com/closest-pair-of-points-5688.html#comment-30273" rel="nofollow"><time datetime="2015-05-04T06:07:33+00:00" pubdate="">2015年5月4日 at 上午6:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>什么破题，题意好难懂啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49308">
+<article class="comment" id="comment-49308">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jinxiang23</a></span> on <a href="http://www.acmerblog.com/closest-pair-of-points-5688.html#comment-49308" rel="nofollow"><time datetime="2015-04-17T01:37:05+00:00" pubdate="">2015年4月17日 at 上午1:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法挺不错。NewHead代表新的头节点，通过递归找到最后一个节点之后，就把这个节点赋给NewHead，然后一直返回返回，中途这个值是没有变化的，一边返回一边把相应的指针方向颠倒，最后结束时返回新的头节点到主函数。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49309">
+<article class="comment" id="comment-49309">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Christmas</a></span> on <a href="http://www.acmerblog.com/closest-pair-of-points-5688.html#comment-49309" rel="nofollow"><time datetime="2015-03-31T02:17:55+00:00" pubdate="">2015年3月31日 at 上午2:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，值得借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30269">
+<article class="comment" id="comment-30269">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wall_</a></span> on <a href="http://www.acmerblog.com/closest-pair-of-points-5688.html#comment-30269" rel="nofollow"><time datetime="2015-03-29T09:44:45+00:00" pubdate="">2015年3月29日 at 上午9:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p><a href="http://www.realoj.com/problem/7如果楼主不介意，以可以在这个oj上做下，按照你的代码是错的。。。直接复制粘贴你的也是错。。不懂错在哪。" rel="nofollow">http://www.realoj.com/problem/7如果楼主不介意，以可以在这个oj上做下，按照你的代码是错的。。。直接复制粘贴你的也是错。。不懂错在哪。</a></p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49305">
+<article class="comment" id="comment-49305">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xuelanghu</a></span> on <a href="http://www.acmerblog.com/closest-pair-of-points-5688.html#comment-49305" rel="nofollow"><time datetime="2014-12-04T22:21:28+00:00" pubdate="">2014年12月4日 at 下午10:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30271">
+<article class="comment" id="comment-30271">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Bob</a></span> on <a href="http://www.acmerblog.com/closest-pair-of-points-5688.html#comment-30271" rel="nofollow"><time datetime="2014-11-24T20:59:05+00:00" pubdate="">2014年11月24日 at 下午8:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>97行缺一个分号</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49307">
+<article class="comment" id="comment-49307">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Riddick</a></span> on <a href="http://www.acmerblog.com/closest-pair-of-points-5688.html#comment-49307" rel="nofollow"><time datetime="2014-11-19T09:55:40+00:00" pubdate="">2014年11月19日 at 上午9:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，算是枚举吧，已修正</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30265">
+<article class="comment" id="comment-30265">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">985836927</a></span> on <a href="http://www.acmerblog.com/closest-pair-of-points-5688.html#comment-30265" rel="nofollow"><time datetime="2014-11-06T04:09:29+00:00" pubdate="">2014年11月6日 at 上午4:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Often We don’t set up on weblogs, but I would like to condition that this established up really forced me individually to do this! considerably outstanding publish</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30272">
+<article class="comment" id="comment-30272">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">geoksz</a></span> on <a href="http://www.acmerblog.com/closest-pair-of-points-5688.html#comment-30272" rel="nofollow"><time datetime="2014-08-26T15:59:59+00:00" pubdate="">2014年8月26日 at 下午3:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有意思，有难度</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30267">
+<article class="comment" id="comment-30267">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">slowlight</a></span> on <a href="http://www.acmerblog.com/closest-pair-of-points-5688.html#comment-30267" rel="nofollow"><time datetime="2014-07-28T20:07:58+00:00" pubdate="">2014年7月28日 at 下午8:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我觉得是D哎……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30266">
+<article class="comment" id="comment-30266">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zhuliyan</a></span> on <a href="http://www.acmerblog.com/closest-pair-of-points-5688.html#comment-30266" rel="nofollow"><time datetime="2014-04-20T07:10:54+00:00" pubdate="">2014年4月20日 at 上午7:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学算法中的数据结构学到一定程度会乐此不疲的，比如其中的2－3树，类似的红黑树，我甚至可以自己写个逻辑文件系统结构来。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

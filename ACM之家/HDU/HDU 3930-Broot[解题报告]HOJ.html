@@ -1,0 +1,457 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>04-14</div>
+<div class="tit"><h1 class="entry-title">HDU 3930-Broot[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观370次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6934" href="http://www.acmerblog.com/hdu-3930-broot-6934.html#comments" title="《HDU 3930-Broot[解题报告]HOJ》上的评论">20 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Broot</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+There is a way of encryption in the Digital planet. If the number x, who lives in M area, K layer, then it will change its name to x ^ K mod M, that is newx = x ^ k mod m. Now the Digital Kingdom wants to make a program, which can find all the original number of a name living in some area, some layer. If there is no solution, output -1. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+There are multiply test cases. Each test case contains there integers k, m , newx ,(0 &lt;= newx , m ,k &lt;= 1.5*10^15) , m is a prime number. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+There are multiply test cases. Each test case contains there integers k, m , newx ,(0 &lt;= newx , m ,k &lt;= 1.5*10^15) , m is a prime number.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1 5 4
+2 13 8
+3 13 8</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+case1:
+4
+case2:
+-1
+case3:
+2
+5
+6</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">/*===========================================
+|	hdu3323幂次方程: 
+|		x^q = a (%p) 已知q,a,p,求x. p为素数
+| 方法：先找到p的原跟g（暴力枚举然后验证）。
+|		 用baby_step求解 g^T = a(%p) 的解T。
+| 然后由于q*k % Eular(p) = T 可由欧拉公式g^Eular(p)=1推得.
+| (Eular(p)为原跟g的幂的周期)
+| 于是解出(T,Eular(p))个解k，然后答案就是g^k
+============================================*/
+#include&lt;stdio.h&gt;
+#include&lt;vector&gt;
+#include&lt;math.h&gt;
+#include&lt;string.h&gt;
+#include&lt;algorithm&gt;
+#include&lt;iostream&gt;
+#include&lt;cassert&gt;
+
+#define PB push_back
+#define MP make_pair
+using namespace std;
+typedef long long ll;
+
+const ll hsz = 1999997;
+vector&lt; pair&lt;ll,int&gt; &gt; has[hsz];
+
+vector&lt;ll&gt; fac;
+ll tot;
+
+ll mul(ll a,ll x,ll mod)
+{
+	ll rec = 0;
+	while (x){
+		if (x&amp;1) rec = (rec + a) % mod;
+		a = (a + a) % mod;	
+		x &gt;&gt;= 1;
+	}
+	return rec;
+}
+ll quick_pow(ll a,ll x,ll mod)
+{
+	ll rec = 1;
+	while (x)
+	{
+		if (x&amp;1) rec = mul(rec, a, mod);
+		a = mul(a, a, mod);
+		assert(a &gt;= 0);
+		assert(rec &gt;= 0);
+		x &gt;&gt;= 1;
+	}
+	return rec;
+}
+bool check(ll x,ll y,ll mod)
+{
+	//cout &lt;&lt; "check " &lt;&lt; x &lt;&lt; " " &lt;&lt; y &lt;&lt; " " &lt;&lt; mod &lt;&lt; endl;
+	for (int i=0;i&lt;fac.size();i++)
+	{
+		if (quick_pow(x, y/fac[i], mod) == 1)
+			return false;
+	}
+	return true;
+}
+ll findori(ll p)
+{
+	ll x = p - 1;
+	fac.clear();	
+	for (int i=2;(ll)i*i&lt;=x;i++)
+		if (x % i == 0)
+		{
+			fac.push_back(i);
+			while (x % i == 0) x /= i;		
+		}
+	
+	if (x &gt; 1) fac.push_back(x);	
+	
+	//for (int i=0;i&lt;fac.size();i++) printf("%d ",fac[i]); printf("\n");
+	
+	for (int i=2;i&lt;p;i++)
+		if (check(i, p-1, p)) 
+			return i;
+	
+	return -1;
+}
+ll ex_gcd(ll a,ll b,long long &amp;x,long long &amp;y)
+{
+	ll t,rec;
+	if (b == 0)
+	{
+		x = 1;
+		y = 0;
+		return a;
+	}
+	rec = ex_gcd(b,a%b,x,y);
+	t = x;
+	x = y;
+	y = t- a/b*y;
+	return rec;
+}
+ll hash(ll x,int id)
+{
+	int v = x % hsz;
+	for (int i=0;i&lt;has[v].size();i++)
+	if (has[v][i].first == x)
+		return has[v][i].second;
+	
+	if (id &gt; -1)
+	{
+		has[v].PB(MP(x, id));
+		//cout &lt;&lt; "insert is " &lt;&lt; x &lt;&lt; " " &lt;&lt; id &lt;&lt; endl;
+	}
+	return -1;
+}
+ll ni(ll a,ll p)
+{
+	long long x,y;
+	ex_gcd(a,p,x,y);
+	return (x % p + p) % p;
+}
+vector&lt;ll&gt; ret;
+vector&lt;ll&gt; mod_equ(ll a,ll b,ll n)
+{
+	ret.clear();
+	long long x,y;
+	ll d = ex_gcd(a,n,x,y);
+	if (b % d == 0)
+	{
+		x = x * (b/d) % n;
+		if ( x&lt;0 ) x += n;
+		for (ll i=0;i&lt;d;i++)
+			ret.push_back(x + i*(n/d));
+	}
+	return ret;
+}
+vector&lt;ll&gt; ans,tmp;
+ll solve(ll g,ll q,ll p,ll a)
+{
+	ll m = (long long)ceil(sqrt(p*1.0));
+	
+	//for (int i=0;i&lt;hsz;i++) has[i].clear();	
+	//cout &lt;&lt; "m is " &lt;&lt; m &lt;&lt; endl;
+	
+	ll ret = 1;
+	for (int i=0;i&lt;m;i++)
+	{
+		hash(ret, i);
+		ret = mul(ret, g, p);
+	}
+	
+	//cout &lt;&lt; "out!!!!!!!!!!!!!\n";
+	
+	ll pro = 1;
+	ll step = ret;
+	ans.clear();	
+	for (int i = 0;i &lt; m;i++, pro = pro * step % p)
+	{
+		ll num = a * ni(pro,p) % p;
+		ll j = hash(num, -1);
+		if (j != -1)
+		{
+			ll k = i * m + j;
+			tmp = mod_equ(q, k, p-1);
+			for (int e=0;e&lt;tmp.size();e++) 
+				ans.push_back( quick_pow(g, tmp[e], p) );
+			break;
+		}
+	}
+	if (ans.size() == 0) 
+		printf("-1\n");
+	else
+	{
+		sort(ans.begin(),ans.end());
+		for (int i=0;i&lt;ans.size();i++) 
+			cout &lt;&lt; ans[i] &lt;&lt; endl;
+	}
+	
+	ret = 1;
+	for (int i=0;i&lt;m;i++)
+	{
+		has[(int)(ret%hsz)].clear();	
+		ret = mul(ret, g, p);
+	}
+}
+int main()
+{
+	long long p, q, a;
+	int cas = 0;
+	while (cin &gt;&gt; q &gt;&gt; p &gt;&gt; a)
+	{		
+		printf("case%d:\n",++cas);
+		if (a == 0) 
+			printf("0\n");
+		else
+		{
+			ll g = findori(p);	
+			//cout &lt;&lt; "g is " &lt;&lt; g &lt;&lt; endl;
+			solve(g, q, p, a);
+		}
+	}
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-71485">
+<article class="comment" id="comment-71485">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518886" rel="external nofollow">新用户973498</a></span> on <a href="http://www.acmerblog.com/hdu-3930-broot-6934.html#comment-71485" rel="nofollow"><time datetime="2017-04-11T17:41:12+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没人阻止你烧水前用一下普通滤纸啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-71484">
+<article class="comment" id="comment-71484">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518886" rel="external nofollow">新用户973498</a></span> on <a href="http://www.acmerblog.com/hdu-3930-broot-6934.html#comment-71484" rel="nofollow"><time datetime="2017-04-11T17:41:12+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没人阻止你烧水前用一下普通滤纸啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-71483">
+<article class="comment" id="comment-71483">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518886" rel="external nofollow">新用户973498</a></span> on <a href="http://www.acmerblog.com/hdu-3930-broot-6934.html#comment-71483" rel="nofollow"><time datetime="2017-04-11T17:41:12+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没人阻止你烧水前用一下普通滤纸啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-71482">
+<article class="comment" id="comment-71482">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518886" rel="external nofollow">新用户973498</a></span> on <a href="http://www.acmerblog.com/hdu-3930-broot-6934.html#comment-71482" rel="nofollow"><time datetime="2017-04-11T17:41:12+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没人阻止你烧水前用一下普通滤纸啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-71481">
+<article class="comment" id="comment-71481">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518886" rel="external nofollow">新用户973498</a></span> on <a href="http://www.acmerblog.com/hdu-3930-broot-6934.html#comment-71481" rel="nofollow"><time datetime="2017-04-11T17:41:12+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没人阻止你烧水前用一下普通滤纸啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-71480">
+<article class="comment" id="comment-71480">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518886" rel="external nofollow">新用户973498</a></span> on <a href="http://www.acmerblog.com/hdu-3930-broot-6934.html#comment-71480" rel="nofollow"><time datetime="2017-04-11T17:41:12+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没人阻止你烧水前用一下普通滤纸啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-71479">
+<article class="comment" id="comment-71479">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518886" rel="external nofollow">新用户973498</a></span> on <a href="http://www.acmerblog.com/hdu-3930-broot-6934.html#comment-71479" rel="nofollow"><time datetime="2017-04-11T17:41:12+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没人阻止你烧水前用一下普通滤纸啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-71478">
+<article class="comment" id="comment-71478">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518886" rel="external nofollow">新用户973498</a></span> on <a href="http://www.acmerblog.com/hdu-3930-broot-6934.html#comment-71478" rel="nofollow"><time datetime="2017-04-11T17:41:12+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没人阻止你烧水前用一下普通滤纸啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-34807">
+<article class="comment" id="comment-34807">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">a997930294</a></span> on <a href="http://www.acmerblog.com/hdu-3930-broot-6934.html#comment-34807" rel="nofollow"><time datetime="2015-07-07T16:09:30+00:00" pubdate="">2015年7月7日 at 下午4:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>输出规范写错了哦~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51603">
+<article class="comment" id="comment-51603">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">liuyuedeyu</a></span> on <a href="http://www.acmerblog.com/hdu-3930-broot-6934.html#comment-51603" rel="nofollow"><time datetime="2015-07-03T14:22:17+00:00" pubdate="">2015年7月3日 at 下午2:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>,,,,,,,,,,,,,,,</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-51604">
+<article class="comment" id="comment-51604">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zoe_music</a></span> on <a href="http://www.acmerblog.com/hdu-3930-broot-6934.html#comment-51604" rel="nofollow"><time datetime="2015-07-03T03:16:51+00:00" pubdate="">2015年7月3日 at 上午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>总数为2n，遍历到第n个，就是中间的位置</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-34811">
+<article class="comment" id="comment-34811">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Dick</a></span> on <a href="http://www.acmerblog.com/hdu-3930-broot-6934.html#comment-34811" rel="nofollow"><time datetime="2015-06-26T16:37:08+00:00" pubdate="">2015年6月26日 at 下午4:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>较好的写法是 start+(end-start)/2</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64143">
+<article class="comment" id="comment-64143">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hongfieyu</a></span> on <a href="http://www.acmerblog.com/hdu-3930-broot-6934.html#comment-64143" rel="nofollow"><time datetime="2015-06-12T19:00:25+00:00" pubdate="">2015年6月12日 at 下午7:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有些说不通吧，只有1个孩子肯定是男孩了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-59867">
+<article class="comment" id="comment-59867">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wall_</a></span> on <a href="http://www.acmerblog.com/hdu-3930-broot-6934.html#comment-59867" rel="nofollow"><time datetime="2015-06-06T07:30:04+00:00" pubdate="">2015年6月6日 at 上午7:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，感谢分享。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-34812">
+<article class="comment" id="comment-34812">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fanxianxian</a></span> on <a href="http://www.acmerblog.com/hdu-3930-broot-6934.html#comment-34812" rel="nofollow"><time datetime="2015-06-04T02:52:47+00:00" pubdate="">2015年6月4日 at 上午2:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不太懂呀，乡亲们。原理知道代码不会</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-34813">
+<article class="comment" id="comment-34813">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">daisyleedq</a></span> on <a href="http://www.acmerblog.com/hdu-3930-broot-6934.html#comment-34813" rel="nofollow"><time datetime="2015-05-16T13:44:52+00:00" pubdate="">2015年5月16日 at 下午1:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序只能输出一个子序列</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-34810">
+<article class="comment" id="comment-34810">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wawa_zmt</a></span> on <a href="http://www.acmerblog.com/hdu-3930-broot-6934.html#comment-34810" rel="nofollow"><time datetime="2015-05-16T08:57:29+00:00" pubdate="">2015年5月16日 at 上午8:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>说的就是无向图啊，有向图的算法也是类似的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-34809">
+<article class="comment" id="comment-34809">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mcitdkj</a></span> on <a href="http://www.acmerblog.com/hdu-3930-broot-6934.html#comment-34809" rel="nofollow"><time datetime="2015-04-29T14:14:29+00:00" pubdate="">2015年4月29日 at 下午2:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>能不能说下这个是用的什么算法策略？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-34808">
+<article class="comment" id="comment-34808">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">liluvu</a></span> on <a href="http://www.acmerblog.com/hdu-3930-broot-6934.html#comment-34808" rel="nofollow"><time datetime="2015-04-23T07:39:02+00:00" pubdate="">2015年4月23日 at 上午7:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>0000</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-51602">
+<article class="comment" id="comment-51602">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">anthozoan77</a></span> on <a href="http://www.acmerblog.com/hdu-3930-broot-6934.html#comment-51602" rel="nofollow"><time datetime="2015-04-15T22:21:44+00:00" pubdate="">2015年4月15日 at 下午10:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>good !</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

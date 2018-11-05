@@ -1,0 +1,501 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-13</div>
+<div class="tit"><h1 class="entry-title">九度-1539-师弟[解题代码]</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/jdoj" rel="category tag" title="查看九度OJ中的全部文章">九度OJ</a></span><span class="i4">围观1977次</span><span class="i3"><a class="ds-thread-count" data-thread-key="2410" href="http://www.acmerblog.com/jiudu-1539-2410.html#comments" title="《九度-1539-师弟[解题代码]》上的评论">25 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<dl>
+<dt>
+<b>题目描述：</b>
+</dt>
+<dd>
+<p>开学了，GrassLand的新师弟也来了，于是GrassLand打算去路口接他，以表兄长之谊。<br/>
+已知：<br/>
+共有n个路口，n个路口间存在着m条道路，每条道路连接两个路口，道路有其各自的长度。<br/>
+GrassLand和他的实验室在1号路口，而他的师弟在n号路口。<br/>
+师弟沿着最短路径走向实验室，若有多于一条的最短路径，他会任意选择一条。<br/>
+GrassLand不希望走的太远而浪费科研的时间，所以他至多只会离开实验室k个路口。<br/>
+问题出现了，GrassLand并不知道他的师弟会选择哪条路径。所以他想知道，所有离开实验室不超过k个路口（即该路口和实验室可以由至多k条道路连接）的路口中，在师弟和实验室间任意一条最短路径上的路口个数(包括实验室所在的1号路口和师弟所在的n号路口)。</p>
+</dd>
+</dl>
+<dl>
+<dt>
+<b>输入：</b>
+</dt>
+<dd>
+<p>输入包含多组测试用例。<br/>
+每组测试用例开头为三个整数n（2 &lt;= n &lt;= 1000），m（1 &lt;= m &lt;= 100000），k(0 &lt;= k &lt;= 1000)<br/>
+接下去m行描述道路信息，每行三个整数a(1 &lt;= a &lt;= n),b(1 &lt;= b &lt;= n &amp;&amp; b != a),c(1 &lt;= c &lt;= 1000)，表示连接路口a和路口b的道路长度为c。<br/>
+数据保证1号路口和n号路口间连通。</p>
+</dd>
+</dl>
+<dl>
+<dt>
+<b>输出：</b>
+</dt>
+<dd>
+<p>对于每组测试用例，输出一个整数，代表符合条件的路口个数。</p>
+</dd>
+</dl>
+<dl>
+<dt>
+<b>样例输入：</b>
+</dt>
+<dd>
+<pre>4 3 2
+1 2 1
+2 3 1
+3 4 1
+4 3 1
+1 2 1
+2 3 1
+3 4 1
+4 4 1
+1 2 3
+1 3 2
+2 4 2
+3 4 3</pre>
+</dd>
+</dl>
+<dl>
+<dt>
+<b>样例输出：</b>
+</dt>
+<dd>
+<pre>3
+2
+3</pre>
+</dd>
+</dl>
+<hr/>cpp 代码如下：
+<pre class="brush:cpp ">#include &lt;iostream&gt;
+#include &lt;queue&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;math.h&gt;
+#include &lt;vector&gt;
+using namespace std;
+const int N = 1001;
+
+class Node
+{
+public:
+	int e, cost;
+	Node(int n, int c)
+	{
+		e = n;
+		cost = c;
+	}
+
+};
+int n, m, k;
+vector&lt;Node&gt; edges[N];
+vector&lt;Node&gt;::iterator iter1;
+vector&lt;int&gt;::iterator iter2;
+bool canVisit[N];
+
+//得到限制范围内的那些点，存储在canVisit中
+void getK()
+{
+	queue&lt;Node&gt; q;
+	Node start(1, 0);
+	q.push(start);
+	canVisit[1] = true;
+	while (q.size() &gt; 0)
+	{
+		Node n = q.front();
+		q.pop();
+		if (n.cost &gt;= k)
+			break;
+		for (iter1 = edges[n.e].begin(); iter1 != edges[n.e].end(); iter1++)
+		{
+			if (!canVisit[iter1-&gt;e])
+			{
+				canVisit[iter1-&gt;e] = true;
+				Node newNode(iter1-&gt;e, n.cost + 1);
+				q.push(newNode);
+			}
+		}
+	}
+	//for (int i = 0; i &lt;= n; i++)
+	//	cout &lt;&lt; canVisit[i] &lt;&lt; ",";
+	//cout &lt;&lt; endl;
+}
+
+int dis1[N]; //正向
+int dis2[N]; //逆向
+
+//计算从点start到其他所有节点的最短距离
+void bfs(int start, int * dis)
+{
+	queue&lt;int&gt; q;
+	q.push(start);
+	bool visit[N] ={ false };
+	dis[start]=0;
+	while (q.size() &gt; 0)
+	{
+		int e = q.front();
+		q.pop();
+		visit[e] = false;
+		for (iter1 = edges[e].begin(); iter1 != edges[e].end(); iter1++)
+		{
+			//-1表示第一次到到改点
+			if (dis[iter1-&gt;e] == -1 || dis[iter1-&gt;e] &gt; dis[e] + iter1-&gt;cost)
+			{
+				dis[iter1-&gt;e] = dis[e] + iter1-&gt;cost;
+				if (!visit[iter1-&gt;e])
+				{
+					q.push(iter1-&gt;e);
+					visit[iter1-&gt;e] = false;
+				}
+			}
+		}
+	}
+	  // for(int i=0; i&lt;=n; i++) cout &lt;&lt; dis[i] &lt;&lt; ",";
+	 //       cout &lt;&lt; endl;
+}
+
+void dij(int start, int * dis){
+	int cnt = 0;
+	bool visit[N] = {false};
+	for(iter1=edges[start].begin(); iter1!=edges[start].end(); iter1++){
+		dis[iter1-&gt;e] = iter1-&gt;cost;
+	}
+dis[start]=0;
+	visit[start] = true;
+	int M = 1000000000;
+//	while(true){
+	for(int i=1; i&lt;n; i++){
+		int index = 0, mint = M;
+		for(int j=1; j&lt;=n; j++){
+			if(!visit[j] &amp;&amp; dis[j]!=-1 &amp;&amp; dis[j] &lt; mint){
+				mint = dis[j];
+				//path[j] = start;
+				//cout &lt;&lt; j &lt;&lt; " " &lt;&lt; start &lt;&lt; endl;
+				index = j;
+			}
+		}
+
+		visit[index] = true;
+			//到达终点
+		start = index;
+		for(iter1=edges[start].begin(); iter1!=edges[start].end(); iter1++){
+			if(!visit[iter1-&gt;e]  &amp;&amp; (dis[iter1-&gt;e] &gt; dis[start]+iter1-&gt;cost || dis[iter1-&gt;e]==-1))
+				dis[iter1-&gt;e] = dis[start]+iter1-&gt;cost;
+		}
+
+
+	}
+	//cout &lt;&lt; "dij: ";
+	//for(int i=0; i&lt;=n; i++) cout &lt;&lt; dis[i] &lt;&lt; ",";
+	//	        cout &lt;&lt; endl;
+}
+
+
+int main()
+{
+	int a,b,c;
+
+	while (scanf ("%d%d%d",&amp;n,&amp;m,&amp;k) != EOF)
+	{
+		memset(edges, 0, sizeof(edges));
+		memset(canVisit, 0 ,sizeof(canVisit));
+		memset(dis1, -1, sizeof(dis1));
+		memset(dis2, -1, sizeof(dis2));
+		for(int i=0; i&lt;m; i++)
+		{
+			scanf("%d%d%d",&amp;a,&amp;b,&amp;c);
+			edges[a].push_back(Node(b,c));
+			edges[b].push_back(Node(a,c));
+		}
+		getK();
+		bfs(1,dis1);
+		bfs(n,dis2);
+		//dij(1,dis1);
+		//dij(n,dis2);
+		int ans=0;
+		//统计最总结果
+		for(int i=1; i&lt;=n; i++){
+			if(canVisit[i] &amp;&amp; dis1[i] != -1 &amp;&amp; dis2[i]!= -1){
+				if(dis1[i] + dis2[i] == dis1[n])
+					ans++;
+			}
+		}
+		printf("%d\n",ans);
+	}
+	return 0;
+}
+/**************************************************************
+	Problem: 1539
+	User: coder
+	Language: C++
+	Result: Accepted
+	Time:500 ms
+	Memory:12252 kb
+****************************************************************/</pre>
+<p></p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-90429">
+<article class="comment" id="comment-90429">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518717" rel="external nofollow">新用户245937</a></span> on <a href="http://www.acmerblog.com/jiudu-1539-2410.html#comment-90429" rel="nofollow"><time datetime="2017-04-13T11:22:40+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>上初中的时候 要求背诵这首词 有一同学就说 老师 我唱出来行不行……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-90428">
+<article class="comment" id="comment-90428">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518717" rel="external nofollow">新用户245937</a></span> on <a href="http://www.acmerblog.com/jiudu-1539-2410.html#comment-90428" rel="nofollow"><time datetime="2017-04-13T11:22:40+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>上初中的时候 要求背诵这首词 有一同学就说 老师 我唱出来行不行……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-90427">
+<article class="comment" id="comment-90427">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518717" rel="external nofollow">新用户245937</a></span> on <a href="http://www.acmerblog.com/jiudu-1539-2410.html#comment-90427" rel="nofollow"><time datetime="2017-04-13T11:22:40+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>上初中的时候 要求背诵这首词 有一同学就说 老师 我唱出来行不行……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-90426">
+<article class="comment" id="comment-90426">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518717" rel="external nofollow">新用户245937</a></span> on <a href="http://www.acmerblog.com/jiudu-1539-2410.html#comment-90426" rel="nofollow"><time datetime="2017-04-13T11:22:40+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>上初中的时候 要求背诵这首词 有一同学就说 老师 我唱出来行不行……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-90425">
+<article class="comment" id="comment-90425">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518717" rel="external nofollow">新用户245937</a></span> on <a href="http://www.acmerblog.com/jiudu-1539-2410.html#comment-90425" rel="nofollow"><time datetime="2017-04-13T11:22:40+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>上初中的时候 要求背诵这首词 有一同学就说 老师 我唱出来行不行……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-90424">
+<article class="comment" id="comment-90424">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518717" rel="external nofollow">新用户245937</a></span> on <a href="http://www.acmerblog.com/jiudu-1539-2410.html#comment-90424" rel="nofollow"><time datetime="2017-04-13T11:22:40+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>上初中的时候 要求背诵这首词 有一同学就说 老师 我唱出来行不行……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-90423">
+<article class="comment" id="comment-90423">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518717" rel="external nofollow">新用户245937</a></span> on <a href="http://www.acmerblog.com/jiudu-1539-2410.html#comment-90423" rel="nofollow"><time datetime="2017-04-13T11:22:40+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>上初中的时候 要求背诵这首词 有一同学就说 老师 我唱出来行不行……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-90422">
+<article class="comment" id="comment-90422">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518717" rel="external nofollow">新用户245937</a></span> on <a href="http://www.acmerblog.com/jiudu-1539-2410.html#comment-90422" rel="nofollow"><time datetime="2017-04-13T11:22:40+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>上初中的时候 要求背诵这首词 有一同学就说 老师 我唱出来行不行……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-90421">
+<article class="comment" id="comment-90421">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518717" rel="external nofollow">新用户245937</a></span> on <a href="http://www.acmerblog.com/jiudu-1539-2410.html#comment-90421" rel="nofollow"><time datetime="2017-04-13T11:22:40+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>上初中的时候 要求背诵这首词 有一同学就说 老师 我唱出来行不行……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-90420">
+<article class="comment" id="comment-90420">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518717" rel="external nofollow">新用户245937</a></span> on <a href="http://www.acmerblog.com/jiudu-1539-2410.html#comment-90420" rel="nofollow"><time datetime="2017-04-13T11:22:40+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>上初中的时候 要求背诵这首词 有一同学就说 老师 我唱出来行不行……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-90419">
+<article class="comment" id="comment-90419">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518717" rel="external nofollow">新用户245937</a></span> on <a href="http://www.acmerblog.com/jiudu-1539-2410.html#comment-90419" rel="nofollow"><time datetime="2017-04-13T11:22:40+00:00" pubdate="">2017年4月13日 at 上午11:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>上初中的时候 要求背诵这首词 有一同学就说 老师 我唱出来行不行……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-15974">
+<article class="comment" id="comment-15974">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Anne</a></span> on <a href="http://www.acmerblog.com/jiudu-1539-2410.html#comment-15974" rel="nofollow"><time datetime="2015-04-24T12:50:05+00:00" pubdate="">2015年4月24日 at 下午12:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>gcc环境</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-15971">
+<article class="comment" id="comment-15971">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wizcabbit</a></span> on <a href="http://www.acmerblog.com/jiudu-1539-2410.html#comment-15971" rel="nofollow"><time datetime="2015-04-23T06:16:05+00:00" pubdate="">2015年4月23日 at 上午6:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个还不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-15968">
+<article class="comment" id="comment-15968">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">liuyuedeyu</a></span> on <a href="http://www.acmerblog.com/jiudu-1539-2410.html#comment-15968" rel="nofollow"><time datetime="2015-04-09T01:30:27+00:00" pubdate="">2015年4月9日 at 上午1:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢提醒。代码又编辑了一下</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-61866">
+<article class="comment" id="comment-61866">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NiKaWaLi</a></span> on <a href="http://www.acmerblog.com/jiudu-1539-2410.html#comment-61866" rel="nofollow"><time datetime="2015-03-21T20:36:32+00:00" pubdate="">2015年3月21日 at 下午8:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>辛苦了，顶</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-15969">
+<article class="comment" id="comment-15969">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fanxianxian</a></span> on <a href="http://www.acmerblog.com/jiudu-1539-2410.html#comment-15969" rel="nofollow"><time datetime="2015-02-27T21:26:42+00:00" pubdate="">2015年2月27日 at 下午9:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>能不能说一下tmp数组和solve都是干嘛的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-15966">
+<article class="comment" id="comment-15966">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">magicSky</a></span> on <a href="http://www.acmerblog.com/jiudu-1539-2410.html#comment-15966" rel="nofollow"><time datetime="2015-02-14T20:23:57+00:00" pubdate="">2015年2月14日 at 下午8:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>51行错了，改为：void Union(struct subset subsets[], int x, int y)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-15967">
+<article class="comment" id="comment-15967">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mnmlist</a></span> on <a href="http://www.acmerblog.com/jiudu-1539-2410.html#comment-15967" rel="nofollow"><time datetime="2014-12-16T21:23:25+00:00" pubdate="">2014年12月16日 at 下午9:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>顺利测试通过了，多谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-61865">
+<article class="comment" id="comment-61865">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">leowww</a></span> on <a href="http://www.acmerblog.com/jiudu-1539-2410.html#comment-61865" rel="nofollow"><time datetime="2014-11-13T21:08:11+00:00" pubdate="">2014年11月13日 at 下午9:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>哇，算法有这么多呢！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-15972">
+<article class="comment" id="comment-15972">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mr_zhang2011</a></span> on <a href="http://www.acmerblog.com/jiudu-1539-2410.html#comment-15972" rel="nofollow"><time datetime="2014-06-09T06:07:39+00:00" pubdate="">2014年6月9日 at 上午6:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>mark, 备用</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-15970">
+<article class="comment" id="comment-15970">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">linzzzz</a></span> on <a href="http://www.acmerblog.com/jiudu-1539-2410.html#comment-15970" rel="nofollow"><time datetime="2014-05-06T13:23:17+00:00" pubdate="">2014年5月6日 at 下午1:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>隐藏最深的bug是(start+end)/2有可能上溢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-15975">
+<article class="comment" id="comment-15975">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">pascal</a></span> on <a href="http://www.acmerblog.com/jiudu-1539-2410.html#comment-15975" rel="nofollow"><time datetime="2014-02-25T08:26:37+00:00" pubdate="">2014年2月25日 at 上午8:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为\n\n</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-15973">
+<article class="comment" id="comment-15973">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yipwinghong</a></span> on <a href="http://www.acmerblog.com/jiudu-1539-2410.html#comment-15973" rel="nofollow"><time datetime="2014-01-24T13:56:57+00:00" pubdate="">2014年1月24日 at 下午1:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一种方法怎么会是O(log(m+n))呢？没有二分的话直接遍历应该就是O(m+n)吧？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-61867">
+<article class="comment" id="comment-61867">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Silence.L</a></span> on <a href="http://www.acmerblog.com/jiudu-1539-2410.html#comment-61867" rel="nofollow"><time datetime="2014-01-15T19:08:38+00:00" pubdate="">2014年1月15日 at 下午7:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>华为这题目略显简单啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-42304">
+<article class="comment" id="comment-42304">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">we</a></span> on <a href="http://www.acmerblog.com/jiudu-1539-2410.html#comment-42304" rel="nofollow"><time datetime="2013-12-20T22:35:45+00:00" pubdate="">2013年12月20日 at 下午10:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>失误失误，转载错了。已经改正，抱歉。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

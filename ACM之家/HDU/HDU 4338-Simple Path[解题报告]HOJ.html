@@ -1,0 +1,416 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>05-23</div>
+<div class="tit"><h1 class="entry-title">HDU 4338-Simple Path[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观155次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7349" href="http://www.acmerblog.com/hdu-4338-simple-path-7349.html#comments" title="《HDU 4338-Simple Path[解题报告]HOJ》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Simple Path</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Everybody knows that totalfrank has absolutely no sense of direction.  Getting lost in the university or nearly supermarket is very common for him. We always worry about whether he can find his way back into our sweet base whenever he goes out alone for his class.  In general, if totalfrank get lost again, we need to check his starting point and destination just in order to find out where he could be (you know this task is very common for us).<br/>Unfortunately, poor totalfrank sometimes forgot taking his mobile phone, when this situation happens, we can’t get in touch with him. But it is so lucky that totalfrank can remember places where he had gone before in his trip from his starting point and destination at this trip so that he won’t go to such place again (he can’t remember places which he had gone during his previous trip). As we are all familiar with map, we can find out which place he couldn’t be.<br/>However, totalfrank can always get lost, doing this same boring work makes us sleepy. So we ask totalfrank for all possible starting point and destination for him, and try to find out how many places he wouldn’t be when he chooses any pair of starting point and destination. Here comes the problem, since our university’s map is so complex (there can be many buildings which can be considered as points in our university, some pair of these point has a way while others hasn’t), we need a program to help us work out this problem. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input contains no more than 10 test cases. <br/>For each test case: <br/>The first line includes two integers N (1 &lt;= N &lt;= 100000) and M (0 &lt;= M &lt;= 200000). N is the total number of nodes. M is the number of edges.<br/>The next M lines each describe an edge of this graph in the following format:<br/>X (0 &lt;= X &lt; N) Y (0 &lt;= Y &lt; N)<br/>It means that there is an edge from point X to point Y. Ways are bidirectional and there are no duplicates or self-loop edges.<br/>The next line includes only one integer Q (1 &lt;= Q &lt;= 100000) which indicates the total number of queries.<br/>The next Q lines are all in the following format:<br/>A B, which means in this query totalfrank choose A as his starting point and B as his destination. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input contains no more than 10 test cases. <br/>For each test case: <br/>The first line includes two integers N (1 &lt;= N &lt;= 100000) and M (0 &lt;= M &lt;= 200000). N is the total number of nodes. M is the number of edges.<br/>The next M lines each describe an edge of this graph in the following format:<br/>X (0 &lt;= X &lt; N) Y (0 &lt;= Y &lt; N)<br/>It means that there is an edge from point X to point Y. Ways are bidirectional and there are no duplicates or self-loop edges.<br/>The next line includes only one integer Q (1 &lt;= Q &lt;= 100000) which indicates the total number of queries.<br/>The next Q lines are all in the following format:<br/>A B, which means in this query totalfrank choose A as his starting point and B as his destination.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+4 3
+0 1
+1 2
+1 3
+1
+0 2
+
+4 4
+0 1
+1 2
+1 3
+2 3
+1
+0 2</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case #1:
+1
+
+Case #2:
+0</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+#include &lt;vector&gt;
+#include &lt;utility&gt;
+#include &lt;algorithm&gt;
+#define Set(a) (memset(a, 0, sizeof(a)))
+
+using namespace std;
+
+typedef pair&lt;int, int&gt; Pair;
+const int MAXN=100005, MAXLOG=20;
+
+int n, dfn[MAXN], low[MAXN], bccno[MAXN];
+bool cut[MAXN];
+vector&lt;Pair&gt; S;
+
+int sz[MAXN*2], ssz[MAXN*2], conno[MAXN*2], fa[MAXN*2][MAXLOG], Deep[MAXN*2];
+bool vis[MAXN*2];
+
+struct NewGraph {
+	int n;
+	vector&lt;int&gt; E[MAXN*2];
+	void AddEdge(int x, int y)
+	{
+		E[x].push_back(y);
+		E[y].push_back(x);
+	}
+	void BFS(int start, int ncon)
+	{
+		static int q[MAXN*2];
+		int l, r, x, y, i;
+		q[l=r=1] = start;
+		while (l &lt;= r) {
+			x = q[l++];
+			conno[x] = ncon;
+			ssz[x] = sz[x]+ssz[fa[x][0]];
+			Deep[x] = Deep[fa[x][0]]+1;
+			for (i=0; i&lt;E[x].size(); i++) {
+				y = E[x][i];
+				if (y==fa[x][0]) continue;
+				fa[y][0] = x;
+				q[++r] = y;
+			}
+		}
+	}
+	void Work()
+	{
+		int i, j, ncon=0;
+		Set(vis), Set(fa), Set(conno);
+		for (i=1; i&lt;=n; i++)
+			if (!conno[i])
+				BFS(i, ++ncon);
+		for (j=1; j&lt;MAXLOG; j++)
+			for (i=1; i&lt;=n; i++)
+				fa[i][j] = fa[fa[i][j-1]][j-1];
+	}
+	int LCA(int x, int y)
+	{
+		int j;
+		if (Deep[x] &lt; Deep[y])
+			swap(x, y);
+		for (j=MAXLOG-1; j&gt;=0; j--)
+			if (Deep[x]-(1&lt;&lt;j) &gt;= Deep[y])
+				x = fa[x][j];
+		if (x == y)
+			return x;
+		for (j=MAXLOG-1; j&gt;=0; j--)
+			if (fa[x][j] != fa[y][j])
+				x=fa[x][j], y=fa[y][j];
+		return fa[x][0];
+	}
+	int Query(int x, int y, bool cut1, bool cut2)
+	{
+		if (!x || !y || conno[x]!=conno[y])
+			return ::n;
+		int lca=LCA(x,y), num=ssz[x]+ssz[y]-(ssz[lca]&lt;&lt;1)+sz[lca]+cut1+cut2;
+		return ::n-num;
+	}
+};
+
+struct Rec {
+	int i, x, y, fa;
+	bool flag;
+};
+
+struct Solver {
+	int ndfn, nbcc;
+	vector&lt;int&gt; E[MAXN], bcc[MAXN];
+	void Init()
+	{
+		ndfn = nbcc = 0;
+		Set(dfn), Set(bccno), Set(cut);
+		int m, x, y;
+		scanf("%d", &amp;m);
+		while (m--) {
+			scanf("%d%d", &amp;x, &amp;y);
+			E[x].push_back(y);
+			E[y].push_back(x);
+		}
+	}
+	void DFS(int start)
+	{
+		static Rec stk[MAXN];
+		int top, x, y, u, v, rtson=0;
+		stk[top=1].i=-1, stk[1].x=start, stk[1].y=stk[1].fa=-1, stk[1].flag=false;
+		while (top) {
+			x = stk[top].x;
+			if (stk[top].i == -1) {
+				dfn[x] = low[x] = ++ndfn;
+				stk[top].i = 0;
+			}
+			for (int &amp;i=stk[top].i; i&lt;E[x].size(); ++i) {
+				if (stk[top].y != -1) {
+					y = stk[top].y;
+					low[x] = min(low[x], low[y]);
+					if (low[y] &gt;= dfn[x]) {
+						cut[x] = true;
+						++nbcc;
+						do {
+							u=S.back().first, v=S.back().second;
+							if (bccno[u] != nbcc)
+								bcc[nbcc].push_back(u);
+							if (bccno[v] != nbcc)
+								bcc[nbcc].push_back(v);
+							bccno[u] = bccno[v] = nbcc;
+							S.pop_back();
+						} while (u!=x || v!=y);
+					}
+					stk[top].y = -1;
+					continue;
+				}
+				y = E[x][i];
+				if (y==stk[top].fa &amp;&amp; !stk[top].flag) {
+					stk[top].flag = true;
+					continue;
+				}
+				if (!dfn[y]) {
+					S.push_back(Pair(x, y));
+					if (stk[top].fa == -1)
+						rtson++;
+					stk[top].y = y;
+					stk[++top].i=-1, stk[top].x=y, stk[top].y=-1, stk[top].fa=x, stk[top].flag=false;
+					break;
+				}
+				if (dfn[y] &lt; dfn[x]) {
+					S.push_back(Pair(x, y));
+					low[x] = min(low[x], dfn[y]);
+				}
+			}
+			if (stk[top].x == x)
+				top--;
+		}
+		cut[start] = (rtson&gt;1);
+	}
+	void Work()
+	{
+		static int newno[MAXN];
+		int i, q, x, y;
+		for (i=0; i&lt;n; i++)
+			if (!dfn[i])
+				DFS(i);
+		NewGraph *a=new NewGraph;
+		a-&gt;n=0, Set(newno);
+		for (i=0; i&lt;n; i++)
+			if (cut[i]) {
+				newno[i] = ++(a-&gt;n);
+				sz[newno[i]] = -1;
+			}
+		for (x=1; x&lt;=nbcc; x++) {
+			sz[++(a-&gt;n)] = bcc[x].size();
+			for (i=0; i&lt;bcc[x].size(); i++) {
+				y = bcc[x][i];
+				if (cut[y])
+					a-&gt;AddEdge(newno[y], a-&gt;n);
+				else
+					newno[y] = a-&gt;n;
+			}
+		}
+		a-&gt;Work();
+		scanf("%d", &amp;q);
+		while (q--) {
+			scanf("%d%d", &amp;x, &amp;y);
+			printf("%d\n", (x==y ? n-1 : a-&gt;Query(newno[x],newno[y], cut[x], cut[y])));
+		}
+	}
+};
+
+int main()
+{
+	///freopen("out.txt", "w", stdout);
+	for (int cas=1; scanf("%d",&amp;n)==1; cas++) {
+		Solver *a=new Solver;
+		a-&gt;Init();
+		printf("Case #%d:\n", cas);
+		a-&gt;Work();
+		putchar('\n');
+	}
+	return 0;
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-98544">
+<article class="comment" id="comment-98544">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533362" rel="external nofollow">新用户331412</a></span> on <a href="http://www.acmerblog.com/hdu-4338-simple-path-7349.html#comment-98544" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>后知后觉，原来月见才是主角，夕颜好可怜，要不是她好胜心太强了不然她就不会这样了，还是喜欢她呀！！我有点讨厌月见那种病娇！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98543">
+<article class="comment" id="comment-98543">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533362" rel="external nofollow">新用户331412</a></span> on <a href="http://www.acmerblog.com/hdu-4338-simple-path-7349.html#comment-98543" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>后知后觉，原来月见才是主角，夕颜好可怜，要不是她好胜心太强了不然她就不会这样了，还是喜欢她呀！！我有点讨厌月见那种病娇！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98542">
+<article class="comment" id="comment-98542">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533362" rel="external nofollow">新用户331412</a></span> on <a href="http://www.acmerblog.com/hdu-4338-simple-path-7349.html#comment-98542" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>后知后觉，原来月见才是主角，夕颜好可怜，要不是她好胜心太强了不然她就不会这样了，还是喜欢她呀！！我有点讨厌月见那种病娇！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98541">
+<article class="comment" id="comment-98541">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533362" rel="external nofollow">新用户331412</a></span> on <a href="http://www.acmerblog.com/hdu-4338-simple-path-7349.html#comment-98541" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>后知后觉，原来月见才是主角，夕颜好可怜，要不是她好胜心太强了不然她就不会这样了，还是喜欢她呀！！我有点讨厌月见那种病娇！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98540">
+<article class="comment" id="comment-98540">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533362" rel="external nofollow">新用户331412</a></span> on <a href="http://www.acmerblog.com/hdu-4338-simple-path-7349.html#comment-98540" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>后知后觉，原来月见才是主角，夕颜好可怜，要不是她好胜心太强了不然她就不会这样了，还是喜欢她呀！！我有点讨厌月见那种病娇！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98539">
+<article class="comment" id="comment-98539">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533362" rel="external nofollow">新用户331412</a></span> on <a href="http://www.acmerblog.com/hdu-4338-simple-path-7349.html#comment-98539" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>后知后觉，原来月见才是主角，夕颜好可怜，要不是她好胜心太强了不然她就不会这样了，还是喜欢她呀！！我有点讨厌月见那种病娇！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98538">
+<article class="comment" id="comment-98538">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533362" rel="external nofollow">新用户331412</a></span> on <a href="http://www.acmerblog.com/hdu-4338-simple-path-7349.html#comment-98538" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>后知后觉，原来月见才是主角，夕颜好可怜，要不是她好胜心太强了不然她就不会这样了，还是喜欢她呀！！我有点讨厌月见那种病娇！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98537">
+<article class="comment" id="comment-98537">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533362" rel="external nofollow">新用户331412</a></span> on <a href="http://www.acmerblog.com/hdu-4338-simple-path-7349.html#comment-98537" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>后知后觉，原来月见才是主角，夕颜好可怜，要不是她好胜心太强了不然她就不会这样了，还是喜欢她呀！！我有点讨厌月见那种病娇！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98536">
+<article class="comment" id="comment-98536">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533362" rel="external nofollow">新用户331412</a></span> on <a href="http://www.acmerblog.com/hdu-4338-simple-path-7349.html#comment-98536" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>后知后觉，原来月见才是主角，夕颜好可怜，要不是她好胜心太强了不然她就不会这样了，还是喜欢她呀！！我有点讨厌月见那种病娇！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98535">
+<article class="comment" id="comment-98535">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533362" rel="external nofollow">新用户331412</a></span> on <a href="http://www.acmerblog.com/hdu-4338-simple-path-7349.html#comment-98535" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>后知后觉，原来月见才是主角，夕颜好可怜，要不是她好胜心太强了不然她就不会这样了，还是喜欢她呀！！我有点讨厌月见那种病娇！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98534">
+<article class="comment" id="comment-98534">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533362" rel="external nofollow">新用户331412</a></span> on <a href="http://www.acmerblog.com/hdu-4338-simple-path-7349.html#comment-98534" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>后知后觉，原来月见才是主角，夕颜好可怜，要不是她好胜心太强了不然她就不会这样了，还是喜欢她呀！！我有点讨厌月见那种病娇！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98533">
+<article class="comment" id="comment-98533">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533362" rel="external nofollow">新用户331412</a></span> on <a href="http://www.acmerblog.com/hdu-4338-simple-path-7349.html#comment-98533" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>后知后觉，原来月见才是主角，夕颜好可怜，要不是她好胜心太强了不然她就不会这样了，还是喜欢她呀！！我有点讨厌月见那种病娇！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-98532">
+<article class="comment" id="comment-98532">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533362" rel="external nofollow">新用户331412</a></span> on <a href="http://www.acmerblog.com/hdu-4338-simple-path-7349.html#comment-98532" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>后知后觉，原来月见才是主角，夕颜好可怜，要不是她好胜心太强了不然她就不会这样了，还是喜欢她呀！！我有点讨厌月见那种病娇！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-98531">
+<article class="comment" id="comment-98531">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919533362" rel="external nofollow">新用户331412</a></span> on <a href="http://www.acmerblog.com/hdu-4338-simple-path-7349.html#comment-98531" rel="nofollow"><time datetime="2017-04-20T14:27:48+00:00" pubdate="">2017年4月20日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>后知后觉，原来月见才是主角，夕颜好可怜，要不是她好胜心太强了不然她就不会这样了，还是喜欢她呀！！我有点讨厌月见那种病娇！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-68614">
+<article class="comment" id="comment-68614">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518398" rel="external nofollow">新用户077364</a></span> on <a href="http://www.acmerblog.com/hdu-4338-simple-path-7349.html#comment-68614" rel="nofollow"><time datetime="2017-04-11T07:10:16+00:00" pubdate="">2017年4月11日 at 上午7:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>thx</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

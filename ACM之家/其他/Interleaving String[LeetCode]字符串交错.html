@@ -1,0 +1,291 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>11-21</div>
+<div class="tit"><h1 class="entry-title">Interleaving String[LeetCode]字符串交错</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/leetcode" rel="category tag" title="查看LeetCode中的全部文章">LeetCode</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a></span><span class="i4">围观1073次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6197" href="http://www.acmerblog.com/interleaving-stringleetcode-6197.html#comments" title="《Interleaving String[LeetCode]字符串交错》上的评论">17 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<h3><strong>Interleaving String</strong></h3>
+<p>Given <i>s1</i>, <i>s2</i>, <i>s3</i>, find whether <i>s3</i> is formed by the interleaving of <i>s1</i> and <i>s2</i>.</p>
+<p>For example,<br/>
+Given:<br/>
+<i>s1</i> = <code>"aabcc"</code>,<br/>
+<i>s2</i> = <code>"dbbca"</code>,</p>
+<p>When <i>s3</i> = <code>"aadbbcbcac"</code>, return true.<br/>
+When <i>s3</i> = <code>"aadbbbaccc"</code>, return false.</p>
+<p>给定字符串s1, s2, s3，判断s3是否可有s1和s2交错组合而成。这里的交错指的是前后顺序不变的交叉。</p>
+<p>1) s3的长度应该是s1和s2的长度之和。</p>
+<p>2) 可以化解为子问题，通过每次删除开头的一个字符，不断缩小字符串的长度。</p>
+<p><strong>方法一 递归求解</strong></p>
+<pre class="brush:java">public boolean inInterleaveRecur(String s1, String s2, String s3) {
+        if(s3.length() != s1.length() + s2.length()) return false;
+        if(s1.length() == 0) return s2.equals(s3);
+        if(s2.length() == 0) return s1.equals(s3);
+        boolean sub1 = false;
+        boolean sub2 = false;
+        if(s1.charAt(0) == s3.charAt(0))
+            sub1 = inInterleaveRecur(s1.substring(1), s2, s3.substring(1));
+        if(s2.charAt(0) == s3.charAt(0))
+            sub2 = inInterleaveRecur(s1, s2.substring(1), s3.substring(1));
+        return sub1 || sub2;
+    }</pre>
+<p>方法简单，但是时间复杂度较大，为O(2^(n+m))</p>
+<p><strong>方法二 动态规划 </strong></p>
+<p>上面的方法会有很多重复的子问题的计算，可以通过动态规划求解。</p>
+<p>dp[i][j]表示 s1[0...i-1],和s2[0...j-1]可以交错匹配s3的最长长度</p>
+<pre class="brush:java">public class InterleavingString {
+
+    public boolean inInterleaveRecur(String s1, String s2, String s3) {
+        if(s3.length() != s1.length() + s2.length()) return false;
+        if(s1.length() == 0) return s2.equals(s3);
+        if(s2.length() == 0) return s1.equals(s3);
+        boolean sub1 = false;
+        boolean sub2 = false;
+        if(s1.charAt(0) == s3.charAt(0))
+            sub1 = inInterleaveRecur(s1.substring(1), s2, s3.substring(1));
+        if(s2.charAt(0) == s3.charAt(0))
+            sub2 = inInterleaveRecur(s1, s2.substring(1), s3.substring(1));
+        return sub1 || sub2;
+    }
+
+    public boolean isInterleave(String s1, String s2, String s3) {
+        int m = s1.length();
+        int n = s2.length();
+        if(m + n != s3.length()) return false;
+
+        //dp[i][j]: s1[0...i-1],和s2[0...j-1]可以交错匹配s3的最长长度
+        int dp[][] = new int[m+1][n+1];
+
+        dp[0][0] = 0;
+
+        //初始化第一列，即只用s1
+        for(int i=1; i&lt;=m; i++) {
+            if (s1.charAt(i - 1) == s3.charAt(i - 1))
+                dp[i][0] = dp[i - 1][0] + 1;
+            else break;
+        }
+
+        for(int i=1; i&lt;=n; i++) {
+            if (s2.charAt(i - 1) == s3.charAt(i - 1))
+                dp[0][i] = dp[0][i - 1] + 1;
+            else break;
+        }
+
+        for(int i=1; i&lt;=m; i++){
+            for(int j=1; j&lt;=n; j++){
+                    dp[i][j] = dp[i][j-1] + 1;
+                if(s1.charAt(i-1) == s3.charAt(i+j-1))
+                    dp[i][j] = dp[i-1][j] + 1;
+                if(s2.charAt(j-1) == s3.charAt(i+j-1))
+                    dp[i][j] = Math.max(dp[i][j - 1] + 1, dp[i][j]);
+            }
+        }
+
+        return dp[m][n] == s3.length();
+    }
+
+    public static void main(String args[]){
+        InterleavingString ils = new InterleavingString();
+
+        System.out.println(ils.inInterleaveRecur("aabcc","dbbca", "aadbbcbcac"));
+        System.out.println(ils.inInterleaveRecur("aabcc", "dbbca", "aadbbbaccc"));
+
+        System.out.println("-----------");
+
+        System.out.println(ils.isInterleave("aabcc","dbbca", "aadbbcbcac"));
+        System.out.println(ils.isInterleave("aabcc","dbbca", "aadbbbaccc"));
+    }
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-73623">
+<article class="comment" id="comment-73623">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919512168" rel="external nofollow">新用户852914</a></span> on <a href="http://www.acmerblog.com/interleaving-stringleetcode-6197.html#comment-73623" rel="nofollow"><time datetime="2017-04-12T00:07:35+00:00" pubdate="">2017年4月12日 at 上午12:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>登- 等等登-登 等-登登-等等-登等登–</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64890">
+<article class="comment" id="comment-64890">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">LHUVk</span> on <a href="http://www.acmerblog.com/interleaving-stringleetcode-6197.html#comment-64890" rel="nofollow"><time datetime="2016-11-24T08:15:06+00:00" pubdate="">2016年11月24日 at 上午8:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是男L人L就L上的L网C战，A 片：htTP://uVU.Cc/ijW6 <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64759">
+<article class="comment" id="comment-64759">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">VQsKa</span> on <a href="http://www.acmerblog.com/interleaving-stringleetcode-6197.html#comment-64759" rel="nofollow"><time datetime="2016-10-16T03:40:42+00:00" pubdate="">2016年10月16日 at 上午3:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>打开 ２８８ｄ．ｐｗ 都是 浪美眉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-32272">
+<article class="comment" id="comment-32272">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fwhappy</a></span> on <a href="http://www.acmerblog.com/interleaving-stringleetcode-6197.html#comment-32272" rel="nofollow"><time datetime="2015-05-16T04:55:34+00:00" pubdate="">2015年5月16日 at 上午4:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>very good solutions.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-32274">
+<article class="comment" id="comment-32274">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tangxiansheng</a></span> on <a href="http://www.acmerblog.com/interleaving-stringleetcode-6197.html#comment-32274" rel="nofollow"><time datetime="2015-05-10T12:38:29+00:00" pubdate="">2015年5月10日 at 下午12:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>面霸网。www.51mx.org</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50409">
+<article class="comment" id="comment-50409">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Miracle-cc</a></span> on <a href="http://www.acmerblog.com/interleaving-stringleetcode-6197.html#comment-50409" rel="nofollow"><time datetime="2015-04-13T02:07:55+00:00" pubdate="">2015年4月13日 at 上午2:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>没有对题目进行一番分析，真是美中不足啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50407">
+<article class="comment" id="comment-50407">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zcmu_sls</a></span> on <a href="http://www.acmerblog.com/interleaving-stringleetcode-6197.html#comment-50407" rel="nofollow"><time datetime="2015-04-02T00:59:13+00:00" pubdate="">2015年4月2日 at 上午12:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>隐藏最深的bug是(start+end)/2有可能上溢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63874">
+<article class="comment" id="comment-63874">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">PriceKiller</a></span> on <a href="http://www.acmerblog.com/interleaving-stringleetcode-6197.html#comment-63874" rel="nofollow"><time datetime="2015-03-22T01:58:59+00:00" pubdate="">2015年3月22日 at 上午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>额楼主能否在发布代码的同时对解题思路做个讲解呢？这样大家在学习的时候就方便多了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63875">
+<article class="comment" id="comment-63875">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">943965021</a></span> on <a href="http://www.acmerblog.com/interleaving-stringleetcode-6197.html#comment-63875" rel="nofollow"><time datetime="2015-03-21T04:35:03+00:00" pubdate="">2015年3月21日 at 上午4:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p><a href="https://coding.net/moon/miracle" rel="nofollow">https://coding.net/moon/miracle</a></p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63872">
+<article class="comment" id="comment-63872">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mnmlist</a></span> on <a href="http://www.acmerblog.com/interleaving-stringleetcode-6197.html#comment-63872" rel="nofollow"><time datetime="2015-02-19T10:51:02+00:00" pubdate="">2015年2月19日 at 上午10:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法挺不错。NewHead代表新的头节点，通过递归找到最后一个节点之后，就把这个节点赋给NewHead，然后一直返回返回，中途这个值是没有变化的，一边返回一边把相应的指针方向颠倒，最后结束时返回新的头节点到主函数。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63873">
+<article class="comment" id="comment-63873">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zclzcllove</a></span> on <a href="http://www.acmerblog.com/interleaving-stringleetcode-6197.html#comment-63873" rel="nofollow"><time datetime="2015-02-10T15:22:59+00:00" pubdate="">2015年2月10日 at 下午3:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63878">
+<article class="comment" id="comment-63878">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ycaxgjd</a></span> on <a href="http://www.acmerblog.com/interleaving-stringleetcode-6197.html#comment-63878" rel="nofollow"><time datetime="2015-01-19T19:22:03+00:00" pubdate="">2015年1月19日 at 下午7:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嗯，尽量吧。题目太多了，很多解题报告是用程序自动发布的，所以就只有代码了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-32273">
+<article class="comment" id="comment-32273">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">0xc0de</a></span> on <a href="http://www.acmerblog.com/interleaving-stringleetcode-6197.html#comment-32273" rel="nofollow"><time datetime="2015-01-13T10:32:36+00:00" pubdate="">2015年1月13日 at 上午10:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p><a href="https://coding.net/moon/miracle" rel="nofollow">https://coding.net/moon/miracle</a></p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63877">
+<article class="comment" id="comment-63877">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xrjervis</a></span> on <a href="http://www.acmerblog.com/interleaving-stringleetcode-6197.html#comment-63877" rel="nofollow"><time datetime="2015-01-01T04:36:03+00:00" pubdate="">2015年1月1日 at 上午4:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-1758">
+<article class="comment" id="comment-1758">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://t.qq.com/caimingchao2012" rel="external nofollow">蔡明超</a></span> on <a href="http://www.acmerblog.com/interleaving-stringleetcode-6197.html#comment-1758" rel="nofollow"><time datetime="2014-12-27T18:23:40+00:00" pubdate="">2014年12月27日 at 下午6:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>for(int i=1; i&lt;=m; i++){<br/>
+            for(int j=1; j&lt;=n; j++){<br/>
+                    dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> [j-1] + 1;<br/>
+                if(s1.charAt(i-1) == s3.charAt(i+j-1))<br/>
+                    dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = dp[i-1] <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  + 1;<br/>
+                if(s2.charAt(j-1) == s3.charAt(i+j-1))<br/>
+                    dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/>  = Math.max(dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> [j - 1] + 1, dp <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> );<br/>
+            }<br/>
+        }<br/>
+这里的代码似乎有点问题？ dp(i)(j) = dp(i)(j-1) + 1;这个例子System.out.println(ils.isInterleave("aa","dbbca", "aadbbcb"));返回的应该是false</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63876">
+<article class="comment" id="comment-63876">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">didiaozuoren</a></span> on <a href="http://www.acmerblog.com/interleaving-stringleetcode-6197.html#comment-63876" rel="nofollow"><time datetime="2014-12-24T21:25:11+00:00" pubdate="">2014年12月24日 at 下午9:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这怎么用Catalan数啊？求解答！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50408">
+<article class="comment" id="comment-50408">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bai</a></span> on <a href="http://www.acmerblog.com/interleaving-stringleetcode-6197.html#comment-50408" rel="nofollow"><time datetime="2014-11-22T09:19:22+00:00" pubdate="">2014年11月22日 at 上午9:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>remove没有实现</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

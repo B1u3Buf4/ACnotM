@@ -1,0 +1,635 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>02-22</div>
+<div class="tit"><h1 class="entry-title">自己动手实现图的BFS和DFS</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/zhuanti/algorithm" rel="category tag" title="查看算法分析中的全部文章">算法分析</a></span><span class="i4">围观2395次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4550" href="http://www.acmerblog.com/bfs-dbs-4550.html#comments" title="《自己动手实现图的BFS和DFS》上的评论">26 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p> </p>
+<h1><span style="font-size: 18px;"><span style="font-family: SimSun; color: #ff0000;">图的存储结构</span></span></h1>
+<p><span style="font-family: SimSun;"><span style="font-size: 14px;">    本文的重点在于图的深度优先搜索（DFS）和广度优先搜索（BFS），因此不再对图的基本概念做过多的介绍，但是要先大致了解下图的几种常见的存储结构。</span></span></p>
+<h2><span style="color: #000099;"><span style="font-family: SimSun;"><span style="font-size: 14px;">    邻接矩阵</span></span></span></h2>
+<p><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-size: 14px;">    邻接矩阵既可以用来存储无向图，也可以用来存储有向图。该结构实际上就是用一个二维数组（邻接矩阵）来存储顶点的信息和顶点之间的关系（有向图的弧或无向图的边）。其描述形式如下：</span></span></span></p>
+<pre class="brush:cpp ">//图的邻接矩阵存储表示
+ #define MAX_NUM 20 // 最大顶点个数
+ enum GraphKind{GY,GN}; // {有向图,无向图}
+ typedef struct
+ {
+    VRType adj; // 顶点关系类型。对无权图，用1(是)或0(否)表示是否相邻；对带权图，则为权值
+    InfoType *info; // 与该弧或边相关信息的指针(可无)
+ }ArcCell,AdjMatrix[MAX_NUM][MAX_NUM]; // 二维数组
+ typedef struct
+ {
+    VertexType vexs[MAX_NUM]; // 顶点向量
+    AdjMatrix arcs; // 邻接矩阵
+    int vexnum,arcnum; // 图的当前顶点数和弧（边）数
+    GraphKind kind; // 图的种类标志
+ }Graph;</pre>
+<p><span style="font-family: SimSun; font-size: 14px;">    我们分别看下面两个图，左边为有向图，右边为无向图</span></p>
+<p><span style="font-size: 14px;"><span style="font-family: SimSun;"><span style="font-family: SimSun; font-size: 14px;"> </span></span></span></p>
+<div style="text-align: center;"><img alt="" src="http://cdn.acmerblog.com/img/1393051644031.jpg"/>             <img alt="" src="http://cdn.acmerblog.com/img/1393051644123.jpg"/></div>
+<div style="text-align: left;"><span style="font-family: SimSun; font-size: 14px;">    上面两个图均为无权图，我们假设存储的时候，V0的序号为0，V1的序号为1，V2的序号为2。。。，且adj为1表示两顶点间没有没有连接，为0时表示有连接。则有向图的邻接矩阵如下图左边的矩阵所示，无向图的邻接矩阵如下图右边的矩阵所示；</span></div>
+<div style="text-align: center;"><span style="font-family: SimSun; font-size: 14px;"><img alt="" src="http://cdn.acmerblog.com/img/1393051647564.jpg"/>         <img alt="" src="http://cdn.acmerblog.com/img/1393051649058.jpg"/><br/>
+</span></div>
+<div style="text-align: left;"><span style="font-family: SimSun; font-size: 14px;">    根据邻接矩阵很容易判断图中任意两个顶点之间连通与否，并可以求出各个顶点的度。</span></div>
+<div style="text-align: left;"><span style="font-family: SimSun; font-size: 14px;">    1、对于无向图，观察右边的矩阵，发现顶点Vi的度即是邻接矩阵中第i行（或第i列）的元素之和。</span></div>
+<div style="text-align: left;"><span style="font-family: SimSun; font-size: 14px;">    2、对于有向图，由于需要分别计算出度和入读，观察左边的矩阵，发现顶点Vi的出度即为邻接矩阵第i行元素之和，入度即为邻接矩阵第i列元素之和，因此顶点Vi的度即为邻接矩阵中第i行元素和第i列元素之和。</span></div>
+<div style="text-align: left;"><span style="font-family: SimSun; font-size: 14px;">    <strong>很明显，邻接矩阵所占用的存储空间与图的边数或弧数无关，因此适用于边数或弧数较多的稠密图。</strong></span></div>
+<div style="text-align: left;"><span style="font-family: SimSun; font-size: 14px;"><strong> </strong></span></div>
+<div style="text-align: left;">
+<h2><span style="color: #000099;"><span style="font-family: SimSun; font-size: 14px;">    邻接表</span></span></h2>
+<p><span style="font-family: SimSun; font-size: 14px;">    邻接表是图的一种链式存储结构，既适合于存储无向图，也适合于存储有向图。在邻接表中，用一个一维数组存储图中的每个顶点的信息，同时为每个顶点建立一个单链表，链表中的节点保存依附在该顶点上的边或弧的信息。其描述形式如下</span><span style="font-family: SimSun; font-size: 14px;">：</span></p>
+</div>
+<pre class="brush:cpp ">//图的邻接表存储表示
+ #define MAX_NUM 20
+ enum GraphKind{GY,GN}; // {有向图,无向图}
+ typedef struct 
+ {
+    int adjvex; // 该弧所指向的顶点或边的另一个顶点的位置
+    ArcNode *nextarc; // 指向下一条弧或边的指针
+    InfoType *info; // 与弧或边相关信息的指针（可无）
+ }ArcNode;// 表结点
+ typedef struct
+ {
+    VertexType data; // 顶点信息
+    ArcNode *firstarc; // 第一个表结点的地址,指向第一条依附该顶点的弧或边的指针
+ }VNode,AdjList[MAX_NUM]; // 头结点
+ struct 
+ {
+    AdjList vertices;
+    int vexnum,arcnum; // 图的当前顶点数和弧（边）数
+    GraphKind kind; // 图的种类标志
+ }Graph;</pre>
+<div style="text-align: left;"><span style="font-family: SimSun; font-size: 14px;">    依然以上面的有向图和无向图为例，采用邻接表来存储，可以得到对应的存储形式如下：</span></div>
+<div style="text-align: center;"><span style="font-family: SimSun; font-size: 14px;"><span style="font-family: SimSun; font-size: 14px;"><img alt="" src="http://cdn.acmerblog.com/img/1393051649317.jpg"/></span></span></div>
+<div style="text-align: left;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-size: 14px;">    在邻接表上容易找到任意一个顶点的第一个邻接点和下一个邻接点，但是要判定任意两个顶点之间是否有边或弧需搜索两个顶点对应的链表，不及邻接矩阵方便。</span></span></span></div>
+<div style="text-align: left;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-size: 14px;"><span style="font-family: SimSun;">    </span><span style="font-family: SimSun;"><strong>很明显，邻接表所占用的存储空间与图的边数或弧数有关，因此适用于边数或弧数较少的稀疏图。</strong></span></span></span></span> 
+</div>
+<div style="text-align: left;">
+<h2><span style="color: #000099;"><span style="font-family: SimSun;"><span style="font-size: 14px;">    十字链表</span></span></span></h2>
+<p><span style="font-family: SimSun;"><span style="font-size: 14px;">    十字链表也是一种链式存储结构，用来表示有向图，它在有向图邻接表的基础上加入了指向弧尾的指针。表示形式如下：</span></span></p>
+</div>
+<pre class="brush:cpp ">//有向图的十字链表存储表示
+ #define MAX_NUM 20
+ typedef struct // 弧结点
+ {
+   int tailvex,headvex; // 该弧的尾和头顶点的位置
+   ArcBox *hlink,*tlink; // 分别为弧头相同和弧尾相同的弧的链域
+   InfoType *info; // 该弧相关信息的指针，可指向权值或其他信息（可无）
+ }ArcBox;
+ typedef struct // 顶点结点
+ {
+   VertexType data;
+   ArcBox *firstin,*firstout; // 分别指向该顶点第一条入弧和出弧
+ }VexNode;
+ struct
+ {
+   VexNode xlist[MAX_NUM]; // 表头向量(数组)
+   int vexnum,arcnum; // 有向图的当前顶点数和弧数
+ }Graph;</pre>
+<div style="text-align: left;"><span style="font-size: 14px;"><span style="font-family: SimSun;">    其思想也很容易理解，这里不再细说。</span></span></div>
+<div style="text-align: left;"><span style="font-size: 14px;"><span style="font-family: SimSun;">    在十字链表中，既容易找到以某个顶点为尾的弧，也容易找到以某个顶点为头的弧，因而容易求得顶点的出度和入度。</span></span></div>
+<div style="text-align: left;"><span style="font-size: 14px;"><span style="font-family: SimSun;"><br/>
+</span></span>
+<h2><span style="color: #000099;"><span style="font-family: SimSun; font-size: 14px;">    邻接多重表</span></span></h2>
+<p><span style="font-family: SimSun;">    邻接多重表也是一种链式存储结构，用来表示无向图，与有向图的十字链表相似，这里也不再细说，直接给出其表示形式：</span></p>
+</div>
+<pre class="brush:cpp ">//无向图的邻接多重表存储表示
+ #define MAX_NUM 20
+ typedef struct 
+ {
+   VisitIf mark; // 访问标记
+   int ivex,jvex; // 该边依附的两个顶点的位置
+   EBox *ilink,*jlink; // 分别指向依附这两个顶点的下一条边
+   InfoType *info; // 该边信息指针，可指向权值或其他信息
+ }EBox;
+ typedef struct
+ {
+   VertexType data;
+   EBox *firstedge; // 指向第一条依附该顶点的边
+ }VexBox;
+ typedef struct 
+ {
+   VexBox adjmulist[MAX_NUM];
+   int vexnum,edgenum; // 无向图的当前顶点数和边数
+ }Graph;</pre>
+<p style="text-align: center;"><span style="font-size: 14px;"><span style="font-family: SimSun;"><span style="font-family: SimSun; font-size: 14px;"><img alt="" src="http://cdn.acmerblog.com/img/1393051649468.jpg"/></span></span></span></p>
+<p style="text-align: left;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-size: 14px;">    我们以邻接表作为上图的存储结构，并将A、B、C、D、E、F、G、H在顶点数组中的序号分别设为0、1、2、3、4、5、6、7。我们根据上图所包含的信息，精简了邻接表的存储结构，采取如下所示的结构来存储图中顶点和边的相关信息：</span></span></span></p>
+<p style="text-align: left;">
+</p><pre class="brush:cpp ">#define NUM 8          //图中顶点的个数
+
+/*
+用邻接表作为图的存储结构
+在邻接表中，用一个一维数组存储图中的每个顶点的信息，
+同时为每个顶点建立一个单链表，链表中的节点保存依附在该顶点上的边或弧的信息
+*/
+typedef struct node
+{	//链表中的每个节点，保存依附在该节点上的边或弧的信息
+	int vertex;          //在有向图中表示该弧所指向的顶点（即弧头）的位置，
+				         //在无向图中表示依附在该边上的另一个顶点的位置
+	struct node *pNext;  //指向下一条依附在该顶点上的弧或边
+}Node;
+typedef struct head
+{	//数组中的每个元素，保存图中每个顶点的相关信息
+	char data;          //顶点的数据域
+	Node *first;        //在有向图中，指向以该顶点为弧尾的第一条弧
+						//在无向图中，指向依附在该顶点上的第一条边
+}Head,*Graph;           //动态分配数组保存每个顶点的相关信息</pre>
+<p style="text-align: left;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-size: 14px;">    那么用邻接表来表示上图中各顶点间的关系，如下图所示：</span></span></span></p>
+<p style="text-align: center;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-size: 14px;"><img alt="" src="http://cdn.acmerblog.com/img/1393051649782.jpg"/><br/>
+</span></span></span></p>
+<p style="text-align: left;">
+</p><h2><span style="color: #000099;"><span style="font-family: SimSun;"><span style="font-size: 14px;">    深度优先搜索</span></span></span></h2>
+<p><span style="font-family: SimSun;">    深度优先搜索（DFS）类似于树的先序遍历（如尚未掌握图的先序遍历，请移步这里：<a href="http://blog.csdn.net/ns_code/article/details/12977901" target="_blank"><span style="color: #993399;"><strong>http://blog.csdn.net/ns_code/article/details/12977901</strong></span></a>）。其基本思想是：从图中某个顶点v出发，遍历该顶点，而后依次从v的未被访问的邻接点出发深度优先遍历图中，直到图中所有与v连通的顶点都已被遍历。如果当前图只是需要遍历的非连通图的一个极大连通子图，则另选其他子图中的一个顶点，重复上述遍历过程，直到该非连通图中的所有顶点都被遍历完。很明显，这里要用到递归的思想。</span></p>
+<p style="text-align: left;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-size: 14px;"><span style="font-family: SimSun;">    结合上面的例子来分析，</span></span></span></span><span style="font-family: SimSun; font-size: 14px;">假设从A点开始遍历该图，根据图中顶点的存储关系，会按照下面的步骤来遍历该图：</span></p>
+<p style="text-align: left;"><span style="font-family: SimSun; font-size: 14px;">    1、在访问完顶点A后，选择A的第一个邻接点B进行访问；</span></p>
+<p style="text-align: left;"><span style="font-family: SimSun; font-size: 14px;">    2、而后看B的邻接点，由于B的第一个邻接点A已经被访问过，故选择其下一个邻接点D进行访问；</span></p>
+<p style="text-align: left;"><span style="font-family: SimSun; font-size: 14px;">    3、而后看D的邻接点，由于D的第一个邻接点B已经被访问过，故选择其下一个邻接点H进行访问；</span></p>
+<p style="text-align: left;"><span style="font-family: SimSun; font-size: 14px;">    4、而后看H的邻接点，由于H的第一个邻接点D已经被访问过，故选择其下一个邻接点E进行访问；</span></p>
+<p style="text-align: left;"><span style="font-family: SimSun; font-size: 14px;">    5、而后看E的邻接点，由于E的第一个邻接点B已经被访问过，那么看其第二个邻接点H，也被访问过了，E的邻接点已经全部被访问过了。</span></p>
+<p style="text-align: left;"><span style="font-family: SimSun; font-size: 14px;">    6、这时退回到上一层递归，回到顶点H，同样H的邻接点也都被访问完毕，再退回到D，D的邻接点也已访问完毕，再退回到B，一直退回到A；</span></p>
+<p style="text-align: left;"><span style="font-family: SimSun; font-size: 14px;">    7、由于A的下一个邻接点C还没有被访问，因此访问C；</span></p>
+<p style="text-align: left;"><span style="font-family: SimSun; font-size: 14px;">    8、而后看C的邻接点，由于C的第一个邻接点A已经被访问过，故选择其下一个邻接点F进行访问；</span></p>
+<p style="text-align: left;"><span style="font-family: SimSun; font-size: 14px;">    9、而后看F的邻接点，由于F的第一个邻接点C已经被访问过，故选择其下一个邻接点G进行访问；</span></p>
+<p style="text-align: left;"><span style="font-family: SimSun; font-size: 14px;">    10、而后看G的邻接点，由于G的临界点都已被访问完毕，因此会退到上一层递归，看F顶点；</span></p>
+<p style="text-align: left;"><span style="font-family: SimSun; font-size: 14px;">    11、同理，由F再回退到C，再由C回退到A，这是第一层的递归，A的所有邻接点也已都被访问完毕，遍历到此结束。</span></p>
+<p style="text-align: left;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-size: 14px;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-family: SimSun;">    综上，上图的DFS是按照如下顺序进行的：</span></span></span></span></span></span></p>
+<p style="text-align: center;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-size: 14px;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><strong><span style="color: #ff0000;">A-&gt;B-&gt;D-&gt;H-&gt;E</span>-&gt;H-&gt;D-&gt;B-&gt;A-&gt;<span style="color: #ff0000;">C-&gt;F-&gt;G</span>-&gt;F-&gt;C-&gt;A</strong></span></span></span></span></span></span></p>
+<p><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-size: 14px;">    其中，红色部分代表首次访问，在这部分顶点被访问后，我们便将visited数组的对应元素设为true，表明这些顶点已经被访问过了，因此我们可以得到深度优先搜索得到的顺序为：</span></span></span></p>
+<p> </p>
+<p style="text-align: center;"><strong><span style="font-family: SimSun; font-size: 14px; color: #000099;">A-&gt;B-&gt;D-&gt;H-&gt;E-&gt;C-&gt;F-&gt;G</span></strong></p>
+<p><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-size: 14px;">    深度优先搜索的代码实现如下：</span></span></span></p>
+<p> </p>
+<pre class="brush:cpp ">/*
+从序号为begin的顶点出发，递归深度优先遍历连通图Gp
+*/
+void DFS(Graph Gp, int begin)
+{
+	//遍历输出序号为begin的顶点的数据域，并保存遍历信息
+	printf("%c ",Gp[begin].data);
+	visited[begin] = true; 
+
+	//循环访问当前节点的所有邻接点（即该节点对应的链表）
+	int i;
+	for(i=first_vertex(Gp,begin); i&gt;=0; i=next_vertex(Gp,begin,i))
+	{
+		if(!visited[i])  //对于尚未遍历的邻接节点，递归调用DFS
+			DFS(Gp,i);
+	}
+} 
+
+/*
+从序号为begin的节点开始深度优先遍历图Gp，Gp可以是连通图也可以是非连通图
+*/
+void DFS_traverse(Graph Gp,int begin)
+{
+	int i;
+	for(i=0;i&lt;NUM;i++)    //初始化遍历标志数组
+		visited[i] = false; 
+
+	//先从序号为begin的顶点开始遍历对应的连通图
+	DFS(Gp,begin);
+	//如果是非连通图，该循环保证每个极大连通子图中的顶点都能被遍历到   
+	for(i=0;i&lt;NUM;i++)
+	{	    
+		if(!visited[i])
+			DFS(Gp,i);
+	}
+}</pre>
+<p><span style="font-family: SimSun; font-size: 14px;">    这里调用了first_vertex（）和next_vertex（）两个函数，根据如上图手绘的邻接表的存储结构，这两个函数代码实现及详细注释如下：</span></p>
+<p> </p>
+<pre class="brush:cpp ">/*
+返回图Gp中pos顶点（序号为pos的顶点）的第一个邻接顶点的序号，如果不存在，则返回-1
+*/
+int first_vertex(Graph Gp,int pos)
+{
+	if(Gp[pos].first)  //如果存在邻接顶点，返回第一个邻接顶点的序号
+		return 	Gp[pos].first-&gt;vertex;
+	else              //如果不存在，则返回-1
+		return -1;
+}
+
+/*
+cur顶点是pos顶点（cur和pos均为顶点的序号）的其中一个邻接顶点，
+返回图Gp中，pos顶点的（相对于cur顶点）下一个邻接顶点的序号,如果不存在，则返回-1
+*/
+int next_vertex(Graph Gp,int pos,int cur)
+{
+	Node *p = Gp[pos].first; //p初始指向顶点的第一个邻接点
+	//循环pos节点对应的链表，直到p指向序号为cur的邻接点
+	while(p-&gt;vertex != cur)
+		p = p-&gt;pNext;
+
+	//返回下一个节点的序号
+	if(p-&gt;pNext)
+		return p-&gt;pNext-&gt;vertex; 
+	else 
+		return -1;
+}</pre>
+<h2 style="font-family: SimSun;"><span style="color: #000099;"><span style="font-size: 14px;">    广度优先搜索</span></span></h2>
+<p><span style="font-size: 14px;"><span style="font-family: SimSun;">    广度优先搜索（BFS）类似于树的层序遍历（<span style="font-family: SimSun; font-size: 14px;">如尚未掌握图的先序遍历，请移步这里：<strong><a href="http://blog.csdn.net/ns_code/article/details/13169703" target="_blank"><span style="color: #993399;">http://blog.csdn.net/ns_code/article/details/13169703</span></a></strong></span>）。其基本思想是：从头图中某个顶点v出发，访问v之后，依次访问v的各个未被访问的邻接点，而后再分别从这些邻接点出发，依次访问它们的邻接点，直<span style="font-family: SimSun; font-size: 14px;">到图中所有与v连通的顶点都已被访问。如果当前图只是需要遍历的非连通图的一个极大连通子图，则另选其他子图中的一个顶点，重复上述遍历过程，直到该非连通图中的所有顶点都被遍历完。很明显，跟树的层序遍历一样，图的广度优先搜索要用到队列来辅助实现。</span></span></span></p>
+<p><span style="font-size: 14px;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-family: SimSun;">    同样以上面的例子来分析，</span><span style="font-family: SimSun;">假设从A点开始遍历该图，根据图中顶点的存储关系，会按照下面的步骤来遍历该图：</span></span></span></span></p>
+<p><span style="font-size: 14px;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-family: SimSun;">    1、在访问完顶点A后，首先访问A的第一个邻接点B，而后访问A的第二个邻接点C；</span></span></span></span></p>
+<p><span style="font-size: 14px;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-family: SimSun;">    2、再根据顺序访问B的未被访问的邻接点，先访问D，后访问E；</span></span></span></span></p>
+<p><span style="font-size: 14px;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-family: SimSun;">    3、再根据顺序访问C的未被访问的邻接点，先访问F，在访问G；</span></span></span></span></p>
+<p><span style="font-size: 14px;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-family: SimSun;">    4、而后一次访问D、E、F、G等顶点的未被访问的邻接点；</span></span></span></span></p>
+<p><span style="font-size: 14px;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-family: SimSun;">    5、D的邻接点中，只有H未被访问，因地访问H；</span></span></span></span></p>
+<p><span style="font-size: 14px;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-family: SimSun;">    6、E、F、G、H等都没有未被访问的邻接点了，遍历到此结束。</span></span></span></span></p>
+<p><span style="font-family: SimSun; font-size: 14px;">    综上，我们可以得到广度优先搜索得到的顺序为：</span></p>
+<p style="font-size: 14px;">
+</p><p style="font-size: 14px; text-align: center;"><span style="color: #000099;"><strong><span style="font-family: SimSun;">A-&gt;B-&gt;C-&gt;D-&gt;E-&gt;F-&gt;G-&gt;H</span></strong></span></p>
+<p style="font-size: 14px;"><span style="font-family: SimSun;">    深度优先搜索的代码实现如下：</span></p>
+<p> </p>
+<pre class="brush:cpp ">/*
+从序号为begin的顶点开始，广度优先遍历图Gp，Gp可以是连通图也可以是非连通图
+*/
+void BFS_traverse(Graph Gp,int begin)
+{
+	int i;
+	for(i=0;i&lt;NUM;i++)    //初始化遍历标志数组
+		visited[i] = false;
+
+	//先从序号为begin的顶点开始遍历对应的连通图
+	BFS(Gp,begin);
+	//如果是非连通图，该循环保证每个极大连通子图中的顶点都能被遍历到   
+	for(i=0;i&lt;NUM;i++)
+	{	if(!visited[i])
+			BFS(Gp,i);		
+	}
+}
+
+/*
+从序号为begin的顶点开始，广度优先遍历连通图Gp
+*/
+void BFS(Graph Gp,int begin)
+{
+	//遍历输出序号为begin的顶点的数据域，并保存遍历信息
+	printf("%c ",Gp[begin].data);
+	visited[begin] = true; 
+
+	int i;
+	int pVertex;  //用来保存从队列中出队的顶点的序号
+	PQUEUE queue = create_queue();  //创建一个空的辅助队列
+	en_queue(queue, begin);          //首先将序号为begin的顶点入队
+	while(!is_empty(queue))
+	{
+		de_queue(queue,&amp;pVertex);
+		//循环遍历，访问完pVertex顶点的所有邻接顶点,并将访问后的邻接顶点入队
+		for(i=first_vertex(Gp,pVertex); i&gt;=0; i=next_vertex(Gp,pVertex,i))
+		{
+			if(!visited[i])
+			{
+				printf("%c ",Gp[i].data);
+				visited[i] = true;
+				en_queue(queue,i);
+			}
+		}
+	}
+	//销毁队列，释放其对应的内存
+	destroy_queue(queue);
+}</pre>
+<p style="font-size: 14px;"><span style="color: #ff0000;"><span style="font-size: 18px;"> </span></span></p>
+<h1 style="font-family: SimSun;"><span style="font-size: 18px; color: #ff0000;">遍历结果</span></h1>
+<p style="font-size: 14px; font-family: SimSun;">    按照上面的例子来构建图，而后采用如下代码测试DFS和BFS的输出结果：</p>
+<pre class="brush:cpp ">/**********************************
+图的BFS和DFS
+Author:兰亭风雨 Date:2014-02-20
+Email:zyb_maodun@163.com
+**********************************/
+#include&lt;stdio.h&gt;
+#include&lt;stdlib.h&gt;
+#include "data_structure.h"
+
+int main()
+{
+	Graph Gp = create_graph();
+
+	//深度优先遍历
+	printf("对图进行深度优先遍历：\n");
+	printf("从顶点A出发DFS的结果：");
+	DFS_traverse(Gp,0);
+	printf("\n");
+	printf("从顶点H出发DFS的结果：");
+	DFS_traverse(Gp,7);
+	printf("\n");
+	printf("从顶点E出发DFS的结果：");
+	DFS_traverse(Gp,4);
+	printf("\n");
+	printf("\n");
+
+	//广度优先遍历
+	printf("对图进行深度优先遍历：\n");
+	printf("从顶点A出发BFS的结果：");
+	BFS_traverse(Gp,0);
+	printf("\n");
+	printf("从顶点H出发BFS的结果：");
+	BFS_traverse(Gp,7);
+	printf("\n");
+	printf("从顶点E出发BFS的结果：");
+	BFS_traverse(Gp,4);
+	printf("\n");
+
+	int i;
+	//释放掉为每个单链表所分配的内存
+	for(i=0;i&lt;NUM;i++)
+	{
+		free(Gp[i].first);
+		Gp[i].first = 0;  //防止悬垂指针的产生
+	}
+
+	//释放掉为顶点数组所分配的内存
+	free(Gp);
+	Gp = 0;
+	return 0;
+}</pre>
+<p>测试得到的输出结果如下：</p>
+<p style="text-align: center; font-size: 14px; font-family: SimSun;"><img alt="" src="http://cdn.acmerblog.com/img/1393051650340.jpg"/></p>
+<h1 style="font-family: SimSun;"><span style="font-size: 18px; color: #ff0000;"><br/>
+完整代码下载</span></h1>
+<p><span style="font-family: Comic Sans MS; font-size: 14px;"><strong>    完整的C语言实现代码下载地址：http://download.csdn.net/detail/mmc_maodun/6946859</strong></span></p>
+<p>转自：http://blog.csdn.net/ns_code/article/details/19617187</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-81333">
+<article class="comment" id="comment-81333">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521371" rel="external nofollow">新用户760262</a></span> on <a href="http://www.acmerblog.com/bfs-dbs-4550.html#comment-81333" rel="nofollow"><time datetime="2017-04-12T18:13:49+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>更新啊~ 超喜欢这个，比看斗破好多了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-81332">
+<article class="comment" id="comment-81332">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521371" rel="external nofollow">新用户760262</a></span> on <a href="http://www.acmerblog.com/bfs-dbs-4550.html#comment-81332" rel="nofollow"><time datetime="2017-04-12T18:13:49+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>更新啊~ 超喜欢这个，比看斗破好多了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-81331">
+<article class="comment" id="comment-81331">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521371" rel="external nofollow">新用户760262</a></span> on <a href="http://www.acmerblog.com/bfs-dbs-4550.html#comment-81331" rel="nofollow"><time datetime="2017-04-12T18:13:49+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>更新啊~ 超喜欢这个，比看斗破好多了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-81330">
+<article class="comment" id="comment-81330">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521371" rel="external nofollow">新用户760262</a></span> on <a href="http://www.acmerblog.com/bfs-dbs-4550.html#comment-81330" rel="nofollow"><time datetime="2017-04-12T18:13:49+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>更新啊~ 超喜欢这个，比看斗破好多了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-81329">
+<article class="comment" id="comment-81329">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521371" rel="external nofollow">新用户760262</a></span> on <a href="http://www.acmerblog.com/bfs-dbs-4550.html#comment-81329" rel="nofollow"><time datetime="2017-04-12T18:13:49+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>更新啊~ 超喜欢这个，比看斗破好多了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-81328">
+<article class="comment" id="comment-81328">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521371" rel="external nofollow">新用户760262</a></span> on <a href="http://www.acmerblog.com/bfs-dbs-4550.html#comment-81328" rel="nofollow"><time datetime="2017-04-12T18:13:49+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>更新啊~ 超喜欢这个，比看斗破好多了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-81327">
+<article class="comment" id="comment-81327">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521371" rel="external nofollow">新用户760262</a></span> on <a href="http://www.acmerblog.com/bfs-dbs-4550.html#comment-81327" rel="nofollow"><time datetime="2017-04-12T18:13:49+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>更新啊~ 超喜欢这个，比看斗破好多了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-81326">
+<article class="comment" id="comment-81326">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521371" rel="external nofollow">新用户760262</a></span> on <a href="http://www.acmerblog.com/bfs-dbs-4550.html#comment-81326" rel="nofollow"><time datetime="2017-04-12T18:13:49+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>更新啊~ 超喜欢这个，比看斗破好多了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-81325">
+<article class="comment" id="comment-81325">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521371" rel="external nofollow">新用户760262</a></span> on <a href="http://www.acmerblog.com/bfs-dbs-4550.html#comment-81325" rel="nofollow"><time datetime="2017-04-12T18:13:49+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>更新啊~ 超喜欢这个，比看斗破好多了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-81324">
+<article class="comment" id="comment-81324">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521371" rel="external nofollow">新用户760262</a></span> on <a href="http://www.acmerblog.com/bfs-dbs-4550.html#comment-81324" rel="nofollow"><time datetime="2017-04-12T18:13:49+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>更新啊~ 超喜欢这个，比看斗破好多了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-81323">
+<article class="comment" id="comment-81323">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521371" rel="external nofollow">新用户760262</a></span> on <a href="http://www.acmerblog.com/bfs-dbs-4550.html#comment-81323" rel="nofollow"><time datetime="2017-04-12T18:13:49+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>更新啊~ 超喜欢这个，比看斗破好多了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-81321">
+<article class="comment" id="comment-81321">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521371" rel="external nofollow">新用户760262</a></span> on <a href="http://www.acmerblog.com/bfs-dbs-4550.html#comment-81321" rel="nofollow"><time datetime="2017-04-12T18:13:49+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>更新啊~ 超喜欢这个，比看斗破好多了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-25722">
+<article class="comment" id="comment-25722">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yesMan</a></span> on <a href="http://www.acmerblog.com/bfs-dbs-4550.html#comment-25722" rel="nofollow"><time datetime="2015-06-14T17:48:59+00:00" pubdate="">2015年6月14日 at 下午5:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个是代码高亮功能，那就再换一个颜色</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-25718">
+<article class="comment" id="comment-25718">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">vintion</a></span> on <a href="http://www.acmerblog.com/bfs-dbs-4550.html#comment-25718" rel="nofollow"><time datetime="2015-05-28T00:03:09+00:00" pubdate="">2015年5月28日 at 上午12:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>We do not harbor that I couldn’t remove other individuals’ problems whenever this arrived at.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-25725">
+<article class="comment" id="comment-25725">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rtaxa</a></span> on <a href="http://www.acmerblog.com/bfs-dbs-4550.html#comment-25725" rel="nofollow"><time datetime="2015-04-26T15:59:06+00:00" pubdate="">2015年4月26日 at 下午3:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>使用代码高亮的插件，再修改下css</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-25719">
+<article class="comment" id="comment-25719">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Mitrenick</a></span> on <a href="http://www.acmerblog.com/bfs-dbs-4550.html#comment-25719" rel="nofollow"><time datetime="2014-11-20T11:05:54+00:00" pubdate="">2014年11月20日 at 上午11:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>使用ListNodeWrapper很蹩脚的感觉，没有更好的解决办法？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-25716">
+<article class="comment" id="comment-25716">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bluesky</a></span> on <a href="http://www.acmerblog.com/bfs-dbs-4550.html#comment-25716" rel="nofollow"><time datetime="2014-10-19T20:02:59+00:00" pubdate="">2014年10月19日 at 下午8:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>在方法1里面：</p>
+<p>    //遍历所有的边，计算入度<br/>
+    for(int i=0; i&lt;V; i++)<br/>
+  {<br/>
+        degree <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/>  = 0;<br/>
+        for (j = adj <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .begin(); j != adj <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .end(); ++j)<br/>
+       {<br/>
+            degree[*j]++;<br/>
+        }<br/>
+    }</p>
+<p>为什么每遍历一条链表，要首先将每个链表头的顶点的入度置为0呢？<br/>
+比如顶点5，若在顶点1、2、3、4的链表中出现过顶点5，那么要增加顶点5的入度，但是在遍历顶点5的链表时，又将顶点5的入度置为0了，那之前的从顶点1234到顶点5的边不是都没了吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-25721">
+<article class="comment" id="comment-25721">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">753951</a></span> on <a href="http://www.acmerblog.com/bfs-dbs-4550.html#comment-25721" rel="nofollow"><time datetime="2014-10-15T10:05:14+00:00" pubdate="">2014年10月15日 at 上午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为是要把从字符串s的start位到当前位在hash中重置，修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-25717">
+<article class="comment" id="comment-25717">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rtaxa</a></span> on <a href="http://www.acmerblog.com/bfs-dbs-4550.html#comment-25717" rel="nofollow"><time datetime="2014-09-22T06:09:33+00:00" pubdate="">2014年9月22日 at 上午6:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是什么编译器啊，不通过</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-25713">
+<article class="comment" id="comment-25713">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Supermaner</a></span> on <a href="http://www.acmerblog.com/bfs-dbs-4550.html#comment-25713" rel="nofollow"><time datetime="2014-08-27T23:09:06+00:00" pubdate="">2014年8月27日 at 下午11:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>A猴子认识的所有猴子和B猴子认识的所有猴子都能认识，这句话用《爱屋及乌》描述比较容易理解……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-25724">
+<article class="comment" id="comment-25724">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gnipuohz</a></span> on <a href="http://www.acmerblog.com/bfs-dbs-4550.html#comment-25724" rel="nofollow"><time datetime="2014-08-19T07:48:13+00:00" pubdate="">2014年8月19日 at 上午7:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正在练习，很有帮助</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46999">
+<article class="comment" id="comment-46999">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">changjf</a></span> on <a href="http://www.acmerblog.com/bfs-dbs-4550.html#comment-46999" rel="nofollow"><time datetime="2014-08-05T18:45:35+00:00" pubdate="">2014年8月5日 at 下午6:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>请问printAllCombination的时间复杂度怎么分析呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-25720">
+<article class="comment" id="comment-25720">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tzf88888888</a></span> on <a href="http://www.acmerblog.com/bfs-dbs-4550.html#comment-25720" rel="nofollow"><time datetime="2014-07-02T12:18:04+00:00" pubdate="">2014年7月2日 at 下午12:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>参考 <a href="http://www.acmerblog.com/leetcode-solutions-6422.html" rel="nofollow">http://www.acmerblog.com/leetcode-solutions-6422.html</a></p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-25715">
+<article class="comment" id="comment-25715">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">litao</a></span> on <a href="http://www.acmerblog.com/bfs-dbs-4550.html#comment-25715" rel="nofollow"><time datetime="2014-06-27T14:17:20+00:00" pubdate="">2014年6月27日 at 下午2:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>2的64次方是多少？ 这到底是在考什么啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-25714">
+<article class="comment" id="comment-25714">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1193658339</a></span> on <a href="http://www.acmerblog.com/bfs-dbs-4550.html#comment-25714" rel="nofollow"><time datetime="2014-04-24T20:31:46+00:00" pubdate="">2014年4月24日 at 下午8:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>博主的C++功底真是好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-25723">
+<article class="comment" id="comment-25723">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">abguorui0928</a></span> on <a href="http://www.acmerblog.com/bfs-dbs-4550.html#comment-25723" rel="nofollow"><time datetime="2014-02-25T01:17:54+00:00" pubdate="">2014年2月25日 at 上午1:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>2的64次方是多少？ 这到底是在考什么啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

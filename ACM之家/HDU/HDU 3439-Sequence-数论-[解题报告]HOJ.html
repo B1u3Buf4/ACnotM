@@ -1,0 +1,610 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-23</div>
+<div class="tit"><h1 class="entry-title">HDU 3439-Sequence-数论-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/math" rel="category tag" title="查看数学相关中的全部文章">数学相关</a>, <a href="http://www.acmerblog.com/category/math/number-theory" rel="category tag" title="查看数论应用中的全部文章">数论应用</a></span><span class="i4">围观475次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5465" href="http://www.acmerblog.com/hdu-3439-sequence-5465.html#comments" title="《HDU 3439-Sequence-数论-[解题报告]HOJ》上的评论">27 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Sequence</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+As you know, there number of permutation of the increasing vector {1, 2, 3…n} is exactly n! ;For example, if n = 3, then, {1,2,3} , {1,3,2}, {2,1,3}, {2,3,1}, {3,1,2}, {3,2,1} are all the permutation of the vector {1,2,3 };<br/>  We define D( {A<sub>1</sub>,A<sub>2</sub>,…A<sub>n</sub>} ) = the number of element that satisfy A<sub>i</sub>=i<br/>  For example, D( {1,2,3} ) = 3 ,D( {1,3,2} ) = 1 (only ‘1’ is at 1), D({3,1,2}) = 0 …. <br/>  Now we want to calculate the number of permutation that satisfy D( {A<sub>1</sub>,A<sub>2</sub>,…A<sub>n</sub>} ) = K.<br/>  For example, if n = 3 and k = 3, then of course there is only one permutation {1,2,3} that satisfy D( {1,2,3}) = 3. But if n = 3 and k = 0, then there are two permutations {3,1,2} and {2,3,1} satisfy D( {3,2,1} ) = D( {2,3,1} ) = 0;<br/>  But when n is very large, it’s hard to calculate by brute force algorithm. Optimal is one required here.<br/>  Because the answer may be very large, so just output the remainder of the answer after divided by m. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+In the first line there is an integer T, indicates the number of test cases. (T &lt;= 500)<br/>In each case, the first line contains three integers n,k and m. (0 &lt;= k&lt;= n &lt;=10^9, 1 &lt;= m &lt;= 10^5, n != 0) </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+In the first line there is an integer T, indicates the number of test cases. (T &lt;= 500)<br/>In each case, the first line contains three integers n,k and m. (0 &lt;= k&lt;= n &lt;=10^9, 1 &lt;= m &lt;= 10^5, n != 0)</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+
+3 0 7
+
+3 3 3</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case 1: 2
+Case 2: 1</pre>
+<p> <!-- problem end --></p>
+<p>
+</p>
+<p>
+</p>
+<pre class="brush:cpp ">#include &lt;iostream&gt;
+#include &lt;cstdio&gt;
+#include &lt;string.h&gt;
+#include &lt;cstdlib&gt;
+
+typedef long long ll;
+
+const int M = 100005;  //所取模的上界
+const int N = 405;
+
+int p[N],e[N];
+int len;
+int cover[N];
+int pri[N];
+int top;
+
+int f[M];
+int finv[M];
+
+int b[N];
+int w[N];
+
+int num[M * 2];
+
+int pi,pi_e;
+ll cnt_of_p;
+int n,k,m;
+int cas = 1;
+
+void prim();
+void init();
+void sol();
+int cal_num();
+int cal_c();
+void get_f_inv();
+int cal_inv(int k);
+void ext_gcd(int aa,int bb,int &amp; x,int &amp; y);
+int cal_f(int n);
+int cal_finv(int n);
+int mul_mod(ll a,int k,int p);
+int CRT();
+
+int main()
+{
+    int t;
+    scanf("%d",&amp;t);
+    prim();
+    while(t--)
+    {
+        init();
+        sol();
+    }
+}
+
+//打素数表
+void prim()
+{
+    top = 0;
+    memset(cover,0,sizeof(cover));
+    for(int i = 2;i &lt; N;i++)
+    {
+        if(cover[i]== 0) pri[top++] = i;
+        for(int j = 0;j &lt; top &amp;&amp; i * pri[j] &lt; N;j++)
+        {
+            pri[i*pri[j]] = 1;
+            if(i % pri[j] == 0) break;
+        }
+    }
+}
+
+//初始化并把m分解因式
+void init()
+{
+    int tm;
+    scanf("%d%d%d",&amp;n,&amp;k,&amp;m);
+
+    tm = m;
+    len = 0;
+    for(int i = 0;i &lt; top &amp;&amp; pri[i] &lt;= tm;i++)
+    {
+        if(tm % pri[i] == 0)
+        {
+            p[len] = pri[i];    //p[i]表示第i+1个质因数
+            e[len] = 0;    //e[i]表示第i+1个质因数的指数
+            w[len] = 1;    //w[i]表示p[i]的e[i]次方的值
+            while(tm %pri[i] == 0)  //len为质因数的个数
+            {
+                e[len]++;
+                tm /= pri[i];
+                w[len] *= pri[i];
+            }
+            len++;
+        }
+    }
+    if(tm &gt; 1)
+    {
+        p[len] = tm;
+        w[len] = tm;
+        e[len++] = 1;
+    }
+    return ;
+}
+
+void sol()
+{
+    ll res;
+    if(m==1)
+    {
+        printf("Case %d: 0\n",cas++);
+        return;
+    }
+    if(k == n)
+    {
+        printf("Case %d: 1\n",cas++);
+        return;
+    }
+    if(k == n-1)
+    {
+        printf("Case %d: 0\n",cas++);
+        return;
+    }
+
+    res = cal_num();    //得到num[n-k]%m的值
+    res *= cal_c();
+    res %=  m;
+    printf("Case %d: %I64d\n",cas++,res);
+    return;
+}
+
+//num[i]表示i个位置的数排列后都不在原位置的种数
+int cal_num()
+{
+    int lofseg,rem;
+    num[0] = 1;
+    num[1] = 0;
+    lofseg = 0;
+    for(int i = 2;;i++)
+    {
+        num[i] = (ll)(i-1)*(num[i-1] + num[i-2]) % m;
+        if(num[i] == 0 &amp;&amp; i % m == 1 &amp;&amp; num[i-1] == 1)
+        {
+            lofseg = i-1;    //经过lofseg正好又回到初始状态
+            break;
+        }
+    }
+    rem = (n-k) % lofseg;
+    return num[rem];
+}
+
+//计算C(n,k)%m的值
+int cal_c()
+{
+    int ans;
+    for(int i = 0;i &lt; len;i++)
+    {
+        pi = p[i];
+        pi_e = w[i];
+        cnt_of_p = 0;
+        get_f_inv();
+        b[i] = cal_f(n);
+        b[i] *= cal_finv(k);b[i] %= pi_e;
+        b[i] *= cal_finv(n-k);b[i] %= pi_e;
+        b[i] *= mul_mod(pi,cnt_of_p,pi_e);b[i] %= pi_e;
+    }
+    ans = CRT();
+    return ans;
+}
+
+void get_f_inv()
+{
+    f[0] = finv[0] = f[1] = finv[1] = 1;
+    cnt_of_p = 0;
+    for(int i = 2;i &lt; pi_e;i++)
+    {
+        f[i] = f[i-1];
+        finv[i] = finv[i-1];
+        if(i % pi)
+        {
+            f[i] = f[i] * i % m;
+            finv[i] = finv[i] * cal_inv(i) % m;
+        }
+    }
+    return;
+}
+
+//求k对于pi_e的乘法逆元
+int cal_inv(int k)
+{
+    int x,y;
+    ext_gcd(k,pi_e,x,y);
+    while(x &lt;0)x += pi_e;
+    return x;
+}
+
+//扩展欧几里得求乘法逆元
+void ext_gcd(int aa,int bb,int &amp; x,int &amp;y)
+{
+    if(bb == 0)
+    {
+        x = 1;
+        y = 0;
+        return;
+    }
+
+    int tx;
+    ext_gcd(bb,aa % bb,x,y);
+    tx = x;
+    x = y;
+    y = tx - aa / bb * y;
+    return;
+}
+
+int cal_f(int n)
+{
+    if(n &lt;= 1)return 1;
+    int cnt_of_seg = n / pi_e,rem = n % pi_e,ans;
+    ans = mul_mod(f[pi_e-1],cnt_of_seg,pi_e);
+    ans *= f[rem];
+    ans %= pi_e;
+    n /= pi;
+    cnt_of_p += n;
+    ans *= cal_f(n);
+    ans %= pi_e;
+    return ans;
+}
+
+int cal_finv(int n)
+{
+    if(n &lt;= 1) return 1;
+    ll cnt_of_seg = n/pi_e,rem = n % pi_e,ans;
+    ans = mul_mod(finv[pi_e-1],cnt_of_seg,pi_e);
+    ans *= finv[rem];
+    ans %= pi_e;
+    n /= pi;
+    cnt_of_p -= n;
+    ans *= cal_finv(n);
+    ans %= pi_e;
+    return ans;
+}
+
+//快速幂取模
+int mul_mod(ll a,int k,int p)
+{
+    ll ans = 1,tmp = a%p;
+    while(k)
+    {
+        if(k&amp;1)ans = (ans*tmp)%p;
+        tmp = (tmp*tmp) % p;
+        k &gt;&gt;= 1;
+    }
+    return ans;
+}
+
+int CRT()
+{
+    int x,y,ans = 0,m,n=1;
+    for(int i = 0;i &lt; len;i++) n*= w[i];
+    for(int i = 0;i &lt; len;i++)
+    {
+        m = n/w[i];
+        ext_gcd(w[i],m,x,y);
+        ll ty = y;
+        ty = ty*m%n;
+        ty = ty * b[i] % n;
+        ans = (ans + ty) % n;
+    }
+    if(ans &gt;= 0)return ans;
+    return ans + n;
+}</pre>
+<p>参考：http://blog.csdn.net/tju_virus/article/details/7845189</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-76628">
+<article class="comment" id="comment-76628">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519286" rel="external nofollow">新用户386070</a></span> on <a href="http://www.acmerblog.com/hdu-3439-sequence-5465.html#comment-76628" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不对哦~桂妮维亚的内心太邪恶，和小零不一样，真正的美是里应外合的，是外表的纯洁优雅应当是内心纯洁和美丽的反映。桂妮维亚不但外表丑（个人觉得，我这辈子从没有不喜欢的颜色，可我有唯一一个讨厌的颜色————粉色 ，不论是什么粉，我都讨厌），内心更丑······</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76627">
+<article class="comment" id="comment-76627">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519286" rel="external nofollow">新用户386070</a></span> on <a href="http://www.acmerblog.com/hdu-3439-sequence-5465.html#comment-76627" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不对哦~桂妮维亚的内心太邪恶，和小零不一样，真正的美是里应外合的，是外表的纯洁优雅应当是内心纯洁和美丽的反映。桂妮维亚不但外表丑（个人觉得，我这辈子从没有不喜欢的颜色，可我有唯一一个讨厌的颜色————粉色 ，不论是什么粉，我都讨厌），内心更丑······</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76626">
+<article class="comment" id="comment-76626">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519286" rel="external nofollow">新用户386070</a></span> on <a href="http://www.acmerblog.com/hdu-3439-sequence-5465.html#comment-76626" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不对哦~桂妮维亚的内心太邪恶，和小零不一样，真正的美是里应外合的，是外表的纯洁优雅应当是内心纯洁和美丽的反映。桂妮维亚不但外表丑（个人觉得，我这辈子从没有不喜欢的颜色，可我有唯一一个讨厌的颜色————粉色 ，不论是什么粉，我都讨厌），内心更丑······</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76625">
+<article class="comment" id="comment-76625">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519286" rel="external nofollow">新用户386070</a></span> on <a href="http://www.acmerblog.com/hdu-3439-sequence-5465.html#comment-76625" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不对哦~桂妮维亚的内心太邪恶，和小零不一样，真正的美是里应外合的，是外表的纯洁优雅应当是内心纯洁和美丽的反映。桂妮维亚不但外表丑（个人觉得，我这辈子从没有不喜欢的颜色，可我有唯一一个讨厌的颜色————粉色 ，不论是什么粉，我都讨厌），内心更丑······</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76624">
+<article class="comment" id="comment-76624">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519286" rel="external nofollow">新用户386070</a></span> on <a href="http://www.acmerblog.com/hdu-3439-sequence-5465.html#comment-76624" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不对哦~桂妮维亚的内心太邪恶，和小零不一样，真正的美是里应外合的，是外表的纯洁优雅应当是内心纯洁和美丽的反映。桂妮维亚不但外表丑（个人觉得，我这辈子从没有不喜欢的颜色，可我有唯一一个讨厌的颜色————粉色 ，不论是什么粉，我都讨厌），内心更丑······</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76623">
+<article class="comment" id="comment-76623">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519286" rel="external nofollow">新用户386070</a></span> on <a href="http://www.acmerblog.com/hdu-3439-sequence-5465.html#comment-76623" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不对哦~桂妮维亚的内心太邪恶，和小零不一样，真正的美是里应外合的，是外表的纯洁优雅应当是内心纯洁和美丽的反映。桂妮维亚不但外表丑（个人觉得，我这辈子从没有不喜欢的颜色，可我有唯一一个讨厌的颜色————粉色 ，不论是什么粉，我都讨厌），内心更丑······</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76622">
+<article class="comment" id="comment-76622">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519286" rel="external nofollow">新用户386070</a></span> on <a href="http://www.acmerblog.com/hdu-3439-sequence-5465.html#comment-76622" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不对哦~桂妮维亚的内心太邪恶，和小零不一样，真正的美是里应外合的，是外表的纯洁优雅应当是内心纯洁和美丽的反映。桂妮维亚不但外表丑（个人觉得，我这辈子从没有不喜欢的颜色，可我有唯一一个讨厌的颜色————粉色 ，不论是什么粉，我都讨厌），内心更丑······</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76621">
+<article class="comment" id="comment-76621">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519286" rel="external nofollow">新用户386070</a></span> on <a href="http://www.acmerblog.com/hdu-3439-sequence-5465.html#comment-76621" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不对哦~桂妮维亚的内心太邪恶，和小零不一样，真正的美是里应外合的，是外表的纯洁优雅应当是内心纯洁和美丽的反映。桂妮维亚不但外表丑（个人觉得，我这辈子从没有不喜欢的颜色，可我有唯一一个讨厌的颜色————粉色 ，不论是什么粉，我都讨厌），内心更丑······</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76620">
+<article class="comment" id="comment-76620">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519286" rel="external nofollow">新用户386070</a></span> on <a href="http://www.acmerblog.com/hdu-3439-sequence-5465.html#comment-76620" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不对哦~桂妮维亚的内心太邪恶，和小零不一样，真正的美是里应外合的，是外表的纯洁优雅应当是内心纯洁和美丽的反映。桂妮维亚不但外表丑（个人觉得，我这辈子从没有不喜欢的颜色，可我有唯一一个讨厌的颜色————粉色 ，不论是什么粉，我都讨厌），内心更丑······</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76619">
+<article class="comment" id="comment-76619">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519286" rel="external nofollow">新用户386070</a></span> on <a href="http://www.acmerblog.com/hdu-3439-sequence-5465.html#comment-76619" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不对哦~桂妮维亚的内心太邪恶，和小零不一样，真正的美是里应外合的，是外表的纯洁优雅应当是内心纯洁和美丽的反映。桂妮维亚不但外表丑（个人觉得，我这辈子从没有不喜欢的颜色，可我有唯一一个讨厌的颜色————粉色 ，不论是什么粉，我都讨厌），内心更丑······</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76618">
+<article class="comment" id="comment-76618">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519286" rel="external nofollow">新用户386070</a></span> on <a href="http://www.acmerblog.com/hdu-3439-sequence-5465.html#comment-76618" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不对哦~桂妮维亚的内心太邪恶，和小零不一样，真正的美是里应外合的，是外表的纯洁优雅应当是内心纯洁和美丽的反映。桂妮维亚不但外表丑（个人觉得，我这辈子从没有不喜欢的颜色，可我有唯一一个讨厌的颜色————粉色 ，不论是什么粉，我都讨厌），内心更丑······</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76617">
+<article class="comment" id="comment-76617">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519286" rel="external nofollow">新用户386070</a></span> on <a href="http://www.acmerblog.com/hdu-3439-sequence-5465.html#comment-76617" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不对哦~桂妮维亚的内心太邪恶，和小零不一样，真正的美是里应外合的，是外表的纯洁优雅应当是内心纯洁和美丽的反映。桂妮维亚不但外表丑（个人觉得，我这辈子从没有不喜欢的颜色，可我有唯一一个讨厌的颜色————粉色 ，不论是什么粉，我都讨厌），内心更丑······</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76616">
+<article class="comment" id="comment-76616">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919519286" rel="external nofollow">新用户386070</a></span> on <a href="http://www.acmerblog.com/hdu-3439-sequence-5465.html#comment-76616" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不对哦~桂妮维亚的内心太邪恶，和小零不一样，真正的美是里应外合的，是外表的纯洁优雅应当是内心纯洁和美丽的反映。桂妮维亚不但外表丑（个人觉得，我这辈子从没有不喜欢的颜色，可我有唯一一个讨厌的颜色————粉色 ，不论是什么粉，我都讨厌），内心更丑······</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29678">
+<article class="comment" id="comment-29678">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sum_tsai</a></span> on <a href="http://www.acmerblog.com/hdu-3439-sequence-5465.html#comment-29678" rel="nofollow"><time datetime="2015-05-07T03:40:21+00:00" pubdate="">2015年5月7日 at 上午3:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为是要把从字符串s的start位到当前位在hash中重置，修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29671">
+<article class="comment" id="comment-29671">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">vincent_ynh</a></span> on <a href="http://www.acmerblog.com/hdu-3439-sequence-5465.html#comment-29671" rel="nofollow"><time datetime="2015-01-15T01:44:19+00:00" pubdate="">2015年1月15日 at 上午1:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>题目需要求解的是最小值，而且没有考虑可能存在环</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29667">
+<article class="comment" id="comment-29667">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">renke</a></span> on <a href="http://www.acmerblog.com/hdu-3439-sequence-5465.html#comment-29667" rel="nofollow"><time datetime="2014-11-30T11:04:57+00:00" pubdate="">2014年11月30日 at 上午11:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这代码的输出格式不对阿，else语句的low=p移动一下位置，增加可读性</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29669">
+<article class="comment" id="comment-29669">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">kate19930802</a></span> on <a href="http://www.acmerblog.com/hdu-3439-sequence-5465.html#comment-29669" rel="nofollow"><time datetime="2014-11-03T12:14:36+00:00" pubdate="">2014年11月3日 at 下午12:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#!/usr/bin/env python def cou(n): arr =  [1]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29670">
+<article class="comment" id="comment-29670">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wangzhenvs123</a></span> on <a href="http://www.acmerblog.com/hdu-3439-sequence-5465.html#comment-29670" rel="nofollow"><time datetime="2014-10-21T04:31:41+00:00" pubdate="">2014年10月21日 at 上午4:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>递归还真是一门学问，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29672">
+<article class="comment" id="comment-29672">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Emlar</a></span> on <a href="http://www.acmerblog.com/hdu-3439-sequence-5465.html#comment-29672" rel="nofollow"><time datetime="2014-09-17T05:32:47+00:00" pubdate="">2014年9月17日 at 上午5:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>在方法1里面：</p>
+<p>    //遍历所有的边，计算入度<br/>
+    for(int i=0; i&lt;V; i++)<br/>
+  {<br/>
+        degree <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/>  = 0;<br/>
+        for (j = adj <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .begin(); j != adj <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .end(); ++j)<br/>
+       {<br/>
+            degree[*j]++;<br/>
+        }<br/>
+    }</p>
+<p>为什么每遍历一条链表，要首先将每个链表头的顶点的入度置为0呢？<br/>
+比如顶点5，若在顶点1、2、3、4的链表中出现过顶点5，那么要增加顶点5的入度，但是在遍历顶点5的链表时，又将顶点5的入度置为0了，那之前的从顶点1234到顶点5的边不是都没了吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29666">
+<article class="comment" id="comment-29666">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rewrite</a></span> on <a href="http://www.acmerblog.com/hdu-3439-sequence-5465.html#comment-29666" rel="nofollow"><time datetime="2014-08-18T23:15:18+00:00" pubdate="">2014年8月18日 at 下午11:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>输入样例作为一个整体输入，带回车</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29668">
+<article class="comment" id="comment-29668">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangdilj</a></span> on <a href="http://www.acmerblog.com/hdu-3439-sequence-5465.html#comment-29668" rel="nofollow"><time datetime="2014-08-06T20:36:39+00:00" pubdate="">2014年8月6日 at 下午8:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>else if也是要比较两次</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29675">
+<article class="comment" id="comment-29675">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">windy</a></span> on <a href="http://www.acmerblog.com/hdu-3439-sequence-5465.html#comment-29675" rel="nofollow"><time datetime="2014-07-28T13:01:17+00:00" pubdate="">2014年7月28日 at 下午1:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>递归还真是一门学问，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29677">
+<article class="comment" id="comment-29677">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">nwling</a></span> on <a href="http://www.acmerblog.com/hdu-3439-sequence-5465.html#comment-29677" rel="nofollow"><time datetime="2014-05-13T01:46:28+00:00" pubdate="">2014年5月13日 at 上午1:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一题还是比较考验智商~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29674">
+<article class="comment" id="comment-29674">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Bernice1989</a></span> on <a href="http://www.acmerblog.com/hdu-3439-sequence-5465.html#comment-29674" rel="nofollow"><time datetime="2014-04-26T01:08:28+00:00" pubdate="">2014年4月26日 at 上午1:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>分析的很专业！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29673">
+<article class="comment" id="comment-29673">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wizcabbit</a></span> on <a href="http://www.acmerblog.com/hdu-3439-sequence-5465.html#comment-29673" rel="nofollow"><time datetime="2014-04-24T23:54:47+00:00" pubdate="">2014年4月24日 at 下午11:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为\n\n</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29676">
+<article class="comment" id="comment-29676">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xuelanghu</a></span> on <a href="http://www.acmerblog.com/hdu-3439-sequence-5465.html#comment-29676" rel="nofollow"><time datetime="2014-04-10T13:53:47+00:00" pubdate="">2014年4月10日 at 下午1:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序员会算法，等于一个古惑仔带了zhi抢啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58559">
+<article class="comment" id="comment-58559">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jupiterhyun</a></span> on <a href="http://www.acmerblog.com/hdu-3439-sequence-5465.html#comment-58559" rel="nofollow"><time datetime="2014-04-04T10:37:24+00:00" pubdate="">2014年4月4日 at 上午10:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你指的哪个问题？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

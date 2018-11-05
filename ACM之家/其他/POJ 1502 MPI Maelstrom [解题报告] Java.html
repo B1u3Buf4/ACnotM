@@ -1,0 +1,329 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>11-09</div>
+<div class="tit"><h1 class="entry-title">POJ 1502 MPI Maelstrom [解题报告] Java</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/zhuanti/java-poj" rel="category tag" title="查看Java解POJ中的全部文章">Java解POJ</a>, <a href="http://www.acmerblog.com/category/problemset/poj2" rel="category tag" title="查看POJ-北大中的全部文章">POJ-北大</a>, <a href="http://www.acmerblog.com/category/graph/shortest-path" rel="category tag" title="查看最短路径中的全部文章">最短路径</a></span><span class="i4">围观1105次</span><span class="i3"><a class="ds-thread-count" data-thread-key="417" href="http://www.acmerblog.com/POJ-1502-MPI-Maelstrom-blog-417.html#comments" title="《POJ 1502 MPI Maelstrom [解题报告] Java》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">MPI Maelstrom</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+BIT has recently taken delivery of their new supercomputer, a 32 processor Apollo Odyssey distributed shared memory machine with a hierarchical communication subsystem. Valentine McKee’s research advisor, Jack Swigert, has asked her to benchmark the new system.<br/>
+<br/>“Since the Apollo is a distributed shared memory machine, memory access and communication times are not uniform,” Valentine told Swigert. “Communication is fast between processors that share the same memory subsystem, but it is slower between processors that are not on the same subsystem. Communication between the Apollo and machines in our lab is slower yet.” 
+<p>“How is Apollo’s port of the Message Passing Interface (MPI) working out?” Swigert asked. </p>
+<p>“Not so well,” Valentine replied. “To do a broadcast of a message from one processor to all the other n-1 processors, they just do a sequence of n-1 sends. That really serializes things and kills the performance.” </p>
+<p>“Is there anything you can do to fix that?” </p>
+<p>“Yes,” smiled Valentine. “There is. Once the first processor has sent the message to another, those two can then send messages to two other hosts at the same time. Then there will be four hosts that can send, and so on.” </p>
+<p>“Ah, so you can do the broadcast as a binary tree!” </p>
+<p>“Not really a binary tree — there are some particular features of our network that we should exploit. The interface cards we have allow each processor to simultaneously send messages to any number of the other processors connected to it. However, the messages don’t necessarily arrive at the destinations at the same time — there is a communication cost involved. In general, we need to take into account the communication costs for each link in our network topologies and plan accordingly to minimize the total time required to do a broadcast.” </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input will describe the topology of a network connecting n processors. The first line of the input will be n, the number of processors, such that 1 &lt;= n &lt;= 100. 
+<p>The rest of the input defines an adjacency matrix, A. The adjacency matrix is square and of size n x n. Each of its entries will be either an integer or the character x. The value of A(i,j) indicates the expense of sending a message directly from node i to node j. A value of x for A(i,j) indicates that a message cannot be sent directly from node i to node j. </p>
+<p>Note that for a node to send a message to itself does not require network communication, so A(i,i) = 0 for 1 &lt;= i &lt;= n. Also, you may assume that the network is undirected (messages can go in either direction with equal overhead), so that A(i,j) = A(j,i). Thus only the entries on the (strictly) lower triangular portion of A will be supplied. </p>
+<p>The input to your program will be the lower triangular section of A. That is, the second line of input will contain one entry, A(2,1). The next line will contain two entries, A(3,1) and A(3,2), and so on.  </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+Your program should output the minimum communication time required to broadcast a message from the first processor to all the other processors. </div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+5
+50
+30 5
+100 20 50
+10 x x 10</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+35</pre>
+<div class="mybigtile mysubmit"> <a href="http://poj.org/submit?problem_id=1502">提交代码</a>   <a href="http://poj.org/bbs?problem_id=1502">问题讨论</a>   <a href="http://poj.org/problemstatus?problem_id=1502">数据统计</a> </div>
+<div>
+<p class="mytitle"> 解题代码:</p>
+</div>
+<pre class="brush:java">方法一:(来自:http://hi.baidu.com/maxupeng/home)
+import java.util.*;
+public class Main {
+ public static void main(String[] args) {
+   Scanner cin = new Scanner(System.in);
+   int n = cin.nextInt();
+   int a[][] = new int[n][n];
+   for (int i = 0; i &lt; n; i++) {
+    a[i][i] = 0;
+    for (int j = 0; j &lt; i; j++) {
+	if (cin.hasNextInt()) {
+	  a[i][j] = cin.nextInt();
+	} else {
+	   a[i][j] = Integer.MAX_VALUE / 200;
+	   cin.next();
+	}
+	a[j][i] = a[i][j];
+     }
+   }
+		
+  for (int k = 0; k &lt; n; k++) {
+   for (int i = 0; i &lt; n; i++) {
+    for (int j =0; j &lt; n; j++) {
+     a[i][j] = a[i][j] &lt; (a[i][k] + a[k][j]) ? a[i][j] : (a[i][k] + a[k][j]);
+    }
+   }
+  }
+		
+  int max = a[0][1];
+  for (int i = 2; i &lt; n; i++) { 
+    if (max &lt; a[0][i]) max = a[0][i]; 
+   }
+  System.out.println(max);
+ }
+}
+
+
+方法二
+/* @author:zeropinzuo */
+import java.io.*;
+import java.util.*;
+
+public class Main{
+ static Scanner cin;
+ static int n;
+ static int[][] d;
+
+ public static void main(String args[]){
+  cin = new Scanner(System.in);
+  n   = cin.nextInt();
+  if(n==1){
+    System.out.println(0);
+    return;
+   }
+
+   d = new int[n+1][n+1];
+
+   String s;
+   int i,j;
+   for(i=1;i&lt;=n;i++)
+	d[i][i] = 0;
+   for(i=2;i&lt;=n;i++)
+	for(j=1;j&lt; i;j++){
+         s = cin.next();
+	  if(s.equals("x") == true){
+	    d[i][j] = -1;
+	    d[j][i] = -1;
+	  }
+	  else{
+	    d[i][j] = Integer.parseInt(s);
+	    d[j][i] = d[i][j];
+	   }
+				
+       }
+
+    int[] dist = dijkstra();
+    int max = 0;
+    for(i=2;i&lt;=n;i++)
+	if(dist[i]&gt;max)
+	  max = dist[i];
+    System.out.println(max);
+  }
+
+  static int[] dijkstra(){
+   int[] dist = new int[n+1];
+   boolean[] s = new boolean[n+1];
+
+   for(int i=2;i&lt;=n;i++){
+    if(d[1][i] == -1)
+	dist[i] = 200000;
+    else
+	dist[i] = d[1][i];
+    s[i] = false;
+   }
+		
+   dist[1] = 0;
+   s[1] = true;
+		
+   for(int i=1;i&lt; n;i++){
+    int temp = 200000;
+    int u=1;
+    for(int j=1;j&lt;=n;j++)
+	if((!s[j])&amp;&amp;(dist[j]&lt; temp)){
+	  u = j;
+	  temp = dist[j];
+	}
+
+   s[u] = true;
+   for(int j=1;j&lt;=n;j++)
+    if((!s[j])&amp;&amp;(d[u][j] != -1)){
+	int newdist = dist[u]+d[u][j];
+	if(newdist &lt; dist[j])
+	  dist[j] = newdist;
+    }
+   }
+		
+   return dist;
+
+ }
+
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-5182">
+<article class="comment" id="comment-5182">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">April</a></span> on <a href="http://www.acmerblog.com/POJ-1502-MPI-Maelstrom-blog-417.html#comment-5182" rel="nofollow"><time datetime="2015-06-30T09:47:31+00:00" pubdate="">2015年6月30日 at 上午9:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这怎么用Catalan数啊？求解答！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-5174">
+<article class="comment" id="comment-5174">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">liuk</a></span> on <a href="http://www.acmerblog.com/POJ-1502-MPI-Maelstrom-blog-417.html#comment-5174" rel="nofollow"><time datetime="2015-06-23T15:54:26+00:00" pubdate="">2015年6月23日 at 下午3:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很棒的网站，加油！⛽️</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-5179">
+<article class="comment" id="comment-5179">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Ailing</a></span> on <a href="http://www.acmerblog.com/POJ-1502-MPI-Maelstrom-blog-417.html#comment-5179" rel="nofollow"><time datetime="2015-06-06T23:05:47+00:00" pubdate="">2015年6月6日 at 下午11:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>此网站甚是喜欢，潜力巨大，请问站长，如何加入开发团队~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-5180">
+<article class="comment" id="comment-5180">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rtaxa</a></span> on <a href="http://www.acmerblog.com/POJ-1502-MPI-Maelstrom-blog-417.html#comment-5180" rel="nofollow"><time datetime="2015-04-21T20:32:08+00:00" pubdate="">2015年4月21日 at 下午8:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>顶一个 赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-5178">
+<article class="comment" id="comment-5178">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jinxiang23</a></span> on <a href="http://www.acmerblog.com/POJ-1502-MPI-Maelstrom-blog-417.html#comment-5178" rel="nofollow"><time datetime="2014-12-25T22:48:54+00:00" pubdate="">2014年12月25日 at 下午10:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错的网站，建议添加些比赛信息</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-5172">
+<article class="comment" id="comment-5172">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jinxiang23</a></span> on <a href="http://www.acmerblog.com/POJ-1502-MPI-Maelstrom-blog-417.html#comment-5172" rel="nofollow"><time datetime="2014-11-11T18:24:42+00:00" pubdate="">2014年11月11日 at 下午6:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，再多来的CF上面的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-5177">
+<article class="comment" id="comment-5177">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wawa</a></span> on <a href="http://www.acmerblog.com/POJ-1502-MPI-Maelstrom-blog-417.html#comment-5177" rel="nofollow"><time datetime="2014-11-02T20:08:21+00:00" pubdate="">2014年11月2日 at 下午8:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>根本过不了。。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-5170">
+<article class="comment" id="comment-5170">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tonight</a></span> on <a href="http://www.acmerblog.com/POJ-1502-MPI-Maelstrom-blog-417.html#comment-5170" rel="nofollow"><time datetime="2014-09-25T08:15:05+00:00" pubdate="">2014年9月25日 at 上午8:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>额，不对应吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-5173">
+<article class="comment" id="comment-5173">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaoriqiang</a></span> on <a href="http://www.acmerblog.com/POJ-1502-MPI-Maelstrom-blog-417.html#comment-5173" rel="nofollow"><time datetime="2014-03-24T18:36:53+00:00" pubdate="">2014年3月24日 at 下午6:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>代码过于复杂了吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-5183">
+<article class="comment" id="comment-5183">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zhiqiang</a></span> on <a href="http://www.acmerblog.com/POJ-1502-MPI-Maelstrom-blog-417.html#comment-5183" rel="nofollow"><time datetime="2014-02-26T23:48:25+00:00" pubdate="">2014年2月26日 at 下午11:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>后面的掩码变量部分乍一看比较难理解，其实就是把32位按照一个整体来看待。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-5176">
+<article class="comment" id="comment-5176">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">starcuan</a></span> on <a href="http://www.acmerblog.com/POJ-1502-MPI-Maelstrom-blog-417.html#comment-5176" rel="nofollow"><time datetime="2014-01-28T02:01:40+00:00" pubdate="">2014年1月28日 at 上午2:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>方法二可行，已测试<br/>
+<a href="http://blog.csdn.net/alpc_paul/article/details/33769407" rel="nofollow">http://blog.csdn.net/alpc_paul/article/details/33769407</a></p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-5171">
+<article class="comment" id="comment-5171">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">magichu</a></span> on <a href="http://www.acmerblog.com/POJ-1502-MPI-Maelstrom-blog-417.html#comment-5171" rel="nofollow"><time datetime="2014-01-27T11:57:14+00:00" pubdate="">2014年1月27日 at 上午11:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你好，这题给出的代码好像弄错了，这个是pow那道题目的解法</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-5181">
+<article class="comment" id="comment-5181">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Yaunxi</a></span> on <a href="http://www.acmerblog.com/POJ-1502-MPI-Maelstrom-blog-417.html#comment-5181" rel="nofollow"><time datetime="2014-01-04T18:00:40+00:00" pubdate="">2014年1月4日 at 下午6:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不好意思，写错了．应该是　path[0]=0,  visited[V] = true;</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-5175">
+<article class="comment" id="comment-5175">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">we</a></span> on <a href="http://www.acmerblog.com/POJ-1502-MPI-Maelstrom-blog-417.html#comment-5175" rel="nofollow"><time datetime="2013-12-14T15:21:41+00:00" pubdate="">2013年12月14日 at 下午3:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>递归还真是一门学问，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,224 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>01-26</div>
+<div class="tit"><h1 class="entry-title">hdu 2433 Travel-BFS-[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/bfs" rel="category tag" title="查看BFS搜索中的全部文章">BFS搜索</a>, <a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/basis/enumeration" rel="category tag" title="查看枚举中的全部文章">枚举</a></span><span class="i4">围观1072次</span><span class="i3"><a class="ds-thread-count" data-thread-key="3897" href="http://www.acmerblog.com/hdu-2433-travel-3897.html#comments" title="《hdu 2433 Travel-BFS-[解题报告]C++》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Travel</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+      One day, Tom traveled to a country named BGM. BGM is a small country, but there are N (N &lt;= 100) towns in it. Each town products one kind of food, the food will be transported to all the towns. In addition, the trucks will always take the shortest way. There are M (M &lt;= 3000) two-way roads connecting the towns, and the length of the road is 1.<br/>      Let SUM be the total distance of the shortest paths between all pairs of the towns. Please write a program to calculate the new SUM after one of the M roads is destroyed. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+      The input contains several test cases.<br/>      The first line contains two positive integers N, M. The following M lines each contains two integers u, v, meaning there is a two-way road between town u and v. The roads are numbered from 1 to M according to the order of the input.<br/>      The input will be terminated by EOF.</div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+      The input contains several test cases.<br/>      The first line contains two positive integers N, M. The following M lines each contains two integers u, v, meaning there is a two-way road between town u and v. The roads are numbered from 1 to M according to the order of the input.<br/>      The input will be terminated by EOF.
+</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+5 4
+5 1
+1 3
+3 2
+5 4
+2 2
+1 2
+1 2</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+INF
+INF
+INF
+INF
+2
+2</pre>
+<p> <!-- problem end --></p>
+<p>在当时网络赛后，有一个解题报告，说这个题目的方法是暴力。具体的暴力方法是：</p>
+<p>暴力算法：枚举每条边，然后对每个点求一次单源最短路，由于题目中的边的权值都是1，因此可以用bfs来求得每个点的单源最短路。复杂度是O(M*N*M)。由于M*N*M=3000*100*3000=9*10<sup>8</sup>，不可能AC。</p>
+<p>标程算法：仍然使用上面的思路，但要作一些预处理。对每个顶点u求一次单源最短路，把求得的结果称作u的最短路径树，并用数组记录所有点到 其他所有顶点的路径的和。若被破坏的公路不在该最短路径树上，则从u出发的所有最短路径的总和就是u到该树上的所有顶点的路径的总和，因为刚刚记录了这个 数值，因此花费O(1)时间就能返回结果。否则，删除被破坏的公路后，重新通过BFS计算从u出发的所有最短路径的总和，这步的复杂度是O(M)。由于最 短路径树上只有N-1条边，因此需要从新计算的次数只有N-1次。因此，程序的复杂度变为O(N*N*M)=3*10<sup>7</sup>。</p>
+<p>存储图需要有比较适合的数据结构，才能方便地枚举边并输出答案。图的存储最好使用前向星，因为边是按顺序存放的，因此枚举边的时侯很方便。再次体会到：数据结构+算法=程序。</p>
+<p>但是明显这个方法过于暴力。一开始没有加任何优化，这个程序跑了19XX ms，题目时限是2000 ms，几乎超时。后来将前向星里面的变量全部改成short，节省了很多内存，时间快到12XX ms。</p>
+<p>#include &lt;cstdio&gt;<br/>#include &lt;cstring&gt;<br/>#include &lt;queue&gt;<br/>using namespace std;</p>
+<p>#define N 105<br/>#define M 6001</p>
+<p>struct EDGE {<br/> short b, next, id;<br/>};<br/>int G[N], sum[N], tot;<br/>EDGE ET[M];<br/>bool vv[N][M];<br/>void addedge(int a, int b, int id) {<br/> EDGE x = { b, G[a], id };<br/> ET[tot] = x;<br/> G[a] = tot++;<br/>}</p>
+<p>void init() {<br/> tot = 0;<br/> memset(G, -1, sizeof(G));<br/>}</p>
+<p>int n, m;<br/>void bfs(int s) {<br/> queue&lt;int&gt; Q;<br/> bool v[N];<br/> int  x, rp, np, d = 0, i, j;<br/> memset(v, 0, sizeof(v));<br/> memset(vv[s], 0, sizeof(vv[s]));<br/> Q.push(s), v[s] = 1, rp = 1,sum[s] = 0;<br/> while (!Q.empty()) {<br/>  np = 0;<br/>  while (rp–) {<br/>   x = Q.front();<br/>   Q.pop();<br/>   sum[s] += d;<br/>   for (j = G[x]; j != -1; j = ET[j].next) {<br/>    i = ET[j].b;<br/>    if (!v[i]) {<br/>     Q.push(i);<br/>     v[i] = 1, vv[s][ET[j].id] = 1, np++;<br/>    }<br/>   }<br/>  }<br/>  rp = np, d++;<br/> }<br/>}</p>
+<p>int bfs2(int s, int del) {<br/> queue&lt;int&gt; Q;<br/> bool v[N];<br/> int x, rp, np, d = 0, i, j, ans = 0, cnt = 1;<br/> memset(v, 0, sizeof(v));<br/> Q.push(s), v[s] = 1, rp = 1;<br/> while (!Q.empty()) {<br/>  np = 0;<br/>  while (rp–) {<br/>   x = Q.front();<br/>   Q.pop();<br/>   ans += d;<br/>   for (j = G[x]; j != -1; j = ET[j].next) {<br/>    if (ET[j].id == del) continue;<br/>    i = ET[j].b;<br/>    if (!v[i]) {<br/>     Q.push(i);<br/>     v[i] = 1, np++, cnt++;<br/>    }<br/>   }</p>
+<p>  }<br/>  rp = np, d++;<br/> }<br/> if (cnt != n) return -1;<br/> return ans;<br/>}</p>
+<p>void solve() {<br/> int i, j, a, b;<br/> init();<br/> for (i = 0; i &lt; m; i++) {<br/>  scanf("%d%d", &amp;a, &amp;b);<br/>  addedge(a, b, i);<br/>  addedge(b, a, i);<br/> }<br/> for (i = 1; i &lt;= n; i++)<br/>  bfs(i);<br/> for (i = 0; i &lt; 2 * m; i += 2) {<br/>  int del = i / 2, ans = 0, t;<br/>  for (j = 1; j &lt;= n; j++) {<br/>   if (vv[j][del] == 0) ans += sum[j];<br/>   else {<br/>    t = bfs2(j, del);<br/>    if (t == -1) {<br/>     ans = -1;<br/>     break;<br/>    }<br/>    ans += t;<br/>   }<br/>  }<br/>  if (ans == -1) printf("INF\n");<br/>  else printf("%d\n", ans);<br/> }<br/>}<br/>int main() {<br/> while (~scanf("%d%d", &amp;n, &amp;m))<br/>  solve();<br/> return 0;<br/>}
+</p>
+<p> 解题转自：http://hi.baidu.com/novosbirsk/item/bfcf0cd201edfc2d39f6f709</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-62574">
+<article class="comment" id="comment-62574">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">MyHome</a></span> on <a href="http://www.acmerblog.com/hdu-2433-travel-3897.html#comment-62574" rel="nofollow"><time datetime="2015-07-20T18:26:59+00:00" pubdate="">2015年7月20日 at 下午6:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>比较基础，找些自信</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-56793">
+<article class="comment" id="comment-56793">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">211206421</a></span> on <a href="http://www.acmerblog.com/hdu-2433-travel-3897.html#comment-56793" rel="nofollow"><time datetime="2015-06-09T17:58:05+00:00" pubdate="">2015年6月9日 at 下午5:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一题还有个解释：没说桌子有多大，可以假设桌子和硬币一样大，肯定是先手胜</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-56798">
+<article class="comment" id="comment-56798">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mnmlist</a></span> on <a href="http://www.acmerblog.com/hdu-2433-travel-3897.html#comment-56798" rel="nofollow"><time datetime="2015-03-18T01:31:09+00:00" pubdate="">2015年3月18日 at 上午1:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>18题的C也是错误的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-62577">
+<article class="comment" id="comment-62577">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">keyyuanxin</a></span> on <a href="http://www.acmerblog.com/hdu-2433-travel-3897.html#comment-62577" rel="nofollow"><time datetime="2015-03-13T18:36:20+00:00" pubdate="">2015年3月13日 at 下午6:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是O(m+n)，不小心打错了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-62571">
+<article class="comment" id="comment-62571">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Tree</a></span> on <a href="http://www.acmerblog.com/hdu-2433-travel-3897.html#comment-62571" rel="nofollow"><time datetime="2015-02-28T05:17:21+00:00" pubdate="">2015年2月28日 at 上午5:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我没看懂题目<br/>
+2<br/>
+5 6 -1 5 4 -7<br/>
+7 0 6 -1 1 -6 7 -5<br/>
+我觉得第一个应该是5 6 -1 5 4 输出是19 5 4<br/>
+第二个是7 0 6 -1 1 -6 7输出是14 7 7<br/>
+不知道题目例子是怎么得出来的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-62570">
+<article class="comment" id="comment-62570">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">CCat</a></span> on <a href="http://www.acmerblog.com/hdu-2433-travel-3897.html#comment-62570" rel="nofollow"><time datetime="2015-01-28T09:35:21+00:00" pubdate="">2015年1月28日 at 上午9:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>纠正一个错误，二分查找树的中序遍历获得元素的升序排列。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-62576">
+<article class="comment" id="comment-62576">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">room306</a></span> on <a href="http://www.acmerblog.com/hdu-2433-travel-3897.html#comment-62576" rel="nofollow"><time datetime="2015-01-16T18:42:58+00:00" pubdate="">2015年1月16日 at 下午6:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二种解法如果数组有重复元素 就不正确</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-56796">
+<article class="comment" id="comment-56796">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zoe_music</a></span> on <a href="http://www.acmerblog.com/hdu-2433-travel-3897.html#comment-56796" rel="nofollow"><time datetime="2015-01-11T02:58:06+00:00" pubdate="">2015年1月11日 at 上午2:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>失误失误，转载错了。已经改正，抱歉。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-62573">
+<article class="comment" id="comment-62573">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiao597896577</a></span> on <a href="http://www.acmerblog.com/hdu-2433-travel-3897.html#comment-62573" rel="nofollow"><time datetime="2014-10-23T08:49:36+00:00" pubdate="">2014年10月23日 at 上午8:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已经挂掉了，给个参考呗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-56795">
+<article class="comment" id="comment-56795">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mr-zhang2011</a></span> on <a href="http://www.acmerblog.com/hdu-2433-travel-3897.html#comment-56795" rel="nofollow"><time datetime="2014-09-12T09:17:09+00:00" pubdate="">2014年9月12日 at 上午9:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我是来看评论的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-62575">
+<article class="comment" id="comment-62575">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">siaswj</a></span> on <a href="http://www.acmerblog.com/hdu-2433-travel-3897.html#comment-62575" rel="nofollow"><time datetime="2014-08-19T02:10:35+00:00" pubdate="">2014年8月19日 at 上午2:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>都是一些基础题啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-62572">
+<article class="comment" id="comment-62572">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jue</a></span> on <a href="http://www.acmerblog.com/hdu-2433-travel-3897.html#comment-62572" rel="nofollow"><time datetime="2014-08-15T16:12:05+00:00" pubdate="">2014年8月15日 at 下午4:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不是HDU 2411。。标题党么。。。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-56794">
+<article class="comment" id="comment-56794">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ForgetVay</a></span> on <a href="http://www.acmerblog.com/hdu-2433-travel-3897.html#comment-56794" rel="nofollow"><time datetime="2014-03-08T01:05:09+00:00" pubdate="">2014年3月8日 at 上午1:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这配图…..</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-56797">
+<article class="comment" id="comment-56797">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">acmclown</a></span> on <a href="http://www.acmerblog.com/hdu-2433-travel-3897.html#comment-56797" rel="nofollow"><time datetime="2014-02-22T14:25:01+00:00" pubdate="">2014年2月22日 at 下午2:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这种题解就相当于直接贴代码了，，想看的是思路</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

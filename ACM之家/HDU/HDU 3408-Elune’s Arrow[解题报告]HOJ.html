@@ -1,0 +1,387 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-23</div>
+<div class="tit"><h1 class="entry-title">HDU 3408-Elune’s Arrow[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观347次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5434" href="http://www.acmerblog.com/hdu-3408-elunes-arrow-5434.html#comments" title="《HDU 3408-Elune’s Arrow[解题报告]HOJ》上的评论">20 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Elune’s Arrow</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+In a recent DOTA game, Littlepig picked Priestess of the Moon (also been called as “POM”) and wanted to practice his skills. As you may know, POM is famous for her second skill “Elune’s Arrow”, which allows POM to fire a fast magic arrow to deal large damage to the enemy unit. In fact, POM’s arrow always flies in a straight line and disappear after hitting an enemy unit.
+<p>Littlepig’s POM was hiding in the forest and intended to shoot a certain important target on the lane. There were also several other enemy units nearby. POM’s arrow might fly in a wrong direction and miss the target, or even if the arrow flew straight to the target, it still could be blocked by other enemy units and couldn’t reach the target. So given a flying direction, your job is to determine whether Littlepig’s arrow would hit his target. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input contains several test cases, and each test case is given in the following format:<br/>The first line contains an integer n (0 &lt;n&lt;=5), indicating the number of enemy units in the game.<br/>The second line are two integers (x0,y0) representing the position where POM stands.<br/>The third line gives a vector (dx,dy) describing the flying direction of the arrow.<br/>Then n lines follows, each describing an enemy unit. An enemy unit can be considered as a convex polygon and the polygon is given in the following format in a line:<br/>    m x1 y1 x2 y2…xm ym<br/>m is the number of vertices(m&lt;=10), and (x1,y1)…(xm,ym) are the vertices coordinates of the polygon, given in counter-clockwise order. <br/>The first enemy unit is the POM’s target.
+<p>The input ends with a zero in a separate line (n=0). All input numbers are integers that do not exceed 105 in magnitude. It is guaranteed that polygons do not contact or overlap, and the point (x0,y0) isn’t inside (or on) any polygons. </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input contains several test cases, and each test case is given in the following format:<br/>The first line contains an integer n (0 &lt;n&lt;=5), indicating the number of enemy units in the game.<br/>The second line are two integers (x0,y0) representing the position where POM stands.<br/>The third line gives a vector (dx,dy) describing the flying direction of the arrow.<br/>Then n lines follows, each describing an enemy unit. An enemy unit can be considered as a convex polygon and the polygon is given in the following format in a line:<br/>    m x1 y1 x2 y2…xm ym<br/>m is the number of vertices(m&lt;=10), and (x1,y1)…(xm,ym) are the vertices coordinates of the polygon, given in counter-clockwise order. <br/>The first enemy unit is the POM’s target.
+<p>The input ends with a zero in a separate line (n=0). All input numbers are integers that do not exceed 105 in magnitude. It is guaranteed that polygons do not contact or overlap, and the point (x0,y0) isn’t inside (or on) any polygons.</p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+0 0
+0 1
+3 2 0 0 2 0 1
+1
+0 0
+-1 -1
+3 2 0 0 2 0 1
+0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+HIT
+MISS</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include &lt;cstdio&gt;
+#include &lt;cmath&gt;
+#include &lt;algorithm&gt;
+#define eps 1e-8
+using namespace std;
+
+int n;
+double vx,vy;
+
+typedef struct pointtype
+{
+ double x,y;
+}point;
+
+typedef struct linetype
+{
+ point a,b;
+ int num;
+}line;
+
+typedef struct polygontype
+{
+ int m;
+ point p[11];
+}poly;
+
+poly po[6];
+line li[53];
+point s,t;
+
+int dblcmp(double d)
+{
+ if(fabs(d)&lt;eps) return 0;
+ return d&gt;0?1:-1;
+}
+
+int xyCmp(double p,double mini,double maxi)
+{
+ return dblcmp(p-mini)*dblcmp(p-maxi);
+}
+
+int betweenCmp(point a,point b,point c)
+{
+ if(fabs(b.x-c.x)&gt;fabs(b.y-c.y))
+ return xyCmp(a.x,min(b.x,c.x),max(b.x,c.x));
+ else
+ return xyCmp(a.y,min(b.y,c.y),max(b.y,c.y));
+}
+
+double dis(point a,point b)
+{
+ return (a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y);
+}
+
+double mul(point p1,point p2,point p0)
+{
+ return (p1.x-p0.x)*(p2.y-p0.y)-(p2.x-p0.x)*(p1.y-p0.y);
+}
+
+int segcross(point a,point b,point c,point d,point &amp;p)
+{
+ double s1,s2,s3,s4;
+ int d1,d2,d3,d4;
+ d1=dblcmp(s1=mul(a,b,c));
+ d2=dblcmp(s2=mul(a,b,d));
+ d3=dblcmp(s3=mul(c,d,a));
+ d4=dblcmp(s4=mul(c,d,b));
+ if((d1^d2)==-2&amp;&amp;(d3^d4)==-2)
+ {
+ p.x=(c.x*s2-d.x*s1)/(s2-s1);
+ p.y=(c.y*s2-d.y*s1)/(s2-s1);
+ return 1;
+ }
+ if(d1==0&amp;&amp;betweenCmp(c,a,b)&lt;=0)
+ {p.x=c.x,p.y=c.y;return 2;}
+ if(d2==0&amp;&amp;betweenCmp(d,a,b)&lt;=0)
+ {p.x=d.x,p.y=d.y;return 2;}
+ if(d3==0&amp;&amp;betweenCmp(a,c,d)&lt;=0)
+ {p.x=a.x,p.y=a.y;return 2;}
+ if(d4==0&amp;&amp;betweenCmp(b,c,d)&lt;=0)
+ {p.x=b.x,p.y=b.y;return 2;}
+ return 0;
+}
+
+int main()
+{
+ int i,j;
+ int nli,ansi;
+ point ptmp,ansp;
+ while(1)
+ {
+ nli=0,ansp.x=99999999,ansp.y=999999999,ansi=999;
+ scanf("%d",&amp;n);
+ if(!n) break;
+ scanf("%lf%lf%lf%lf",&amp;s.x,&amp;s.y,&amp;vx,&amp;vy);
+ for(i=1;i&lt;=n;i++)
+ {
+ scanf("%d",&amp;po[i].m);
+ for(j=1;j&lt;=po[i].m;j++)
+ scanf("%lf%lf",&amp;po[i].p[j].x,&amp;po[i].p[j].y);
+ }
+ t.x=s.x,t.y=s.y;
+ for(i=1;i&lt;=160;i++)
+ t.x+=vx,t.y+=vy;
+ for(i=1;i&lt;=n;i++)
+ {
+ for(j=1;j&lt;po[i].m;j++)
+ li[++nli].a=po[i].p[j],li[nli].b=po[i].p[j+1],li[nli].num=i;
+ li[++nli].a=po[i].p[1],li[nli].b=po[i].p[po[i].m],li[nli].num=i;
+ }
+ for(i=1;i&lt;=nli;i++)
+ if(segcross(s,t,li[i].a,li[i].b,ptmp))
+ if(dis(ptmp,s)&lt;dis(ansp,s))
+ {
+ ansp=ptmp;
+ ansi=li[i].num;
+ }
+ if(ansi==1)
+ printf("HIT\n");
+ else
+ printf("MISS\n");
+ }
+ return 0;
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-76967">
+<article class="comment" id="comment-76967">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526067" rel="external nofollow">新用户291294</a></span> on <a href="http://www.acmerblog.com/hdu-3408-elunes-arrow-5434.html#comment-76967" rel="nofollow"><time datetime="2017-04-12T07:34:18+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>就显示两三个月前的最低价，有时间限制，也就买的时候看看，至少不会被明宰，我就京东买买东西了，今年东西都升到金牌了，眼力差淘宝不敢买东西</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76966">
+<article class="comment" id="comment-76966">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526067" rel="external nofollow">新用户291294</a></span> on <a href="http://www.acmerblog.com/hdu-3408-elunes-arrow-5434.html#comment-76966" rel="nofollow"><time datetime="2017-04-12T07:34:18+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>就显示两三个月前的最低价，有时间限制，也就买的时候看看，至少不会被明宰，我就京东买买东西了，今年东西都升到金牌了，眼力差淘宝不敢买东西</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76965">
+<article class="comment" id="comment-76965">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526067" rel="external nofollow">新用户291294</a></span> on <a href="http://www.acmerblog.com/hdu-3408-elunes-arrow-5434.html#comment-76965" rel="nofollow"><time datetime="2017-04-12T07:34:18+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>就显示两三个月前的最低价，有时间限制，也就买的时候看看，至少不会被明宰，我就京东买买东西了，今年东西都升到金牌了，眼力差淘宝不敢买东西</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76964">
+<article class="comment" id="comment-76964">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526067" rel="external nofollow">新用户291294</a></span> on <a href="http://www.acmerblog.com/hdu-3408-elunes-arrow-5434.html#comment-76964" rel="nofollow"><time datetime="2017-04-12T07:34:18+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>就显示两三个月前的最低价，有时间限制，也就买的时候看看，至少不会被明宰，我就京东买买东西了，今年东西都升到金牌了，眼力差淘宝不敢买东西</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76963">
+<article class="comment" id="comment-76963">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526067" rel="external nofollow">新用户291294</a></span> on <a href="http://www.acmerblog.com/hdu-3408-elunes-arrow-5434.html#comment-76963" rel="nofollow"><time datetime="2017-04-12T07:34:18+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>就显示两三个月前的最低价，有时间限制，也就买的时候看看，至少不会被明宰，我就京东买买东西了，今年东西都升到金牌了，眼力差淘宝不敢买东西</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76962">
+<article class="comment" id="comment-76962">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919526067" rel="external nofollow">新用户291294</a></span> on <a href="http://www.acmerblog.com/hdu-3408-elunes-arrow-5434.html#comment-76962" rel="nofollow"><time datetime="2017-04-12T07:34:18+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>就显示两三个月前的最低价，有时间限制，也就买的时候看看，至少不会被明宰，我就京东买买东西了，今年东西都升到金牌了，眼力差淘宝不敢买东西</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48861">
+<article class="comment" id="comment-48861">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yipwinghong</a></span> on <a href="http://www.acmerblog.com/hdu-3408-elunes-arrow-5434.html#comment-48861" rel="nofollow"><time datetime="2015-06-30T18:39:45+00:00" pubdate="">2015年6月30日 at 下午6:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58490">
+<article class="comment" id="comment-58490">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">895350909</a></span> on <a href="http://www.acmerblog.com/hdu-3408-elunes-arrow-5434.html#comment-58490" rel="nofollow"><time datetime="2015-05-15T04:17:25+00:00" pubdate="">2015年5月15日 at 上午4:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题别太纠结了，不同的编译器结果不一</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29454">
+<article class="comment" id="comment-29454">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">aaa</a></span> on <a href="http://www.acmerblog.com/hdu-3408-elunes-arrow-5434.html#comment-29454" rel="nofollow"><time datetime="2015-04-24T06:57:43+00:00" pubdate="">2015年4月24日 at 上午6:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#pragma pack(2) 这个用法太坑爹</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29458">
+<article class="comment" id="comment-29458">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tufei</a></span> on <a href="http://www.acmerblog.com/hdu-3408-elunes-arrow-5434.html#comment-29458" rel="nofollow"><time datetime="2015-02-05T08:39:31+00:00" pubdate="">2015年2月5日 at 上午8:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是穷举，但是代码有优化（v数组），并不是2^n。测试数据应该没问题，之前有超时的代码。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29461">
+<article class="comment" id="comment-29461">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jade1827</a></span> on <a href="http://www.acmerblog.com/hdu-3408-elunes-arrow-5434.html#comment-29461" rel="nofollow"><time datetime="2015-01-03T17:59:41+00:00" pubdate="">2015年1月3日 at 下午5:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>站长，你好！<br/>
+         你创办的的网站非常好，为我们学习算法练习编程提供了一个很好的平台，我想给你提个小建议，就是要能把每道题目的难度标出来就好了，这样我们学习起来会有一个循序渐进的过程！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29462">
+<article class="comment" id="comment-29462">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1173954900</a></span> on <a href="http://www.acmerblog.com/hdu-3408-elunes-arrow-5434.html#comment-29462" rel="nofollow"><time datetime="2014-12-07T13:41:02+00:00" pubdate="">2014年12月7日 at 下午1:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>注释很详细，多谢分享！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29456">
+<article class="comment" id="comment-29456">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zwj0571</a></span> on <a href="http://www.acmerblog.com/hdu-3408-elunes-arrow-5434.html#comment-29456" rel="nofollow"><time datetime="2014-12-01T13:22:18+00:00" pubdate="">2014年12月1日 at 下午1:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>printf这个函数在计算的时候是从右到左，打印是从左到右。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48860">
+<article class="comment" id="comment-48860">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ruoshui</a></span> on <a href="http://www.acmerblog.com/hdu-3408-elunes-arrow-5434.html#comment-48860" rel="nofollow"><time datetime="2014-11-14T02:43:12+00:00" pubdate="">2014年11月14日 at 上午2:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>总数为2n，遍历到第n个，就是中间的位置</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29459">
+<article class="comment" id="comment-29459">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">liluvu</a></span> on <a href="http://www.acmerblog.com/hdu-3408-elunes-arrow-5434.html#comment-29459" rel="nofollow"><time datetime="2014-11-12T09:42:41+00:00" pubdate="">2014年11月12日 at 上午9:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>上面的评论很起劲，为什么我看不懂啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29457">
+<article class="comment" id="comment-29457">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">soasipray</a></span> on <a href="http://www.acmerblog.com/hdu-3408-elunes-arrow-5434.html#comment-29457" rel="nofollow"><time datetime="2014-11-08T06:09:03+00:00" pubdate="">2014年11月8日 at 上午6:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不考虑最后将结果排序的话，快排的时间复杂度是O(N) ，而堆排的是O(N*logK)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29463">
+<article class="comment" id="comment-29463">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jinxiang23</a></span> on <a href="http://www.acmerblog.com/hdu-3408-elunes-arrow-5434.html#comment-29463" rel="nofollow"><time datetime="2014-10-26T18:54:43+00:00" pubdate="">2014年10月26日 at 下午6:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29464">
+<article class="comment" id="comment-29464">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hehe_snail</a></span> on <a href="http://www.acmerblog.com/hdu-3408-elunes-arrow-5434.html#comment-29464" rel="nofollow"><time datetime="2014-09-06T21:37:12+00:00" pubdate="">2014年9月6日 at 下午9:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>mark, 备用</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-29455">
+<article class="comment" id="comment-29455">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">cyyuen</a></span> on <a href="http://www.acmerblog.com/hdu-3408-elunes-arrow-5434.html#comment-29455" rel="nofollow"><time datetime="2014-08-14T05:56:07+00:00" pubdate="">2014年8月14日 at 上午5:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>使用代码高亮的插件，再修改下css</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29460">
+<article class="comment" id="comment-29460">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">actlea</a></span> on <a href="http://www.acmerblog.com/hdu-3408-elunes-arrow-5434.html#comment-29460" rel="nofollow"><time datetime="2014-07-19T15:19:10+00:00" pubdate="">2014年7月19日 at 下午3:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

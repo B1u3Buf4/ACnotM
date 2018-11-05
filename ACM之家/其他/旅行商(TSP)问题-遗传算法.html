@@ -1,0 +1,723 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>05-10</div>
+<div class="tit"><h1 class="entry-title">旅行商(TSP)问题-遗传算法</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/zhuanti/algorithm" rel="category tag" title="查看算法分析中的全部文章">算法分析</a>, <a href="http://www.acmerblog.com/category/zhuanti/classic" rel="category tag" title="查看经典问题中的全部文章">经典问题</a></span><span class="i4">围观3867次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5762" href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comments" title="《旅行商(TSP)问题-遗传算法》上的评论">31 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<h2>旅行商问题（Traveling Salesman Problem，TSP）描述</h2>
+<p>又译为旅行推销员问题、货郎担问题，简称为<a href="http://baike.baidu.com/view/45957.htm" target="_blank">TSP问题</a>，是最基本的路线问题，该问题是在寻求单一旅行者由起点出发，通过所有给定的需求点之后，最后再回到原点的最小路径成本。</p>
+<h2>分析</h2>
+<p>TSP问题最简单的求解方法是枚举法。它的解是多维的、多局部极值的、趋于无穷大的复杂解的空间，搜索空间是n个点的所有排列的集合，大小为（n-1）！。可以形象地把解空间看成是一个无穷大的丘陵地带，各山峰或山谷的高度即是问题的极值。求解TSP，则是在此不能穷尽的丘陵地带中攀登以达到山顶或谷底的过程。</p>
+<p>在前面一讲，介绍了<a href="http://www.acmerblog.com/genetic-algorithm-for-beginners-java-demo-5755.html">遗传算法的入门</a>，这一篇将用遗传算法解决TSP问题。</p>
+<p>根据上一讲的程序，下面的几个函数需要做修改：</p>
+<p>1）评价。这个评价算法应该比较简单了，就是找计算总距离，小的为优。</p>
+<p>2）突变。为了防止重复访问，不能随机的进行突变。因为每个城市只能访问一次，我们只需要任意的交换两个城市即可。</p>
+<p><img alt="" src="http://www.theprojectspot.com/images/post-assets/swap_mutation.jpg"/></p>
+<p>上一行是突变之前，下面一行是突变之后的。</p>
+<p>3）交叉。这个操作是个比较关键的步骤，怎样交叉才能才能父母的优秀基因呢？对于TSP问题，我们要找的是一个最优的排列，其中排列的顺序应该是最重要的。</p>
+<p>因此在交叉的时候，分别随机的取 父母的部分序列，要保持原有的顺序。</p>
+<p>Parents</p>
+<p><img alt="" src="http://www.theprojectspot.com/images/post-assets/crossover_parents.jpg"/></p>
+<p>先随机的选取 Parent1 的 一部分，例如 678 部分，。然后把剩下的城市 安装 Parent2 中的顺序，遗传下去。</p>
+<p>Chlid</p>
+<p><img alt="" src="http://www.theprojectspot.com/images/post-assets/crossover_children.jpg"/></p>
+<h2>代码实现</h2>
+<p>下面的代码，包括<a href="http://www.acmerblog.com/genetic-algorithm-for-beginners-java-demo-5755.html">上一篇入门代码</a>，已经上传到github:<a href="https://github.com/gaotong2055/Advanced-Algorithm">https://github.com/gaotong2055/Advanced-Algorithm</a> (genetic-algorithm)</p>
+<p>1: City.java  城市的简单封装类。</p>
+<pre class="brush:java">package tsp;
+
+public class City {
+    int x;
+    int y;
+
+    //构造一个随机的city
+    public City(){
+        this.x = (int)(Math.random()*200);
+        this.y = (int)(Math.random()*200);
+    }
+
+    public City(int x, int y){
+        this.x = x;
+        this.y = y;
+    }
+
+    public int getX(){
+        return this.x;
+    }
+
+    public int getY(){
+        return this.y;
+    }
+
+    // 计算到给定 city的距离
+    public double distanceTo(City city){
+        int xDistance = Math.abs(getX() - city.getX());
+        int yDistance = Math.abs(getY() - city.getY());
+        double distance = Math.sqrt( (xDistance*xDistance) + (yDistance*yDistance) );
+
+        return distance;
+    }
+
+    @Override
+    public String toString(){
+        return getX()+", "+getY();
+    }
+}</pre>
+<p>2: Population.java  旅行路径 的一个集合。主要方法，获取种群中最优的的一个路径</p>
+<pre class="brush:java">package tsp;
+
+public class Population {
+
+    // 保持 路径的 集合 即为种群
+    Tour[] tours;
+    // Construct a population
+    public Population(int populationSize, boolean initialise) {
+        tours = new Tour[populationSize];
+        // If we need to initialise a population of tours do so
+        if (initialise) {
+            // Loop and create individuals
+            for (int i = 0; i &lt; populationSize(); i++) {
+                Tour newTour = new Tour();
+                newTour.generateIndividual();
+                saveTour(i, newTour);
+            }
+        }
+    }
+
+    // Saves a tour
+    public void saveTour(int index, Tour tour) {
+        tours[index] = tour;
+    }
+
+    // Gets a tour from population
+    public Tour getTour(int index) {
+        return tours[index];
+    }
+
+    // 获取当前种群 中 最优的个体
+    public Tour getFittest() {
+        Tour fittest = tours[0];
+        // Loop through individuals to find fittest
+        for (int i = 1; i &lt; populationSize(); i++) {
+            if (fittest.getFitness() &lt;= getTour(i).getFitness()) {
+                fittest = getTour(i);
+            }
+        }
+        return fittest;
+    }
+
+    // Gets population size
+    public int populationSize() {
+        return tours.length;
+    }
+}</pre>
+<p>3. Tour.java</p>
+<pre class="brush:java">package tsp;
+
+import java.util.ArrayList;
+import java.util.Collections;
+
+//每个Tour就是一个旅行路径，种群的一个  个体
+public class Tour{
+
+    // 保持所有城市的路径
+    private ArrayList tour = new ArrayList&lt;City&gt;();
+    // Cache
+    private double fitness = 0;
+    private int distance = 0;
+
+    // Constructs a blank tour
+    public Tour(){
+        for (int i = 0; i &lt; TSP_GA.destinationCities.size(); i++) {
+            tour.add(null);
+        }
+    }
+
+    public Tour(ArrayList tour){
+        this.tour = tour;
+    }
+
+    //创建一个随机的 个体(路径)
+    public void generateIndividual() {
+        // Loop through all our destination cities and add them to our tour
+        for (int cityIndex = 0; cityIndex &lt; TSP_GA.destinationCities.size(); cityIndex++) {
+          setCity(cityIndex, TSP_GA.destinationCities.get(cityIndex));
+        }
+        // 打乱顺序
+        Collections.shuffle(tour);
+    }
+
+    // Gets a city from the tour
+    public City getCity(int tourPosition) {
+        return (City)tour.get(tourPosition);
+    }
+
+    // 讲城市加入到路径中
+    public void setCity(int tourPosition, City city) {
+        tour.set(tourPosition, city);
+        // If the tours been altered we need to reset the fitness and distance
+        fitness = 0;
+        distance = 0;
+    }
+
+    // 距离小的 适应值较大
+    public double getFitness() {
+        if (fitness == 0) {
+            fitness = 1/(double)getDistance();
+        }
+        return fitness;
+    }
+
+    // 获取当前路径的总距离
+    public int getDistance(){
+        if (distance == 0) {
+            int tourDistance = 0;
+            for (int cityIndex=0; cityIndex &lt; tourSize(); cityIndex++) {
+                City fromCity = getCity(cityIndex);
+                City destinationCity;
+                if(cityIndex+1 &lt; tourSize()){
+                    destinationCity = getCity(cityIndex+1);
+                }
+                else{
+                    destinationCity = getCity(0);
+                }
+                tourDistance += fromCity.distanceTo(destinationCity);
+            }
+            distance = tourDistance;
+        }
+        return distance;
+    }
+
+    //一个路径中 城市的个数
+    public int tourSize() {
+        return tour.size();
+    }
+    //当前路径中是否包含该city
+    public boolean containsCity(City city){
+        return tour.contains(city);
+    }
+
+    @Override
+    public String toString() {
+        String geneString = "|";
+        for (int i = 0; i &lt; tourSize(); i++) {
+            geneString += getCity(i)+"|";
+        }
+        return geneString;
+    }
+}</pre>
+<p>4. GA.java 算法的实现</p>
+<pre class="brush:java">package tsp;
+
+public class GA {
+
+    /* GA 算法参数 */
+    private static final double mutationRate = 0.015;
+    private static final int tournamentSize = 5;
+    private static final boolean elitism = true;
+
+    // 进化种群
+    public static Population evolvePopulation(Population pop) {
+        Population newPopulation = new Population(pop.populationSize(), false);
+        // 第一个位置 保持最优个体
+        int elitismOffset = 0;
+        if (elitism) {
+            newPopulation.saveTour(0, pop.getFittest());
+            elitismOffset = 1;
+        }
+
+        // 种群交叉操作
+        // 从当前的种群pop 来 创建下一代种群 newPopulation
+        for (int i = elitismOffset; i &lt; newPopulation.populationSize(); i++) {
+            // 选择较优的parent
+            Tour parent1 = tournamentSelection(pop);
+            Tour parent2 = tournamentSelection(pop);
+            // 交叉 parents
+            Tour child = crossover(parent1, parent2);
+            // 将产生的child放入到 新种群 newPopulation
+            newPopulation.saveTour(i, child);
+        }
+
+        // 进行突变操作，给基因来点good luck
+        for (int i = elitismOffset; i &lt; newPopulation.populationSize(); i++) {
+            mutate(newPopulation.getTour(i));
+        }
+        return newPopulation;
+    }
+
+    // 对parent1和parent2进行交叉操作，生成新的 tour 路径
+    public static Tour crossover(Tour parent1, Tour parent2) {
+        // Create new child tour
+        Tour child = new Tour();
+
+        // startPos endPos之间的序列，会被遗传到下一代。 (如果startPos&lt;endPos,就是取反)
+        int startPos = (int) (Math.random() * parent1.tourSize());
+        int endPos = (int) (Math.random() * parent1.tourSize());
+
+        // Loop and add the sub tour from parent1 to our child
+        for (int i = 0; i &lt; child.tourSize(); i++) {
+            // If our start position is less than the end position
+            if (startPos &lt; endPos &amp;&amp; i &gt; startPos &amp;&amp; i &lt; endPos) {
+                child.setCity(i, parent1.getCity(i));
+            } // If our start position is larger
+            else if (startPos &gt; endPos) {
+                if (!(i &lt; startPos &amp;&amp; i &gt; endPos)) {
+                    child.setCity(i, parent1.getCity(i));
+                }
+            }
+        }
+
+        // 由于child已经继承了parent1的部分city. 下面就是找 parent2中还被child继承的那些city
+        // 要保证city的唯一性
+        for (int i = 0; i &lt; parent2.tourSize(); i++) {
+            // If child doesn't have the city add it
+            if (!child.containsCity(parent2.getCity(i))) {
+                // Loop to find a spare position in the child's tour
+                for (int ii = 0; ii &lt; child.tourSize(); ii++) {
+                    // Spare position found, add city
+                    if (child.getCity(ii) == null) {
+                        child.setCity(ii, parent2.getCity(i));
+                        break;
+                    }
+                }
+            }
+        }
+        return child;
+    }
+
+    // 突变操作。随机交换
+    private static void mutate(Tour tour) {
+        // Loop through tour cities
+        for(int tourPos1=0; tourPos1 &lt; tour.tourSize(); tourPos1++){
+            // Apply mutation rate
+            if(Math.random() &lt; mutationRate){
+                // Get a second random position in the tour
+                int tourPos2 = (int) (tour.tourSize() * Math.random());
+                // Get the cities at target position in tour
+                City city1 = tour.getCity(tourPos1);
+                City city2 = tour.getCity(tourPos2);
+
+                // Swap them around
+                tour.setCity(tourPos2, city1);
+                tour.setCity(tourPos1, city2);
+            }
+        }
+    }
+
+    // Selects candidate tour for crossover
+    private static Tour tournamentSelection(Population pop) {
+        // Create a tournament population
+        Population tournament = new Population(tournamentSize, false);
+        // For each place in the tournament get a random candidate tour and
+        // add it
+        for (int i = 0; i &lt; tournamentSize; i++) {
+            int randomId = (int) (Math.random() * pop.populationSize());
+            tournament.saveTour(i, pop.getTour(randomId));
+        }
+        // Get the fittest tour
+        Tour fittest = tournament.getFittest();
+        return fittest;
+    }
+}</pre>
+<p>5 TSP_GA.java  测试</p>
+<pre class="brush:java">package tsp;
+
+import java.util.ArrayList;
+
+public class TSP_GA {
+
+	public static ArrayList&lt;City&gt; destinationCities = new ArrayList&lt;City&gt;();
+
+    public static void main(String[] args) {
+
+        // Create and add our cities
+        City city = new City(60, 200);
+        destinationCities.add(city);
+        City city2 = new City(180, 200);
+        destinationCities.add(city2);
+        City city3 = new City(80, 180);
+        destinationCities.add(city3);
+        City city4 = new City(140, 180);
+        destinationCities.add(city4);
+        City city5 = new City(20, 160);
+        destinationCities.add(city5);
+        City city6 = new City(100, 160);
+        destinationCities.add(city6);
+        City city7 = new City(200, 160);
+        destinationCities.add(city7);
+        City city8 = new City(140, 140);
+        destinationCities.add(city8);
+        City city9 = new City(40, 120);
+        destinationCities.add(city9);
+        City city10 = new City(100, 120);
+        destinationCities.add(city10);
+        City city11 = new City(180, 100);
+        destinationCities.add(city11);
+        City city12 = new City(60, 80);
+        destinationCities.add(city12);
+        City city13 = new City(120, 80);
+        destinationCities.add(city13);
+        City city14 = new City(180, 60);
+        destinationCities.add(city14);
+        City city15 = new City(20, 40);
+        destinationCities.add(city15);
+        City city16 = new City(100, 40);
+        destinationCities.add(city16);
+        City city17 = new City(200, 40);
+        destinationCities.add(city17);
+        City city18 = new City(20, 20);
+        destinationCities.add(city18);
+        City city19 = new City(60, 20);
+        destinationCities.add(city19);
+        City city20 = new City(160, 20);
+        destinationCities.add(city20);
+
+        // Initialize population
+        Population pop = new Population(50, true);
+        System.out.println("Initial distance: " + pop.getFittest().getDistance());
+
+        // 进化到100代就停止程序
+        for (int i = 0; i &lt; 100; i++) {
+            pop = GA.evolvePopulation(pop);
+        }
+
+        // 打印最终的结果
+        System.out.println("Finished");
+        System.out.println("Final distance: " + pop.getFittest().getDistance());
+        System.out.println("Solution:");
+        System.out.println(pop.getFittest());
+    }
+}</pre>
+<p>输出结果(不确定，非最优解)：</p>
+<pre class="brush:java">Initial distance: 1934
+Finished
+Final distance: 890
+Solution:
+|140, 140|140, 180|180, 200|200, 160|180, 100|180, 60|200, 40|160, 20|100, 40|60, 20|20, 20|20, 40|60, 80|120, 80|100, 120|40, 120|20, 160|60, 200|80, 180|100, 160|</pre>
+<p>英文原文：http://www.theprojectspot.com/tutorial-post/applying-a-genetic-algorithm-to-the-travelling-salesman-problem/5</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75630">
+<article class="comment" id="comment-75630">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515480" rel="external nofollow">新用户883765</a></span> on <a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comment-75630" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你最好有多远滚多远！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75629">
+<article class="comment" id="comment-75629">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515480" rel="external nofollow">新用户883765</a></span> on <a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comment-75629" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你最好有多远滚多远！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75628">
+<article class="comment" id="comment-75628">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515480" rel="external nofollow">新用户883765</a></span> on <a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comment-75628" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你最好有多远滚多远！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75627">
+<article class="comment" id="comment-75627">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515480" rel="external nofollow">新用户883765</a></span> on <a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comment-75627" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你最好有多远滚多远！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75626">
+<article class="comment" id="comment-75626">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515480" rel="external nofollow">新用户883765</a></span> on <a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comment-75626" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你最好有多远滚多远！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75625">
+<article class="comment" id="comment-75625">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515480" rel="external nofollow">新用户883765</a></span> on <a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comment-75625" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你最好有多远滚多远！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75624">
+<article class="comment" id="comment-75624">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515480" rel="external nofollow">新用户883765</a></span> on <a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comment-75624" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你最好有多远滚多远！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75623">
+<article class="comment" id="comment-75623">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515480" rel="external nofollow">新用户883765</a></span> on <a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comment-75623" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你最好有多远滚多远！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75622">
+<article class="comment" id="comment-75622">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515480" rel="external nofollow">新用户883765</a></span> on <a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comment-75622" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你最好有多远滚多远！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75621">
+<article class="comment" id="comment-75621">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515480" rel="external nofollow">新用户883765</a></span> on <a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comment-75621" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你最好有多远滚多远！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75620">
+<article class="comment" id="comment-75620">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515480" rel="external nofollow">新用户883765</a></span> on <a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comment-75620" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你最好有多远滚多远！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75619">
+<article class="comment" id="comment-75619">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515480" rel="external nofollow">新用户883765</a></span> on <a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comment-75619" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你最好有多远滚多远！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75618">
+<article class="comment" id="comment-75618">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515480" rel="external nofollow">新用户883765</a></span> on <a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comment-75618" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你最好有多远滚多远！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75617">
+<article class="comment" id="comment-75617">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515480" rel="external nofollow">新用户883765</a></span> on <a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comment-75617" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你最好有多远滚多远！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65298">
+<article class="comment" id="comment-65298">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.wx31.com/" rel="external nofollow">奢侈品网</a></span> on <a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comment-65298" rel="nofollow"><time datetime="2017-03-26T07:51:47+00:00" pubdate="">2017年3月26日 at 上午7:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>奢侈品女装ﺠCOACH(寇驰)CéLINE(赛琳)3.1 Phillip Lim微信：LoveMeJck</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65235">
+<article class="comment" id="comment-65235">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://360meimei.com/" rel="external nofollow">日本美女</a></span> on <a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comment-65235" rel="nofollow"><time datetime="2017-03-23T03:32:20+00:00" pubdate="">2017年3月23日 at 上午3:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/df/longniankm_org.gif"/> 私房套图ἐ人体艺术q8354手绘美女最好看的avuD6.mm88.ml</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65228">
+<article class="comment" id="comment-65228">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://360meimei.com/" rel="external nofollow">挤胸照</a></span> on <a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comment-65228" rel="nofollow"><time datetime="2017-03-23T02:15:29+00:00" pubdate="">2017年3月23日 at 上午2:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>丝袜诱惑⨈庄稼地里的诱惑av天堂吧av排名男士性感内衣mm88.ml</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30337">
+<article class="comment" id="comment-30337">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">JcZ</a></span> on <a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comment-30337" rel="nofollow"><time datetime="2015-07-07T05:41:16+00:00" pubdate="">2015年7月7日 at 上午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这怎么用Catalan数啊？求解答！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49351">
+<article class="comment" id="comment-49351">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ozhfo</a></span> on <a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comment-49351" rel="nofollow"><time datetime="2015-06-18T09:28:14+00:00" pubdate="">2015年6月18日 at 上午9:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>约瑟夫也用说这么长……很成熟的一个问题了，分治的方法解起来o(n)就可以了，有兴趣可以看看具体数学的第一章，关于约瑟夫问题推导出了一系列的结论，很漂亮</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58775">
+<article class="comment" id="comment-58775">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gladuo</a></span> on <a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comment-58775" rel="nofollow"><time datetime="2015-06-08T07:00:21+00:00" pubdate="">2015年6月8日 at 上午7:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>gcc环境</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63587">
+<article class="comment" id="comment-63587">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Trenson</a></span> on <a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comment-63587" rel="nofollow"><time datetime="2015-05-06T04:23:56+00:00" pubdate="">2015年5月6日 at 上午4:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>以了解 想問為甚麼 Tbl[6001] = {1} 初始化都是1<br/>
+為何不是Tbl[0]=1 其他為0</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30341">
+<article class="comment" id="comment-30341">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Trenson</a></span> on <a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comment-30341" rel="nofollow"><time datetime="2015-04-15T07:29:01+00:00" pubdate="">2015年4月15日 at 上午7:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>怎么输入两个0程序还没退出</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30342">
+<article class="comment" id="comment-30342">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zoe_music</a></span> on <a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comment-30342" rel="nofollow"><time datetime="2015-03-03T08:49:46+00:00" pubdate="">2015年3月3日 at 上午8:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>递归还真是一门学问，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30338">
+<article class="comment" id="comment-30338">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Emlar</a></span> on <a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comment-30338" rel="nofollow"><time datetime="2015-02-05T00:51:16+00:00" pubdate="">2015年2月5日 at 上午12:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>I go through some of your put up and I uncovered a good deal of expertise from it. Many thanks for posting this sort of exciting posts</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30336">
+<article class="comment" id="comment-30336">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">samjustin</a></span> on <a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comment-30336" rel="nofollow"><time datetime="2014-12-22T11:10:46+00:00" pubdate="">2014年12月22日 at 上午11:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>0000</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30340">
+<article class="comment" id="comment-30340">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Watson</a></span> on <a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comment-30340" rel="nofollow"><time datetime="2014-12-07T14:27:24+00:00" pubdate="">2014年12月7日 at 下午2:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>能不能说下这个是用的什么算法策略？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49350">
+<article class="comment" id="comment-49350">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rtaxa</a></span> on <a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comment-49350" rel="nofollow"><time datetime="2014-12-04T20:31:56+00:00" pubdate="">2014年12月4日 at 下午8:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>居然看懂了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30343">
+<article class="comment" id="comment-30343">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">samjustin</a></span> on <a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comment-30343" rel="nofollow"><time datetime="2014-11-25T05:29:29+00:00" pubdate="">2014年11月25日 at 上午5:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>代码过于复杂了吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30339">
+<article class="comment" id="comment-30339">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">MyHome</a></span> on <a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comment-30339" rel="nofollow"><time datetime="2014-11-06T05:06:36+00:00" pubdate="">2014年11月6日 at 上午5:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>问题3中，GetRightPosition()和GetLeftPosition()与STL中的upper_bound()和lower_boune()的代码实现一样吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63588">
+<article class="comment" id="comment-63588">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bobo</a></span> on <a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comment-63588" rel="nofollow"><time datetime="2014-09-03T04:30:07+00:00" pubdate="">2014年9月3日 at 上午4:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么不直接用STL排序呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49352">
+<article class="comment" id="comment-49352">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">actlea</a></span> on <a href="http://www.acmerblog.com/genetic-algorithm-to-tsp-problem-5762.html#comment-49352" rel="nofollow"><time datetime="2014-06-05T06:36:08+00:00" pubdate="">2014年6月5日 at 上午6:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢提醒，是漏掉了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

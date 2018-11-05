@@ -1,0 +1,351 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>04-13</div>
+<div class="tit"><h1 class="entry-title">HDU 3856-Palindrome-分治-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/basis/recursion" rel="category tag" title="查看递归和分治中的全部文章">递归和分治</a></span><span class="i4">围观179次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6858" href="http://www.acmerblog.com/hdu-3856-palindrome-6858.html#comments" title="《HDU 3856-Palindrome-分治-[解题报告]HOJ》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Palindrome</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Given a string S,you are asked to find the longest palindrome in the substring [l,r]. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line is a number T which indicates the number of test cases
+<p>then follows a string s(length(s)&lt;200000)<br/>s can consists all ascii characters<br/>Then an integer q,q querys(q&lt;200000)<br/>each query is two integer l,r.<br/>find the longest palindrome in the substring [l,r]. </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The first line is a number T which indicates the number of test cases
+<p>then follows a string s(length(s)&lt;200000)<br/>s can consists all ascii characters<br/>Then an integer q,q querys(q&lt;200000)<br/>each query is two integer l,r.<br/>find the longest palindrome in the substring [l,r].</p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+aaabbcc
+5
+1 7
+1 4
+2 3
+4 5
+2 5</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+3
+3
+2
+2
+2
+
+<div style="font-family:Times New Roman;font-size:14px;background-color:F4FBFF;border:#B7CBFF 1px dashed;padding:6px"><div style="font-family:Arial;font-weight:bold;color:#7CA9ED;border-bottom:#B7CBFF 1px dashed"><i>Hint</i></div>1 7 means aaabbcc the longest palindrome substring is aaa,whose length is 3.
+4 5 means bb the longest palindrome substring is bb,whose length is 2.</div><i style="font-size:1px"> </i></pre>
+<p> <!-- problem end --></p>
+<p>不知道错在哪了，求大神指教！！！</p>
+<p>思路：用manacher求出每个以str[i]为中心轴的回文串的长度，RMQ预处理区间最大值，对于每个查询，二分最大回文串长，判定是否可行。</p>
+<p> </p>
+<pre class="brush:cpp">#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+#include &lt;cstdlib&gt;
+#include &lt;algorithm&gt;
+
+using namespace std;
+
+const int MAXN = 222222;
+
+char str[ MAXN ];
+int data[ MAXN * 2 ];
+int p[ MAXN * 2 ];
+int d[ MAXN * 2 ][30];
+int n, len;
+
+void init()
+{
+    int id,MaxL,MaxId;
+    int i;
+    MaxL=MaxId=0;
+    len = strlen(&amp;str[1]);
+    for (i=1; i &lt;= len; i++)
+    {
+        data[(i&lt;&lt;1)]=str[i];
+        data[(i&lt;&lt;1)+1]=2;
+    }
+    data[0]=1;
+    data[1]=2;
+    n=(i&lt;&lt;1)+2;
+    data[n]=0;
+    MaxId=MaxL=0;
+    p[0] = 1;
+    for (i=1; i&lt;n; i++)
+    {
+        if (MaxId&gt;i)
+            p[i]=min(p[2*id-i],MaxId-i);
+        else
+            p[i]=1;
+        while (data[i+p[i]] == data[i-p[i]])
+            p[i]++;
+        if (p[i]+i&gt;MaxId)
+            MaxId=p[i]+i,id=i;
+        //printf( "p[%d]=%d\n", i, p[i] );
+    }
+    for ( i = 1; i &lt; n; ++i ) --p[i];
+
+    return;
+}
+
+void RMQinit()
+{
+    for ( int i = 0; i &lt;= n; ++i ) d[i][0] = p[i];
+    for ( int j = 1; ( 1 &lt;&lt; j ) &lt;= n; ++j )
+        for ( int i = 1; i + j - 1 &lt;= n; ++i )
+            d[i][j] = max( d[i][j - 1], d[ i + (1&lt;&lt;(j-1))][j - 1] );
+    return;
+}
+
+int RMQquery( int L, int R )
+{
+    int k = 0;
+    while ( (1 &lt;&lt; (k + 1)) &lt;= R - L + 1 ) ++k;
+    return max( d[L][k], d[ R - ( 1 &lt;&lt; k ) + 1 ][k] );
+}
+
+bool check( int L, int R, int mid )
+{
+    //if ( L + mid &gt; R - mid ) return false;
+    int ans = RMQquery( L + mid, R - mid );
+    //printf("[%d %d]:%d\n", L + mid, R - mid, ans );
+    //printf("ans = %d, mid = %d\n", ans, mid );
+    if ( ans &gt;= mid )
+    {
+        //puts("****");
+        return true;
+    }
+    return false;
+}
+
+int BiSearch( int l, int r, int L, int R )
+{
+    int ans = 1;
+    while ( l &lt;= r )
+    {
+        int mid = ( l + r ) &gt;&gt; 1;
+        if ( check( L, R, mid ) )
+        {
+            l = mid + 1;
+            ans = mid;
+        }
+        else r = mid - 1;
+    }
+    return ans;
+}
+
+int main()
+{
+    int T;
+    scanf( "%d", &amp;T );
+    getchar();
+    while ( T-- )
+    {
+        memset( d, 0, sizeof(d) );
+        memset( p, 0, sizeof(p) );
+        gets( &amp;str[1] );
+        init();
+        RMQinit();
+
+        int Q;
+        scanf( "%d", &amp;Q );
+        while ( Q-- )
+        {
+            int a, b;
+            scanf( "%d%d", &amp;a, &amp;b );
+            if ( a &lt; 1 ) a = 1;
+            if ( b &gt; len ) b = len;
+            if ( a &gt; len )
+            {
+                puts("0");
+                continue;
+            }
+            if ( a &gt; b ) swap( a, b );
+            int ans = BiSearch( 1, b - a + 1, a*2 - 1, b*2 + 1 );
+            printf( "%d\n", ans );
+        }
+        getchar();
+    }
+    return 0;
+}</pre>
+<p> </p>
+<p>参考：http://www.cnblogs.com/GBRgbr/archive/2013/08/27/3286025.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-72299">
+<article class="comment" id="comment-72299">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919463930" rel="external nofollow">新用户194499</a></span> on <a href="http://www.acmerblog.com/hdu-3856-palindrome-6858.html#comment-72299" rel="nofollow"><time datetime="2017-04-11T17:41:13+00:00" pubdate="">2017年4月11日 at 下午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>So cool…The information mentioned in the article are some of the best available…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-34311">
+<article class="comment" id="comment-34311">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">weijieut</a></span> on <a href="http://www.acmerblog.com/hdu-3856-palindrome-6858.html#comment-34311" rel="nofollow"><time datetime="2015-07-10T22:27:07+00:00" pubdate="">2015年7月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>懂了，谢谢啦</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-34306">
+<article class="comment" id="comment-34306">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">super157</a></span> on <a href="http://www.acmerblog.com/hdu-3856-palindrome-6858.html#comment-34306" rel="nofollow"><time datetime="2015-06-28T06:42:47+00:00" pubdate="">2015年6月28日 at 上午6:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，赞一个！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-34308">
+<article class="comment" id="comment-34308">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NextLife</a></span> on <a href="http://www.acmerblog.com/hdu-3856-palindrome-6858.html#comment-34308" rel="nofollow"><time datetime="2015-06-11T11:29:41+00:00" pubdate="">2015年6月11日 at 上午11:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有点意思</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-34312">
+<article class="comment" id="comment-34312">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zhenghao</a></span> on <a href="http://www.acmerblog.com/hdu-3856-palindrome-6858.html#comment-34312" rel="nofollow"><time datetime="2015-06-08T21:00:03+00:00" pubdate="">2015年6月8日 at 下午9:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>位运算真赞</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-34309">
+<article class="comment" id="comment-34309">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yesMan</a></span> on <a href="http://www.acmerblog.com/hdu-3856-palindrome-6858.html#comment-34309" rel="nofollow"><time datetime="2015-06-07T02:49:35+00:00" pubdate="">2015年6月7日 at 上午2:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>整理的很好，多谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-34313">
+<article class="comment" id="comment-34313">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wizcabbit</a></span> on <a href="http://www.acmerblog.com/hdu-3856-palindrome-6858.html#comment-34313" rel="nofollow"><time datetime="2015-05-21T01:20:39+00:00" pubdate="">2015年5月21日 at 上午1:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序是错的吧，明显没有判断不和该节点相邻的其他节点是否相互相邻</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-34304">
+<article class="comment" id="comment-34304">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gy910210</a></span> on <a href="http://www.acmerblog.com/hdu-3856-palindrome-6858.html#comment-34304" rel="nofollow"><time datetime="2015-05-14T07:57:27+00:00" pubdate="">2015年5月14日 at 上午7:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实国内大部分公司对算法都不够重视。特别是中小型公司老板根本都不懂技术，也不懂什么是算法，从而也不要求程序员懂什么算法，做程序从来不考虑性能问题，只要页面能显示出来就是好程序，这是国内的现状，很无奈。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-34315">
+<article class="comment" id="comment-34315">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dreams</a></span> on <a href="http://www.acmerblog.com/hdu-3856-palindrome-6858.html#comment-34315" rel="nofollow"><time datetime="2015-05-13T12:18:01+00:00" pubdate="">2015年5月13日 at 下午12:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>比较基础，找些自信</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-34305">
+<article class="comment" id="comment-34305">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">MyHome</a></span> on <a href="http://www.acmerblog.com/hdu-3856-palindrome-6858.html#comment-34305" rel="nofollow"><time datetime="2015-05-04T20:12:11+00:00" pubdate="">2015年5月4日 at 下午8:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>A的话不是不能避免冲突么？感觉出题者在考察是否考虑了冲突解决办法？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-34316">
+<article class="comment" id="comment-34316">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">binqi_ren</a></span> on <a href="http://www.acmerblog.com/hdu-3856-palindrome-6858.html#comment-34316" rel="nofollow"><time datetime="2015-05-03T08:01:32+00:00" pubdate="">2015年5月3日 at 上午8:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>“再把所有不和该节点相邻的节点着相同的颜色”，程序中没有进行不和该节点相邻的其他节点是否相邻进行判断。再说求出来的也不一样是颜色数最少的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-34307">
+<article class="comment" id="comment-34307">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sheyty</a></span> on <a href="http://www.acmerblog.com/hdu-3856-palindrome-6858.html#comment-34307" rel="nofollow"><time datetime="2015-04-30T19:33:01+00:00" pubdate="">2015年4月30日 at 下午7:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，算是枚举吧，已修正</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-34310">
+<article class="comment" id="comment-34310">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Christmas</a></span> on <a href="http://www.acmerblog.com/hdu-3856-palindrome-6858.html#comment-34310" rel="nofollow"><time datetime="2015-04-25T00:00:30+00:00" pubdate="">2015年4月25日 at 上午12:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>递归实现的代码部分<br/>
+14句和18句的 wt[n - 1]是不是应该改为 wt[ n ] ?</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-34303">
+<article class="comment" id="comment-34303">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mnmlist</a></span> on <a href="http://www.acmerblog.com/hdu-3856-palindrome-6858.html#comment-34303" rel="nofollow"><time datetime="2015-04-24T04:13:06+00:00" pubdate="">2015年4月24日 at 上午4:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这道题目重复了，删掉一个吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-34314">
+<article class="comment" id="comment-34314">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yupeng.bai</a></span> on <a href="http://www.acmerblog.com/hdu-3856-palindrome-6858.html#comment-34314" rel="nofollow"><time datetime="2015-04-16T13:08:00+00:00" pubdate="">2015年4月16日 at 下午1:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>题目和代码都不一样好吗！！！搞错了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

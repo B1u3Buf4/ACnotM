@@ -1,0 +1,362 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>11-27</div>
+<div class="tit"><h1 class="entry-title">HDU 3594-Cactus-图-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph" rel="category tag" title="查看图论中的全部文章">图论</a>, <a href="http://www.acmerblog.com/category/graph/connectivity" rel="category tag" title="查看连通性问题中的全部文章">连通性问题</a></span><span class="i4">围观308次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6558" href="http://www.acmerblog.com/hdu-3594-cactus-6558.html#comments" title="《HDU 3594-Cactus-图-[解题报告]HOJ》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Cactus</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+1. It is a Strongly Connected graph.<br/>2. Each edge of the graph belongs to a circle and only belongs to one circle.<br/>We call this graph as CACTUS.
+<p></p><center><img alt="The most powerful force" src="http://www.acmerblog.com/img/1419799204813.jpg"/></center>
+<p>There is an example as the figure above. The left one is a cactus, but the right one isn’t. Because the edge (0, 1) in the right graph belongs to two circles as (0, 1, 3) and (0, 1, 2, 3). </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input consists of several test cases. The first line contains an integer T (1&lt;=T&lt;=10), representing the number of test cases.<br/>For each case, the first line contains a integer n (1&lt;=n&lt;=20000), representing the number of points.<br/>The following lines, each line has two numbers a and b, representing a single-way edge (a-&gt;b). Each case ends with (0 0).<br/>Notice: The total number of edges does not exceed 50000. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input consists of several test cases. The first line contains an integer T (1&lt;=T&lt;=10), representing the number of test cases.<br/>For each case, the first line contains a integer n (1&lt;=n&lt;=20000), representing the number of points.<br/>The following lines, each line has two numbers a and b, representing a single-way edge (a-&gt;b). Each case ends with (0 0).<br/>Notice: The total number of edges does not exceed 50000.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+4
+0 1
+1 2
+2 0
+2 3
+3 2
+0 0
+4
+0 1
+1 2
+2 3
+3 0
+1 3
+0 0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+YES
+NO</pre>
+<p> <!-- problem end --></p>
+<p>题目地址：http://acm.hdu.edu.cn/showproblem.php?pid=3594</p>
+<p>题意：判断给定的有向图是否满足 1.强连通 2 每一条边属于且仅属于一个环</p>
+<p>tarjan算法的运用，用fa[]数组记录tarjand的搜索路径，当有一个点有横向边（指向它的祖先节点——表示有环），据fa记录的路径标记 除被指向的祖先外所有路径上的点，当有某个点被记录2次时，必然存在一条边属于两个环。</p>
+<p></p>
+<p></p>
+<pre class="brush:cpp" name="code">#include&lt;iostream&gt;  
+    #include&lt;cstdio&gt;  
+    #include&lt;cstring&gt;  
+    #include&lt;cmath&gt;  
+    #include&lt;algorithm&gt;  
+    #include&lt;queue&gt;  
+    #include&lt;vector&gt;  
+    #include&lt;stack&gt;  
+    #include&lt;map&gt;  
+    #define MAX 20500  // 点的最大数量  
+    #define MAXE 50500// 边的最大数量  
+    using namespace std;  
+    // 假设对边u--&gt;v  
+    struct EDGE  
+    {  
+        int v; // 从u点出发能到达的点v  
+        int next; // 从u点出发能到达的下一条边的编号  
+    }edge[MAXE];  
+    int first[MAX];   // first[u] = e：从点u出发的最后一条边的编号是e(“最后”是指最后输入)  
+    int dfn[MAX];  // dfn[u]：节点u搜索的次序编号(时间戳)  
+    int low[MAX];// low[u]：是u或u的子树能够追溯到的最早的栈中节点的次序号  
+    int ins[MAX];// 是否在栈中  
+    //int scc[MAX]; // scc[i] = j：第i个点所在的强连通分量的编号  (此题可有可无)
+    int out[MAX];  
+    int in[MAX];// 强连通分量的出度  
+    int fa[MAX];//fa[i] 表示 i的前驱 （父亲节点）
+    int n,m;  
+    int num; // 强连通分量的数目  
+    int index; // 次序编号  
+    stack&lt;int&gt; s;  
+    bool ok;//判断是否满足条件
+    void sign(int v,int x)
+    {
+        while(fa[x]!=v)
+        {
+            out[x]++;//out[x] 表示被标记了几次
+        //    cout&lt;&lt;x&lt;&lt;endl;
+            if(out[x]&gt;1)//超过2次 必定有边 同属于两个环
+            {
+                ok=false;
+                return ;
+            }
+            x=fa[x];
+        }
+    }
+    int DFS(int x)  
+    {  
+        if(!ok)return 0;
+        low[x]=dfn[x]=index++;  
+        s.push(x);  
+        ins[x]=1;  
+        // 枚举每一条边：u--&gt;v  
+        for(int k=first[x];k!=-1;k=edge[k].next)  
+        {  
+            int v=edge[k].v;  
+            if(dfn[v]==0)  
+            {  
+                fa[v]=x;
+                DFS(v);  
+                low[x]=min(low[x],low[v]); 
+            }  
+            else if(ins[v])  
+            {  
+                low[x]=min(dfn[v],low[x]); 
+                sign(v,x);	//由x沿路径返回并标记一直找到v
+                if(ok==false)
+                return 0;
+            }  
+        }  
+         // 如果节点u是强连通分量的根  
+        if(low[x]==dfn[x])  
+        {  
+            int v;  
+            num++;  
+        if(num&gt;1){ok=false;return 0;}//出现两个强联通分量
+            do{  
+            v=s.top();  
+            s.pop();  
+            ins[v]=0;  
+      //      scc[v]=num;  
+            }while(v!=x);  
+        }  
+        return 1;
+    }  
+    
+    void init()  
+    {  
+        memset(dfn,0,sizeof(dfn));  
+        memset(low,0,sizeof(low));  
+        memset(first,-1,sizeof(first));  
+        memset(ins,0,sizeof(ins));  
+        memset(out,0,sizeof(out));  
+        memset(in,0,sizeof(in));  
+     //   memset(scc,0,sizeof(scc));  
+        index=1;  
+        num=0;  
+        ok=true;
+        int a,b,e=0;  
+        scanf("%d",&amp;n);
+        for(;;)  
+        {  
+            scanf("%d%d",&amp;a,&amp;b);
+            if(a+b==0)break;    
+            edge[e].v=b;  
+            edge[e].next=first[a];  
+            first[a]=e;  
+            e++;  
+        }  
+      
+    }  
+    
+    void solve()  
+    {  
+          // 求强连通分量  
+        for(int i=0;i&lt;n;i++)  
+        {  
+            if(dfn[i]==0)  
+            {  
+               DFS(i);
+                if(ok==false)
+                break;
+            }  
+        }  
+        if(ok)
+        printf("YES\n");
+        else 
+        printf("NO\n");
+    }  
+    int main()  
+    {  
+        int Case;
+        scanf("%d",&amp;Case);
+        while(Case--)  
+        {  
+            init();  
+            solve();  
+        }  
+    return 0;  
+    }      </pre>
+<p>参考：http://blog.csdn.net/wsniyufang/article/details/6609872</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-73633">
+<article class="comment" id="comment-73633">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919528443" rel="external nofollow">新用户324426</a></span> on <a href="http://www.acmerblog.com/hdu-3594-cactus-6558.html#comment-73633" rel="nofollow"><time datetime="2017-04-12T00:07:35+00:00" pubdate="">2017年4月12日 at 上午12:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>父母也有过错的啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50467">
+<article class="comment" id="comment-50467">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bluesky</a></span> on <a href="http://www.acmerblog.com/hdu-3594-cactus-6558.html#comment-50467" rel="nofollow"><time datetime="2015-05-18T11:06:29+00:00" pubdate="">2015年5月18日 at 上午11:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>1234百位上出现的次数应该是200吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50468">
+<article class="comment" id="comment-50468">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Aifan</a></span> on <a href="http://www.acmerblog.com/hdu-3594-cactus-6558.html#comment-50468" rel="nofollow"><time datetime="2015-04-13T18:35:23+00:00" pubdate="">2015年4月13日 at 下午6:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>分析的很专业！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50472">
+<article class="comment" id="comment-50472">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">water160</a></span> on <a href="http://www.acmerblog.com/hdu-3594-cactus-6558.html#comment-50472" rel="nofollow"><time datetime="2015-03-26T07:57:13+00:00" pubdate="">2015年3月26日 at 上午7:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>看见的晚了，只能提交一次唉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50469">
+<article class="comment" id="comment-50469">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mechine</a></span> on <a href="http://www.acmerblog.com/hdu-3594-cactus-6558.html#comment-50469" rel="nofollow"><time datetime="2015-03-19T14:23:53+00:00" pubdate="">2015年3月19日 at 下午2:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>跟书上的解法不一样，不知道哪个效率要高些</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-59315">
+<article class="comment" id="comment-59315">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Anne</a></span> on <a href="http://www.acmerblog.com/hdu-3594-cactus-6558.html#comment-59315" rel="nofollow"><time datetime="2015-03-12T07:22:59+00:00" pubdate="">2015年3月12日 at 上午7:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的方法，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50466">
+<article class="comment" id="comment-50466">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaoriqiang2</a></span> on <a href="http://www.acmerblog.com/hdu-3594-cactus-6558.html#comment-50466" rel="nofollow"><time datetime="2015-02-27T23:56:11+00:00" pubdate="">2015年2月27日 at 下午11:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法好！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50471">
+<article class="comment" id="comment-50471">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Baifern</a></span> on <a href="http://www.acmerblog.com/hdu-3594-cactus-6558.html#comment-50471" rel="nofollow"><time datetime="2015-02-21T04:21:58+00:00" pubdate="">2015年2月21日 at 上午4:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二块代码if(it != mp.end())应改为if(it != mp.end() &amp;&amp; (i+1)!=(it-&gt;second +1))；因为第二种解法如果数组有重复元素 就不正确</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50476">
+<article class="comment" id="comment-50476">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fastislow</a></span> on <a href="http://www.acmerblog.com/hdu-3594-cactus-6558.html#comment-50476" rel="nofollow"><time datetime="2015-02-18T07:39:08+00:00" pubdate="">2015年2月18日 at 上午7:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>比较基础，找些自信</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50475">
+<article class="comment" id="comment-50475">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Ding Qiangyuan</a></span> on <a href="http://www.acmerblog.com/hdu-3594-cactus-6558.html#comment-50475" rel="nofollow"><time datetime="2015-01-30T09:15:29+00:00" pubdate="">2015年1月30日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个是代码高亮功能，那就再换一个颜色</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50474">
+<article class="comment" id="comment-50474">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">siaswj</a></span> on <a href="http://www.acmerblog.com/hdu-3594-cactus-6558.html#comment-50474" rel="nofollow"><time datetime="2015-01-01T23:31:19+00:00" pubdate="">2015年1月1日 at 下午11:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>还真是，i7的cpu跑了3秒</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50464">
+<article class="comment" id="comment-50464">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ygxqqx</a></span> on <a href="http://www.acmerblog.com/hdu-3594-cactus-6558.html#comment-50464" rel="nofollow"><time datetime="2014-12-25T19:45:04+00:00" pubdate="">2014年12月25日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>输出规范写错了哦~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50473">
+<article class="comment" id="comment-50473">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xrjervis</a></span> on <a href="http://www.acmerblog.com/hdu-3594-cactus-6558.html#comment-50473" rel="nofollow"><time datetime="2014-12-23T12:41:42+00:00" pubdate="">2014年12月23日 at 下午12:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已修改。一些字符在编辑的时候转义了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50470">
+<article class="comment" id="comment-50470">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">changjf</a></span> on <a href="http://www.acmerblog.com/hdu-3594-cactus-6558.html#comment-50470" rel="nofollow"><time datetime="2014-12-17T00:41:12+00:00" pubdate="">2014年12月17日 at 上午12:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>great work！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50465">
+<article class="comment" id="comment-50465">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mr-zhang2011</a></span> on <a href="http://www.acmerblog.com/hdu-3594-cactus-6558.html#comment-50465" rel="nofollow"><time datetime="2014-12-06T14:34:00+00:00" pubdate="">2014年12月6日 at 下午2:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有没有C++编译的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

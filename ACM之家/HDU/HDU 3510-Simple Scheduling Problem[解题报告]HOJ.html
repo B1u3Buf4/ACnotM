@@ -1,0 +1,427 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>04-09</div>
+<div class="tit"><h1 class="entry-title">HDU 3510-Simple Scheduling Problem[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观777次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5710" href="http://www.acmerblog.com/hdu-3510-simple-scheduling-problem-5710.html#comments" title="《HDU 3510-Simple Scheduling Problem[解题报告]HOJ》上的评论">27 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Simple Scheduling Problem</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Team YouAreSoStrong meet a very boring problem. They have to schedule n jobs on m machines. Each job needs exactly one unit time on one machine. At first, YouAreSoStrong   thought ceil(n/m) units of time is enough. Soon, they find out there exist some ordering constraints between jobs. This is reasonable. For example, you have to complete "hand in hand" before you can "hug". And only after you’ve done "hug", can you "kiss". It’s guaranteed that following 3 conditions are satisfied.<br/>1. one job can only be relied by at most one job. <br/>2. one job may rely more than one job.  <br/>3.There is no circular dependency. Such as a relies on b, and b relies on a. <br/>YouAreSoStrong thought for a long time, but do not have a clue. Can you help them? </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+First line contains one integer T, indicates the number of test cases. For each case, the first line contains 3 integers : n, e, m, denotes number of jobs, number of ordering constraints, number of machines separately. Each line from 2 to (e+1)th contains one pair of integers (a,b), which stands for job a must be done before job b can start. T≤10. 0 &lt; n, e , m≤100 000.</div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+First line contains one integer T, indicates the number of test cases. For each case, the first line contains 3 integers : n, e, m, denotes number of jobs, number of ordering constraints, number of machines separately. Each line from 2 to (e+1)th contains one pair of integers (a,b), which stands for job a must be done before job b can start. T≤10. 0 &lt; n, e , m≤100 000.
+</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+4 2 1
+1 3
+2 3
+4 2 2
+1 3
+2 3</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+4
+2</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include &lt;cstdio&gt;
+#include &lt;deque&gt;
+#include &lt;set&gt;
+#include &lt;string&gt;
+#include &lt;map&gt;
+#include &lt;vector&gt;
+#include &lt;cstring&gt;
+#include &lt;iostream&gt;
+#include &lt;algorithm&gt;
+#include &lt;cmath&gt;
+#include &lt;queue&gt;
+#include &lt;stack&gt;
+using namespace std;
+typedef long long LL;
+
+#define Debug(x) (cerr &lt;&lt; #x &lt;&lt; " = " &lt;&lt; (x) &lt;&lt; endl)
+#define Debug2(x, y) (cerr &lt;&lt; #x &lt;&lt; " = " &lt;&lt; (x) &lt;&lt; ", " &lt;&lt; #y &lt;&lt; " = " &lt;&lt; (y) &lt;&lt; endl)
+template&lt;class T&gt; inline T&amp; RD(T &amp;x){  
+    char c; for (c = getchar(); c &lt; '0'; c = getchar()); x = c - '0'; for (c = getchar(); '0' &lt;= c &amp;&amp; c &lt;= '9'; c = getchar()) x = x * 10 + c - '0';  
+    return x;  
+}
+
+
+const int inf = 0x3f3f3f3f;
+const int maxn = 100005;
+
+int ra[maxn];
+int d[maxn];
+int fa[maxn];
+
+vector&lt;int&gt; v[maxn];
+
+int dfs(int u){	
+	ra[u] = 0;
+	for(int i=0;i&lt;v[u].size();i++){
+		ra[u]= max(dfs(v[u][i])+1,ra[u]);
+	}
+	return ra[u];
+}
+
+int main(){
+	int T;
+	scanf("%d",&amp;T);
+	while(T --){
+		int n,e,m;
+		scanf("%d%d%d",&amp;n,&amp;e,&amp;m);
+		memset(ra,0,sizeof(ra));	
+		memset(d,0,sizeof(d));
+		memset(fa,0,sizeof(fa));
+
+		//build tree
+		for(int i=1;i&lt;=n;i++)v[i].clear();
+
+		for(int i=0;i&lt;e;i++){
+			int a,b;
+			scanf("%d%d",&amp;a,&amp;b);
+			v[b].push_back(a);
+			fa[a] = 1;
+		}
+
+		//calc the deepth of each node
+		for(int i=1;i&lt;=n;i++){
+			if(fa[i] == 0)dfs(i);
+		}
+
+		//calc count of each deepth
+		int _max = 0;
+		for(int i=1;i&lt;=n;i++){
+			d[ra[i]] ++;
+			_max = max(_max,ra[i]);
+		}
+
+
+		//cnt: time 	lft: the can-do job last turn left
+		int cnt = 0,lft = 0;
+
+		//if I want to finish d[i] and there is lft left
+		for(int i=0;i&lt;=_max;i++){
+			int td = d[i];
+			//if current time &gt; the deepth, I can use the left; 
+			if(cnt &gt; i){
+				d[i] -= lft;
+				//mode lft that I can use
+				if(d[i] &lt; 0){
+					lft -= td;
+					continue;
+				}				
+			}
+			//calc the time I should  use and the job left
+			cnt += d[i]/m;
+			if(d[i]%m)cnt ++;
+			lft = m - d[i]%m;
+			if(lft == m)lft = 0;
+		}
+		printf("%d\n", cnt);
+	}
+	return 0;
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75894">
+<article class="comment" id="comment-75894">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520065" rel="external nofollow">新用户344774</a></span> on <a href="http://www.acmerblog.com/hdu-3510-simple-scheduling-problem-5710.html#comment-75894" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好哲♀学的运动</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75893">
+<article class="comment" id="comment-75893">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520065" rel="external nofollow">新用户344774</a></span> on <a href="http://www.acmerblog.com/hdu-3510-simple-scheduling-problem-5710.html#comment-75893" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好哲♀学的运动</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75892">
+<article class="comment" id="comment-75892">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520065" rel="external nofollow">新用户344774</a></span> on <a href="http://www.acmerblog.com/hdu-3510-simple-scheduling-problem-5710.html#comment-75892" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好哲♀学的运动</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75891">
+<article class="comment" id="comment-75891">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520065" rel="external nofollow">新用户344774</a></span> on <a href="http://www.acmerblog.com/hdu-3510-simple-scheduling-problem-5710.html#comment-75891" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好哲♀学的运动</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75890">
+<article class="comment" id="comment-75890">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520065" rel="external nofollow">新用户344774</a></span> on <a href="http://www.acmerblog.com/hdu-3510-simple-scheduling-problem-5710.html#comment-75890" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好哲♀学的运动</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75889">
+<article class="comment" id="comment-75889">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520065" rel="external nofollow">新用户344774</a></span> on <a href="http://www.acmerblog.com/hdu-3510-simple-scheduling-problem-5710.html#comment-75889" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好哲♀学的运动</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75888">
+<article class="comment" id="comment-75888">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520065" rel="external nofollow">新用户344774</a></span> on <a href="http://www.acmerblog.com/hdu-3510-simple-scheduling-problem-5710.html#comment-75888" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好哲♀学的运动</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75887">
+<article class="comment" id="comment-75887">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520065" rel="external nofollow">新用户344774</a></span> on <a href="http://www.acmerblog.com/hdu-3510-simple-scheduling-problem-5710.html#comment-75887" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好哲♀学的运动</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75886">
+<article class="comment" id="comment-75886">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520065" rel="external nofollow">新用户344774</a></span> on <a href="http://www.acmerblog.com/hdu-3510-simple-scheduling-problem-5710.html#comment-75886" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好哲♀学的运动</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75885">
+<article class="comment" id="comment-75885">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520065" rel="external nofollow">新用户344774</a></span> on <a href="http://www.acmerblog.com/hdu-3510-simple-scheduling-problem-5710.html#comment-75885" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好哲♀学的运动</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75884">
+<article class="comment" id="comment-75884">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520065" rel="external nofollow">新用户344774</a></span> on <a href="http://www.acmerblog.com/hdu-3510-simple-scheduling-problem-5710.html#comment-75884" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好哲♀学的运动</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75883">
+<article class="comment" id="comment-75883">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520065" rel="external nofollow">新用户344774</a></span> on <a href="http://www.acmerblog.com/hdu-3510-simple-scheduling-problem-5710.html#comment-75883" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好哲♀学的运动</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75882">
+<article class="comment" id="comment-75882">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520065" rel="external nofollow">新用户344774</a></span> on <a href="http://www.acmerblog.com/hdu-3510-simple-scheduling-problem-5710.html#comment-75882" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好哲♀学的运动</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75881">
+<article class="comment" id="comment-75881">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520065" rel="external nofollow">新用户344774</a></span> on <a href="http://www.acmerblog.com/hdu-3510-simple-scheduling-problem-5710.html#comment-75881" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好哲♀学的运动</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30235">
+<article class="comment" id="comment-30235">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">21435048</a></span> on <a href="http://www.acmerblog.com/hdu-3510-simple-scheduling-problem-5710.html#comment-30235" rel="nofollow"><time datetime="2015-06-17T17:59:45+00:00" pubdate="">2015年6月17日 at 下午5:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>使用ListNodeWrapper很蹩脚的感觉，没有更好的解决办法？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30228">
+<article class="comment" id="comment-30228">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sheyty</a></span> on <a href="http://www.acmerblog.com/hdu-3510-simple-scheduling-problem-5710.html#comment-30228" rel="nofollow"><time datetime="2015-05-14T14:22:42+00:00" pubdate="">2015年5月14日 at 下午2:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>代码是给出了，但是解析的也太不清晰了吧！如 13 abejkcfghid jkebfghicda<br/>
+第一步拆分为 三部分 (bejk, cfghi, d) * C(13,3)，为什么要这样拆分，原则是什么？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30233">
+<article class="comment" id="comment-30233">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">missliuxin</a></span> on <a href="http://www.acmerblog.com/hdu-3510-simple-scheduling-problem-5710.html#comment-30233" rel="nofollow"><time datetime="2015-05-14T02:14:55+00:00" pubdate="">2015年5月14日 at 上午2:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学算法中的数据结构学到一定程度会乐此不疲的，比如其中的2－3树，类似的红黑树，我甚至可以自己写个逻辑文件系统结构来。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30230">
+<article class="comment" id="comment-30230">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">stamwoo</a></span> on <a href="http://www.acmerblog.com/hdu-3510-simple-scheduling-problem-5710.html#comment-30230" rel="nofollow"><time datetime="2015-03-03T12:43:43+00:00" pubdate="">2015年3月3日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为\n\n</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30229">
+<article class="comment" id="comment-30229">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">April</a></span> on <a href="http://www.acmerblog.com/hdu-3510-simple-scheduling-problem-5710.html#comment-30229" rel="nofollow"><time datetime="2015-02-08T10:33:33+00:00" pubdate="">2015年2月8日 at 上午10:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有意思，有难度</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30234">
+<article class="comment" id="comment-30234">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">leowww</a></span> on <a href="http://www.acmerblog.com/hdu-3510-simple-scheduling-problem-5710.html#comment-30234" rel="nofollow"><time datetime="2014-11-12T01:19:40+00:00" pubdate="">2014年11月12日 at 上午1:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已修正</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30238">
+<article class="comment" id="comment-30238">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dreams</a></span> on <a href="http://www.acmerblog.com/hdu-3510-simple-scheduling-problem-5710.html#comment-30238" rel="nofollow"><time datetime="2014-09-27T13:58:02+00:00" pubdate="">2014年9月27日 at 下午1:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>1234百位上出现的次数应该是200吧。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30232">
+<article class="comment" id="comment-30232">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">anthozoan77</a></span> on <a href="http://www.acmerblog.com/hdu-3510-simple-scheduling-problem-5710.html#comment-30232" rel="nofollow"><time datetime="2014-08-26T10:44:11+00:00" pubdate="">2014年8月26日 at 上午10:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个程序编译都通不过， int L[m+1][n+1];这样定义出错，应该换成具体的数字ac</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30237">
+<article class="comment" id="comment-30237">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">renke</a></span> on <a href="http://www.acmerblog.com/hdu-3510-simple-scheduling-problem-5710.html#comment-30237" rel="nofollow"><time datetime="2014-08-21T16:38:25+00:00" pubdate="">2014年8月21日 at 下午4:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>看见的晚了，只能提交一次唉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30236">
+<article class="comment" id="comment-30236">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">vintion</a></span> on <a href="http://www.acmerblog.com/hdu-3510-simple-scheduling-problem-5710.html#comment-30236" rel="nofollow"><time datetime="2014-07-23T13:04:18+00:00" pubdate="">2014年7月23日 at 下午1:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>0000</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30231">
+<article class="comment" id="comment-30231">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1520006273</a></span> on <a href="http://www.acmerblog.com/hdu-3510-simple-scheduling-problem-5710.html#comment-30231" rel="nofollow"><time datetime="2014-06-25T04:01:21+00:00" pubdate="">2014年6月25日 at 上午4:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>看似简单，还是不少坑的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30239">
+<article class="comment" id="comment-30239">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">linzzzz</a></span> on <a href="http://www.acmerblog.com/hdu-3510-simple-scheduling-problem-5710.html#comment-30239" rel="nofollow"><time datetime="2014-05-09T19:02:14+00:00" pubdate="">2014年5月9日 at 下午7:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这种题解就相当于直接贴代码了，，想看的是思路</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30227">
+<article class="comment" id="comment-30227">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">congve1</a></span> on <a href="http://www.acmerblog.com/hdu-3510-simple-scheduling-problem-5710.html#comment-30227" rel="nofollow"><time datetime="2014-04-19T06:29:07+00:00" pubdate="">2014年4月19日 at 上午6:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>[…] 如果此题没有要求 相对位置不变，可以参考文章：http://www.acmerblog.com/interview-9-2427/ […]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,384 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>01-05</div>
+<div class="tit"><h1 class="entry-title">hdu 2351 One is an Interesting Number-BFS-[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/bfs" rel="category tag" title="查看BFS搜索中的全部文章">BFS搜索</a>, <a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/search" rel="category tag" title="查看搜索中的全部文章">搜索</a></span><span class="i4">围观642次</span><span class="i3"><a class="ds-thread-count" data-thread-key="3567" href="http://www.acmerblog.com/hdu-2351-one-is-an-interesting-number-3567.html#comments" title="《hdu 2351 One is an Interesting Number-BFS-[解题报告]C++》上的评论">20 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">One is an Interesting Number</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Numbers are interesting, but some are inherently more interesting than others, by various criteria. Given a collection of numbers, you are to find the<br/>most interesting ones.
+<p>A number X is more interesting than another number Y if it has more attributes than Y. For the purposes of this problem, the attributes that are<br/>interesting are:</p>
+<p></p><center><img src="http://www.acmerblog.com/img/1388998809898.jpg"/></center>
+<p>Note that 0 has no multiples other than itself, and 1 is not prime.</p>
+<p>In addition to the above attributes, there are also those which depend on the other numbers in a given collection:</p>
+<p></p><center><img src="http://www.acmerblog.com/img/1388998810090.jpg"/></center>
+<p>This makes for a total of thirteen possible attributes. Note that meeting the criteria for a particular attribute in multiple ways (1 is the factor of all<br/>other numbers, for example) still only counts as a single instance of an attribute.</p>
+<p>Given a collection of numbers, you are to determine which numbers in that collection are most interesting. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+Input to this problem will begin with a line containing a single integer N (1 ≤ N ≤ 100) indicating the number of data sets. Each data set consists of<br/>the following components:
+<p>A line containing a single integer M (1 ≤ M ≤ 100) indicating how many numbers are in the collection;<br/>A series of M lines, each with a single integer X (1 ≤ X ≤ 1000000). There will be no duplicate integers X within the same data set. </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+Input to this problem will begin with a line containing a single integer N (1 ≤ N ≤ 100) indicating the number of data sets. Each data set consists of<br/>the following components:
+<p>A line containing a single integer M (1 ≤ M ≤ 100) indicating how many numbers are in the collection;<br/>A series of M lines, each with a single integer X (1 ≤ X ≤ 1000000). There will be no duplicate integers X within the same data set.</p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+2
+1
+100
+3
+2
+3
+4</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+DATA SET #1
+1
+DATA SET #2
+4</pre>
+<p> <!-- problem end --></p>
+<p>不得不说这道题木让人很蛋疼，本来是一道很简单的广搜题目，但是由于人的位置处于一块连续的区域，所以难度就出来了，关键是防守人的位置怎么存储，这里我是把它存储在一个node类型的vector数组里面，为什么用vector呢，因为之前总是莫名其妙的MLE，不过到后来证明用数组也是不超内存的，应该是我的程序进入了死循环。</p>
+<pre class="brush:cpp ">#include&lt;iostream&gt;
+ #include&lt;string.h&gt;
+ #include&lt;string&gt;
+ #include&lt;stdio.h&gt;
+ #include&lt;queue&gt;
+ #include&lt;vector&gt;
+ using namespace std;
+ char Map[101][101];
+ int mark[101][101];//设置走过的图的标志数组
+ int H,W;
+ struct node
+ {
+     int x,y;//点的坐标x,y
+ };
+ struct Node
+ {
+     vector&lt;node&gt;dep;//存放防守人的区域（由node点构成）
+     int depth;//描述位置的深度
+ };
+ int X[4]={1,-1,0,0};//X,Y数组表示方向
+ int Y[4]={0,0,1,-1};
+ int  Check(int dirX,int dirY,Node N)
+ {
+     int i,len=N.dep.size(),state=0;//state表示check的状态
+     int newx,newy;
+     newx=N.dep[0].x+dirX;
+     newy=N.dep[0].y+dirY;
+     if(mark[newx][newy]==1) return 0;//表不可以移动
+     for(i=0;i&lt;len;i++)
+     {
+         newx=N.dep[i].x+dirX;
+         newy=N.dep[i].y+dirY;
+         if(newx&lt;0 || newx&gt;=H || newy&lt;0 || newy&gt;=W)return 0;//不可以新的newx newy不在图的范围内，所以不可以移动
+         if(Map[newx][newy]=='O')
+         {
+             return 0;
+         }
+         if(Map[newx][newy]=='Q')state=1;//表示新移动到的位置可以catch him
+     }
+     if(state)return 1;//表示抓到四号位，进入这条语句说明新位置没有碰到O，即前锋
+     return 2;//表示可以移动到新位置
+ }
+ int BFS(Node N)
+ {
+     queue&lt;Node&gt;q;
+    int i=0,j=0,len;
+    Node N1;
+     mark[N.dep[0].x][N.dep[0].y]=1;//先将N的位置标志访问过
+    q.push(N);//进队
+    while(!q.empty())
+    {
+       N1=q.front();
+       for(i=0;i&lt;4;i++)
+       {
+           int state=Check(X[i],Y[i],N1);//对每一个方向进行检查可不可以进行移动，或是catch him
+           if(state==0)continue;//不可以移动
+           if(state==1)return N1.depth+1;//catch him 返回当前位置深度再加1
+           if(state==2)//可以进行移动
+           {
+                Node N2;
+                 node n;
+                 len=N1.dep.size();
+                 for(j=0;j&lt;len;j++)//对当前位置内所有点全部进行X[i]，Y[i]方向移动
+                 {
+                     n.x=(N1.dep[j]).x+X[i];
+                     n.y=(N1.dep[j]).y+Y[i];
+                     N2.dep.push_back(n);
+                 }
+                 N2.depth=N1.depth+1;//更新深度
+                  mark[N2.dep[0].x][N2.dep[0].y]=1;//泥马呀，就是这句标志位移动到了下面注释的那条，就出现了各种错误，上不起啊
+                 q.push(N2);
+           }
+       }
+        //mark[N1.dep[0].x][N1.dep[0].y]=1;
+       q.pop();
+    }
+    return 0;
+ }
+ int main()
+ {
+     int i,j,ans;
+     while(scanf("%d %d",&amp;H,&amp;W)!=EOF)
+     {
+         if(H==0 &amp;&amp; W==0)break;
+         memset(mark,0,sizeof(mark));
+         node n;
+         Node N;
+         N.depth=0;
+         for(i=0;i&lt;H;i++)
+         {
+             getchar();//读取换行符
+             for(j=0;j&lt;W;j++)
+             {
+                 scanf("%c",&amp;Map[i][j]);
+                 if(Map[i][j]=='D')
+                 {
+                     n.x=i;
+                     n.y=j;
+                     N.dep.push_back(n);
+                 }
+             }
+         }
+         //mark[N.dep[0].x][N.dep[0].y]=1;
+         ans=BFS(N);
+         if(ans)
+         {
+             printf("%d\n",ans);continue;
+         }
+         puts("Impossible");
+     }
+     return 0;
+ }</pre>
+<p>解题转自：http://www.cnblogs.com/lonelycatcher/archive/2011/09/23/2186707.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-85816">
+<article class="comment" id="comment-85816">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466728" rel="external nofollow">新用户574904</a></span> on <a href="http://www.acmerblog.com/hdu-2351-one-is-an-interesting-number-3567.html#comment-85816" rel="nofollow"><time datetime="2017-04-13T03:10:08+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>看到这么多病句就知道这是某些吃饱了没事干的人编出来诓人的（我对韩国乃至朝鲜半岛印象都不太好，但是这样瞎编，良心上过得去吗？）……当然，也有可能是翻译功底不到位，导致翻译后的偏差。但是作为语法结构与汉语相当相似的韩语都能翻译出病句来，这翻译水平堪忧……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-85815">
+<article class="comment" id="comment-85815">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466728" rel="external nofollow">新用户574904</a></span> on <a href="http://www.acmerblog.com/hdu-2351-one-is-an-interesting-number-3567.html#comment-85815" rel="nofollow"><time datetime="2017-04-13T03:10:08+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>看到这么多病句就知道这是某些吃饱了没事干的人编出来诓人的（我对韩国乃至朝鲜半岛印象都不太好，但是这样瞎编，良心上过得去吗？）……当然，也有可能是翻译功底不到位，导致翻译后的偏差。但是作为语法结构与汉语相当相似的韩语都能翻译出病句来，这翻译水平堪忧……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-85814">
+<article class="comment" id="comment-85814">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466728" rel="external nofollow">新用户574904</a></span> on <a href="http://www.acmerblog.com/hdu-2351-one-is-an-interesting-number-3567.html#comment-85814" rel="nofollow"><time datetime="2017-04-13T03:10:08+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>看到这么多病句就知道这是某些吃饱了没事干的人编出来诓人的（我对韩国乃至朝鲜半岛印象都不太好，但是这样瞎编，良心上过得去吗？）……当然，也有可能是翻译功底不到位，导致翻译后的偏差。但是作为语法结构与汉语相当相似的韩语都能翻译出病句来，这翻译水平堪忧……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-85813">
+<article class="comment" id="comment-85813">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466728" rel="external nofollow">新用户574904</a></span> on <a href="http://www.acmerblog.com/hdu-2351-one-is-an-interesting-number-3567.html#comment-85813" rel="nofollow"><time datetime="2017-04-13T03:10:08+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>看到这么多病句就知道这是某些吃饱了没事干的人编出来诓人的（我对韩国乃至朝鲜半岛印象都不太好，但是这样瞎编，良心上过得去吗？）……当然，也有可能是翻译功底不到位，导致翻译后的偏差。但是作为语法结构与汉语相当相似的韩语都能翻译出病句来，这翻译水平堪忧……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-85812">
+<article class="comment" id="comment-85812">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466728" rel="external nofollow">新用户574904</a></span> on <a href="http://www.acmerblog.com/hdu-2351-one-is-an-interesting-number-3567.html#comment-85812" rel="nofollow"><time datetime="2017-04-13T03:10:08+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>看到这么多病句就知道这是某些吃饱了没事干的人编出来诓人的（我对韩国乃至朝鲜半岛印象都不太好，但是这样瞎编，良心上过得去吗？）……当然，也有可能是翻译功底不到位，导致翻译后的偏差。但是作为语法结构与汉语相当相似的韩语都能翻译出病句来，这翻译水平堪忧……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-85811">
+<article class="comment" id="comment-85811">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466728" rel="external nofollow">新用户574904</a></span> on <a href="http://www.acmerblog.com/hdu-2351-one-is-an-interesting-number-3567.html#comment-85811" rel="nofollow"><time datetime="2017-04-13T03:10:08+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>看到这么多病句就知道这是某些吃饱了没事干的人编出来诓人的（我对韩国乃至朝鲜半岛印象都不太好，但是这样瞎编，良心上过得去吗？）……当然，也有可能是翻译功底不到位，导致翻译后的偏差。但是作为语法结构与汉语相当相似的韩语都能翻译出病句来，这翻译水平堪忧……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-85810">
+<article class="comment" id="comment-85810">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466728" rel="external nofollow">新用户574904</a></span> on <a href="http://www.acmerblog.com/hdu-2351-one-is-an-interesting-number-3567.html#comment-85810" rel="nofollow"><time datetime="2017-04-13T03:10:08+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>看到这么多病句就知道这是某些吃饱了没事干的人编出来诓人的（我对韩国乃至朝鲜半岛印象都不太好，但是这样瞎编，良心上过得去吗？）……当然，也有可能是翻译功底不到位，导致翻译后的偏差。但是作为语法结构与汉语相当相似的韩语都能翻译出病句来，这翻译水平堪忧……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-85809">
+<article class="comment" id="comment-85809">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466728" rel="external nofollow">新用户574904</a></span> on <a href="http://www.acmerblog.com/hdu-2351-one-is-an-interesting-number-3567.html#comment-85809" rel="nofollow"><time datetime="2017-04-13T03:10:08+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>看到这么多病句就知道这是某些吃饱了没事干的人编出来诓人的（我对韩国乃至朝鲜半岛印象都不太好，但是这样瞎编，良心上过得去吗？）……当然，也有可能是翻译功底不到位，导致翻译后的偏差。但是作为语法结构与汉语相当相似的韩语都能翻译出病句来，这翻译水平堪忧……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-85808">
+<article class="comment" id="comment-85808">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466728" rel="external nofollow">新用户574904</a></span> on <a href="http://www.acmerblog.com/hdu-2351-one-is-an-interesting-number-3567.html#comment-85808" rel="nofollow"><time datetime="2017-04-13T03:10:08+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>看到这么多病句就知道这是某些吃饱了没事干的人编出来诓人的（我对韩国乃至朝鲜半岛印象都不太好，但是这样瞎编，良心上过得去吗？）……当然，也有可能是翻译功底不到位，导致翻译后的偏差。但是作为语法结构与汉语相当相似的韩语都能翻译出病句来，这翻译水平堪忧……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-85807">
+<article class="comment" id="comment-85807">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919466728" rel="external nofollow">新用户574904</a></span> on <a href="http://www.acmerblog.com/hdu-2351-one-is-an-interesting-number-3567.html#comment-85807" rel="nofollow"><time datetime="2017-04-13T03:10:08+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>看到这么多病句就知道这是某些吃饱了没事干的人编出来诓人的（我对韩国乃至朝鲜半岛印象都不太好，但是这样瞎编，良心上过得去吗？）……当然，也有可能是翻译功底不到位，导致翻译后的偏差。但是作为语法结构与汉语相当相似的韩语都能翻译出病句来，这翻译水平堪忧……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-62465">
+<article class="comment" id="comment-62465">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">GordonTJ</a></span> on <a href="http://www.acmerblog.com/hdu-2351-one-is-an-interesting-number-3567.html#comment-62465" rel="nofollow"><time datetime="2015-05-24T22:04:30+00:00" pubdate="">2015年5月24日 at 下午10:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>赞一个！权限已更新:）</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-44803">
+<article class="comment" id="comment-44803">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zclzcllove</a></span> on <a href="http://www.acmerblog.com/hdu-2351-one-is-an-interesting-number-3567.html#comment-44803" rel="nofollow"><time datetime="2015-04-14T01:37:21+00:00" pubdate="">2015年4月14日 at 上午1:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-44801">
+<article class="comment" id="comment-44801">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">CHEATBEATER</a></span> on <a href="http://www.acmerblog.com/hdu-2351-one-is-an-interesting-number-3567.html#comment-44801" rel="nofollow"><time datetime="2015-02-26T11:42:26+00:00" pubdate="">2015年2月26日 at 上午11:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>大致看了下，算法的时间复杂度没有很本性的提升，算不上高效。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-44800">
+<article class="comment" id="comment-44800">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sam_justin</a></span> on <a href="http://www.acmerblog.com/hdu-2351-one-is-an-interesting-number-3567.html#comment-44800" rel="nofollow"><time datetime="2015-02-05T05:00:57+00:00" pubdate="">2015年2月5日 at 上午5:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Thanks for taking the time to examine this, I really feel strongly about it and love studying a lot more on this topic. If possible, as you acquire experience</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-62464">
+<article class="comment" id="comment-62464">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">943965021</a></span> on <a href="http://www.acmerblog.com/hdu-2351-one-is-an-interesting-number-3567.html#comment-62464" rel="nofollow"><time datetime="2014-10-25T23:34:09+00:00" pubdate="">2014年10月25日 at 下午11:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>m /= i; 是一直在变的。参考这一篇关于质因数的http://www.acmerblog.com/integer-factorization-5124.html</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-44805">
+<article class="comment" id="comment-44805">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yueyanglou</a></span> on <a href="http://www.acmerblog.com/hdu-2351-one-is-an-interesting-number-3567.html#comment-44805" rel="nofollow"><time datetime="2014-10-15T00:57:27+00:00" pubdate="">2014年10月15日 at 上午12:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>您没有考虑 树的根节点是负数的情况， 若树的根节点是个很大的负数，那么就要考虑过不过另外一边子树了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-44799">
+<article class="comment" id="comment-44799">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">helloacm</a></span> on <a href="http://www.acmerblog.com/hdu-2351-one-is-an-interesting-number-3567.html#comment-44799" rel="nofollow"><time datetime="2014-10-04T11:36:30+00:00" pubdate="">2014年10月4日 at 上午11:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>整理的很好，多谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-44802">
+<article class="comment" id="comment-44802">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">a997930294</a></span> on <a href="http://www.acmerblog.com/hdu-2351-one-is-an-interesting-number-3567.html#comment-44802" rel="nofollow"><time datetime="2014-09-22T15:43:53+00:00" pubdate="">2014年9月22日 at 下午3:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢指出，已改正</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-44804">
+<article class="comment" id="comment-44804">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">AcmDream</a></span> on <a href="http://www.acmerblog.com/hdu-2351-one-is-an-interesting-number-3567.html#comment-44804" rel="nofollow"><time datetime="2014-05-11T04:38:28+00:00" pubdate="">2014年5月11日 at 上午4:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>题本身没错，但是HDOJ放题目的时候，前面有个题目解释了什么是XXX定律。<br/>
+这里直接放了这个题目，肯定没几个人明白是干啥</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-44806">
+<article class="comment" id="comment-44806">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hao555sky</a></span> on <a href="http://www.acmerblog.com/hdu-2351-one-is-an-interesting-number-3567.html#comment-44806" rel="nofollow"><time datetime="2014-02-27T18:59:56+00:00" pubdate="">2014年2月27日 at 下午6:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>楼主 为什么输入的形式都不对  题目是不是弄错了？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

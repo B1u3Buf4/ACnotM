@@ -1,0 +1,426 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-22</div>
+<div class="tit"><h1 class="entry-title">无处不在的二分查找</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/gaotong2055" rel="author" title="由dragon发布">dragon</a></span><span class="i1"><a href="http://www.acmerblog.com/category/zhuanti/classic" rel="category tag" title="查看经典问题中的全部文章">经典问题</a>, <a href="http://www.acmerblog.com/category/basis/recursion" rel="category tag" title="查看递归和分治中的全部文章">递归和分治</a></span><span class="i4">围观2071次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5345" href="http://www.acmerblog.com/ubiquitous-binary-search-5345.html#comments" title="《无处不在的二分查找》上的评论">23 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p><span>我们都知道二分查找算法，实际上二分查找以及其扩展应用是很广泛的</span><span>。这里</span><span>收集了一些和二分查找有关的有趣问题。强烈建议大家看完问题后最小化浏览器，先尝试自己去解决，然后再看代码，问题都不是太难。</span></p>
+<h3><strong>问题1描述</strong></h3>
+<p>给一个已经排序的数组，其中有N个互不相同的元素。要求使用最小的比较次数找出其中的一个元素。(你认为二分查找在排序数组里找一个元素是最优的算法的吗？)</p>
+<p>不需要太多的理论，这是一个典型的二分查找算法。先看下面的代码：</p>
+<pre class="brush:cpp">// 返回要查找元素的下标，-1为没有找到
+int BinarySearch(int A[], int l, int r, int key)
+{
+    int m;
+    while( l &lt;= r )
+    {
+        m = l + (r-l)/2;
+
+        if( A[m] == key ) //第一次比较
+            return m;
+
+        if( A[m] &lt; key ) // 第二次比较
+            l = m + 1;
+        else
+            r = m - 1;
+    }
+
+    return -1;
+}</pre>
+<p>理论上，我们最多需要 logN+1 次比较。仔细观察，我们在每次迭代中使用两次比较，除了最后比较成功的一次。实际应用上，比较也是代价高昂的操作，往往不是简单的数据类型的比较。减少比较的次数也是优化的方向之一。</p>
+<p>下面是一个比较次数更少的实现：</p>
+<pre class="brush:cpp">// 循环不变式： A[l] &lt;= key &amp;  A[r] &gt; key
+// 边界: |r - l| = 1
+// 输入: A[l .... r-1]
+int BinarySearch(int A[], int l, int r, int key)
+{
+    int m;
+    while( r - l &gt; 1 )
+    {
+        m = l + (r-l)/2;
+
+        if( A[m] &lt;= key )
+            l = m;
+        else
+            r = m;
+    }
+    if( A[l] == key )
+        return l;
+    else
+        return -1;
+}</pre>
+<p>在while循环中，我们仅依赖于一次比较。搜索空间( l-&gt;r )不断缩小，我们需要一个比较跟踪搜索状态。</p>
+<p>需要注意的，要保证我们恒等式（A[l] &lt;= key &amp; A[r] &gt; key）正确，后面还会用到循环不变式。</p>
+<p>大家可以在这个链接看到上面代码的测试：<a href="http://ideone.com/76bad0">http://ideone.com/76bad0</a></p>
+<h3><strong>问题2描述</strong></h3>
+<p>给一个有N个互不相同的元素的已排序数组，返回<strong>小于或等于</strong>给定key的最大元素。 例如输入为 A = {-1, 2, 3, 5, 6, 8, 9, 10}   key = 7,应该返回6.</p>
+<p>分析：</p>
+<p>我们可以用上面的优化方案，还是保持一个<strong>恒等式，</strong>然后移动 左右两个指针。最终 left指针会指向 小于或等于给定key的最大元素(根据恒等式A[l] &lt;= key and A[r] &gt; key)。</p>
+<p><span><span>- &gt; 如果数组中所有元素都小于key，左边的指针left 会一直移动到最后一个元素。</span></span></p>
+<p><span><span>- &gt; 如果数组中所有元素都大于key，这是一个错误条件，无答案。</span></span></p>
+<p><span><span>- &gt; 如果数组中的所有元素都 &lt;= key，这是最坏的情况根据下面的实现</span></span></p>
+<p>代码：</p>
+<pre class="brush:cpp">// 循环不变式: A[l] &lt;= key and A[r] &gt; key
+// 边界条件: |r - l| = 1
+// 输入: A[l .... r-1]
+// 先决条件: A[l] &lt;= key &lt;= A[r]
+int Floor(int A[], int l, int r, int key)
+{
+    int m;
+    while( r - l &gt; 1 )
+    {
+        m = l + (r - l)/2;
+        if( A[m] &lt;= key )
+            l = m;
+        else
+            r = m;
+    }
+    return A[l];
+}
+
+// 初始调用
+int Floor(int A[], int size, int key)
+{
+    // 如果 key &lt; A[0] 不符合条件
+    if( key &lt; A[0] )
+        return -1;
+
+    return Floor(A, 0, size, key);
+}</pre>
+<p>在这个链接可以看到相应的测试： <a href="http://ideone.com/z0Kx4a" target="_blank">http://ideone.com/z0Kx4a</a>.</p>
+<p>这个函数在C++的STL里面有实现 :  lower_bound 函数</p>
+<h3><strong>问题3描述</strong></h3>
+<p>给一个有重复元素的已排序数组，找出给定的元素key出现的次数，时间复杂度要求为logN.</p>
+<p>分析</p>
+<p>其实可以对上面的程序稍作修改，思路就是分别找出key 第一次出现的位置和最后一次出现的位置。</p>
+<pre class="brush:cpp">// 输入: 数组区间 [l ... r)
+// 循环不变式: A[l] &lt;= key and A[r] &gt; key
+int GetRightPosition(int A[], int l, int r, int key)
+{
+    int m;
+    while( r - l &gt; 1 )
+    {
+        m = l + (r - l)/2;
+        if( A[m] &lt;= key )
+            l = m;
+        else
+            r = m;
+    }
+    return l;
+}
+
+// 输入: 数组区间 (l ... r]
+// 恒等式: A[r] &gt;= key and A[l] &gt; key
+int GetLeftPosition(int A[], int l, int r, int key)
+{
+    int m;
+    while( r - l &gt; 1 )
+    {
+        m = l + (r - l)/2;
+        if( A[m] &gt;= key )
+            r = m;
+        else
+            l = m;
+    }
+    return r;
+}
+
+int CountOccurances(int A[], int size, int key)
+{
+    // 找出边界
+    int left = GetLeftPosition(A, -1, size-1, key);
+    int right = GetRightPosition(A, 0, size, key);
+
+    // key有可能不存在，需要判断
+    return (A[left] == key &amp;&amp; key == A[right])?
+           (right - left + 1) : 0;
+}</pre>
+<p>测试程序：<a href="http://ideone.com/zn6R6a" target="_blank">http://ideone.com/zn6R6a</a>.</p>
+<h3><strong>问题4描述</strong></h3>
+<p>有一个已排序的数组（无相同元素）在未知的位置进行了旋转操作，找出在新数组中的最小元素所在的位置。</p>
+<p>例如：原数组 {1,2,3,4,5,6,7,8,9,10}， 旋转后的数组可能是 {<del>6,7,8,9,10</del>, 1,2,3,4,5 }，也可能是 {<del>8,9,10</del>,1,2,3,4,5,6,7 }</p>
+<p>分析：</p>
+<p>我们不断的缩小 l 左指针和 r 右指针直到有一个元素。把上面划横线的作为第一部分，剩下的为第二部分。如果中间位置m落在第一部分，即A[m] &lt; A[r] 不成立，我们排序掉区间 A[m+1 ... r]。 如果中间位置m落在第二部分，即 A[m]&lt;A[r]成立，我们缩小区间至 A[m+1 .... r ]。 直到搜索的区间大小为1就结束。</p>
+<pre class="brush:cpp">int BinarySearchIndexOfMinimumRotatedArray(int A[], int l, int r)
+{
+    int m;
+
+    // 先决条件: A[l] &gt; A[r]
+    if( A[l] &lt;= A[r] )
+        return l;
+
+    while( l &lt;= r )
+    {
+        //终止条件
+        if( l == r )
+            return l;
+
+        m = l + (r-l)/2; // 'm' 可以落在第一部分或第二部分
+
+        if( A[m] &lt; A[r] )
+            // (m &lt; i &lt;= r),可以排除 A[m+1 ... r]
+            r = m;
+        else
+            // min肯定在区间 (m &lt; i &lt;= r),
+            // 缩小区间至 A[m+1 ... r]
+            l = m+1;
+    }
+    return -1;
+}
+
+int BinarySearchIndexOfMinimumRotatedArray(int A[], int size)
+{
+    return BinarySearchIndexOfMinimumRotatedArray(A, 0, size-1);
+}</pre>
+<p>测试程序：<a href="http://ideone.com/KbwDrk" target="_blank">http://ideone.com/KbwDrk</a>.</p>
+<p><strong><span><span>后续文章中讲继续使用二叉搜索来解决几个有趣的问题，欢迎大家的评论</span><span>。</span></span></strong></p>
+<p>ACM之家原创，链接：<a href="http://www.acmerblog.com/ubiquitous-binary-search-5345.html">http://www.acmerblog.com/ubiquitous-binary-search-5345.html</a></p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-77183">
+<article class="comment" id="comment-77183">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919458225" rel="external nofollow">新用户862579</a></span> on <a href="http://www.acmerblog.com/ubiquitous-binary-search-5345.html#comment-77183" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>沙发</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77182">
+<article class="comment" id="comment-77182">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919458225" rel="external nofollow">新用户862579</a></span> on <a href="http://www.acmerblog.com/ubiquitous-binary-search-5345.html#comment-77182" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>沙发</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77181">
+<article class="comment" id="comment-77181">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919458225" rel="external nofollow">新用户862579</a></span> on <a href="http://www.acmerblog.com/ubiquitous-binary-search-5345.html#comment-77181" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>沙发</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77180">
+<article class="comment" id="comment-77180">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919458225" rel="external nofollow">新用户862579</a></span> on <a href="http://www.acmerblog.com/ubiquitous-binary-search-5345.html#comment-77180" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>沙发</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77179">
+<article class="comment" id="comment-77179">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919458225" rel="external nofollow">新用户862579</a></span> on <a href="http://www.acmerblog.com/ubiquitous-binary-search-5345.html#comment-77179" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>沙发</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77178">
+<article class="comment" id="comment-77178">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919458225" rel="external nofollow">新用户862579</a></span> on <a href="http://www.acmerblog.com/ubiquitous-binary-search-5345.html#comment-77178" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>沙发</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77177">
+<article class="comment" id="comment-77177">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919458225" rel="external nofollow">新用户862579</a></span> on <a href="http://www.acmerblog.com/ubiquitous-binary-search-5345.html#comment-77177" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>沙发</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77176">
+<article class="comment" id="comment-77176">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919458225" rel="external nofollow">新用户862579</a></span> on <a href="http://www.acmerblog.com/ubiquitous-binary-search-5345.html#comment-77176" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>沙发</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77175">
+<article class="comment" id="comment-77175">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919458225" rel="external nofollow">新用户862579</a></span> on <a href="http://www.acmerblog.com/ubiquitous-binary-search-5345.html#comment-77175" rel="nofollow"><time datetime="2017-04-12T09:15:00+00:00" pubdate="">2017年4月12日 at 上午9:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>沙发</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65052">
+<article class="comment" id="comment-65052">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.kaixin001.com/home/?uid=145877219" rel="external nofollow">熊翔爱</a></span> on <a href="http://www.acmerblog.com/ubiquitous-binary-search-5345.html#comment-65052" rel="nofollow"><time datetime="2017-03-11T03:54:29+00:00" pubdate="">2017年3月11日 at 上午3:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>▅▅▅▅▅▅▅▅看а片 【 <a href="http://www.rennn.info" rel="nofollow">http://www.rennn.info</a> 】 你*懂*得▅▅▅▅▅▅▅▅ ▅▅▅▅▅▅▅▅看а片 【 <a href="http://www.rennn.info" rel="nofollow">http://www.rennn.info</a> 】 你*懂*得▅▅▅▅▅▅▅▅ ▅▅▅▅▅▅▅▅看а片 【 <a href="http://www.rennn.info" rel="nofollow">http://www.rennn.info</a> 】 你*懂*得▅▅▅▅▅▅▅▅ .</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64865">
+<article class="comment" id="comment-64865">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">TXMln</span> on <a href="http://www.acmerblog.com/ubiquitous-binary-search-5345.html#comment-64865" rel="nofollow"><time datetime="2016-11-12T03:35:07+00:00" pubdate="">2016年11月12日 at 上午3:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个更C刺j激，准备好手纸哦 A 片。HTTp://T.Cn/Rc4PF3o <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64732">
+<article class="comment" id="comment-64732">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">tptlp</span> on <a href="http://www.acmerblog.com/ubiquitous-binary-search-5345.html#comment-64732" rel="nofollow"><time datetime="2016-10-10T07:12:17+00:00" pubdate="">2016年10月10日 at 上午7:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个更刺ｃ激，准备好手纸哦 A 片。。 <a href="http://T.CN/RcFeD2C" rel="nofollow">http://T.CN/RcFeD2C</a> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48754">
+<article class="comment" id="comment-48754">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sum_tsai</a></span> on <a href="http://www.acmerblog.com/ubiquitous-binary-search-5345.html#comment-48754" rel="nofollow"><time datetime="2015-03-22T13:13:47+00:00" pubdate="">2015年3月22日 at 下午1:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为是要把从字符串s的start位到当前位在hash中重置，修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58437">
+<article class="comment" id="comment-58437">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yunyang088</a></span> on <a href="http://www.acmerblog.com/ubiquitous-binary-search-5345.html#comment-58437" rel="nofollow"><time datetime="2015-01-28T10:39:09+00:00" pubdate="">2015年1月28日 at 上午10:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，现在就缺少新的资料</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48753">
+<article class="comment" id="comment-48753">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mr-zhang2011</a></span> on <a href="http://www.acmerblog.com/ubiquitous-binary-search-5345.html#comment-48753" rel="nofollow"><time datetime="2014-12-01T03:12:19+00:00" pubdate="">2014年12月1日 at 上午3:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>图像处理那题解题报告在哪儿呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48750">
+<article class="comment" id="comment-48750">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">congve1</a></span> on <a href="http://www.acmerblog.com/ubiquitous-binary-search-5345.html#comment-48750" rel="nofollow"><time datetime="2014-10-23T21:21:09+00:00" pubdate="">2014年10月23日 at 下午9:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>递归还真是一门学问，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-48752">
+<article class="comment" id="comment-48752">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">reking</a></span> on <a href="http://www.acmerblog.com/ubiquitous-binary-search-5345.html#comment-48752" rel="nofollow"><time datetime="2014-08-01T01:28:01+00:00" pubdate="">2014年8月1日 at 上午1:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Good task for the group. Hold it up for every yeara??s winner. This is a excellent oppotunity for a lot more enhancement. Indeed, obtaining far better and much better is constantly the crucial. Just like my pal suggests on the truth about ab muscles, he just keeps obtaining much better.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-652">
+<article class="comment" id="comment-652">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">Or_me</span> on <a href="http://www.acmerblog.com/ubiquitous-binary-search-5345.html#comment-652" rel="nofollow"><time datetime="2014-07-31T11:53:42+00:00" pubdate="">2014年7月31日 at 上午11:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>问题3中，GetRightPosition()和GetLeftPosition()与STL中的upper_bound()和lower_boune()的代码实现一样吗？</p>
+</div>
+</article><!-- #comment-## -->
+<ul class="children">
+<li class="comment byuser comment-author-admin even depth-2" id="li-comment-653">
+<article class="comment" id="comment-653">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://weibo.com/itong2055" rel="external nofollow">管理员</a></span> on <a href="http://www.acmerblog.com/ubiquitous-binary-search-5345.html#comment-653" rel="nofollow"><time datetime="2014-07-31T13:04:53+00:00" pubdate="">2014年7月31日 at 下午1:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>具体实现上有所差别，但思路是一样的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ul><!-- .children -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-even depth-1" id="li-comment-392">
+<article class="comment" id="comment-392">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">ss</span> on <a href="http://www.acmerblog.com/ubiquitous-binary-search-5345.html#comment-392" rel="nofollow"><time datetime="2014-06-02T20:47:35+00:00" pubdate="">2014年6月2日 at 下午8:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一个真的要比较两次吗，换成else if 不可以吗</p>
+</div>
+</article><!-- #comment-## -->
+<ul class="children">
+<li class="comment byuser comment-author-admin even depth-2" id="li-comment-396">
+<article class="comment" id="comment-396">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://weibo.com/itong2055" rel="external nofollow">管理员</a></span> on <a href="http://www.acmerblog.com/ubiquitous-binary-search-5345.html#comment-396" rel="nofollow"><time datetime="2014-06-03T17:24:09+00:00" pubdate="">2014年6月3日 at 下午5:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>else if也是要比较两次</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ul><!-- .children -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-48751">
+<article class="comment" id="comment-48751">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">linzzzz</a></span> on <a href="http://www.acmerblog.com/ubiquitous-binary-search-5345.html#comment-48751" rel="nofollow"><time datetime="2014-04-11T11:07:19+00:00" pubdate="">2014年4月11日 at 上午11:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个程序编译都通不过， int L[m+1][n+1];这样定义出错，应该换成具体的数字ac</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-240">
+<article class="comment" id="comment-240">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">pigdog</span> on <a href="http://www.acmerblog.com/ubiquitous-binary-search-5345.html#comment-240" rel="nofollow"><time datetime="2014-03-22T21:25:08+00:00" pubdate="">2014年3月22日 at 下午9:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>看似简单，还是不少坑的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

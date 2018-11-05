@@ -1,0 +1,326 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-23</div>
+<div class="tit"><h1 class="entry-title">HDU 1828 Picture -线段树-[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/data-struct/trees" rel="category tag" title="查看树形结构中的全部文章">树形结构</a></span><span class="i4">围观800次</span><span class="i3"><a class="ds-thread-count" data-thread-key="2810" href="http://www.acmerblog.com/hdu-1828-Picture-2810.html#comments" title="《HDU 1828 Picture -线段树-[解题报告] C++》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Picture </h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+A number of rectangular posters, photographs and other pictures of the same shape are pasted on a wall. Their sides are all vertical or horizontal. Each rectangle can be partially or totally covered by the others. The length of the boundary of the union of all rectangles is called the perimeter. 
+<p>Write a program to calculate the perimeter. An example with 7 rectangles is shown in Figure 1. </p>
+<p></p><center><img src="http://acm.hdu.edu.cn/showproblem.php/../../../data/images/1828-1.jpg"/></center>
+<p>The corresponding boundary is the whole set of line segments drawn in Figure 2. </p>
+<p></p><center><img src="http://acm.hdu.edu.cn/showproblem.php/../../../data/images/1828-2.jpg"/></center>
+<p>The vertices of all rectangles have integer coordinates. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+Your program is to read from standard input. The first line contains the number of rectangles pasted on the wall. In each of the subsequent lines, one can find the integer coordinates of the lower left vertex and the upper right vertex of each rectangle. The values of those coordinates are given as ordered pairs consisting of an x-coordinate followed by a y-coordinate. 
+<p>0 &lt;= number of rectangles &lt; 5000 <br/>All coordinates are in the range [-10000,10000] and any existing rectangle has a positive area.</p>
+<p>Please process to the end of file. </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+Your program is to write to standard output. The output must contain a single line with a non-negative integer which corresponds to the perimeter for the input rectangles.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+7
+-15 0 5 10
+-5 8 20 25
+15 -4 24 14
+0 -6 16 4
+2 15 10 22
+30 10 36 20
+34 0 40 16</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+228</pre>
+<p> <!-- problem end --></p>
+<p><a href="http://acm.hdu.edu.cn/showproblem.php?pid=1828" target="_blank">hdu 1828 Picture(扫描线)</a></p>
+<p>题意：算多个矩形的周长并。</p>
+<p>线段树，扫描线。。</p>
+<pre class="brush:cpp ">#include&lt;stdio.h&gt;
+#include&lt;string.h&gt;
+#include&lt;stdlib.h&gt;
+#include&lt;algorithm&gt;
+#define ll __int64
+#define lson l , m , rt &lt;&lt; 1
+#define rson m + 1 , r , rt &lt;&lt; 1 | 1
+using namespace std ;
+
+int max ( int a , int b ) { return a &gt; b ? a : b ; }
+int min ( int a , int b ) { return a &lt; b ? a : b ; }
+const int maxn = 222222 ;
+int sum[maxn&lt;&lt;2] , cnt[maxn&lt;&lt;2] ;
+
+struct Edge
+{
+    int l , r , h , id ;
+    bool operator &lt; ( const Edge &amp;p ) const
+    {
+        return h &lt; p.h ;
+    }
+}edge[maxn] ;
+
+struct Rec
+{
+    int a , b , c , d ;
+} rec[maxn] ;
+
+void init ()
+{
+    memset ( sum , 0 , sizeof ( sum ) ) ;
+    memset ( cnt , 0 , sizeof ( cnt ) ) ;
+}
+
+void build_seg ( int l , int r , int h , int id , int i )
+{
+    edge[i].l = l , edge[i].r = r , edge[i].h = h , edge[i].id = id ;
+}
+
+void push_up ( int l , int r , int rt )
+{
+    if ( cnt[rt] ) sum[rt] = r - l + 1 ;
+    else if ( l == r ) sum[rt] = 0 ;
+    else sum[rt] = sum[rt&lt;&lt;1] + sum[rt&lt;&lt;1|1] ;
+}
+
+void update ( int a , int b , int c , int l , int r , int rt )
+{
+    if ( a &lt;= l &amp;&amp; r &lt;= b )
+    {
+        cnt[rt] += c ;
+        push_up ( l , r , rt ) ;
+        return ;
+    }
+    int m = ( l + r ) &gt;&gt; 1 ;
+    ll ret = 0 ;
+    if ( a &lt;= m ) update ( a , b , c , lson ) ;
+    if ( m &lt; b ) update ( a , b , c , rson ) ;
+    push_up ( l , r , rt ) ;
+}
+
+ll solve ( int m )
+{
+    init () ;
+    ll ret = 0 ;
+    sort ( edge + 1 , edge + m + 1 ) ;
+    int i , last = 0 ;
+    int l = 10001 , r = -10001 ;
+    for ( i = 1 ; i &lt;= m ; i ++ ) 
+    {
+        r = max ( r , edge[i].r ) ;
+        l = min ( l , edge[i].l ) ;
+    }
+    for ( i = 1 ; i &lt;= m ; i ++ )
+    {
+        update ( edge[i].l , edge[i].r - 1 , edge[i].id , l , r , 1 ) ;
+        ret += abs ( last - sum[1] ) ;
+        last = sum[1] ;
+    }
+    return ret ;
+}
+
+int main ()
+{
+    int n , i , j , a , b , c , d ;
+    while ( scanf ( "%d" , &amp;n ) != EOF )
+    {
+        ll ans = 0 ;
+        for ( i = 1 ; i &lt;= n ; i ++ )
+            scanf ( "%d%d%d%d" , &amp;rec[i].a , &amp;rec[i].b , &amp;rec[i].c , &amp;rec[i].d ) ;
+        int m = 0 ;
+        for ( i = 1 ; i &lt;= n ; i ++ )
+        {
+            m ++ ;
+            build_seg ( rec[i].a , rec[i].c , rec[i].b , 1 , m ) ;
+            m ++ ;
+            build_seg ( rec[i].a , rec[i].c , rec[i].d , -1 , m ) ;
+        }
+        ans += solve ( m ) ;
+        m = 0 ;
+        for ( i = 1 ; i &lt;= n ; i ++ )
+        {
+            m ++ ;
+            build_seg ( rec[i].b , rec[i].d , rec[i].a , 1 , m ) ;
+            m ++ ;
+            build_seg ( rec[i].b , rec[i].d , rec[i].c , -1 , m ) ;
+        }
+        ans += solve ( m ) ;
+        printf ( "%I64d\n" , ans ) ;
+    }
+}</pre>
+<p>解题报告转自：http://blog.csdn.net/no__stop/article/details/12971035</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-42980">
+<article class="comment" id="comment-42980">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">skyand</a></span> on <a href="http://www.acmerblog.com/hdu-1828-Picture-2810.html#comment-42980" rel="nofollow"><time datetime="2015-07-10T21:09:50+00:00" pubdate="">2015年7月10日 at 下午9:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p><strong>Gucci New Fall Arrivals</strong></p>
+<p>This is really nice to know. I hope it will be successful in the future. Good job on this and keep up the good work.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-42981">
+<article class="comment" id="comment-42981">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Happiness</a></span> on <a href="http://www.acmerblog.com/hdu-1828-Picture-2810.html#comment-42981" rel="nofollow"><time datetime="2015-03-28T04:09:11+00:00" pubdate="">2015年3月28日 at 上午4:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是研发类的题还是算法类？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-55790">
+<article class="comment" id="comment-55790">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gnipuohz</a></span> on <a href="http://www.acmerblog.com/hdu-1828-Picture-2810.html#comment-55790" rel="nofollow"><time datetime="2015-02-04T10:32:28+00:00" pubdate="">2015年2月4日 at 上午10:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个也是算法导论的习题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-55795">
+<article class="comment" id="comment-55795">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Anne</a></span> on <a href="http://www.acmerblog.com/hdu-1828-Picture-2810.html#comment-55795" rel="nofollow"><time datetime="2014-12-26T12:17:19+00:00" pubdate="">2014年12月26日 at 下午12:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是什么编译器啊，不通过</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-42982">
+<article class="comment" id="comment-42982">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tonight</a></span> on <a href="http://www.acmerblog.com/hdu-1828-Picture-2810.html#comment-42982" rel="nofollow"><time datetime="2014-12-10T06:39:51+00:00" pubdate="">2014年12月10日 at 上午6:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>辛苦了，顶</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-55792">
+<article class="comment" id="comment-55792">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">we</a></span> on <a href="http://www.acmerblog.com/hdu-1828-Picture-2810.html#comment-55792" rel="nofollow"><time datetime="2014-10-07T09:48:17+00:00" pubdate="">2014年10月7日 at 上午9:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>约瑟夫也用说这么长……很成熟的一个问题了，分治的方法解起来o(n)就可以了，有兴趣可以看看具体数学的第一章，关于约瑟夫问题推导出了一系列的结论，很漂亮</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-55794">
+<article class="comment" id="comment-55794">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zx123456</a></span> on <a href="http://www.acmerblog.com/hdu-1828-Picture-2810.html#comment-55794" rel="nofollow"><time datetime="2014-10-02T13:33:14+00:00" pubdate="">2014年10月2日 at 下午1:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这怎么用Catalan数啊？求解答！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-42978">
+<article class="comment" id="comment-42978">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Xun_Brooklyn</a></span> on <a href="http://www.acmerblog.com/hdu-1828-Picture-2810.html#comment-42978" rel="nofollow"><time datetime="2014-07-18T23:17:53+00:00" pubdate="">2014年7月18日 at 下午11:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个分析相当全面，经典！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-62049">
+<article class="comment" id="comment-62049">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">geoksz</a></span> on <a href="http://www.acmerblog.com/hdu-1828-Picture-2810.html#comment-62049" rel="nofollow"><time datetime="2014-06-19T11:02:56+00:00" pubdate="">2014年6月19日 at 上午11:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可以用公式。主要为了说明动态规划，如果要打表的话，这种方法也是较简单和高效的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-55789">
+<article class="comment" id="comment-55789">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mclown</a></span> on <a href="http://www.acmerblog.com/hdu-1828-Picture-2810.html#comment-55789" rel="nofollow"><time datetime="2014-05-11T05:53:29+00:00" pubdate="">2014年5月11日 at 上午5:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>全是智力分析的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-42979">
+<article class="comment" id="comment-42979">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">feifei003603</a></span> on <a href="http://www.acmerblog.com/hdu-1828-Picture-2810.html#comment-42979" rel="nofollow"><time datetime="2014-05-05T23:43:53+00:00" pubdate="">2014年5月5日 at 下午11:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我没看懂题目<br/>
+2<br/>
+5 6 -1 5 4 -7<br/>
+7 0 6 -1 1 -6 7 -5<br/>
+我觉得第一个应该是5 6 -1 5 4 输出是19 5 4<br/>
+第二个是7 0 6 -1 1 -6 7输出是14 7 7<br/>
+不知道题目例子是怎么得出来的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-55793">
+<article class="comment" id="comment-55793">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Trenson</a></span> on <a href="http://www.acmerblog.com/hdu-1828-Picture-2810.html#comment-55793" rel="nofollow"><time datetime="2014-04-06T18:38:12+00:00" pubdate="">2014年4月6日 at 下午6:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>值得分享！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-55791">
+<article class="comment" id="comment-55791">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaotong2055</a></span> on <a href="http://www.acmerblog.com/hdu-1828-Picture-2810.html#comment-55791" rel="nofollow"><time datetime="2014-03-24T22:40:58+00:00" pubdate="">2014年3月24日 at 下午10:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个后缀数组不是常用的那个.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-42983">
+<article class="comment" id="comment-42983">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mechine</a></span> on <a href="http://www.acmerblog.com/hdu-1828-Picture-2810.html#comment-42983" rel="nofollow"><time datetime="2014-02-18T17:46:08+00:00" pubdate="">2014年2月18日 at 下午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚开始学习，为啥会报错了，你试过了吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

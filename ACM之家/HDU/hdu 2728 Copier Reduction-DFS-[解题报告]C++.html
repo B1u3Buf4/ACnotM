@@ -1,0 +1,332 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>02-14</div>
+<div class="tit"><h1 class="entry-title">hdu 2728 Copier Reduction-DFS-[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/dfs" rel="category tag" title="查看DFS搜索中的全部文章">DFS搜索</a>, <a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观406次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4326" href="http://www.acmerblog.com/hdu-2728-copier-reduction-4326.html#comments" title="《hdu 2728 Copier Reduction-DFS-[解题报告]C++》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Copier Reduction</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+What do you do if you need to copy a 560x400mm image onto a standard sheet of US letter-size paper (which is about 216x280mm), while keeping the image as large as possible? You can rotate the image 90 degrees (so that it is in "landscape" mode), then reduce it to 50% of its original size so that it is 200x280mm. Then it will fit on the paper without overlapping any edges. Your job is to solve this problem in general. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input consists of one or more test cases, each of which is a single line containing four positive integers A, B, C, and D, separated by a space, representing an AxBmm image and a CxDmm piece of paper. All inputs will be less than one thousand. Following the test cases is a line containing four zeros that signals the end of the input. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input consists of one or more test cases, each of which is a single line containing four positive integers A, B, C, and D, separated by a space, representing an AxBmm image and a CxDmm piece of paper. All inputs will be less than one thousand. Following the test cases is a line containing four zeros that signals the end of the input.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+560 400 218 280
+10 25 88 10
+8 13 5 1
+9 13 10 6
+199 333 40 2
+75 90 218 280
+999 99 1 10
+0 0 0 0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+50%
+100%
+12%
+66%
+1%
+100%
+1%</pre>
+<p> <!-- problem end --></p>
+<p><a href="http://acm.hdu.edu.cn/showproblem.php?pid=3829">http://acm.hdu.edu.cn/showproblem.php?pid=3829</a></p>
+<p><a href="http://acm.hdu.edu.cn/showproblem.php?pid=2768">http://acm.hdu.edu.cn/showproblem.php?pid=2768</a></p>
+<p>思路：<span style="font-size: medium;">以cat_lover和dog_lover把观众分为两个集合。只要两个集合内的人的选择有冲突，这两个顶点连接，边代表矛盾，然后求最大独立集。</span></p>
+<p><span style="font-size: medium;">       最大独立集 = 顶点数 – 最小顶点覆盖数（最大匹配数）</span></p>
+<p> </p>
+<pre class="brush:cpp ">#include&lt;set&gt;
+#include&lt;map&gt;
+#include&lt;stack&gt;
+#include&lt;queue&gt;
+#include&lt;cmath&gt;
+#include&lt;bitset&gt;
+#include&lt;string&gt;
+#include&lt;climits&gt;
+#include&lt;cstdio&gt;
+#include&lt;vector&gt;
+#include&lt;utility&gt;
+#include&lt;cstdlib&gt;
+#include&lt;cstring&gt;
+#include&lt;iostream&gt;
+#include&lt;algorithm&gt;
+#define IN puts("in")
+#define OUT puts("out")
+#define FR(x) freopen(x,"r",stdin)
+#define FW(x) freopen(x,"w",stdout)
+#define MSET(x,y) memset(x,y,sizeof(x))
+#define ST system("pause")
+#define lowbit(x) (x)&amp;(-x)
+#define L(x) (x)&lt;&lt;1
+#define R(x) ((x)&lt;&lt;1)^1
+using namespace std;
+const int maxn = 505;
+char cat[maxn][2][5];
+char dog[maxn][2][5];
+struct nd{
+        int v,next;
+}edge[maxn*maxn];
+int head[maxn],vis[maxn],to[maxn];
+int ecnt,n,m,vv;
+void add(int u,int v)
+{
+        edge[ecnt].v = v;
+        edge[ecnt].next = head[u];
+        head[u] = ecnt++;
+}
+void readin()
+{
+        int i,j,c,d,v;
+        char str[2][5];
+        scanf("%d %d %d",&amp;c,&amp;d,&amp;v);
+        vv = v;
+        n = m = ecnt = 0;
+        while(v--)
+        {
+                scanf("%s %s",str[0],str[1]);
+                if(str[0][0]=='D'){
+                        strcpy(dog[n][0],str[0]);
+                        strcpy(dog[n][1],str[1]);
+                        n++;
+                }else{
+                        strcpy(cat[m][0],str[0]);
+                        strcpy(cat[m][1],str[1]);
+                        m++;
+                }
+        }
+        MSET(head,-1);
+        for(i = 0; i &lt; n; ++ i)
+                for(j = 0; j &lt; m; ++ j)
+                        if(strcmp(dog[i][0],cat[j][1])==0||strcmp(dog[i][1],cat[j][0])==0)
+                                add(i,j);
+}
+int dfs(int u)
+{
+        int i,v;
+        for(i = head[u]; i != -1; i = edge[i].next)
+        {
+                v = edge[i].v;
+                if(!vis[v]){
+                        vis[v] = 1;
+                        if(to[v]==-1||dfs(to[v])){
+                                to[v] = u;
+                                return 1;
+                        }
+                }
+        }return 0;
+}
+void processing()
+{
+        int i,k = 0;
+        MSET(to,-1);
+        for(i = 0; i &lt; n; ++ i){
+                MSET(vis,0);
+                k += dfs(i);
+        }
+        printf("%d\n",vv-k);
+}
+int main()
+{
+        int t;
+        scanf("%d",&amp;t);
+        while(t--)
+        {
+            readin();
+            processing();
+        }
+        return 0;
+}</pre>
+<p> </p>
+<p> </p>
+<p><span style="font-size: medium;"> </span></p>
+<p>解题转自：http://www.cnblogs.com/aigoruan/archive/2012/07/25/2608033.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-82077">
+<article class="comment" id="comment-82077">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518133" rel="external nofollow">新用户166438</a></span> on <a href="http://www.acmerblog.com/hdu-2728-copier-reduction-4326.html#comment-82077" rel="nofollow"><time datetime="2017-04-12T19:45:08+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>A大，请问北区数据是不是不完整，帖子也说了从16.1.1开记。是否因此我的效率差异过大，比如原来261是168效率，现在显示112。数据统计完毕是否会正常。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-24712">
+<article class="comment" id="comment-24712">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">GordonTJ</a></span> on <a href="http://www.acmerblog.com/hdu-2728-copier-reduction-4326.html#comment-24712" rel="nofollow"><time datetime="2015-04-19T00:14:36+00:00" pubdate="">2015年4月19日 at 上午12:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>排版</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-24715">
+<article class="comment" id="comment-24715">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zwj0571</a></span> on <a href="http://www.acmerblog.com/hdu-2728-copier-reduction-4326.html#comment-24715" rel="nofollow"><time datetime="2015-04-16T05:35:47+00:00" pubdate="">2015年4月16日 at 上午5:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>比较基础，找些自信</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-24718">
+<article class="comment" id="comment-24718">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">slowlight</a></span> on <a href="http://www.acmerblog.com/hdu-2728-copier-reduction-4326.html#comment-24718" rel="nofollow"><time datetime="2015-03-10T19:29:30+00:00" pubdate="">2015年3月10日 at 下午7:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算法是程序的灵魂，算法分简单和复杂，如果不搞大数据类，程序员了解一下简单点的算法也是可以的，但是会算法的一定要会编程才行，程序员不一定要会算法，利于自己项目需要的可以简单了解。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-24713">
+<article class="comment" id="comment-24713">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">stamwoo</a></span> on <a href="http://www.acmerblog.com/hdu-2728-copier-reduction-4326.html#comment-24713" rel="nofollow"><time datetime="2015-02-16T23:56:30+00:00" pubdate="">2015年2月16日 at 下午11:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真心不错，力顶作者</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-57432">
+<article class="comment" id="comment-57432">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sharp</a></span> on <a href="http://www.acmerblog.com/hdu-2728-copier-reduction-4326.html#comment-57432" rel="nofollow"><time datetime="2015-02-12T05:19:27+00:00" pubdate="">2015年2月12日 at 上午5:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>能不能说一下tmp数组和solve都是干嘛的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-46501">
+<article class="comment" id="comment-46501">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fastislow</a></span> on <a href="http://www.acmerblog.com/hdu-2728-copier-reduction-4326.html#comment-46501" rel="nofollow"><time datetime="2015-01-01T21:50:18+00:00" pubdate="">2015年1月1日 at 下午9:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一题是不是可以这样想，生了n孩子的家庭等价于n个家庭各生了一个1个孩子，这样最后男女的比例还是1:1</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-24714">
+<article class="comment" id="comment-24714">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mechine</a></span> on <a href="http://www.acmerblog.com/hdu-2728-copier-reduction-4326.html#comment-24714" rel="nofollow"><time datetime="2014-10-21T14:49:46+00:00" pubdate="">2014年10月21日 at 下午2:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>
+	welcome!</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-24710">
+<article class="comment" id="comment-24710">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">abguorui0928</a></span> on <a href="http://www.acmerblog.com/hdu-2728-copier-reduction-4326.html#comment-24710" rel="nofollow"><time datetime="2014-09-28T09:22:31+00:00" pubdate="">2014年9月28日 at 上午9:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Java真是解决大数的利器</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-57433">
+<article class="comment" id="comment-57433">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Xun_Brooklyn</a></span> on <a href="http://www.acmerblog.com/hdu-2728-copier-reduction-4326.html#comment-57433" rel="nofollow"><time datetime="2014-09-23T13:49:58+00:00" pubdate="">2014年9月23日 at 下午1:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢提醒，是漏掉了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-24717">
+<article class="comment" id="comment-24717">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">skyand</a></span> on <a href="http://www.acmerblog.com/hdu-2728-copier-reduction-4326.html#comment-24717" rel="nofollow"><time datetime="2014-09-08T01:18:37+00:00" pubdate="">2014年9月8日 at 上午1:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>总数为2n，遍历到第n个，就是中间的位置</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-24716">
+<article class="comment" id="comment-24716">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">qq1005873807</a></span> on <a href="http://www.acmerblog.com/hdu-2728-copier-reduction-4326.html#comment-24716" rel="nofollow"><time datetime="2014-08-17T08:39:23+00:00" pubdate="">2014年8月17日 at 上午8:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题别太纠结了，不同的编译器结果不一样</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-46499">
+<article class="comment" id="comment-46499">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">liuyuedeyu</a></span> on <a href="http://www.acmerblog.com/hdu-2728-copier-reduction-4326.html#comment-46499" rel="nofollow"><time datetime="2014-07-28T12:43:16+00:00" pubdate="">2014年7月28日 at 下午12:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>约瑟夫也用说这么长……很成熟的一个问题了，分治的方法解起来o(n)就可以了，有兴趣可以看看具体数学的第一章，关于约瑟夫问题推导出了一系列的结论，很漂亮</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46500">
+<article class="comment" id="comment-46500">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NiKaWaLi2015</a></span> on <a href="http://www.acmerblog.com/hdu-2728-copier-reduction-4326.html#comment-46500" rel="nofollow"><time datetime="2014-05-30T10:42:18+00:00" pubdate="">2014年5月30日 at 上午10:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不对吧 你算的an是前面说有的项的和</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-24711">
+<article class="comment" id="comment-24711">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">asdass</a></span> on <a href="http://www.acmerblog.com/hdu-2728-copier-reduction-4326.html#comment-24711" rel="nofollow"><time datetime="2014-03-07T02:04:53+00:00" pubdate="">2014年3月7日 at 上午2:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>if(j){<br/>
+                    int ans=a <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> ;<br/>
+                    for(int x=j-1;x&gt;=0;x–){<br/>
+                        if(!a <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/d7/newx_org.gif"/> ) break;<br/>
+                        ans=min(ans,a <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/d7/newx_org.gif"/> );<br/>
+                        sum+=ans;<br/>
+                    }<br/>
+                }<br/>
+求解释，，dp的思路是什么呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

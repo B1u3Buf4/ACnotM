@@ -1,0 +1,443 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>02-10</div>
+<div class="tit"><h1 class="entry-title">hdu 2586 How far away ？-动态规划-[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a>, <a href="http://www.acmerblog.com/category/graph/connectivity" rel="category tag" title="查看连通性问题中的全部文章">连通性问题</a></span><span class="i4">围观744次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4138" href="http://www.acmerblog.com/hdu-2586-how-far-away-4138.html#comments" title="《hdu 2586 How far away ？-动态规划-[解题报告]C++》上的评论">16 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">How far away ？</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+There are n houses in the village and some bidirectional roads connecting them. Every day peole always like to ask like this "How far is it if I want to go from house A to house B"? Usually it hard to answer. But luckily int this village the answer is always unique, since the roads are built in the way that there is a unique simple path("simple" means you can’t visit a place twice) between every two houses. Yout task is to answer all these curious people. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+First line is a single integer T(T&lt;=10), indicating the number of test cases.<br/>  For each test case,in the first line there are two numbers n(2&lt;=n&lt;=40000) and m (1&lt;=m&lt;=200),the number of houses and the number of queries. The following n-1 lines each consisting three numbers i,j,k, separated bu a single space, meaning that there is a road connecting  house i and house j,with length k(0&lt;k&lt;=40000).The houses are labeled from 1 to n.<br/>  Next m lines each has distinct integers i and j, you areato answer the distance between house i and house j. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+First line is a single integer T(T&lt;=10), indicating the number of test cases.<br/>  For each test case,in the first line there are two numbers n(2&lt;=n&lt;=40000) and m (1&lt;=m&lt;=200),the number of houses and the number of queries. The following n-1 lines each consisting three numbers i,j,k, separated bu a single space, meaning that there is a road connecting  house i and house j,with length k(0&lt;k&lt;=40000).The houses are labeled from 1 to n.<br/>  Next m lines each has distinct integers i and j, you areato answer the distance between house i and house j.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+3 2
+1 2 10
+3 1 15
+1 2
+2 3
+
+2 2
+1 2 100
+1 2
+2 1</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+10
+25
+100
+100</pre>
+<p> <!-- problem end --></p>
+<p>LCA模板题</p>
+<p> 题意：给一个无根树，有q个询问，每个询问两个点，问两点的距离。求出  lca = LCA(X,Y) , 然后  dir[x] + dir[y] – 2 * dir[lca]</p>
+<p>dir[u]表示点u到树根的距离</p>
+<p> </p>
+<p>下面两份代码都可以通过HDU的C++和G++，都不存在爆栈问题，网上很多人说会爆栈，加了申请系统栈语句，其实不用，而且好想比赛中不允许使用的</p>
+<p>Tarjan算法跑得更快些，C++ 15ms，  G++ 50ms  左右， RMQ大概60ms</p>
+<p> </p>
+<p>在线算法：LCA转化为RMQ</p>
+<pre class="brush:cpp ">#include &lt;iostream&gt;
+#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+#include &lt;cmath&gt;
+using namespace std;
+//#pragma comment(linker, "/STACK:102400000,102400000") //不需要申请系统栈
+const int N = 40010;
+const int M = 25;
+
+int _pow[M];
+int tot,head[N],ver[2*N],R[2*N],first[N],dir[N];
+int dp[2*N][M];  //这个数组记得开到2*N，因为遍历后序列长度为2*n-1
+bool vis[N];
+struct edge
+{
+    int u,v,w,next;
+}e[2*N];
+
+inline void add(int u ,int v ,int w ,int &amp;k)
+{
+    e[k].u = u; e[k].v = v; e[k].w = w; 
+    e[k].next = head[u]; head[u] = k++;
+    u = u^v; v = u^v; u = u^v;
+    e[k].u = u; e[k].v = v; e[k].w = w; 
+    e[k].next = head[u]; head[u] = k++;
+}
+
+void dfs(int u ,int dep)
+{
+    vis[u] = true; ver[++tot] = u; first[u] = tot; R[tot] = dep;
+    for(int k=head[u]; k!=-1; k=e[k].next)
+        if( !vis[e[k].v] )
+        {
+            int v = e[k].v , w = e[k].w;
+            dir[v] = dir[u] + w;
+            dfs(v,dep+1);
+            ver[++tot] = u; R[tot] = dep;
+        }
+}
+
+void ST(int len)
+{
+    int K = (int)(log((double)len) / log(2.0));
+    for(int i=1; i&lt;=len; i++) dp[i][0] = i;
+    for(int j=1; j&lt;=K; j++)
+        for(int i=1; i+_pow[j]-1&lt;=len; i++)
+        {
+            int a = dp[i][j-1] , b = dp[i+_pow[j-1]][j-1];
+            if(R[a] &lt; R[b]) dp[i][j] = a;
+            else            dp[i][j] = b;
+        }
+}
+
+int RMQ(int x ,int y)
+{
+    int K = (int)(log((double)(y-x+1)) / log(2.0));
+    int a = dp[x][K] , b = dp[y-_pow[K]+1][K];
+    if(R[a] &lt; R[b]) return a;
+    else            return b;
+}
+
+int LCA(int u ,int v)
+{
+    int x = first[u] , y = first[v];
+    if(x &gt; y) swap(x,y);
+    int res = RMQ(x,y);
+    return ver[res];
+}
+
+int main()
+{
+    for(int i=0; i&lt;M; i++) _pow[i] = (1&lt;&lt;i);
+    int cas;
+    scanf("%d",&amp;cas);
+    while(cas--)
+    {
+        int n,q,num = 0;
+        scanf("%d%d",&amp;n,&amp;q);
+        memset(head,-1,sizeof(head));
+        memset(vis,false,sizeof(vis));
+        for(int i=1; i&lt;n; i++)
+        {
+            int u,v,w;
+            scanf("%d%d%d",&amp;u,&amp;v,&amp;w);
+            add(u,v,w,num);
+        }
+        tot = 0; dir[1] = 0;
+        dfs(1,1);
+        /*
+        printf("节点 "); for(int i=1; i&lt;=2*n-1; i++) printf("%d ",ver[i]); cout &lt;&lt; endl;
+        printf("深度 "); for(int i=1; i&lt;=2*n-1; i++) printf("%d ",R[i]);   cout &lt;&lt; endl;
+        printf("首位 "); for(int i=0; i&lt;n; i++) printf("%d ",first[i]);    cout &lt;&lt; endl;
+        printf("距离 "); for(int i=0; i&lt;n; i++) printf("%d ",dir[i]);      cout &lt;&lt; endl;
+        */
+        ST(2*n-1);
+        while(q--)
+        {
+            int u,v;
+            scanf("%d%d",&amp;u,&amp;v);
+            int lca = LCA(u,v);
+//            printf("lca = %d\n",lca);
+            printf("%d\n",dir[u] + dir[v] - 2*dir[lca]);
+        }
+    }
+    return 0;
+}</pre>
+<p> </p>
+<p> </p>
+<p>离线算法：Tarjan算法解决</p>
+<p> </p>
+<pre class="brush:cpp ">#include &lt;iostream&gt;
+#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+using namespace std;
+const int N = 40010;
+const int M = 410;
+
+int head[N],__head[N];
+struct edge{
+    int u,v,w,next;
+}e[2*N];
+struct ask{
+    int u,v,lca,next;
+}ea[M];
+int dir[N],fa[N],ance[N];
+bool vis[N];
+
+inline void add_edge(int u,int v,int w,int &amp;k)
+{
+    e[k].u = u; e[k].v = v; e[k].w = w;
+    e[k].next = head[u]; head[u] = k++;
+    u = u^v; v = u^v; u = u^v;
+    e[k].u = u; e[k].v = v; e[k].w = w;
+    e[k].next = head[u]; head[u] = k++;
+}
+
+inline void add_ask(int u ,int v ,int &amp;k)
+{
+    ea[k].u = u; ea[k].v = v; ea[k].lca = -1;
+    ea[k].next = __head[u]; __head[u] = k++;
+    u = u^v; v = u^v; u = u^v;
+    ea[k].u = u; ea[k].v = v; ea[k].lca = -1;
+    ea[k].next = __head[u]; __head[u] = k++;
+}
+
+int Find(int x)
+{
+    return x == fa[x] ? x : fa[x] = Find(fa[x]);
+}
+void Union(int u ,int v)
+{
+    fa[v] = fa[u];  //可写为  fa[Find(v)] = fa[u];
+}
+
+void Tarjan(int u)
+{
+    vis[u] = true;
+    ance[u] = fa[u] = u; //课写为 ance[Find(u)] = fa[u] = u;
+    for(int k=head[u]; k!=-1; k=e[k].next)
+        if( !vis[e[k].v] )
+        {
+            int v = e[k].v , w = e[k].w;
+            dir[v] = dir[u] + w;
+            Tarjan(v);
+            Union(u,v);
+            //ance[Find(u)] = u;  //可写为ance[u] = u;  //甚至不要这个语句都行
+        }
+    for(int k=__head[u]; k!=-1; k=ea[k].next)
+        if( vis[ea[k].v] )
+        {
+            int v = ea[k].v;
+            ea[k].lca = ea[k^1].lca = ance[Find(v)];
+        }
+}
+
+int main()
+{
+    int cas,n,q,tot;
+    scanf("%d",&amp;cas);
+    while(cas--)
+    {
+        scanf("%d%d",&amp;n,&amp;q);
+        memset(head,-1,sizeof(head));
+        memset(__head,-1,sizeof(__head));
+        tot = 0;
+        for(int i=1; i&lt;n; i++)
+        {
+            int u,v,w;
+            scanf("%d%d%d",&amp;u,&amp;v,&amp;w);
+            add_edge(u,v,w,tot);
+        }
+        tot = 0;
+        for(int i=0; i&lt;q; i++)
+        {
+            int u,v;
+            scanf("%d%d",&amp;u,&amp;v);
+            add_ask(u,v,tot);
+        }
+        memset(vis,0,sizeof(vis));
+        dir[1] = 0;
+        Tarjan(1);
+        for(int i=0; i&lt;q; i++)
+        {
+            int s = i * 2 , u = ea[s].u , v = ea[s].v , lca = ea[s].lca;
+            printf("%d\n",dir[u] + dir[v] - 2*dir[lca]);
+        }
+    }
+    return 0;
+}</pre>
+<p> </p>
+<p>解题转自：http://www.cnblogs.com/scau20110726/archive/2013/05/26/3100265.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-83728">
+<article class="comment" id="comment-83728">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511649" rel="external nofollow">新用户814190</a></span> on <a href="http://www.acmerblog.com/hdu-2586-how-far-away-4138.html#comment-83728" rel="nofollow"><time datetime="2017-04-12T22:38:37+00:00" pubdate="">2017年4月12日 at 下午10:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已在微博关注</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-83727">
+<article class="comment" id="comment-83727">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919511649" rel="external nofollow">新用户814190</a></span> on <a href="http://www.acmerblog.com/hdu-2586-how-far-away-4138.html#comment-83727" rel="nofollow"><time datetime="2017-04-12T22:38:37+00:00" pubdate="">2017年4月12日 at 下午10:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已在微博关注</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-45818">
+<article class="comment" id="comment-45818">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zclzcllove</a></span> on <a href="http://www.acmerblog.com/hdu-2586-how-far-away-4138.html#comment-45818" rel="nofollow"><time datetime="2015-06-15T18:05:21+00:00" pubdate="">2015年6月15日 at 下午6:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>输入样例作为一个整体输入，带回车</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-23220">
+<article class="comment" id="comment-23220">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">_Tree</a></span> on <a href="http://www.acmerblog.com/hdu-2586-how-far-away-4138.html#comment-23220" rel="nofollow"><time datetime="2015-03-04T22:25:52+00:00" pubdate="">2015年3月4日 at 下午10:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>方法二可行，已测试<br/>
+<a href="http://blog.csdn.net/alpc_paul/article/details/33769407" rel="nofollow">http://blog.csdn.net/alpc_paul/article/details/33769407</a></p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-45826">
+<article class="comment" id="comment-45826">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">czw8528</a></span> on <a href="http://www.acmerblog.com/hdu-2586-how-far-away-4138.html#comment-45826" rel="nofollow"><time datetime="2015-02-12T01:38:06+00:00" pubdate="">2015年2月12日 at 上午1:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/d8/good_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-45819">
+<article class="comment" id="comment-45819">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Riddick</a></span> on <a href="http://www.acmerblog.com/hdu-2586-how-far-away-4138.html#comment-45819" rel="nofollow"><time datetime="2015-01-21T23:31:44+00:00" pubdate="">2015年1月21日 at 下午11:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为\n\n</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-732">
+<article class="comment" id="comment-732">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">NGUper</span> on <a href="http://www.acmerblog.com/hdu-2586-how-far-away-4138.html#comment-732" rel="nofollow"><time datetime="2014-08-20T22:22:20+00:00" pubdate="">2014年8月20日 at 下午10:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实不需要用LCA，用DFS+vector更简单</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-45820">
+<article class="comment" id="comment-45820">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiao597896577</a></span> on <a href="http://www.acmerblog.com/hdu-2586-how-far-away-4138.html#comment-45820" rel="nofollow"><time datetime="2014-08-11T05:24:17+00:00" pubdate="">2014年8月11日 at 上午5:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>值得分享！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-45827">
+<article class="comment" id="comment-45827">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">we</a></span> on <a href="http://www.acmerblog.com/hdu-2586-how-far-away-4138.html#comment-45827" rel="nofollow"><time datetime="2014-08-02T12:30:27+00:00" pubdate="">2014年8月2日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>int L[m+1][n+1];这样定义出错，这个在gcc上可以编译通过 在VS上不行 应该改为new 或者vector</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-45825">
+<article class="comment" id="comment-45825">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">2013283119</a></span> on <a href="http://www.acmerblog.com/hdu-2586-how-far-away-4138.html#comment-45825" rel="nofollow"><time datetime="2014-07-21T07:15:11+00:00" pubdate="">2014年7月21日 at 上午7:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一题还是比较考验智商~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-23222">
+<article class="comment" id="comment-23222">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">samjustin</a></span> on <a href="http://www.acmerblog.com/hdu-2586-how-far-away-4138.html#comment-23222" rel="nofollow"><time datetime="2014-06-18T11:04:32+00:00" pubdate="">2014年6月18日 at 上午11:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈呀！这个Dijkstra模板好长OwQ！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-45821">
+<article class="comment" id="comment-45821">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Spike</a></span> on <a href="http://www.acmerblog.com/hdu-2586-how-far-away-4138.html#comment-45821" rel="nofollow"><time datetime="2014-06-12T08:48:04+00:00" pubdate="">2014年6月12日 at 上午8:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个条件 “两个数的乘积最小”可以忽略</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-45822">
+<article class="comment" id="comment-45822">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hao555sky</a></span> on <a href="http://www.acmerblog.com/hdu-2586-how-far-away-4138.html#comment-45822" rel="nofollow"><time datetime="2014-06-07T19:59:22+00:00" pubdate="">2014年6月7日 at 下午7:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>顶一个 赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-45823">
+<article class="comment" id="comment-45823">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">2013283119</a></span> on <a href="http://www.acmerblog.com/hdu-2586-how-far-away-4138.html#comment-45823" rel="nofollow"><time datetime="2014-05-18T10:32:32+00:00" pubdate="">2014年5月18日 at 上午10:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>使用ListNodeWrapper很蹩脚的感觉，没有更好的解决办法？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-45824">
+<article class="comment" id="comment-45824">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zwj0571</a></span> on <a href="http://www.acmerblog.com/hdu-2586-how-far-away-4138.html#comment-45824" rel="nofollow"><time datetime="2014-04-06T09:46:42+00:00" pubdate="">2014年4月6日 at 上午9:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我表示楼主不要乱抄题，你写的另一个题吧，直接扒了代码没跑吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-23221">
+<article class="comment" id="comment-23221">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jinxiang23</a></span> on <a href="http://www.acmerblog.com/hdu-2586-how-far-away-4138.html#comment-23221" rel="nofollow"><time datetime="2014-03-11T12:25:07+00:00" pubdate="">2014年3月11日 at 下午12:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>[…] 答案：http://www.acmerblog.com/interview-2-1549/ […]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

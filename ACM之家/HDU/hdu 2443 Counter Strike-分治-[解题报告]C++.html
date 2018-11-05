@@ -1,0 +1,404 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>01-26</div>
+<div class="tit"><h1 class="entry-title">hdu 2443 Counter Strike-分治-[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/basis/enumeration" rel="category tag" title="查看枚举中的全部文章">枚举</a>, <a href="http://www.acmerblog.com/category/basis/recursion" rel="category tag" title="查看递归和分治中的全部文章">递归和分治</a></span><span class="i4">围观1172次</span><span class="i3"><a class="ds-thread-count" data-thread-key="3907" href="http://www.acmerblog.com/hdu-2443-counter-strike-3907.html#comments" title="《hdu 2443 Counter Strike-分治-[解题报告]C++》上的评论">27 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Counter Strike</h1>
+</div>
+<div>
+<p class="mytitle">问题描述 :</p>
+</div>
+<div class="mypanel">Anti-terrorism is becoming more and more serious nowadays. The country now has n soldiers,and every solider has a score.We want to choose some soldiers to fulfill an urgent task. The soldiers chosen must be adjacent to each other in order to make sure that they can cooperate well. And all the soldiers chosen must have an average score greater than a.
+<p>Now, please calculate how many ways can the chief of staff choose the soldiers.</p>
+</div>
+<div>
+<p class="mytitle">输入:</p>
+</div>
+<div class="mypanel">The first line consists of a single integer t, indicating number of test cases.For each test case, the first line gives n, the number of soldiers, and a, the minimum possible average score(n&lt;=100000,a&lt;=10000). The second line gives n integers, corresponding to the soldiers’ scores in order. All the scores are no greater than 10000.
+</div>
+<div>
+<p class="mytitle">输出:</p>
+</div>
+<div class="mypanel">The first line consists of a single integer t, indicating number of test cases.For each test case, the first line gives n, the number of soldiers, and a, the minimum possible average score(n&lt;=100000,a&lt;=10000). The second line gives n integers, corresponding to the soldiers’ scores in order. All the scores are no greater than 10000.
+</div>
+<div>
+<p class="mytitle">样例输入:</p>
+</div>
+<pre class="mypanel iopanel">2
+5 3
+1 3 7 2 4
+1 1000
+9999</pre>
+<div>
+<p class="mytitle">样例输出:</p>
+</div>
+<pre class="mypanel iopanel">10
+1</pre>
+<p><!-- problem end --></p>
+<pre class="brush:cpp">/*
+ * hdu2443.cpp
+ *
+ *  Created on: 2010-12-4
+ *      Author: caiweiwen
+ */
+#include &lt;cstdio&gt;
+const int MAXN=100000;
+typedef long long arr[MAXN+1];
+
+arr sum,tmp;
+int t,n,a,score;
+
+long long merge(int l,int m,int r){
+    int h1,h2,tmp_h,i;
+    long long count=0;
+
+    h1=l;h2=m+1;tmp_h=l;
+    while (h1&lt;=m &amp;&amp; h2&lt;=r)
+        if (sum[h2]&gt;sum[h1]){
+            tmp[tmp_h++]=sum[h1];
+            h1++;
+            count+=r-h2+1;
+        }
+        else{
+            tmp[tmp_h++]=sum[h2];
+            h2++;
+        }
+    while (h1&lt;=m) tmp[tmp_h++]=sum[h1++];
+    while (h2&lt;=r) tmp[tmp_h++]=sum[h2++];
+    for (i=l;i&lt;=r;i++)
+        sum[i]=tmp[i];
+    return count;
+}
+
+long long merge_sort(int l,int r){
+    long long tot=0;
+
+    if (l!=r){
+        tot=merge_sort(l,(l+r)/2);
+        tot+=merge_sort((l+r)/2+1,r);
+        tot+=merge(l,(l+r)/2,r);
+        return tot;
+    }
+    else
+        return 0;
+}
+
+int main(){
+    int i,j;
+
+    scanf("%d",&amp;t);
+    sum[0]=0;
+    for (i=0;i&lt;t;i++){
+        scanf("%d %d",&amp;n,&amp;a);
+        for (j=1;j&lt;=n;j++){
+            scanf("%d",&amp;score);
+            sum[j]=sum[j-1]+(score-a);
+        }
+        printf("%I64d\n",merge_sort(0,n));
+    }
+    return 0;
+}
+/*
+ * 在最后输入要用%I64d，如果用%lld 会WA
+ * 先把问题转换成求“正序对"问题（”正序对“方法类似于逆序对--算法导论P24思考题)
+ * 题目要求的是给出n个数，问有多少个区间，使得区间的平均值大于a
+ * 如果用一般的枚举，时间复杂度为O（n^2），由于n&lt;=100000,因此肯定超时。
+ * 设sum[i]=sum[i-1]+score[i]-i*a;
+ *    如果sum[i]-sum[j]&gt;0 （i&gt;j),即sum[i]&gt;sum[j] (i&gt;j) 那么区间[i,j]就满足条件
+ *    sum[i]&gt;sum[j] (i&gt;j)就类似于求逆序对a[i]&gt;a[j] 且 i&lt;j
+ *    然后用那个类似于合并排序的算法来求“正序对”个数，时间复杂度为O（nlgn）
+ *
+ *    类似与合并排序求逆序对的算法：
+ *     利用分治法
+ *     分解：含有n个数的序列分解成各含有n/2个数的子序列；
+ *     解决：用类似于合并排序对两个子序列递归排序，并求逆序对数；
+ *     合并：合并两个 已求出逆序对个数 且 已排序 的子序列，得到 一个子序列对于另一个子序列的逆序对个数 和 该序列的排序结果，那么 两个子序列逆序对的个数 加上 两个子序列之间逆序对个数 就是该序列逆序对的个数。
+ *
+ */</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-84700">
+<article class="comment" id="comment-84700">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514547" rel="external nofollow">新用户421580</a></span> on <a href="http://www.acmerblog.com/hdu-2443-counter-strike-3907.html#comment-84700" rel="nofollow"><time datetime="2017-04-13T01:15:55+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>SCV standby。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-84699">
+<article class="comment" id="comment-84699">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514547" rel="external nofollow">新用户421580</a></span> on <a href="http://www.acmerblog.com/hdu-2443-counter-strike-3907.html#comment-84699" rel="nofollow"><time datetime="2017-04-13T01:15:55+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>SCV standby。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-84698">
+<article class="comment" id="comment-84698">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514547" rel="external nofollow">新用户421580</a></span> on <a href="http://www.acmerblog.com/hdu-2443-counter-strike-3907.html#comment-84698" rel="nofollow"><time datetime="2017-04-13T01:15:55+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>SCV standby。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-84697">
+<article class="comment" id="comment-84697">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514547" rel="external nofollow">新用户421580</a></span> on <a href="http://www.acmerblog.com/hdu-2443-counter-strike-3907.html#comment-84697" rel="nofollow"><time datetime="2017-04-13T01:15:55+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>SCV standby。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-84696">
+<article class="comment" id="comment-84696">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514547" rel="external nofollow">新用户421580</a></span> on <a href="http://www.acmerblog.com/hdu-2443-counter-strike-3907.html#comment-84696" rel="nofollow"><time datetime="2017-04-13T01:15:55+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>SCV standby。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-84695">
+<article class="comment" id="comment-84695">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514547" rel="external nofollow">新用户421580</a></span> on <a href="http://www.acmerblog.com/hdu-2443-counter-strike-3907.html#comment-84695" rel="nofollow"><time datetime="2017-04-13T01:15:55+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>SCV standby。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-84694">
+<article class="comment" id="comment-84694">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514547" rel="external nofollow">新用户421580</a></span> on <a href="http://www.acmerblog.com/hdu-2443-counter-strike-3907.html#comment-84694" rel="nofollow"><time datetime="2017-04-13T01:15:55+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>SCV standby。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-84693">
+<article class="comment" id="comment-84693">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514547" rel="external nofollow">新用户421580</a></span> on <a href="http://www.acmerblog.com/hdu-2443-counter-strike-3907.html#comment-84693" rel="nofollow"><time datetime="2017-04-13T01:15:55+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>SCV standby。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-84692">
+<article class="comment" id="comment-84692">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514547" rel="external nofollow">新用户421580</a></span> on <a href="http://www.acmerblog.com/hdu-2443-counter-strike-3907.html#comment-84692" rel="nofollow"><time datetime="2017-04-13T01:15:55+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>SCV standby。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-84691">
+<article class="comment" id="comment-84691">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514547" rel="external nofollow">新用户421580</a></span> on <a href="http://www.acmerblog.com/hdu-2443-counter-strike-3907.html#comment-84691" rel="nofollow"><time datetime="2017-04-13T01:15:55+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>SCV standby。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-84690">
+<article class="comment" id="comment-84690">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514547" rel="external nofollow">新用户421580</a></span> on <a href="http://www.acmerblog.com/hdu-2443-counter-strike-3907.html#comment-84690" rel="nofollow"><time datetime="2017-04-13T01:15:55+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>SCV standby。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-84689">
+<article class="comment" id="comment-84689">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514547" rel="external nofollow">新用户421580</a></span> on <a href="http://www.acmerblog.com/hdu-2443-counter-strike-3907.html#comment-84689" rel="nofollow"><time datetime="2017-04-13T01:15:55+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>SCV standby。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-84687">
+<article class="comment" id="comment-84687">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514547" rel="external nofollow">新用户421580</a></span> on <a href="http://www.acmerblog.com/hdu-2443-counter-strike-3907.html#comment-84687" rel="nofollow"><time datetime="2017-04-13T01:15:55+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>SCV standby。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-84686">
+<article class="comment" id="comment-84686">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514547" rel="external nofollow">新用户421580</a></span> on <a href="http://www.acmerblog.com/hdu-2443-counter-strike-3907.html#comment-84686" rel="nofollow"><time datetime="2017-04-13T01:15:55+00:00" pubdate="">2017年4月13日 at 上午1:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>SCV standby。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-45256">
+<article class="comment" id="comment-45256">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Emlar</a></span> on <a href="http://www.acmerblog.com/hdu-2443-counter-strike-3907.html#comment-45256" rel="nofollow"><time datetime="2015-05-09T09:40:31+00:00" pubdate="">2015年5月9日 at 上午9:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>[…] 如果此题没有要求 相对位置不变，可以参考文章：http://www.acmerblog.com/interview-9-2427/ […]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-56812">
+<article class="comment" id="comment-56812">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">changjf</a></span> on <a href="http://www.acmerblog.com/hdu-2443-counter-strike-3907.html#comment-56812" rel="nofollow"><time datetime="2015-05-02T00:16:27+00:00" pubdate="">2015年5月2日 at 上午12:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>网站不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-45255">
+<article class="comment" id="comment-45255">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Aliens</a></span> on <a href="http://www.acmerblog.com/hdu-2443-counter-strike-3907.html#comment-45255" rel="nofollow"><time datetime="2015-04-23T03:44:05+00:00" pubdate="">2015年4月23日 at 上午3:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有没有C++语言的代码？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-22039">
+<article class="comment" id="comment-22039">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Cloudy</a></span> on <a href="http://www.acmerblog.com/hdu-2443-counter-strike-3907.html#comment-22039" rel="nofollow"><time datetime="2015-03-11T17:13:09+00:00" pubdate="">2015年3月11日 at 下午5:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>博主的C++功底真是好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22040">
+<article class="comment" id="comment-22040">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">CCCat</a></span> on <a href="http://www.acmerblog.com/hdu-2443-counter-strike-3907.html#comment-22040" rel="nofollow"><time datetime="2015-03-09T21:17:42+00:00" pubdate="">2015年3月9日 at 下午9:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我是来看评论的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-45258">
+<article class="comment" id="comment-45258">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Trenson</a></span> on <a href="http://www.acmerblog.com/hdu-2443-counter-strike-3907.html#comment-45258" rel="nofollow"><time datetime="2015-03-09T12:50:59+00:00" pubdate="">2015年3月9日 at 下午12:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>看来学好代数很重要啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-45257">
+<article class="comment" id="comment-45257">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tzf88888888</a></span> on <a href="http://www.acmerblog.com/hdu-2443-counter-strike-3907.html#comment-45257" rel="nofollow"><time datetime="2015-02-04T10:15:23+00:00" pubdate="">2015年2月4日 at 上午10:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>int L[m+1][n+1];这样定义出错，这个在gcc上可以编译通过 在VS上不行 应该改为new 或者vector</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-45254">
+<article class="comment" id="comment-45254">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Watson</a></span> on <a href="http://www.acmerblog.com/hdu-2443-counter-strike-3907.html#comment-45254" rel="nofollow"><time datetime="2014-11-23T17:09:37+00:00" pubdate="">2014年11月23日 at 下午5:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>头文件的颜色是有意设成这种灰暗色的吗？感觉看不清</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22037">
+<article class="comment" id="comment-22037">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wall_</a></span> on <a href="http://www.acmerblog.com/hdu-2443-counter-strike-3907.html#comment-22037" rel="nofollow"><time datetime="2014-11-20T04:27:25+00:00" pubdate="">2014年11月20日 at 上午4:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Good task for the group. Hold it up for every yeara??s winner. This is a excellent oppotunity for a lot more enhancement. Indeed, obtaining far better and much better is constantly the crucial. Just like my pal suggests on the truth about ab muscles, he just keeps obtaining much better.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-45259">
+<article class="comment" id="comment-45259">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">starcuan</a></span> on <a href="http://www.acmerblog.com/hdu-2443-counter-strike-3907.html#comment-45259" rel="nofollow"><time datetime="2014-11-01T16:45:37+00:00" pubdate="">2014年11月1日 at 下午4:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给力的文章，例子也非常好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22041">
+<article class="comment" id="comment-22041">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xun.gong</a></span> on <a href="http://www.acmerblog.com/hdu-2443-counter-strike-3907.html#comment-22041" rel="nofollow"><time datetime="2014-09-14T08:17:14+00:00" pubdate="">2014年9月14日 at 上午8:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一个真的要比较两次吗，换成else if 不可以吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-22038">
+<article class="comment" id="comment-22038">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NextLife</a></span> on <a href="http://www.acmerblog.com/hdu-2443-counter-strike-3907.html#comment-22038" rel="nofollow"><time datetime="2014-07-05T10:48:57+00:00" pubdate="">2014年7月5日 at 上午10:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>头文件的颜色是有意设成这种灰暗色的吗？感觉看不清</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22042">
+<article class="comment" id="comment-22042">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">spiderMan</a></span> on <a href="http://www.acmerblog.com/hdu-2443-counter-strike-3907.html#comment-22042" rel="nofollow"><time datetime="2014-06-27T05:20:42+00:00" pubdate="">2014年6月27日 at 上午5:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一个数表示数列的个数，5表示之后有5个数</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

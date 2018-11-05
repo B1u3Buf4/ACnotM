@@ -1,0 +1,461 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>09-17</div>
+<div class="tit"><h1 class="entry-title">HDU 4643-GSM-计算几何-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/basis/enumeration" rel="category tag" title="查看枚举中的全部文章">枚举</a>, <a href="http://www.acmerblog.com/category/geometry" rel="category tag" title="查看计算几何中的全部文章">计算几何</a></span><span class="i4">围观82次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7688" href="http://www.acmerblog.com/hdu-4643-gsm-7688.html#comments" title="《HDU 4643-GSM-计算几何-[解题报告]HOJ》上的评论">16 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">GSM</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Xiao Ming is traveling around several cities by train. And the time on the train is very boring, so Xiao Ming will use the mobile Internet. We all know that mobile phone receives the signal from base station and it will change the base station when moving on the train. Xiao Ming would like to know how many times the base station will change from city A to city B.<br/>Now, the problem is simplified. We assume the route of train is straight, and the mobile phone will receive the signal from the nearest base station.  </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+Multiple cases. For each case, The first line: N(3&lt;=N&lt;=50) – the number of cities, M(2&lt;=M&lt;=50) – the number of base stations. Then there are N cities with coordinates of (x, y) and M base stations with coordinates of (x, y) – (0&lt;=x&lt;=1000, 0&lt;=y&lt;=1000, both x and y is integer).Then there is a number : K, the next, there are K queries, for each query, each line, there are two numbers: a, b. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+Multiple cases. For each case, The first line: N(3&lt;=N&lt;=50) – the number of cities, M(2&lt;=M&lt;=50) – the number of base stations. Then there are N cities with coordinates of (x, y) and M base stations with coordinates of (x, y) – (0&lt;=x&lt;=1000, 0&lt;=y&lt;=1000, both x and y is integer).Then there is a number : K, the next, there are K queries, for each query, each line, there are two numbers: a, b.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+4 4
+0 2
+1 3
+1 0
+2 0
+1 2
+1 1
+2 2
+2 1
+4
+1 2
+1 3
+1 4
+3 4</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+0
+1
+2
+1
+<div style="font-family:Times New Roman;font-size:14px;background-color:F4FBFF;border:#B7CBFF 1px dashed;padding:6px"><div style="font-family:Arial;font-weight:bold;color:#7CA9ED;border-bottom:#B7CBFF 1px dashed"><i>Hint</i></div>
+The train way from a to b will not cross the point with the same distance from more than 2 base stations. 
+(For the distance d1 and d2, if fabs(d1-d2)&lt;1e-7, we think d1 == d2). 
+And every city exactly receive signal from just one base station.
+</div><i style="font-size:1px"> </i></pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp" name="code">/*
+hdu 4643 GSM 计算几何 - 点线关系
+
+N个城市，任意两个城市之间都有沿他们之间直线的铁路
+M个基站
+
+问从城市A到城市B需要切换几次基站
+
+当从基站a切换到基站b时，切换的地点就是ab的中垂线与铁路的交点(记录由哪两个基站得到的交点，方便切换)处
+
+枚举任意两个基站与铁路的交点，按到城市A的距离排序
+
+求出在城市A时用的基站j，然后开始遍历交点，看从j可以切换到哪个基站(假设是k)，然后再看可以从k可以切换到哪个基站
+*/
+#include&lt;stdio.h&gt;
+#include&lt;algorithm&gt;
+#include&lt;math.h&gt;
+using namespace std;
+const double eps=1e-11;
+struct point
+{
+	double x,y;
+}city[55],base[55];
+int N,M,K,a,b;
+struct node
+{
+	int i,j;
+	point p;
+	double dist;
+}jiao[3000];
+
+inline bool mo_ee(double x,double y)
+{
+	double ret=x-y;
+	if(ret&lt;0) ret=-ret;
+	if(ret&lt;eps) return 1;
+	return 0;
+}
+inline bool mo_gg(double x,double y)  {   return x &gt; y + eps;} // x &gt; y   
+inline bool mo_ll(double x,double y)  {   return x &lt; y - eps;} // x &lt; y   
+inline bool mo_ge(double x,double y) {   return x &gt; y - eps;} // x &gt;= y   
+inline bool mo_le(double x,double y) {   return x &lt; y + eps;}     // x &lt;= y   
+
+inline double min(double a,double b)
+{
+	if(a&lt;b) return a;
+	return b;
+}
+
+inline double max(double a,double b)
+{
+	if(a&gt;b) return a;
+	return b;
+}
+
+
+point getxiang(point xiang)//求法向量
+{
+	point a;
+	if(mo_ee(xiang.x,0))
+	{
+		a.x=1;
+		a.y=0;
+		return a;
+	}else if(mo_ee(xiang.y,0))
+	{
+		a.x=0;
+		a.y=1;
+		return a;
+	}else
+	{
+		a.x=1;
+		a.y=-1.0*xiang.x/xiang.y;
+		return a;
+	}
+
+}
+inline double mo_distance(point p1,point p2)
+{
+    return sqrt((p1.x-p2.x)*(p1.x-p2.x)+(p1.y-p2.y)*(p1.y-p2.y));
+}
+
+point mo_intersection(point u1,point u2,point v1,point v2)//两个直线的交点
+{
+    point ret=u1;
+    double t=((u1.x-v1.x)*(v1.y-v2.y)-(u1.y-v1.y)*(v1.x-v2.x))
+             /((u1.x-u2.x)*(v1.y-v2.y)-(u1.y-u2.y)*(v1.x-v2.x));
+    ret.x+=(u2.x-u1.x)*t;
+    ret.y+=(u2.y-u1.y)*t;
+    return ret;
+}
+
+
+int segjiao(point &amp;ji,point a,point b,point c,point d)//直线(中垂线)与线段(铁路)的交点
+{
+	ji=mo_intersection(a,b,c,d);
+
+	if(mo_ll(ji.x,min(c.x,d.x))) return 0;
+
+	if(mo_ll(ji.y,min(c.y,d.y))) return 0;
+
+
+	if(mo_gg(ji.x,max(c.x,d.x))) return 0;
+
+	if(mo_gg(ji.y,max(c.y,d.y))) return 0;
+	return 1;
+}
+node jiaojiao(int a,int b,int ii,int jj)//求交点
+{
+	node cur;
+	point xiang1,xiang2;
+	xiang1.x=city[b].x-city[a].x,xiang1.y=city[b].y-city[a].y;
+	xiang2.x=base[jj].x-base[ii].x,xiang2.y=base[jj].y-base[ii].y;
+	if(mo_ee(xiang1.x*xiang2.x,xiang1.y*xiang2.y))
+	{
+		cur.i=-1;
+		return cur;
+	}
+	xiang2=getxiang(xiang2);
+	point zhong;
+	zhong.x=(base[ii].x+base[jj].x)/2,zhong.y=(base[ii].y+base[jj].y)/2;
+	point zhongxia;
+	zhongxia.x=zhong.x+xiang2.x;
+	zhongxia.y=zhong.y+xiang2.y;
+
+	point jiaodian;
+	int jjao=segjiao(jiaodian,zhong,zhongxia,city[a],city[b]);
+	if(jjao==0)
+	{
+		cur.i=-1;
+		return cur;
+	}
+
+	cur.p=jiaodian;
+	cur.i=ii;
+	cur.j=jj;
+	cur.dist=mo_distance(jiaodian,city[a]);
+	return cur;
+}
+bool cmp(const node &amp;aa,const node &amp;bb)//按交点到城市A的距离排序
+{
+	if(mo_ee(aa.dist,bb.dist))
+	{
+		point temp;
+		temp.x=(base[aa.i].x+base[aa.j].x)/2;
+		temp.y=(base[aa.i].y+base[aa.j].y)/2;
+		double dist1=mo_distance(aa.p,temp);
+		
+		temp.x=(base[bb.i].x+base[bb.j].x)/2;
+		temp.y=(base[bb.i].y+base[bb.j].y)/2;
+		double dist2=mo_distance(bb.p,temp);
+		return mo_ll(dist1,dist2);
+	}
+	return mo_ll(aa.dist,bb.dist);
+}
+inline int nextno(int j,int no)//切换
+{
+	if(jiao[j].i==no) return jiao[j].j;
+	if(jiao[j].j==no) return jiao[j].i;
+	return no;
+}
+int main()
+{
+	int i,j,ncase;
+//	freopen("1001.in","r",stdin);
+//	freopen("1001.out.2","w",stdout);
+	while(scanf("%d%d",&amp;N,&amp;M)!=EOF)
+	{
+		for(i=1;i&lt;=N;++i)
+		{
+			scanf("%lf%lf",&amp;city[i].x,&amp;city[i].y);
+		}
+		for(i=1;i&lt;=M;++i)
+		{
+			scanf("%lf%lf",&amp;base[i].x,&amp;base[i].y);
+		}
+		scanf("%d",&amp;K);
+		for(ncase=0;ncase&lt;K;++ncase)
+		{
+			int yong=0;
+			scanf("%d%d",&amp;a,&amp;b);
+			for(i=1;i&lt;=M;++i)
+			{
+				
+				for(j=i+1;j&lt;=M;++j)
+				{
+					if(i==j) continue;
+					node cur=jiaojiao(a,b,i,j);//求任意两个基站与铁路的交点
+					if(cur.i&lt;0)//无交点
+					{
+						continue;
+					}else
+					{
+						jiao[yong++]=cur;
+					}
+				}
+			}
+
+			sort(jiao,jiao+yong,cmp);//按到城市a的距离排序
+			double mindist=-1;
+			int minno;
+			for(i=1;i&lt;=M;++i)//求城市a用的基站
+			{
+				double disttemp=sqrt((city[a].x-base[i].x)*(city[a].x-base[i].x)+(city[a].y-base[i].y)*(city[a].y-base[i].y));
+				if(mindist&lt;0||mo_ll(disttemp,mindist))
+				{
+					mindist=disttemp;
+					minno=i;
+				}
+			}
+			int dang=minno,ret=0;
+			for(i=0;i&lt;yong;++i)//判断切换次数
+			{
+				int xinno=nextno(i,dang);
+				if(xinno!=dang)
+				{
+					dang=xinno;
+					ret++;
+				}
+			}
+			printf("%d\n",ret);
+		}
+	}
+	return 0;
+}</pre>
+<p><img alt="GSM" src="http://cdn.acmerblog.com/img/1447862433130.gif"/></p>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/qq172108805/article/details/9814909</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-97218">
+<article class="comment" id="comment-97218">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515809" rel="external nofollow">新用户059618</a></span> on <a href="http://www.acmerblog.com/hdu-4643-gsm-7688.html#comment-97218" rel="nofollow"><time datetime="2017-04-20T05:15:13+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>本期，钟声歌声传万里，月亮摇摆着身姿，数九严寒献爱心，圣诞节日己来临，老人出洞派礼物，独来独往不见形，猴年马月盼今期，开心美丽醉人间，老去又逢新岁月，春来更有好花枝，三五从群来祈祷，平安二字值千金，149赠言，今期开奖一四九，仔仔細细有前途，人无横财就不</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-97217">
+<article class="comment" id="comment-97217">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515809" rel="external nofollow">新用户059618</a></span> on <a href="http://www.acmerblog.com/hdu-4643-gsm-7688.html#comment-97217" rel="nofollow"><time datetime="2017-04-20T05:15:13+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>本期，钟声歌声传万里，月亮摇摆着身姿，数九严寒献爱心，圣诞节日己来临，老人出洞派礼物，独来独往不见形，猴年马月盼今期，开心美丽醉人间，老去又逢新岁月，春来更有好花枝，三五从群来祈祷，平安二字值千金，149赠言，今期开奖一四九，仔仔細细有前途，人无横财就不</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-97216">
+<article class="comment" id="comment-97216">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515809" rel="external nofollow">新用户059618</a></span> on <a href="http://www.acmerblog.com/hdu-4643-gsm-7688.html#comment-97216" rel="nofollow"><time datetime="2017-04-20T05:15:13+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>本期，钟声歌声传万里，月亮摇摆着身姿，数九严寒献爱心，圣诞节日己来临，老人出洞派礼物，独来独往不见形，猴年马月盼今期，开心美丽醉人间，老去又逢新岁月，春来更有好花枝，三五从群来祈祷，平安二字值千金，149赠言，今期开奖一四九，仔仔細细有前途，人无横财就不</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-97215">
+<article class="comment" id="comment-97215">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515809" rel="external nofollow">新用户059618</a></span> on <a href="http://www.acmerblog.com/hdu-4643-gsm-7688.html#comment-97215" rel="nofollow"><time datetime="2017-04-20T05:15:13+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>本期，钟声歌声传万里，月亮摇摆着身姿，数九严寒献爱心，圣诞节日己来临，老人出洞派礼物，独来独往不见形，猴年马月盼今期，开心美丽醉人间，老去又逢新岁月，春来更有好花枝，三五从群来祈祷，平安二字值千金，149赠言，今期开奖一四九，仔仔細细有前途，人无横财就不</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-97214">
+<article class="comment" id="comment-97214">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515809" rel="external nofollow">新用户059618</a></span> on <a href="http://www.acmerblog.com/hdu-4643-gsm-7688.html#comment-97214" rel="nofollow"><time datetime="2017-04-20T05:15:13+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>本期，钟声歌声传万里，月亮摇摆着身姿，数九严寒献爱心，圣诞节日己来临，老人出洞派礼物，独来独往不见形，猴年马月盼今期，开心美丽醉人间，老去又逢新岁月，春来更有好花枝，三五从群来祈祷，平安二字值千金，149赠言，今期开奖一四九，仔仔細细有前途，人无横财就不</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-97213">
+<article class="comment" id="comment-97213">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515809" rel="external nofollow">新用户059618</a></span> on <a href="http://www.acmerblog.com/hdu-4643-gsm-7688.html#comment-97213" rel="nofollow"><time datetime="2017-04-20T05:15:13+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>本期，钟声歌声传万里，月亮摇摆着身姿，数九严寒献爱心，圣诞节日己来临，老人出洞派礼物，独来独往不见形，猴年马月盼今期，开心美丽醉人间，老去又逢新岁月，春来更有好花枝，三五从群来祈祷，平安二字值千金，149赠言，今期开奖一四九，仔仔細细有前途，人无横财就不</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-97212">
+<article class="comment" id="comment-97212">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515809" rel="external nofollow">新用户059618</a></span> on <a href="http://www.acmerblog.com/hdu-4643-gsm-7688.html#comment-97212" rel="nofollow"><time datetime="2017-04-20T05:15:13+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>本期，钟声歌声传万里，月亮摇摆着身姿，数九严寒献爱心，圣诞节日己来临，老人出洞派礼物，独来独往不见形，猴年马月盼今期，开心美丽醉人间，老去又逢新岁月，春来更有好花枝，三五从群来祈祷，平安二字值千金，149赠言，今期开奖一四九，仔仔細细有前途，人无横财就不</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-97211">
+<article class="comment" id="comment-97211">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515809" rel="external nofollow">新用户059618</a></span> on <a href="http://www.acmerblog.com/hdu-4643-gsm-7688.html#comment-97211" rel="nofollow"><time datetime="2017-04-20T05:15:13+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>本期，钟声歌声传万里，月亮摇摆着身姿，数九严寒献爱心，圣诞节日己来临，老人出洞派礼物，独来独往不见形，猴年马月盼今期，开心美丽醉人间，老去又逢新岁月，春来更有好花枝，三五从群来祈祷，平安二字值千金，149赠言，今期开奖一四九，仔仔細细有前途，人无横财就不</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-66316">
+<article class="comment" id="comment-66316">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513458" rel="external nofollow">新用户684087</a></span> on <a href="http://www.acmerblog.com/hdu-4643-gsm-7688.html#comment-66316" rel="nofollow"><time datetime="2017-04-10T22:27:48+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是在圣索菲亚教堂那里吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-66315">
+<article class="comment" id="comment-66315">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513458" rel="external nofollow">新用户684087</a></span> on <a href="http://www.acmerblog.com/hdu-4643-gsm-7688.html#comment-66315" rel="nofollow"><time datetime="2017-04-10T22:27:48+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是在圣索菲亚教堂那里吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-66314">
+<article class="comment" id="comment-66314">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513458" rel="external nofollow">新用户684087</a></span> on <a href="http://www.acmerblog.com/hdu-4643-gsm-7688.html#comment-66314" rel="nofollow"><time datetime="2017-04-10T22:27:48+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是在圣索菲亚教堂那里吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-66313">
+<article class="comment" id="comment-66313">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513458" rel="external nofollow">新用户684087</a></span> on <a href="http://www.acmerblog.com/hdu-4643-gsm-7688.html#comment-66313" rel="nofollow"><time datetime="2017-04-10T22:27:48+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是在圣索菲亚教堂那里吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-66312">
+<article class="comment" id="comment-66312">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513458" rel="external nofollow">新用户684087</a></span> on <a href="http://www.acmerblog.com/hdu-4643-gsm-7688.html#comment-66312" rel="nofollow"><time datetime="2017-04-10T22:27:48+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是在圣索菲亚教堂那里吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-66311">
+<article class="comment" id="comment-66311">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513458" rel="external nofollow">新用户684087</a></span> on <a href="http://www.acmerblog.com/hdu-4643-gsm-7688.html#comment-66311" rel="nofollow"><time datetime="2017-04-10T22:27:48+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是在圣索菲亚教堂那里吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-66310">
+<article class="comment" id="comment-66310">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513458" rel="external nofollow">新用户684087</a></span> on <a href="http://www.acmerblog.com/hdu-4643-gsm-7688.html#comment-66310" rel="nofollow"><time datetime="2017-04-10T22:27:48+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是在圣索菲亚教堂那里吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-66309">
+<article class="comment" id="comment-66309">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513458" rel="external nofollow">新用户684087</a></span> on <a href="http://www.acmerblog.com/hdu-4643-gsm-7688.html#comment-66309" rel="nofollow"><time datetime="2017-04-10T22:27:48+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是在圣索菲亚教堂那里吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

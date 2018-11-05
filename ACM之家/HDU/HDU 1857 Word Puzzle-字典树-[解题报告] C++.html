@@ -1,0 +1,349 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-23</div>
+<div class="tit"><h1 class="entry-title">HDU 1857 Word Puzzle-字典树-[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/data-struct/trie-tree" rel="category tag" title="查看字典树中的全部文章">字典树</a></span><span class="i4">围观2075次</span><span class="i3"><a class="ds-thread-count" data-thread-key="2844" href="http://www.acmerblog.com/hdu-1857-word-puzzle-2844.html#comments" title="《HDU 1857 Word Puzzle-字典树-[解题报告] C++》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Word Puzzle</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Did you heard of a little game named "Word Puzzle" ? If you didn’t, what a pity !<br/>In the game, you will be given a rectangular grid of letters, in which several words are hidden. Each word may begin anywhere in the puzzle, and may be oriented in any straight line horizontally, vertically, or diagonally. However, the words must all go down, right, or down-right. A dictionary is also given to you, indicating the words to be found in the grid.
+<p>You task is to find the locations of each word within the grid. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+<b>There is only one test case.</b>
+<p>The first line is two integers R and C separated by a whitespace. R (20 ≤ R ≤ 500) is the number of rows of the grid. C (20 ≤ C ≤ 500) is the number of columns of the grid. </p>
+<p>The following R lines, each line will contains exactly C characters without anything else. Each character is in the range ‘A’ – ‘Z’. </p>
+<p>A blank line will be followed after the grid.</p>
+<p>The following lines, each line contains a unique word in the dictionary. Each word will contain between 1 and 20 characters ( also in the range ‘A’ – ‘Z’). The dictionary consists of at most 10000 words.</p>
+<p>-1 means the end of dictionary.</p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+For each word, output the "ROW COL"(quotes for clarity) pair, where ROW is the 0-based row in which the first letter of the word is found, and COL is the 0-based column in which the first letter of the word is found. If the same word can be found more than once, the location in the lowest-indexed row should be returned. If there is still a tie, return the location with the lowest-indexed column. If a word cannot be found in the grid, return "-1 -1" for the word.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3 5
+HENRY
+GAVIN
+MAGIC
+
+HENRY
+HGM
+HAG
+MAVIN
+-1</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+0 0
+0 0
+0 0
+-1 -1</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include&lt;iostream&gt;
+#include&lt;cstdio&gt;
+#include&lt;cstring&gt;
+using namespace std;
+
+const int KIND = 26;
+const int MAXN = 1000000;
+int cnt_node;
+int R,C;
+char map[505][505];
+char word[10005][22];
+
+struct node{
+    bool isword;
+    int r,c;
+    node* next[KIND];
+    void init(){
+        r=c=-1;
+        isword=false;
+        memset(next, 0, sizeof(next));
+    }
+}Heap[MAXN];
+
+inline node* new_node(){
+    Heap[cnt_node].init();
+    return &amp;Heap[cnt_node++];
+}
+// 把询问的单词建Trie树
+void insert(node* root, char *str){
+    for(char *p=str; *p; ++p){
+        int ch=*p-'A';
+        if(root-&gt;next[ch]==NULL)
+            root-&gt;next[ch] = new_node();
+        root=root-&gt;next[ch];
+    } 
+    root-&gt;isword=true;
+}
+// 对矩阵中枚举的单词查找是否再Trie树中
+void search(node* root, char *str, int row, int col){
+    for(char *p=str; *p; ++p){
+        int ch=*p-'A';
+        if(root-&gt;next[ch]==NULL)
+            return ;
+        root=root-&gt;next[ch];
+        if(root-&gt;isword &amp;&amp; root-&gt;r==-1 &amp;&amp; root-&gt;c==-1){
+            root-&gt;r=row, root-&gt;c=col; 
+        }
+    }
+    if(root-&gt;isword &amp;&amp; root-&gt;r==-1 &amp;&amp; root-&gt;c==-1){
+        root-&gt;r=row, root-&gt;c=col;
+    }
+}
+// 输出询问的单词在矩阵中的位置
+void output(node* root, char *str){
+    for(char *p=str; *p; ++p){
+        int ch=*p-'A';
+        if(root-&gt;next[ch]==NULL) 
+            return;
+        root=root-&gt;next[ch];
+    }
+    if(root-&gt;isword)
+        printf("%d %d\n", root-&gt;r, root-&gt;c);
+}
+
+int main(){
+    // Trie init
+    cnt_node=0;
+    node* root=new_node();
+
+    scanf("%d%d%*c",&amp;R,&amp;C);
+    for(int i=0; i&lt;R; ++i){
+        gets(map[i]);
+    }
+
+    gets(word[0]); //消除空格
+    int pos=0;
+    while(gets(word[pos])){
+        if(word[pos][0]=='-') break;
+        insert(root, word[pos++]);
+    }
+
+    char str[30];
+
+    for(int i=0; i&lt;R; ++i){
+        for(int j=0; j&lt;C; ++j){
+            int end_r,end_c=j;
+            // 竖下
+            if(i+20&lt;R)
+                end_r=i+20;
+            else 
+                end_r=R;
+            memset(str, 0, sizeof(str));
+            for(int k=i,p=0; k&lt;end_r; ++k)
+                str[p++]=map[k][j];
+            search(root, str, i, j);
+            
+            // 横着
+            if(j+20&lt;C) 
+                end_c=j+20;
+            else
+                end_c=C;
+            memset(str, 0, sizeof(str));
+            for(int k=j,p=0; k&lt;end_c; ++k)
+                str[p++]=map[i][k];
+            search(root, str, i, j);
+
+            // 斜着
+            int r=i, c=j,p=0;
+            memset(str, 0, sizeof(str));
+            while(r&lt;end_r &amp;&amp; c&lt;end_c){
+                str[p++]=map[r][c];
+                ++r, ++c;
+            }
+            search(root,str,i,j);
+        }
+    }
+
+    for(int i=0; i&lt;pos; ++i){
+        output(root, word[i]);
+    }
+    return 0;
+}</pre>
+<p>解题报告转自：http://blog.csdn.net/shuangde800/article/details/8112433</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-88842">
+<article class="comment" id="comment-88842">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515444" rel="external nofollow">新用户714082</a></span> on <a href="http://www.acmerblog.com/hdu-1857-word-puzzle-2844.html#comment-88842" rel="nofollow"><time datetime="2017-04-13T09:02:19+00:00" pubdate="">2017年4月13日 at 上午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>按喇叭的声音也是nyan吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-17444">
+<article class="comment" id="comment-17444">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jlucky</a></span> on <a href="http://www.acmerblog.com/hdu-1857-word-puzzle-2844.html#comment-17444" rel="nofollow"><time datetime="2015-06-30T16:36:43+00:00" pubdate="">2015年6月30日 at 下午4:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这配图…..</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-17440">
+<article class="comment" id="comment-17440">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dream</a></span> on <a href="http://www.acmerblog.com/hdu-1857-word-puzzle-2844.html#comment-17440" rel="nofollow"><time datetime="2015-05-27T21:35:57+00:00" pubdate="">2015年5月27日 at 下午9:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真心不错，力顶作者</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-17442">
+<article class="comment" id="comment-17442">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Bob</a></span> on <a href="http://www.acmerblog.com/hdu-1857-word-puzzle-2844.html#comment-17442" rel="nofollow"><time datetime="2015-05-09T02:30:00+00:00" pubdate="">2015年5月9日 at 上午2:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很有用，收藏了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-17441">
+<article class="comment" id="comment-17441">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dreams</a></span> on <a href="http://www.acmerblog.com/hdu-1857-word-puzzle-2844.html#comment-17441" rel="nofollow"><time datetime="2015-01-29T16:51:41+00:00" pubdate="">2015年1月29日 at 下午4:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>else if也是要比较两次</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-17443">
+<article class="comment" id="comment-17443">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sgx_go</a></span> on <a href="http://www.acmerblog.com/hdu-1857-word-puzzle-2844.html#comment-17443" rel="nofollow"><time datetime="2014-10-23T18:19:21+00:00" pubdate="">2014年10月23日 at 下午6:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>原来的主机不行，目前更换到了国内主机</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-17436">
+<article class="comment" id="comment-17436">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rick</a></span> on <a href="http://www.acmerblog.com/hdu-1857-word-puzzle-2844.html#comment-17436" rel="nofollow"><time datetime="2014-10-16T03:35:12+00:00" pubdate="">2014年10月16日 at 上午3:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>无需用转移方程也可以解决，哈哈</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-17447">
+<article class="comment" id="comment-17447">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">oneal</a></span> on <a href="http://www.acmerblog.com/hdu-1857-word-puzzle-2844.html#comment-17447" rel="nofollow"><time datetime="2014-09-10T01:41:35+00:00" pubdate="">2014年9月10日 at 上午1:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题别太纠结了，不同的编译器结果不一</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-17435">
+<article class="comment" id="comment-17435">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiaoliubuer</a></span> on <a href="http://www.acmerblog.com/hdu-1857-word-puzzle-2844.html#comment-17435" rel="nofollow"><time datetime="2014-09-05T06:30:46+00:00" pubdate="">2014年9月5日 at 上午6:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错的代码！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-17445">
+<article class="comment" id="comment-17445">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">vincent_ynh</a></span> on <a href="http://www.acmerblog.com/hdu-1857-word-puzzle-2844.html#comment-17445" rel="nofollow"><time datetime="2014-09-01T19:16:37+00:00" pubdate="">2014年9月1日 at 下午7:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Thanks for taking the time to examine this, I really feel strongly about it and love studying a lot more on this topic. If possible, as you acquire experience</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-17437">
+<article class="comment" id="comment-17437">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mechine</a></span> on <a href="http://www.acmerblog.com/hdu-1857-word-puzzle-2844.html#comment-17437" rel="nofollow"><time datetime="2014-07-16T07:48:07+00:00" pubdate="">2014年7月16日 at 上午7:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>mark, 备用</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-17439">
+<article class="comment" id="comment-17439">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1832044043</a></span> on <a href="http://www.acmerblog.com/hdu-1857-word-puzzle-2844.html#comment-17439" rel="nofollow"><time datetime="2014-06-15T15:39:44+00:00" pubdate="">2014年6月15日 at 下午3:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>if(j){<br/>
+                    int ans=a <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> ;<br/>
+                    for(int x=j-1;x&gt;=0;x–){<br/>
+                        if(!a <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/d7/newx_org.gif"/> ) break;<br/>
+                        ans=min(ans,a <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/d7/newx_org.gif"/> );<br/>
+                        sum+=ans;<br/>
+                    }<br/>
+                }<br/>
+求解释，，dp的思路是什么呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-17438">
+<article class="comment" id="comment-17438">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jinxiang23</a></span> on <a href="http://www.acmerblog.com/hdu-1857-word-puzzle-2844.html#comment-17438" rel="nofollow"><time datetime="2014-05-22T00:06:00+00:00" pubdate="">2014年5月22日 at 上午12:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>博主的C++功底真是好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-17448">
+<article class="comment" id="comment-17448">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jamoeba</a></span> on <a href="http://www.acmerblog.com/hdu-1857-word-puzzle-2844.html#comment-17448" rel="nofollow"><time datetime="2014-01-09T22:27:50+00:00" pubdate="">2014年1月9日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>目测会火</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-17446">
+<article class="comment" id="comment-17446">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">usx13123</a></span> on <a href="http://www.acmerblog.com/hdu-1857-word-puzzle-2844.html#comment-17446" rel="nofollow"><time datetime="2014-01-07T00:00:37+00:00" pubdate="">2014年1月7日 at 上午12:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>大致看了下，算法的时间复杂度没有很本性的提升，算不上高效。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

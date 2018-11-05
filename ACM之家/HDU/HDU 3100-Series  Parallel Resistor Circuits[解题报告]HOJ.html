@@ -1,0 +1,432 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-02</div>
+<div class="tit"><h1 class="entry-title">HDU 3100-Series / Parallel Resistor Circuits[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观752次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4915" href="http://www.acmerblog.com/hdu-3100-series-parallel-resistor-circuits-4915.html#comments" title="《HDU 3100-Series / Parallel Resistor Circuits[解题报告]HOJ》上的评论">27 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Series / Parallel Resistor Circuits</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+A series/parallel resistor circuit is shown here.
+<p></p><center><img alt="Defense of the Ancients" src="http://www.acmerblog.com/img/1394162456503.jpg"/></center>
+<p>The resistance value is given next to each resistor. Connection points (wires connecting two or more resistors together, are denoted by an uppercase letter. A and Z are reserved for the names of the connection points which are the endpoints of the circuit. Our goal is to calculate the equivalent resistance of the circuit (i.e., the equivalent resistance between A and Z).</p>
+<p>Within the circuit, a resistor can be specified by a triple consisting of the connection points at either endpoint, and the resistance. The resistor labelled “9" could be specified as either (C, D, 9) or (D, C, 9). A circuit specification is the set of all resistor specifications.</p>
+<p>A pair of resistors is in series if one of either of their endpoints have a common connection point that is not use by any other resistor (e.g., the resistors labelled “6" and “9" are both connected to C, which is not connected to anything else). Two series resistors can be replaced by an equivalent single resistor whose resistance is the sum of the replaced resistors (15, in the previous example).</p>
+<p>A pair of resistors is in parallel if both their endpoints have common connection points (e.g., the resistors labelled “3" and “10" above are both connected to R and D). Two parallel resistors can be replaced by an equivalent single resistor whose resistance is the inverse of the sum of the inverses of the two resistors ( (1/3 + 1/10)-1 = 2.307692 , in the previous example).</p>
+<p></p><center><img alt="Defense of the Ancients" src="http://www.acmerblog.com/img/1394162456671.jpg"/></center>
+<p>The equivalent resistance of a well-formed series-parallel resistor circuit can be determined by successively replacing a series or parallel resistor pair by the single equivalent resistor, until only one is left.</p>
+<p>Not all circuits can be decomposed into series and parallel components. The Wheatstone Bridge, shown here, is a classic example of a circuit that is not considered a well-formed series-parallel resistor circuit.</p>
+<p></p><center><img alt="Defense of the Ancients" src="http://www.acmerblog.com/img/1394162456885.jpg"/></center> </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+There will be multiple circuit specifications. The first input line for each circuit specification is an integer N  (N &lt; 1000 ), the number of resistors in the circuit. This is followed by N  lines, each being a resistor specification in the form: X Y r , where X  and Y  are uppercase characters, and r  is a positive integer resistance (r &lt; 100 ). The equivalent resistance is guaranteed never to be greater than 100.
+<p>A circuit with N = 0 indicates the last circuit, and should not be processed. </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+There will be multiple circuit specifications. The first input line for each circuit specification is an integer N  (N &lt; 1000 ), the number of resistors in the circuit. This is followed by N  lines, each being a resistor specification in the form: X Y r , where X  and Y  are uppercase characters, and r  is a positive integer resistance (r &lt; 100 ). The equivalent resistance is guaranteed never to be greater than 100.
+<p>A circuit with N = 0 indicates the last circuit, and should not be processed.</p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+8
+N R 2
+D R 3
+R N 2
+R D 10
+Z R 7
+C D 9
+N C 6
+A N 4
+2
+A Z 3
+Z A 10
+2
+P A 6
+P Z 9
+5
+A B 1
+B Z 4
+A C 8
+C Z 19
+B C 12
+0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+11.945
+2.308
+15.000
+-1.000</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include &lt;bits/stdc++.h&gt;
+
+using namespace std;
+
+vector&lt;double&gt; adj[26][26];
+int deg[26];
+
+int main() {
+  int n;
+  while (cin &gt;&gt; n, n) {
+    char v, w; double r;
+    for (int i = 0; i &lt; 26; i++) {
+      for (int j = 0; j &lt; 26; j++) {
+        adj[i][j].clear();
+      }
+    }
+    
+    for (int i = 0; i &lt; n; i++) {
+      cin &gt;&gt; v &gt;&gt; w &gt;&gt; r;
+      adj[v-'A'][w-'A'].push_back(r);
+      adj[w-'A'][v-'A'].push_back(r);
+    }
+    
+    for (int k = 0; k &lt; n; k++) {
+      //reducing parallel resistors
+      for (int i = 0; i &lt; 26; i++) {
+        for (int j = 0; j &lt; 26; j++) {
+          if (adj[i][j].size() &gt; 1) {
+            double inv_sum = 0;
+            for (int s = 0; s &lt; adj[i][j].size(); s++) {
+              inv_sum += 1.0/adj[i][j][s];
+            }
+            adj[i][j].clear(); adj[j][i].clear();
+            adj[i][j].push_back(1.0/inv_sum); adj[j][i].push_back(1.0/inv_sum);
+          }
+        }
+      }
+      
+      memset(deg, 0, sizeof deg);
+      for (int i = 0; i &lt; 26; i++) {
+        for (int j = 0; j &lt; 26; j++) {
+          if (adj[i][j].size()) deg[i]++;
+        }
+      }
+      
+      //reducing series resistors
+      for (int i = 0; i &lt; 26; i++) {
+        for (int j = 0; j &lt; 26; j++) {
+          for (int l = 0; l &lt; 26; l++) {
+            if (i == l || i == j || j == l) continue;
+            if (j == 0 || j == 25) continue;
+            if (adj[i][j].size() &amp;&amp; adj[j][l].size()) {
+              if (deg[j] != 2) break;
+              double r = adj[i][j][0] + adj[j][l][0];
+              adj[i][j].clear(); adj[j][i].clear();
+              adj[j][l].clear(); adj[l][j].clear();
+              adj[i][l].push_back(r); adj[l][i].push_back(r);
+              deg[j] = 0; deg[i]++; deg[l]++;
+            }
+          }
+        }
+      }
+    }
+    
+    bool reduced = true;
+    for (int i = 1; i &lt; 25; i++) {
+      if (deg[i] != 0) reduced = false;
+    }
+    
+    double ans = 0;
+    if (!reduced || adj[0][25].empty()) ans = -1;
+    else ans = adj[0][25][0];
+    
+    cout &lt;&lt; fixed &lt;&lt; setprecision(3) &lt;&lt; ans &lt;&lt; endl;
+  }
+	return 0;
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-79121">
+<article class="comment" id="comment-79121">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527120" rel="external nofollow">新用户006789</a></span> on <a href="http://www.acmerblog.com/hdu-3100-series-parallel-resistor-circuits-4915.html#comment-79121" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>喜欢漫画加群497663383</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79120">
+<article class="comment" id="comment-79120">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527120" rel="external nofollow">新用户006789</a></span> on <a href="http://www.acmerblog.com/hdu-3100-series-parallel-resistor-circuits-4915.html#comment-79120" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>喜欢漫画加群497663383</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79119">
+<article class="comment" id="comment-79119">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527120" rel="external nofollow">新用户006789</a></span> on <a href="http://www.acmerblog.com/hdu-3100-series-parallel-resistor-circuits-4915.html#comment-79119" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>喜欢漫画加群497663383</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79118">
+<article class="comment" id="comment-79118">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527120" rel="external nofollow">新用户006789</a></span> on <a href="http://www.acmerblog.com/hdu-3100-series-parallel-resistor-circuits-4915.html#comment-79118" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>喜欢漫画加群497663383</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79117">
+<article class="comment" id="comment-79117">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527120" rel="external nofollow">新用户006789</a></span> on <a href="http://www.acmerblog.com/hdu-3100-series-parallel-resistor-circuits-4915.html#comment-79117" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>喜欢漫画加群497663383</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79116">
+<article class="comment" id="comment-79116">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527120" rel="external nofollow">新用户006789</a></span> on <a href="http://www.acmerblog.com/hdu-3100-series-parallel-resistor-circuits-4915.html#comment-79116" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>喜欢漫画加群497663383</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79115">
+<article class="comment" id="comment-79115">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527120" rel="external nofollow">新用户006789</a></span> on <a href="http://www.acmerblog.com/hdu-3100-series-parallel-resistor-circuits-4915.html#comment-79115" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>喜欢漫画加群497663383</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79114">
+<article class="comment" id="comment-79114">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527120" rel="external nofollow">新用户006789</a></span> on <a href="http://www.acmerblog.com/hdu-3100-series-parallel-resistor-circuits-4915.html#comment-79114" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>喜欢漫画加群497663383</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79113">
+<article class="comment" id="comment-79113">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527120" rel="external nofollow">新用户006789</a></span> on <a href="http://www.acmerblog.com/hdu-3100-series-parallel-resistor-circuits-4915.html#comment-79113" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>喜欢漫画加群497663383</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79112">
+<article class="comment" id="comment-79112">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527120" rel="external nofollow">新用户006789</a></span> on <a href="http://www.acmerblog.com/hdu-3100-series-parallel-resistor-circuits-4915.html#comment-79112" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>喜欢漫画加群497663383</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79111">
+<article class="comment" id="comment-79111">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527120" rel="external nofollow">新用户006789</a></span> on <a href="http://www.acmerblog.com/hdu-3100-series-parallel-resistor-circuits-4915.html#comment-79111" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>喜欢漫画加群497663383</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-79110">
+<article class="comment" id="comment-79110">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527120" rel="external nofollow">新用户006789</a></span> on <a href="http://www.acmerblog.com/hdu-3100-series-parallel-resistor-circuits-4915.html#comment-79110" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>喜欢漫画加群497663383</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-79109">
+<article class="comment" id="comment-79109">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527120" rel="external nofollow">新用户006789</a></span> on <a href="http://www.acmerblog.com/hdu-3100-series-parallel-resistor-circuits-4915.html#comment-79109" rel="nofollow"><time datetime="2017-04-12T14:00:08+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>喜欢漫画加群497663383</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63142">
+<article class="comment" id="comment-63142">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiaobei</a></span> on <a href="http://www.acmerblog.com/hdu-3100-series-parallel-resistor-circuits-4915.html#comment-63142" rel="nofollow"><time datetime="2015-06-27T11:21:21+00:00" pubdate="">2015年6月27日 at 上午11:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>网站做得很好看，内容也多，全。前段时间在博客园里看到有人说：网页的好坏看字体。觉得微软雅黑的字体很好看，然后现在这个网站也用的这个字体！nice!</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-27123">
+<article class="comment" id="comment-27123">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">windy</a></span> on <a href="http://www.acmerblog.com/hdu-3100-series-parallel-resistor-circuits-4915.html#comment-27123" rel="nofollow"><time datetime="2015-05-25T13:25:46+00:00" pubdate="">2015年5月25日 at 下午1:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>输入样例作为一个整体输入，带回车</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27122">
+<article class="comment" id="comment-27122">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rtaxa</a></span> on <a href="http://www.acmerblog.com/hdu-3100-series-parallel-resistor-circuits-4915.html#comment-27122" rel="nofollow"><time datetime="2015-04-18T21:40:51+00:00" pubdate="">2015年4月18日 at 下午9:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一题还有个解释：没说桌子有多大，可以假设桌子和硬币一样大，肯定是先手胜</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63146">
+<article class="comment" id="comment-63146">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">vincent_ynh</a></span> on <a href="http://www.acmerblog.com/hdu-3100-series-parallel-resistor-circuits-4915.html#comment-63146" rel="nofollow"><time datetime="2015-04-09T00:09:09+00:00" pubdate="">2015年4月9日 at 上午12:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个分析相当全面，经典！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27124">
+<article class="comment" id="comment-27124">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">verycourage</a></span> on <a href="http://www.acmerblog.com/hdu-3100-series-parallel-resistor-circuits-4915.html#comment-27124" rel="nofollow"><time datetime="2015-01-26T15:40:17+00:00" pubdate="">2015年1月26日 at 下午3:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>隐藏最深的bug是(start+end)/2有可能上溢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-27121">
+<article class="comment" id="comment-27121">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">GordonTJ</a></span> on <a href="http://www.acmerblog.com/hdu-3100-series-parallel-resistor-circuits-4915.html#comment-27121" rel="nofollow"><time datetime="2015-01-07T12:52:18+00:00" pubdate="">2015年1月7日 at 下午12:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>给力</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63144">
+<article class="comment" id="comment-63144">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">645198</a></span> on <a href="http://www.acmerblog.com/hdu-3100-series-parallel-resistor-circuits-4915.html#comment-63144" rel="nofollow"><time datetime="2014-12-05T13:57:39+00:00" pubdate="">2014年12月5日 at 下午1:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚开始学习，为啥会报错了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63147">
+<article class="comment" id="comment-63147">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">final</a></span> on <a href="http://www.acmerblog.com/hdu-3100-series-parallel-resistor-circuits-4915.html#comment-63147" rel="nofollow"><time datetime="2014-11-17T17:39:09+00:00" pubdate="">2014年11月17日 at 下午5:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>思考人生吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27125">
+<article class="comment" id="comment-27125">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">g29tony</a></span> on <a href="http://www.acmerblog.com/hdu-3100-series-parallel-resistor-circuits-4915.html#comment-27125" rel="nofollow"><time datetime="2014-11-16T02:40:36+00:00" pubdate="">2014年11月16日 at 上午2:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>上面的评论很起劲，为什么我看不懂啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63145">
+<article class="comment" id="comment-63145">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wangzhenvs123</a></span> on <a href="http://www.acmerblog.com/hdu-3100-series-parallel-resistor-circuits-4915.html#comment-63145" rel="nofollow"><time datetime="2014-11-12T16:32:30+00:00" pubdate="">2014年11月12日 at 下午4:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈呀！这个Dijkstra模板好长OwQ！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-47729">
+<article class="comment" id="comment-47729">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">silianbo</a></span> on <a href="http://www.acmerblog.com/hdu-3100-series-parallel-resistor-circuits-4915.html#comment-47729" rel="nofollow"><time datetime="2014-10-17T00:03:14+00:00" pubdate="">2014年10月17日 at 上午12:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>51行错了，改为：void Union(struct subset subsets[], int x, int y)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-27119">
+<article class="comment" id="comment-27119">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">biantiao</a></span> on <a href="http://www.acmerblog.com/hdu-3100-series-parallel-resistor-circuits-4915.html#comment-27119" rel="nofollow"><time datetime="2014-09-17T13:22:34+00:00" pubdate="">2014年9月17日 at 下午1:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>清华也会出这么无聊的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27120">
+<article class="comment" id="comment-27120">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">actlea</a></span> on <a href="http://www.acmerblog.com/hdu-3100-series-parallel-resistor-circuits-4915.html#comment-27120" rel="nofollow"><time datetime="2014-05-26T10:00:17+00:00" pubdate="">2014年5月26日 at 上午10:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>题目需要求解的是最小值，而且没有考虑可能存在环</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63143">
+<article class="comment" id="comment-63143">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hunangangli</a></span> on <a href="http://www.acmerblog.com/hdu-3100-series-parallel-resistor-circuits-4915.html#comment-63143" rel="nofollow"><time datetime="2014-05-17T07:46:15+00:00" pubdate="">2014年5月17日 at 上午7:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有意思，有难度</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,496 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-03</div>
+<div class="tit"><h1 class="entry-title">HDU 3126-Nova[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观260次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4942" href="http://www.acmerblog.com/hdu-3126-nova-4942.html#comments" title="《HDU 3126-Nova[解题报告]HOJ》上的评论">24 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Nova</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+The Lich is a powerful hero that he can kill a wisp with his skill Frost Nova. The Burning Legion wants to conquer the forest so they sent some liches to kill all the wisps. A lich can kill a wisp once he could see the wisp and the wisp in his attack range. So the lich can attack a wisp when the distance between them is less than or equal to specific R and no trees are on the segment between the lich and wisp. Each lich has a cool down time that once he used Frost Nova he has to wait a few seconds for the next attack. Different liches may have different attack range and cool down time. The Lich King is the leader of the Burning Legion and he wants to arrange the attack order so the liches can wipe out all the wisps as soon as possible. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line consists of an integer T, indicating the number of test cases.<br/>The first line of each case consists of three integers N, M, K, indicating the number of lich, the number of wisps and the number of trees. The next N lines, each line consists of four integers x, y, r, t indicating the coordinate of that a lich, the radius of the attack range that lich’s Frost Nova can reach and the value of cool down time. The next M lines, each line consists of two integers x, y indicating the coordinate of each wisp. The last K lines, each line consists of three integers x, y, r, indicating the coordinate and radius of a tree. A lich cannot attack a wisp if the segment between them has a common point with the tree. The lich, wisp and trees will not overlap with each other. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The first line consists of an integer T, indicating the number of test cases.<br/>The first line of each case consists of three integers N, M, K, indicating the number of lich, the number of wisps and the number of trees. The next N lines, each line consists of four integers x, y, r, t indicating the coordinate of that a lich, the radius of the attack range that lich’s Frost Nova can reach and the value of cool down time. The next M lines, each line consists of two integers x, y indicating the coordinate of each wisp. The last K lines, each line consists of three integers x, y, r, indicating the coordinate and radius of a tree. A lich cannot attack a wisp if the segment between them has a common point with the tree. The lich, wisp and trees will not overlap with each other.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+2 3 1
+-100 0 100 3
+100 0 100 5
+-100 -10
+100 10
+110 11
+5 5 10</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+5</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">/*
+ *  解法: 很明显是几何 + 最小费用最大流, 关键是如何建图.
+ *        1. 设置一个源点和汇点.
+ *        2. 每个lich和每个wisp分别用一个点来表示.
+ *        3. 如果第i个lich能攻击到第j个wisp, 那么在图中从lich[i]到wisp[j]增加一条边, 容量为1, 费用为0.
+ *        4. 每个wisp连一条边到汇点, 容量为1, 费用为0.
+ *        5. 源点到每个lich连k条边, k为每个lich能攻击到的wisp数量, 每条边的容量为1, 第i条边的费用为i * t (i为0 - k-1, t为lich的cooldown时间)
+ *        运行最小费用最大流, 答案就是从源点到lich满流的边, 且费用最大的那条边的费用值.
+ */
+#include &lt;iostream&gt;
+#include &lt;math.h&gt;
+using namespace std;
+const int maxn = 205;
+const double eps = 1e-8;
+typedef int typef;
+typedef int typec;
+#define inff 0x0fffffff
+#define infc 0x0fffffff
+#define V    500
+#define E    200000
+struct network
+{
+    int nv, ne, pnt[E], nxt[E];
+    int vis[V], que[V], head[V], pv[V], pe[V];
+    typef flow, cap[E]; typec cost, dis[E], d[V];
+    void addedge(int u, int v, typef c, typec w)
+    {
+        pnt[ne] = v; cap[ne] = c;
+        dis[ne] = w; nxt[ne] = head[u]; head[u] = ne++;
+        pnt[ne] = u; cap[ne] = 0;
+        dis[ne] = -w; nxt[ne] = head[v]; head[v] = ne++;
+    }
+    int mincost(int src, int sink)
+    {
+        int i, k, f, r; typef mxf;
+        for(flow = 0, cost = 0; ; )
+        {
+            memset(pv, -1, sizeof(pv));
+            memset(vis, 0, sizeof(vis));
+            for(i = 0; i &lt; nv; ++i) d[i] = infc;
+            d[src] = 0; pv[src] = src; vis[src] = 1;
+            for(f = 0, r = 1, que[0] = src; r != f; )
+            {
+                i = que[f++]; vis[i] = 0;
+                if(V == f) f = 0;
+                for(k = head[i]; k != -1; k = nxt[k])
+                    if(cap[k] &amp;&amp; dis[k]+d[i] &lt; d[pnt[k]])
+                    {
+                        d[pnt[k]] = dis[k] + d[i];
+                        if(0 == vis[pnt[k]])
+                        {
+                            vis[pnt[k]] = 1;
+                            que[r++] = pnt[k];
+                            if(V == r) r = 0;
+                        }
+                        pv[pnt[k]] = i; pe[pnt[k]] = k;
+                    }
+            }
+            if(-1 == pv[sink]) break;
+            for(k = sink, mxf = inff; k != src; k = pv[k])
+                if(cap[pe[k]] &lt; mxf) mxf = cap[pe[k]];
+            flow += mxf; cost += d[sink] * mxf;
+            for(k = sink; k != src; k = pv[k])
+            {
+                cap[pe[k]] -= mxf; cap[pe[k]^1] += mxf;
+            }
+        }
+        return cost;
+    }
+    void init(int v)
+    {
+        nv = v; ne = 0;
+        memset(head, -1, 4 * v);
+    }
+} nw;
+struct Lich
+{
+    double x, y, r;
+    int t;
+    void input()
+    {
+        scanf("%lf %lf %lf %d", &amp;x, &amp;y, &amp;r, &amp;t);
+    }
+} lich[maxn];
+struct Wisp
+{
+    double x, y;
+    void input()
+    {
+        scanf("%lf %lf", &amp;x, &amp;y);
+    }
+} wisp[maxn];
+struct Tree
+{
+    double x, y, r;
+    void input()
+    {
+        scanf("%lf %lf %lf", &amp;x, &amp;y, &amp;r);
+    }
+} tree[maxn];
+int T, N, M, K;
+int ecnt[maxn];
+double Dot(double dx1, double dy1, double dx2, double dy2)
+{
+    return dx1 * dx2 + dy1 * dy2;
+}
+double Dis(double x0, double y0, double x1, double y1, double x2, double y2)
+{
+    double a, b, c;
+    if (fabs(x1 - x2) &gt; fabs(y1 - y2))
+    {
+        b = 1.0;
+        a = b * (y2 - y1) / (x1 - x2);
+        c = -(a * x1 + b * y1);
+    }
+    else
+    {
+        a = 1.0;
+        b = a * (x2 - x1) / (y1 - y2);
+        c = -(a * x1 + b * y1);
+    }
+    return fabs(a * x0 + b * y0 + c) / sqrt(a * a + b * b);
+}
+bool NoCross(int a, int b)
+{
+    int i;
+    for (i = 0; i &lt; K; i++)
+    {
+        if (Dot(tree[i].x - lich[a].x, tree[i].y - lich[a].y, wisp[b].x - lich[a].x, wisp[b].y - lich[a].y) &gt; 0.0 &amp;&amp;
+            Dot(tree[i].x - wisp[b].x, tree[i].y - wisp[b].y, lich[a].x - wisp[b].x, lich[a].y - wisp[b].y) &gt; 0.0 &amp;&amp;
+            Dis(tree[i].x, tree[i].y, lich[a].x, lich[a].y, wisp[b].x, wisp[b].y) &lt; tree[i].r + eps)
+            return false;
+    }
+    return true;
+}
+bool InRound(int i, int j)
+{
+    double dx = lich[i].x - wisp[j].x;
+    double dy = lich[i].y - wisp[j].y;
+    return sqrt(dx * dx + dy * dy) &lt; lich[i].r + eps;
+}
+void BuildGraph()
+{
+    int i, j;
+    for (i = 0; i &lt; N; i++)
+    {
+        ecnt[i] = 0;
+        for (j = 0; j &lt; M; j++)
+        {
+            if (InRound(i, j) &amp;&amp; NoCross(i, j))
+            {
+                ecnt[i]++;
+                nw.addedge(i, N + j, 1, 0);
+            }
+        }
+    }
+    for (i = 0; i &lt; N; i++)
+    {
+        for (j = 0; j &lt; ecnt[i]; j++)
+            nw.addedge(N + M, i, 1, lich[i].t * j);
+    }
+    for (i = 0; i &lt; M; i++)
+        nw.addedge(N + i, N + M + 1, 1, 0);
+}
+void Solve()
+{
+    nw.mincost(N + M, N + M + 1);
+    if (nw.flow != M)
+    {
+        printf("-1/n");
+        return;
+    }
+    int ans = 0;
+    for (int p = nw.head[N+M]; p != -1; p = nw.nxt[p])
+    {
+        if (nw.cap[p] == 0 &amp;&amp; nw.dis[p] &gt; ans)
+            ans = nw.dis[p];
+    }
+    printf("%d/n", ans);
+}
+int main()
+{
+    int i;
+    for (scanf("%d", &amp;T); T; T--)
+    {
+        scanf("%d %d %d", &amp;N, &amp;M, &amp;K);
+        for (i = 0; i &lt; N; i++)
+            lich[i].input();
+        for (i = 0; i &lt; M; i++)
+            wisp[i].input();
+        for (i = 0; i &lt; K; i++)
+            tree[i].input();
+        nw.init(N + M + 2);
+        BuildGraph();
+        Solve();
+    }
+    return 0;
+}</pre>
+<p>参考：http://blog.csdn.net/RaceBug2010/article/details/6092516</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-78872">
+<article class="comment" id="comment-78872">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515383" rel="external nofollow">新用户221642</a></span> on <a href="http://www.acmerblog.com/hdu-3126-nova-4942.html#comment-78872" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>TOP GUN在我在大陆电视上看的时候是叫做壮志凌云的……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78871">
+<article class="comment" id="comment-78871">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515383" rel="external nofollow">新用户221642</a></span> on <a href="http://www.acmerblog.com/hdu-3126-nova-4942.html#comment-78871" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>TOP GUN在我在大陆电视上看的时候是叫做壮志凌云的……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-78870">
+<article class="comment" id="comment-78870">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515383" rel="external nofollow">新用户221642</a></span> on <a href="http://www.acmerblog.com/hdu-3126-nova-4942.html#comment-78870" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>TOP GUN在我在大陆电视上看的时候是叫做壮志凌云的……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78869">
+<article class="comment" id="comment-78869">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515383" rel="external nofollow">新用户221642</a></span> on <a href="http://www.acmerblog.com/hdu-3126-nova-4942.html#comment-78869" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>TOP GUN在我在大陆电视上看的时候是叫做壮志凌云的……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-78868">
+<article class="comment" id="comment-78868">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515383" rel="external nofollow">新用户221642</a></span> on <a href="http://www.acmerblog.com/hdu-3126-nova-4942.html#comment-78868" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>TOP GUN在我在大陆电视上看的时候是叫做壮志凌云的……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78867">
+<article class="comment" id="comment-78867">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515383" rel="external nofollow">新用户221642</a></span> on <a href="http://www.acmerblog.com/hdu-3126-nova-4942.html#comment-78867" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>TOP GUN在我在大陆电视上看的时候是叫做壮志凌云的……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-78866">
+<article class="comment" id="comment-78866">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515383" rel="external nofollow">新用户221642</a></span> on <a href="http://www.acmerblog.com/hdu-3126-nova-4942.html#comment-78866" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>TOP GUN在我在大陆电视上看的时候是叫做壮志凌云的……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78865">
+<article class="comment" id="comment-78865">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515383" rel="external nofollow">新用户221642</a></span> on <a href="http://www.acmerblog.com/hdu-3126-nova-4942.html#comment-78865" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>TOP GUN在我在大陆电视上看的时候是叫做壮志凌云的……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-78864">
+<article class="comment" id="comment-78864">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515383" rel="external nofollow">新用户221642</a></span> on <a href="http://www.acmerblog.com/hdu-3126-nova-4942.html#comment-78864" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>TOP GUN在我在大陆电视上看的时候是叫做壮志凌云的……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78863">
+<article class="comment" id="comment-78863">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515383" rel="external nofollow">新用户221642</a></span> on <a href="http://www.acmerblog.com/hdu-3126-nova-4942.html#comment-78863" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>TOP GUN在我在大陆电视上看的时候是叫做壮志凌云的……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-78862">
+<article class="comment" id="comment-78862">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919515383" rel="external nofollow">新用户221642</a></span> on <a href="http://www.acmerblog.com/hdu-3126-nova-4942.html#comment-78862" rel="nofollow"><time datetime="2017-04-12T14:00:07+00:00" pubdate="">2017年4月12日 at 下午2:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>TOP GUN在我在大陆电视上看的时候是叫做壮志凌云的……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-57966">
+<article class="comment" id="comment-57966">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">g29tony</a></span> on <a href="http://www.acmerblog.com/hdu-3126-nova-4942.html#comment-57966" rel="nofollow"><time datetime="2015-06-30T22:08:12+00:00" pubdate="">2015年6月30日 at 下午10:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>神奇的网站</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-57974">
+<article class="comment" id="comment-57974">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Klaus</a></span> on <a href="http://www.acmerblog.com/hdu-3126-nova-4942.html#comment-57974" rel="nofollow"><time datetime="2015-04-05T16:40:30+00:00" pubdate="">2015年4月5日 at 下午4:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为是要把从字符串s的start位到当前位在hash中重置，修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-47818">
+<article class="comment" id="comment-47818">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Rocky</a></span> on <a href="http://www.acmerblog.com/hdu-3126-nova-4942.html#comment-47818" rel="nofollow"><time datetime="2015-01-24T14:16:55+00:00" pubdate="">2015年1月24日 at 下午2:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我还有个问题想请教一下，就是感觉对于新手来说，递归理解起来有些困难，不知有没有什么好的方法或者什么好的建议？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-57975">
+<article class="comment" id="comment-57975">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">calvert1991</a></span> on <a href="http://www.acmerblog.com/hdu-3126-nova-4942.html#comment-57975" rel="nofollow"><time datetime="2015-01-01T14:28:59+00:00" pubdate="">2015年1月1日 at 下午2:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>“可以发现,树将是满二叉树,”这句话不对吧，构造的树应该是“完全二叉树”，而非“满二叉树”。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63166">
+<article class="comment" id="comment-63166">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jue</a></span> on <a href="http://www.acmerblog.com/hdu-3126-nova-4942.html#comment-63166" rel="nofollow"><time datetime="2014-11-26T23:41:34+00:00" pubdate="">2014年11月26日 at 下午11:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已更正。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-57973">
+<article class="comment" id="comment-57973">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">changjf</a></span> on <a href="http://www.acmerblog.com/hdu-3126-nova-4942.html#comment-57973" rel="nofollow"><time datetime="2014-09-18T11:58:40+00:00" pubdate="">2014年9月18日 at 上午11:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是研发类的题还是算法类？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-57970">
+<article class="comment" id="comment-57970">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hsp_77_abc</a></span> on <a href="http://www.acmerblog.com/hdu-3126-nova-4942.html#comment-57970" rel="nofollow"><time datetime="2014-08-30T10:27:31+00:00" pubdate="">2014年8月30日 at 上午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已更正。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-57967">
+<article class="comment" id="comment-57967">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zx123456</a></span> on <a href="http://www.acmerblog.com/hdu-3126-nova-4942.html#comment-57967" rel="nofollow"><time datetime="2014-07-18T12:24:40+00:00" pubdate="">2014年7月18日 at 下午12:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真考人啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-57971">
+<article class="comment" id="comment-57971">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mnmlist</a></span> on <a href="http://www.acmerblog.com/hdu-3126-nova-4942.html#comment-57971" rel="nofollow"><time datetime="2014-05-28T17:55:29+00:00" pubdate="">2014年5月28日 at 下午5:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>站长好。我是一个准备创业的互联网小白,我们打算做一个有关国*际*游*学的平台。手上也有了一些境外资源。现阶段的团队现在没有cto.原意出让一些管理股寻找一个靠谱的技术专家做合伙人, 不知道是不是能得到您的帮助。发个帖子或者其他方式。期待您的回应。可以加我微信tianxielemon聊聊。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-57972">
+<article class="comment" id="comment-57972">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rick</a></span> on <a href="http://www.acmerblog.com/hdu-3126-nova-4942.html#comment-57972" rel="nofollow"><time datetime="2014-05-25T05:06:03+00:00" pubdate="">2014年5月25日 at 上午5:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有些说不通吧，只有1个孩子肯定是男孩了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-57969">
+<article class="comment" id="comment-57969">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zwj0571</a></span> on <a href="http://www.acmerblog.com/hdu-3126-nova-4942.html#comment-57969" rel="nofollow"><time datetime="2014-05-13T09:03:29+00:00" pubdate="">2014年5月13日 at 上午9:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是研发的在线笔试题吗?发现很多C啊，阿里不是JAVA多么？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-57968">
+<article class="comment" id="comment-57968">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangduanjing</a></span> on <a href="http://www.acmerblog.com/hdu-3126-nova-4942.html#comment-57968" rel="nofollow"><time datetime="2014-05-04T14:53:25+00:00" pubdate="">2014年5月4日 at 下午2:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>等待后面的实现，多谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-57965">
+<article class="comment" id="comment-57965">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">testnew</a></span> on <a href="http://www.acmerblog.com/hdu-3126-nova-4942.html#comment-57965" rel="nofollow"><time datetime="2014-03-18T18:13:59+00:00" pubdate="">2014年3月18日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Java真是解决大数的利器</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

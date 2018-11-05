@@ -1,0 +1,327 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-09</div>
+<div class="tit"><h1 class="entry-title">HDU 1332 LC-Display-DFS-[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph/graph-visit" rel="category tag" title="查看图的遍历中的全部文章">图的遍历</a></span><span class="i4">围观1474次</span><span class="i3"><a class="ds-thread-count" data-thread-key="1752" href="http://www.acmerblog.com/hdu-1332-LC-Display-1752.html#comments" title="《HDU 1332 LC-Display-DFS-[解题报告] C++》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">LC-Display</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+A friend of you has just bought a new computer. Until now, the most powerful computer he ever used has been a pocket calculator. Now, looking at his new computer, he is a bit disappointed, because he liked the LC-display of his calculator so much. So you decide to write a program that displays numbers in an LC-display-like style on his computer.  </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input contains several lines, one for each number to be displayed. Each line contains two integers s, n (1 &lt;= s &lt;= 10, 0 &lt;= n &lt;= 99 999 999), where n is the number to be displayed and s is the size in which it shall be displayed. 
+<p>The input file will be terminated by a line containing two zeros. This line should not be processed.  </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+Output the numbers given in the input file in an LC-display-style using s “-” signs for the horizontal segments and s “|” signs for the vertical ones. Each digit occupies exactly s+2 columns and 2s+3 rows. (Be sure to fill all the white space occupied by the digits with blanks, also for the last digit.) There has to be exactly one column of blanks between two digits. 
+<p>Output a blank line after each number. (You will find a sample of each digit in the sample output.) </p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2 12345
+3 67890
+0 0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+      --   --        -- 
+   |    |    | |  | | 
+   |    |    | |  | | 
+      --   --   --   -- 
+   | |       |    |    |
+   | |       |    |    |
+      --   --        -- 
+
+ ---   ---   ---   ---   --- 
+|         | |   | |   | |   |
+|         | |   | |   | |   |
+|         | |   | |   | |   |
+ ---         ---   --- 
+|   |     | |   |     | |   |
+|   |     | |   |     | |   |
+|   |     | |   |     | |   |
+ ---         ---   ---   ---</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include&lt;cstdio&gt;
+#include&lt;cstring&gt;
+#include&lt;cstdlib&gt;
+#include&lt;algorithm&gt;
+using namespace std;
+struct Eight
+{
+    char matrix[3][3];
+    int x,y;
+};
+Eight src,dst;
+int step[][2]= {{0,1},{-1,0},{1,0},{0,-1}};
+int dep,nextstep;
+char * cmd="dlru",ans[100];
+bool flag;
+bool OK(const Eight&amp; src)
+{
+    for(int i=0; i&lt;3; i++)
+        for(int j=0; j&lt;3; j++)
+            if(src.matrix[i][j] &amp;&amp; src.matrix[i][j] !=i*3+j+1)
+                return false;
+    return true;
+}
+int h(const Eight&amp; src)
+{
+    int ans =0;
+    for(int i=0; i&lt;3; i++)
+        for(int j=0; j&lt;3; j++)
+            if(src.matrix[i][j])
+                ans += abs(i-(src.matrix[i][j]-1)/3)+abs(j-(src.matrix[i][j]-1)%3);
+    return ans;
+}
+bool CanSovle()
+{
+    int ans = 0;
+    for(int i=0;i&lt;3;i++)
+        for(int j=0;j&lt;3;j++)
+            if(src.matrix[i][j])
+                for(int y=0;y&lt;3;y++)
+                    for(int x=0;y*3+x&lt;=i*3+j &amp;&amp; x&lt;3;x++)
+                        if(src.matrix[y][x] &amp;&amp; src.matrix[y][x] &gt;src.matrix[i][j])
+                            ans++;
+    return ans % 2 ==0;
+}
+void dfs(int x,Eight src,int from)
+{
+    if(OK(src))
+    {
+        flag = true;
+        return;
+    }
+    int t = h(src);
+    if(x + t &gt;dep || flag)
+    {
+        nextstep = min (nextstep,x+t);
+        return;
+    }
+    for(int i=0; i&lt;4 &amp;&amp; !flag; i++)
+    {
+        if(from + i ==3)
+            continue;
+        int tx = src.x + step[i][0];
+        int ty = src.y + step[i][1];
+        if(tx &gt;=0 &amp;&amp; tx&lt;=2 &amp;&amp; ty&gt;=0 &amp;&amp; ty&lt;=2)
+        {
+            Eight tmp = src;
+            swap(tmp.matrix[src.y][src.x],tmp.matrix[ty][tx]);
+            tmp.x = tx;
+            tmp.y = ty;
+            dfs(x+1,tmp,i);
+            if(flag)
+                ans[x]=cmd[i];
+        }
+    }
+}
+void IDAstar(Eight src)
+{
+    memset(ans,0,sizeof(ans));
+    for(dep = h(src);!flag; dep=nextstep)
+    {
+        nextstep=100;
+        dfs(0,src,-1);
+    }
+}
+int main()
+{
+    while(1)
+    {
+        flag = false;
+        for(int i=0; i&lt;3; i++)
+        {
+            for(int j=0; j&lt;3; j++)
+            {
+                if(scanf(" %c",&amp;src.matrix[i][j])!=1)
+                    return 0;
+                if(src.matrix[i][j]=='x')
+                {
+                    src.matrix[i][j]=0;
+                    src.y=i;
+                    src.x=j;
+                }
+                else
+                    src.matrix[i][j]-='0';
+            }
+        }
+        if(CanSovle())
+        {
+            IDAstar(src);
+            printf("%s\n",ans);
+        }
+        else
+            printf("unsolvable\n");
+    }
+    return 0;
+}</pre>
+<p>解题报告转自：http://www.cnblogs.com/luyi0619/archive/2010/10/29/1864808.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-12570">
+<article class="comment" id="comment-12570">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">aaa</a></span> on <a href="http://www.acmerblog.com/hdu-1332-LC-Display-1752.html#comment-12570" rel="nofollow"><time datetime="2015-06-22T16:37:23+00:00" pubdate="">2015年6月22日 at 下午4:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为\n\n</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-54604">
+<article class="comment" id="comment-54604">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fastislow</a></span> on <a href="http://www.acmerblog.com/hdu-1332-LC-Display-1752.html#comment-54604" rel="nofollow"><time datetime="2015-05-06T09:35:00+00:00" pubdate="">2015年5月6日 at 上午9:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚开始学，非常好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-12567">
+<article class="comment" id="comment-12567">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gladuo</a></span> on <a href="http://www.acmerblog.com/hdu-1332-LC-Display-1752.html#comment-12567" rel="nofollow"><time datetime="2014-12-14T08:44:33+00:00" pubdate="">2014年12月14日 at 上午8:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>此题的样例描述不正确</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-12565">
+<article class="comment" id="comment-12565">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">melody12ab</a></span> on <a href="http://www.acmerblog.com/hdu-1332-LC-Display-1752.html#comment-12565" rel="nofollow"><time datetime="2014-09-03T02:05:49+00:00" pubdate="">2014年9月3日 at 上午2:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>yeah, This is very tricky. If you use Cpp,you need more code</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-54602">
+<article class="comment" id="comment-54602">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jlucky</a></span> on <a href="http://www.acmerblog.com/hdu-1332-LC-Display-1752.html#comment-54602" rel="nofollow"><time datetime="2014-08-30T07:10:31+00:00" pubdate="">2014年8月30日 at 上午7:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>a是根先忽略掉，递归子树。剩下前缀bejkcfghid和后缀jkebfghicd，分拆的原则的是每个子树前缀和后缀的节点个数是一样的，根节点出现在前缀的第一个，后缀的最后一个。根节点b出现后缀的第四个位置，则第一部分为四个节点，前缀bejk，后缀jkeb，剩下的c出现在后缀的倒数第2个，就划分为cfghi和 fghic，第3部分就为c、c</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-54603">
+<article class="comment" id="comment-54603">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">raymanshf</a></span> on <a href="http://www.acmerblog.com/hdu-1332-LC-Display-1752.html#comment-54603" rel="nofollow"><time datetime="2014-08-24T23:46:36+00:00" pubdate="">2014年8月24日 at 下午11:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>递归实现的代码部分<br/>
+14句和18句的 wt[n - 1]是不是应该改为 wt[ n ] ?</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-54601">
+<article class="comment" id="comment-54601">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rtaxa</a></span> on <a href="http://www.acmerblog.com/hdu-1332-LC-Display-1752.html#comment-54601" rel="nofollow"><time datetime="2014-06-27T15:23:18+00:00" pubdate="">2014年6月27日 at 下午3:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>I like your publish. It is great to see you verbalize from the coronary heart and clarity on this essential subject matter can be easily noticed.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-12563">
+<article class="comment" id="comment-12563">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">linyanjin</a></span> on <a href="http://www.acmerblog.com/hdu-1332-LC-Display-1752.html#comment-12563" rel="nofollow"><time datetime="2014-06-19T13:57:03+00:00" pubdate="">2014年6月19日 at 下午1:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一题还是比较考验智商~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-61463">
+<article class="comment" id="comment-61463">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Silence.L</a></span> on <a href="http://www.acmerblog.com/hdu-1332-LC-Display-1752.html#comment-61463" rel="nofollow"><time datetime="2014-05-15T11:04:21+00:00" pubdate="">2014年5月15日 at 上午11:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>写的好·····  Pollard Rho快速因数分解</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-61464">
+<article class="comment" id="comment-61464">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1193658339</a></span> on <a href="http://www.acmerblog.com/hdu-1332-LC-Display-1752.html#comment-61464" rel="nofollow"><time datetime="2014-05-10T16:37:09+00:00" pubdate="">2014年5月10日 at 下午4:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>最长回文子串可以使用manacher算法，将时间复杂度降到O(n)。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-12569">
+<article class="comment" id="comment-12569">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zwj0571</a></span> on <a href="http://www.acmerblog.com/hdu-1332-LC-Display-1752.html#comment-12569" rel="nofollow"><time datetime="2014-04-04T13:19:52+00:00" pubdate="">2014年4月4日 at 下午1:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有点意思</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-12566">
+<article class="comment" id="comment-12566">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wawa</a></span> on <a href="http://www.acmerblog.com/hdu-1332-LC-Display-1752.html#comment-12566" rel="nofollow"><time datetime="2013-12-26T16:58:04+00:00" pubdate="">2013年12月26日 at 下午4:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>隐藏最深的bug是(start+end)/2有可能上溢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-12568">
+<article class="comment" id="comment-12568">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dream</a></span> on <a href="http://www.acmerblog.com/hdu-1332-LC-Display-1752.html#comment-12568" rel="nofollow"><time datetime="2013-12-24T07:50:05+00:00" pubdate="">2013年12月24日 at 上午7:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>全是智力分析的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-12564">
+<article class="comment" id="comment-12564">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">youpushipop</a></span> on <a href="http://www.acmerblog.com/hdu-1332-LC-Display-1752.html#comment-12564" rel="nofollow"><time datetime="2013-12-14T22:30:45+00:00" pubdate="">2013年12月14日 at 下午10:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一题还是比较考验智商~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

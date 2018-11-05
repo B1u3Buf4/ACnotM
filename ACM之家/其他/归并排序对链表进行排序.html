@@ -1,0 +1,463 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-24</div>
+<div class="tit"><h1 class="entry-title">归并排序对链表进行排序</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/gaotong2055" rel="author" title="由dragon发布">dragon</a></span><span class="i1"><a href="http://www.acmerblog.com/category/basis/sort" rel="category tag" title="查看排序中的全部文章">排序</a>, <a href="http://www.acmerblog.com/category/zhuanti/algorithm" rel="category tag" title="查看算法分析中的全部文章">算法分析</a></span><span class="i4">围观2857次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5371" href="http://www.acmerblog.com/merge-sort-for-linked-list-5371.html#comments" title="《归并排序对链表进行排序》上的评论">28 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p><a href="http://www.acmerblog.com/merge-sort-5372.html">归并排序</a>通常是链表排序的第一选择。由于无法对链表随机访问，快速排序的的效果并不好，堆排序也是无法实现的。</p>
+<p>为了和大部分数据结构中的链表结构保持一致，<strong>head</strong>表示链表的头节点，<strong>headRef</strong>表示指向头节点(head)的指针。注意，我们需要一个指针指向头节点MergeSort()中，因为以下实现将更改next，所以头节点必须改变如果原始数据头不是链表中的最小值。</p>
+<pre class="brush:other">MergeSort(headRef)
+1) If head == NULL or 只有一个元素
+    then return.
+2) Else 将链表分为两个部分  
+      FrontBackSplit(head, &amp;a, &amp;b); /* a,b分别代表分割后的链表 */
+3) 分别对a,b排序
+      MergeSort(a);
+      MergeSort(b);
+4) 合并已排序的a,b ，并跟新 头指针headRef
+     *headRef = SortedMerge(a, b);</pre>
+<p>代码实现：</p>
+<pre class="brush:cpp">#include&lt;stdio.h&gt;
+#include&lt;stdlib.h&gt;
+
+struct node
+{
+    int data;
+    struct node* next;
+};
+
+/* 函数定义 */
+struct node* SortedMerge(struct node* a, struct node* b);
+void FrontBackSplit(struct node* source,
+          struct node** frontRef, struct node** backRef);
+
+/* 通过改变指针来排序，而不是数据 */
+void MergeSort(struct node** headRef)
+{
+  struct node* head = *headRef;
+  struct node* a;
+  struct node* b;
+
+  if ((head == NULL) || (head-&gt;next == NULL))
+  {
+    return;
+  }
+
+  /* 分割链表为 'a' 和  'b' 两个子链表 */
+  FrontBackSplit(head, &amp;a, &amp;b); 
+
+  MergeSort(&amp;a);
+  MergeSort(&amp;b);
+
+  /* 记得跟新头指针 */
+  *headRef = SortedMerge(a, b);
+}
+
+/* 合并两个已排序链表 */
+struct node* SortedMerge(struct node* a, struct node* b)
+{
+  struct node* result = NULL;
+  if (a == NULL)
+     return(b);
+  else if (b==NULL)
+     return(a);
+  /* 使用递归调用的方法 */
+  if (a-&gt;data &lt;= b-&gt;data)
+  {
+     result = a;
+     result-&gt;next = SortedMerge(a-&gt;next, b);
+  }
+  else
+  {
+     result = b;
+     result-&gt;next = SortedMerge(a, b-&gt;next);
+  }
+  return(result);
+}
+
+/* 公用函数 */
+/* 分割一个链表为两部分，通过指针返回结果，使用快慢指针  */
+void FrontBackSplit(struct node* source,
+          struct node** frontRef, struct node** backRef)
+{
+  struct node* fast;
+  struct node* slow;
+  if (source==NULL || source-&gt;next==NULL)
+  {
+    /* length &lt; 2 */
+    *frontRef = source;
+    *backRef = NULL;
+  }
+  else
+  {
+    slow = source;
+    fast = source-&gt;next;
+
+    /* 'fast'移动两个节点,  'slow' 移动一个节点 */
+    while (fast != NULL)
+    {
+      fast = fast-&gt;next;
+      if (fast != NULL)
+      {
+        slow = slow-&gt;next;
+        fast = fast-&gt;next;
+      }
+    }
+
+    /* 'slow' 在中间位置的前面 */
+    *frontRef = source;
+    *backRef = slow-&gt;next;
+    slow-&gt;next = NULL;
+  }
+}
+
+/* 打印链表 */
+void printList(struct node *node)
+{
+  while(node!=NULL)
+  {
+   printf("%d ", node-&gt;data);
+   node = node-&gt;next;
+  }
+}
+
+/* 插入数据 */
+void push(struct node** head_ref, int new_data)
+{
+  struct node* new_node =
+            (struct node*) malloc(sizeof(struct node));
+
+  new_node-&gt;data  = new_data;
+  new_node-&gt;next = (*head_ref);    
+  (*head_ref)    = new_node;
+} 
+
+/* 测试程序 */
+int main()
+{
+  struct node* res = NULL;
+  struct node* a = NULL;
+
+  /* 创建一下链表 a: 2-&gt;3-&gt;20-&gt;5-&gt;10-&gt;15 */
+  push(&amp;a, 15);
+  push(&amp;a, 10);
+  push(&amp;a, 5); 
+  push(&amp;a, 20);
+  push(&amp;a, 3);
+  push(&amp;a, 2); 
+
+  MergeSort(&amp;a);
+
+  printf("\n Sorted Linked List is: \n");
+  printList(a);           
+
+  getchar();
+  return 0;
+}</pre>
+<p>参考：http://www.geeksforgeeks.org/merge-sort-for-linked-list/</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-76413">
+<article class="comment" id="comment-76413">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514152" rel="external nofollow">新用户931576</a></span> on <a href="http://www.acmerblog.com/merge-sort-for-linked-list-5371.html#comment-76413" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你肿么知道的，嚯呀？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76412">
+<article class="comment" id="comment-76412">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514152" rel="external nofollow">新用户931576</a></span> on <a href="http://www.acmerblog.com/merge-sort-for-linked-list-5371.html#comment-76412" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你肿么知道的，嚯呀？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76411">
+<article class="comment" id="comment-76411">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514152" rel="external nofollow">新用户931576</a></span> on <a href="http://www.acmerblog.com/merge-sort-for-linked-list-5371.html#comment-76411" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你肿么知道的，嚯呀？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76410">
+<article class="comment" id="comment-76410">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514152" rel="external nofollow">新用户931576</a></span> on <a href="http://www.acmerblog.com/merge-sort-for-linked-list-5371.html#comment-76410" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你肿么知道的，嚯呀？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76409">
+<article class="comment" id="comment-76409">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514152" rel="external nofollow">新用户931576</a></span> on <a href="http://www.acmerblog.com/merge-sort-for-linked-list-5371.html#comment-76409" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你肿么知道的，嚯呀？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76408">
+<article class="comment" id="comment-76408">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514152" rel="external nofollow">新用户931576</a></span> on <a href="http://www.acmerblog.com/merge-sort-for-linked-list-5371.html#comment-76408" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你肿么知道的，嚯呀？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76407">
+<article class="comment" id="comment-76407">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514152" rel="external nofollow">新用户931576</a></span> on <a href="http://www.acmerblog.com/merge-sort-for-linked-list-5371.html#comment-76407" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你肿么知道的，嚯呀？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76406">
+<article class="comment" id="comment-76406">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514152" rel="external nofollow">新用户931576</a></span> on <a href="http://www.acmerblog.com/merge-sort-for-linked-list-5371.html#comment-76406" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你肿么知道的，嚯呀？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76405">
+<article class="comment" id="comment-76405">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514152" rel="external nofollow">新用户931576</a></span> on <a href="http://www.acmerblog.com/merge-sort-for-linked-list-5371.html#comment-76405" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你肿么知道的，嚯呀？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76404">
+<article class="comment" id="comment-76404">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514152" rel="external nofollow">新用户931576</a></span> on <a href="http://www.acmerblog.com/merge-sort-for-linked-list-5371.html#comment-76404" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你肿么知道的，嚯呀？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76403">
+<article class="comment" id="comment-76403">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514152" rel="external nofollow">新用户931576</a></span> on <a href="http://www.acmerblog.com/merge-sort-for-linked-list-5371.html#comment-76403" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你肿么知道的，嚯呀？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76402">
+<article class="comment" id="comment-76402">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514152" rel="external nofollow">新用户931576</a></span> on <a href="http://www.acmerblog.com/merge-sort-for-linked-list-5371.html#comment-76402" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你肿么知道的，嚯呀？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-76401">
+<article class="comment" id="comment-76401">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514152" rel="external nofollow">新用户931576</a></span> on <a href="http://www.acmerblog.com/merge-sort-for-linked-list-5371.html#comment-76401" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你肿么知道的，嚯呀？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-76400">
+<article class="comment" id="comment-76400">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514152" rel="external nofollow">新用户931576</a></span> on <a href="http://www.acmerblog.com/merge-sort-for-linked-list-5371.html#comment-76400" rel="nofollow"><time datetime="2017-04-12T07:34:16+00:00" pubdate="">2017年4月12日 at 上午7:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你肿么知道的，嚯呀？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49044">
+<article class="comment" id="comment-49044">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Mitrenick</a></span> on <a href="http://www.acmerblog.com/merge-sort-for-linked-list-5371.html#comment-49044" rel="nofollow"><time datetime="2015-05-31T15:12:56+00:00" pubdate="">2015年5月31日 at 下午3:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正在练习，很有帮助</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49045">
+<article class="comment" id="comment-49045">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Mayboy</a></span> on <a href="http://www.acmerblog.com/merge-sort-for-linked-list-5371.html#comment-49045" rel="nofollow"><time datetime="2015-01-25T04:05:25+00:00" pubdate="">2015年1月25日 at 上午4:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算法还停留在大学的知识中</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58619">
+<article class="comment" id="comment-58619">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">water160</a></span> on <a href="http://www.acmerblog.com/merge-sort-for-linked-list-5371.html#comment-58619" rel="nofollow"><time datetime="2014-12-13T19:47:55+00:00" pubdate="">2014年12月13日 at 下午7:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感觉这里的评分标准没啥作用阿，反而显得显得赘余，还不如直接去掉好了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49042">
+<article class="comment" id="comment-49042">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">20122256</a></span> on <a href="http://www.acmerblog.com/merge-sort-for-linked-list-5371.html#comment-49042" rel="nofollow"><time datetime="2014-11-30T21:55:29+00:00" pubdate="">2014年11月30日 at 下午9:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>具体实现上有所差别，但思路是一样的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58618">
+<article class="comment" id="comment-58618">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hunangangli</a></span> on <a href="http://www.acmerblog.com/merge-sort-for-linked-list-5371.html#comment-58618" rel="nofollow"><time datetime="2014-11-23T11:38:40+00:00" pubdate="">2014年11月23日 at 上午11:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>和编译器有关吧，我用的g++正常。头文件可能还需要一个&lt;string.h&gt;</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29788">
+<article class="comment" id="comment-29788">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangduanjing</a></span> on <a href="http://www.acmerblog.com/merge-sort-for-linked-list-5371.html#comment-29788" rel="nofollow"><time datetime="2014-09-25T08:07:01+00:00" pubdate="">2014年9月25日 at 上午8:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有没有C++语言的代码？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49041">
+<article class="comment" id="comment-49041">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hunangangli</a></span> on <a href="http://www.acmerblog.com/merge-sort-for-linked-list-5371.html#comment-49041" rel="nofollow"><time datetime="2014-09-02T00:28:45+00:00" pubdate="">2014年9月2日 at 上午12:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>remove没有实现</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29790">
+<article class="comment" id="comment-29790">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hehe_snail</a></span> on <a href="http://www.acmerblog.com/merge-sort-for-linked-list-5371.html#comment-29790" rel="nofollow"><time datetime="2014-08-10T04:06:55+00:00" pubdate="">2014年8月10日 at 上午4:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有意思，有难度</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49040">
+<article class="comment" id="comment-49040">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rick</a></span> on <a href="http://www.acmerblog.com/merge-sort-for-linked-list-5371.html#comment-49040" rel="nofollow"><time datetime="2014-08-03T06:10:53+00:00" pubdate="">2014年8月3日 at 上午6:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这种题解就相当于直接贴代码了，，想看的是思路</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49038">
+<article class="comment" id="comment-49038">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">HDC</a></span> on <a href="http://www.acmerblog.com/merge-sort-for-linked-list-5371.html#comment-49038" rel="nofollow"><time datetime="2014-07-24T13:41:49+00:00" pubdate="">2014年7月24日 at 下午1:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>使用代码高亮的插件，再修改下css</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58617">
+<article class="comment" id="comment-58617">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">vincent_ynh</a></span> on <a href="http://www.acmerblog.com/merge-sort-for-linked-list-5371.html#comment-58617" rel="nofollow"><time datetime="2014-07-14T19:39:16+00:00" pubdate="">2014年7月14日 at 下午7:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好。代码比书上的简练！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-29789">
+<article class="comment" id="comment-29789">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">GordonTJ</a></span> on <a href="http://www.acmerblog.com/merge-sort-for-linked-list-5371.html#comment-29789" rel="nofollow"><time datetime="2014-05-24T19:04:22+00:00" pubdate="">2014年5月24日 at 下午7:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实不需要用LCA，用DFS+vector更简单</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49043">
+<article class="comment" id="comment-49043">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">anshansh</a></span> on <a href="http://www.acmerblog.com/merge-sort-for-linked-list-5371.html#comment-49043" rel="nofollow"><time datetime="2014-04-27T19:35:44+00:00" pubdate="">2014年4月27日 at 下午7:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢支持！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49039">
+<article class="comment" id="comment-49039">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiaoliubuer</a></span> on <a href="http://www.acmerblog.com/merge-sort-for-linked-list-5371.html#comment-49039" rel="nofollow"><time datetime="2014-04-04T06:16:15+00:00" pubdate="">2014年4月4日 at 上午6:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#include &lt;cstdio&gt;</p>
+<p>int main() {<br/>
+	//answer must be odd<br/>
+    int n, u, d;<br/>
+    while(scanf("%d%d%d",&amp;n,&amp;u,&amp;d)==3 &amp;&amp; n&gt;0) {<br/>
+        if(n&lt;=u) { puts("1"); continue; }<br/>
+        n-=u; u-=d; n+=u-1; n/=u;<br/>
+        n&lt;&lt;=1, ++n;<br/>
+        printf("%dn",n);<br/>
+    }<br/>
+    return 0;<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

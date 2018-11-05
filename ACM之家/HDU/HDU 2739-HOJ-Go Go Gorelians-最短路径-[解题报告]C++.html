@@ -1,0 +1,507 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>02-14</div>
+<div class="tit"><h1 class="entry-title">HDU 2739-HOJ-Go Go Gorelians-最短路径-[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph/shortest-path" rel="category tag" title="查看最短路径中的全部文章">最短路径</a></span><span class="i4">围观597次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4354" href="http://www.acmerblog.com/hdu-2739-go-go-gorelians-4354.html#comments" title="《HDU 2739-HOJ-Go Go Gorelians-最短路径-[解题报告]C++》上的评论">30 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Go Go Gorelians</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+The Gorelians travel through space using warp links. Travel through a warp link is instantaneous, but for safety reasons, an individual can only warp once every 10 hours. Also, the cost of creating a warp link increases directly with the linear distance between the link endpoints.
+<p>The Gorelians, being the dominant force in the known universe, are often bored, so they frequently conquer new regions of space in the following manner.</p>
+<p>1) The initial invasion force finds a suitable planet and conquers it, establishing a Regional Gorelian Galactic Government, hereafter referred to as the RGGG, that will govern all Gorelian matters in this region of space.</p>
+<p>2) When the next planet is conquered, a single warp link is constructed between the new planet and the RGGG planet. Planets connected via warp links in this manner are said to be part of the Regional Gorelian Planetary Network, that is, the RGPN.</p>
+<p>3) As additional planets are conquered, each new planet is connected with a single warp link to the nearest planet already in the RGPN, thus keeping the cost of connecting new planets to the network to a minimum. If two or more planets are equidistant from the new planet, the new planet is connected to whichever of them was conquered first.</p>
+<p>This causes a problem however. Since planets are conquered in a more-or-less random fashion, after a while, the RGGG will probably not be in an ideal location. Some Gorelians needing to consult with the RGGG might only have to make one or two warps, but others might require dozens—very inconvenient when one considers the 10-hour waiting period between warps.</p>
+<p>So, once each Gorelian year, the RGGG analyzes the RGPN and relocates itself to an optimal location. The optimal location is defined as a planet that minimizes the maximum number of warps required to reach the RGGG from any planet in the RGPN. As it turns out, there is always exactly one or two such planets. When there are two, they are always directly adjacent via a warp link, and the RGGG divides itself evenly between the two planets.</p>
+<p>Your job is to write a program that finds the optimal planets for the RGGG. For the purposes of this problem, the region of space conquered by the Gorelians is defined as a cube that ranges from (0,0,0) to (1000,1000,1000). </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input consists of a set of scenarios where the Gorelians conquer a region of space. Each scenario is independent. The first line of the scenario is an integer N that specifies the total number of planets conquered by the Gorelians. The next N lines of the input specify, in the order conquered, the IDs and coordinates of the conquered planets to be added to the RGPN, in the format ID X Y Z. An ID is an integer from 1 to 1000. X, Y, and Z are integers from 0 to 1000. A single space separates the numbers. A value of N = 0 marks the end of the input.</div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input consists of a set of scenarios where the Gorelians conquer a region of space. Each scenario is independent. The first line of the scenario is an integer N that specifies the total number of planets conquered by the Gorelians. The next N lines of the input specify, in the order conquered, the IDs and coordinates of the conquered planets to be added to the RGPN, in the format ID X Y Z. An ID is an integer from 1 to 1000. X, Y, and Z are integers from 0 to 1000. A single space separates the numbers. A value of N = 0 marks the end of the input.
+</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+5
+1 0 0 0
+2 0 0 1
+3 0 0 2
+4 0 0 3
+5 0 0 4
+5
+1 0 0 0
+2 1 1 0
+3 3 2 0
+4 2 1 0
+5 3 0 0
+10
+21 71 76 4
+97 32 5 69
+70 33 19 35
+3 79 81 8
+31 91 17 67
+52 31 48 75
+48 90 14 4
+41 73 2 21
+83 74 41 69
+26 32 30 24
+0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+3
+2 4
+31 97</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">/*若原图的基图不连通,
+ 或者存在某个点的入度或出度为 0 则无解。
+ 统计所有点的入度出度之差 Di, 对于 Di &gt; 0 的点,
+ 加边(s, i, Di, 0); 对于 Di &lt; 0 的点加边(i, t, -Di,0);
+ 对原图中的每条边(i, j),
+ 在网络中加边(i, j, ∞, Dij),Dij 为边(i, j)的权值。
+ 求一次最小费用流,费用加上原图所有边权和即为结果。
+ 若进一步要求输出最小权值回路,则对所有流量 fij &gt; 0 的边(i, j),在原图中复制fij 份,这样原图便成为欧拉图,求一次欧拉回路即可。
+ */
+ #include &lt;iostream&gt;
+ #include &lt;cstdio&gt;
+ #include &lt;cstring&gt;
+ #include &lt;queue&gt;
+ #include &lt;algorithm&gt;
+ #include &lt;cmath&gt;
+ 
+ using namespace std;
+ 
+ const int maxn = 1e2 + 5;
+ const int maxm = 2e4 + 5;
+ const int inf = 0x3f3f3f3f;
+ 
+ struct MCMF {
+     struct Edge {
+         int v, c, w, next;
+     }p[maxm &lt;&lt; 1];
+     int e, head[maxn], dis[maxn], pre[maxn], cnt[maxn], sumFlow, n;
+     bool vis[maxn];
+     void init(int nt){
+         e = 0, n = nt + 1;
+         memset(head, -1, sizeof(head[0]) * (n + 2));
+     }
+     void addEdge(int u, int v, int c, int w){
+         p[e].v = v; p[e].c = c; p[e].w = w; p[e].next = head[u]; head[u] = e++;
+         swap(u, v);
+         p[e].v = v; p[e].c = 0; p[e].w = -w; p[e].next = head[u]; head[u] = e++;
+     }
+     bool spfa(int S, int T){
+         queue &lt;int&gt; q;
+         for (int i = 0; i &lt;= n; ++i)
+             vis[i] = cnt[i] = 0, pre[i] = -1, dis[i] = inf;
+         vis[S] = 1; dis[S] = 0;
+         q.push(S);
+         while (!q.empty()){
+             int u = q.front(); q.pop();
+             vis[u] = 0;
+             for (int i = head[u]; i + 1; i = p[i].next){
+                 int v = p[i].v;
+                 if (p[i].c &amp;&amp; dis[v] &gt; dis[u] + p[i].w){
+                     dis[v] = dis[u] + p[i].w;
+                     pre[v] = i;
+                     if (!vis[v]){
+                         q.push(v);
+                         vis[v] = 1;
+                         if (++cnt[v] &gt; n) return 0;
+                     }
+                 }
+             }
+         }
+         return dis[T] != inf;
+     }
+     int mcmf(int S, int T){
+         sumFlow = 0;
+         int minFlow = 0, minCost = 0;
+         while (spfa(S, T)){
+             minFlow = inf + 1;
+             for (int i = pre[T]; i + 1; i = pre[ p[i ^ 1].v ])
+                 minFlow = min(minFlow, p[i].c);
+             sumFlow += minFlow;
+             for (int i = pre[T]; i + 1; i = pre[ p[i ^ 1].v ]){
+                 p[i].c -= minFlow;
+                 p[i ^ 1].c += minFlow;
+             }
+             minCost += dis[T] * minFlow;
+         }
+         return minCost;
+     }
+     int ind[maxn], outd[maxn], ans ;
+     bool build(int nt, int mt){
+         init(nt);
+         memset(ind, 0, sizeof(ind));
+         memset(outd, 0, sizeof(outd));
+         ans = 0;
+         int u, v, c;
+         while (mt--){
+             scanf("%d%d%d", &amp;u, &amp;v, &amp;c);
+             u++, v++;
+             addEdge(u, v, inf, c);
+             ans += c;
+             outd[u]++, ind[v]++;
+         }
+         for (int i = 1; i &lt;= nt; ++i){
+             if (ind[i] == 0 || outd[i] == 0) return false;
+         }
+         for (int i = 1; i &lt;= nt; ++i){
+             if (ind[i] - outd[i] &gt; 0)
+                 addEdge(0, i, ind[i] - outd[i], 0);
+             else if (ind[i] - outd[i] &lt; 0) 
+                 addEdge(i, n, outd[i] - ind[i], 0);
+         }
+         return true;
+     }
+     void solve(){
+         ans += mcmf(0, n);
+         printf("%d\n", ans);
+     }
+ }my;
+ int main(){
+     int tcase, n, m;
+     scanf("%d", &amp;tcase);
+     while (tcase--){
+         scanf("%d%d", &amp;n, &amp;m);
+         if (!my.build(n, m)){
+             printf("-1\n");
+             continue;
+         }
+         my.solve();
+     }
+     return 0;
+ }</pre>
+<p> </p>
+<p>解题参考：http://www.cnblogs.com/Missa/archive/2013/08/21/3273552.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-82943">
+<article class="comment" id="comment-82943">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521720" rel="external nofollow">新用户435059</a></span> on <a href="http://www.acmerblog.com/hdu-2739-go-go-gorelians-4354.html#comment-82943" rel="nofollow"><time datetime="2017-04-12T21:18:13+00:00" pubdate="">2017年4月12日 at 下午9:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是周日，你们这群傻×</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-82942">
+<article class="comment" id="comment-82942">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521720" rel="external nofollow">新用户435059</a></span> on <a href="http://www.acmerblog.com/hdu-2739-go-go-gorelians-4354.html#comment-82942" rel="nofollow"><time datetime="2017-04-12T21:18:13+00:00" pubdate="">2017年4月12日 at 下午9:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是周日，你们这群傻×</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-82941">
+<article class="comment" id="comment-82941">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521720" rel="external nofollow">新用户435059</a></span> on <a href="http://www.acmerblog.com/hdu-2739-go-go-gorelians-4354.html#comment-82941" rel="nofollow"><time datetime="2017-04-12T21:18:13+00:00" pubdate="">2017年4月12日 at 下午9:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是周日，你们这群傻×</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-82940">
+<article class="comment" id="comment-82940">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521720" rel="external nofollow">新用户435059</a></span> on <a href="http://www.acmerblog.com/hdu-2739-go-go-gorelians-4354.html#comment-82940" rel="nofollow"><time datetime="2017-04-12T21:18:13+00:00" pubdate="">2017年4月12日 at 下午9:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是周日，你们这群傻×</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-82939">
+<article class="comment" id="comment-82939">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521720" rel="external nofollow">新用户435059</a></span> on <a href="http://www.acmerblog.com/hdu-2739-go-go-gorelians-4354.html#comment-82939" rel="nofollow"><time datetime="2017-04-12T21:18:13+00:00" pubdate="">2017年4月12日 at 下午9:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是周日，你们这群傻×</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-82938">
+<article class="comment" id="comment-82938">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521720" rel="external nofollow">新用户435059</a></span> on <a href="http://www.acmerblog.com/hdu-2739-go-go-gorelians-4354.html#comment-82938" rel="nofollow"><time datetime="2017-04-12T21:18:13+00:00" pubdate="">2017年4月12日 at 下午9:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是周日，你们这群傻×</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-82937">
+<article class="comment" id="comment-82937">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521720" rel="external nofollow">新用户435059</a></span> on <a href="http://www.acmerblog.com/hdu-2739-go-go-gorelians-4354.html#comment-82937" rel="nofollow"><time datetime="2017-04-12T21:18:13+00:00" pubdate="">2017年4月12日 at 下午9:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是周日，你们这群傻×</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-82936">
+<article class="comment" id="comment-82936">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521720" rel="external nofollow">新用户435059</a></span> on <a href="http://www.acmerblog.com/hdu-2739-go-go-gorelians-4354.html#comment-82936" rel="nofollow"><time datetime="2017-04-12T21:18:13+00:00" pubdate="">2017年4月12日 at 下午9:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是周日，你们这群傻×</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-82935">
+<article class="comment" id="comment-82935">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521720" rel="external nofollow">新用户435059</a></span> on <a href="http://www.acmerblog.com/hdu-2739-go-go-gorelians-4354.html#comment-82935" rel="nofollow"><time datetime="2017-04-12T21:18:13+00:00" pubdate="">2017年4月12日 at 下午9:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是周日，你们这群傻×</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-82934">
+<article class="comment" id="comment-82934">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521720" rel="external nofollow">新用户435059</a></span> on <a href="http://www.acmerblog.com/hdu-2739-go-go-gorelians-4354.html#comment-82934" rel="nofollow"><time datetime="2017-04-12T21:18:13+00:00" pubdate="">2017年4月12日 at 下午9:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是周日，你们这群傻×</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-82933">
+<article class="comment" id="comment-82933">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521720" rel="external nofollow">新用户435059</a></span> on <a href="http://www.acmerblog.com/hdu-2739-go-go-gorelians-4354.html#comment-82933" rel="nofollow"><time datetime="2017-04-12T21:18:13+00:00" pubdate="">2017年4月12日 at 下午9:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是周日，你们这群傻×</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-82932">
+<article class="comment" id="comment-82932">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521720" rel="external nofollow">新用户435059</a></span> on <a href="http://www.acmerblog.com/hdu-2739-go-go-gorelians-4354.html#comment-82932" rel="nofollow"><time datetime="2017-04-12T21:18:13+00:00" pubdate="">2017年4月12日 at 下午9:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是周日，你们这群傻×</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-82930">
+<article class="comment" id="comment-82930">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521720" rel="external nofollow">新用户435059</a></span> on <a href="http://www.acmerblog.com/hdu-2739-go-go-gorelians-4354.html#comment-82930" rel="nofollow"><time datetime="2017-04-12T21:18:13+00:00" pubdate="">2017年4月12日 at 下午9:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是周日，你们这群傻×</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-82929">
+<article class="comment" id="comment-82929">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521720" rel="external nofollow">新用户435059</a></span> on <a href="http://www.acmerblog.com/hdu-2739-go-go-gorelians-4354.html#comment-82929" rel="nofollow"><time datetime="2017-04-12T21:18:13+00:00" pubdate="">2017年4月12日 at 下午9:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是周日，你们这群傻×</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-82928">
+<article class="comment" id="comment-82928">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521720" rel="external nofollow">新用户435059</a></span> on <a href="http://www.acmerblog.com/hdu-2739-go-go-gorelians-4354.html#comment-82928" rel="nofollow"><time datetime="2017-04-12T21:18:13+00:00" pubdate="">2017年4月12日 at 下午9:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是周日，你们这群傻×</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-82945">
+<article class="comment" id="comment-82945">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521720" rel="external nofollow">新用户435059</a></span> on <a href="http://www.acmerblog.com/hdu-2739-go-go-gorelians-4354.html#comment-82945" rel="nofollow"><time datetime="2017-04-12T21:18:13+00:00" pubdate="">2017年4月12日 at 下午9:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是周日，你们这群傻×</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-82944">
+<article class="comment" id="comment-82944">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521720" rel="external nofollow">新用户435059</a></span> on <a href="http://www.acmerblog.com/hdu-2739-go-go-gorelians-4354.html#comment-82944" rel="nofollow"><time datetime="2017-04-12T21:18:13+00:00" pubdate="">2017年4月12日 at 下午9:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是周日，你们这群傻×</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-57307">
+<article class="comment" id="comment-57307">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">changjf</a></span> on <a href="http://www.acmerblog.com/hdu-2739-go-go-gorelians-4354.html#comment-57307" rel="nofollow"><time datetime="2015-07-10T15:27:31+00:00" pubdate="">2015年7月10日 at 下午3:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>m /= i; 是一直在变的。参考这一篇关于质因数的http://www.acmerblog.com/integer-factorization-5124.html</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-57308">
+<article class="comment" id="comment-57308">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wizcabbit</a></span> on <a href="http://www.acmerblog.com/hdu-2739-go-go-gorelians-4354.html#comment-57308" rel="nofollow"><time datetime="2015-06-19T04:28:51+00:00" pubdate="">2015年6月19日 at 上午4:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>居然看懂了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-57309">
+<article class="comment" id="comment-57309">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Yaunxi</a></span> on <a href="http://www.acmerblog.com/hdu-2739-go-go-gorelians-4354.html#comment-57309" rel="nofollow"><time datetime="2015-06-06T06:33:13+00:00" pubdate="">2015年6月6日 at 上午6:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很有用，收藏了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-24144">
+<article class="comment" id="comment-24144">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">211206421</a></span> on <a href="http://www.acmerblog.com/hdu-2739-go-go-gorelians-4354.html#comment-24144" rel="nofollow"><time datetime="2015-03-01T14:12:15+00:00" pubdate="">2015年3月1日 at 下午2:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>前排支持</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-57306">
+<article class="comment" id="comment-57306">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jue</a></span> on <a href="http://www.acmerblog.com/hdu-2739-go-go-gorelians-4354.html#comment-57306" rel="nofollow"><time datetime="2015-02-11T10:51:10+00:00" pubdate="">2015年2月11日 at 上午10:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序员会算法，等于一个古惑仔带了zhi抢啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-57312">
+<article class="comment" id="comment-57312">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xuelanghu</a></span> on <a href="http://www.acmerblog.com/hdu-2739-go-go-gorelians-4354.html#comment-57312" rel="nofollow"><time datetime="2015-01-25T04:26:53+00:00" pubdate="">2015年1月25日 at 上午4:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好厉害～</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-24139">
+<article class="comment" id="comment-24139">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">asdass</a></span> on <a href="http://www.acmerblog.com/hdu-2739-go-go-gorelians-4354.html#comment-24139" rel="nofollow"><time datetime="2015-01-04T20:33:17+00:00" pubdate="">2015年1月4日 at 下午8:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>DFS方法的原理还是不太清楚啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-24143">
+<article class="comment" id="comment-24143">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">siaswj</a></span> on <a href="http://www.acmerblog.com/hdu-2739-go-go-gorelians-4354.html#comment-24143" rel="nofollow"><time datetime="2014-11-02T04:57:16+00:00" pubdate="">2014年11月2日 at 上午4:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真心不错，力顶作者</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-24140">
+<article class="comment" id="comment-24140">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fanxianxian</a></span> on <a href="http://www.acmerblog.com/hdu-2739-go-go-gorelians-4354.html#comment-24140" rel="nofollow"><time datetime="2014-08-16T10:13:21+00:00" pubdate="">2014年8月16日 at 上午10:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>yeah, This is very tricky. If you use Cpp,you need more code</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-57311">
+<article class="comment" id="comment-57311">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">becool456</a></span> on <a href="http://www.acmerblog.com/hdu-2739-go-go-gorelians-4354.html#comment-57311" rel="nofollow"><time datetime="2014-08-01T18:35:49+00:00" pubdate="">2014年8月1日 at 下午6:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>原来的主机不行，目前更换到了国内主机</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-24142">
+<article class="comment" id="comment-24142">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">JcZ</a></span> on <a href="http://www.acmerblog.com/hdu-2739-go-go-gorelians-4354.html#comment-24142" rel="nofollow"><time datetime="2014-07-25T10:47:39+00:00" pubdate="">2014年7月25日 at 上午10:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>总结的很全面，学习了！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-57310">
+<article class="comment" id="comment-57310">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Rocky</a></span> on <a href="http://www.acmerblog.com/hdu-2739-go-go-gorelians-4354.html#comment-57310" rel="nofollow"><time datetime="2014-07-09T14:20:18+00:00" pubdate="">2014年7月9日 at 下午2:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一段代码中：<br/>
+ next <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/>  = next <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> ;<br/>
+明显不对吧，应该是 next <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> =j;才对</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-24141">
+<article class="comment" id="comment-24141">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mechine</a></span> on <a href="http://www.acmerblog.com/hdu-2739-go-go-gorelians-4354.html#comment-24141" rel="nofollow"><time datetime="2014-03-09T20:30:01+00:00" pubdate="">2014年3月9日 at 下午8:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

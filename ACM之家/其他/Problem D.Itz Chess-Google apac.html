@@ -1,0 +1,424 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>12-12</div>
+<div class="tit"><h1 class="entry-title">Problem D.Itz Chess-Google apac</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/basis/simulate" rel="category tag" title="查看模拟法中的全部文章">模拟法</a></span><span class="i4">围观1016次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6530" href="http://www.acmerblog.com/problem-d-itz-chess-google-apac-6530.html#comments" title="《Problem D.Itz Chess-Google apac》上的评论">28 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<h3>题目链接：http://code.google.com/codejam/contest/6214486/dashboard#s=p3</h3>
+<h3>Problem</h3>
+<p>Given an arranged chess board with pieces, figure out the total number of different ways in which any piece can be killed <b>in one move</b>. Note: in this problem, the pieces can be killed despite of the color.<br/>
+<img alt="" src="http://code.google.com/codejam/contest/images/?image=chess.png&amp;p=5681224764882944&amp;c=6214486"/></p>
+<p>For example, if there are 3 pieces King is at B2, Pawn at A1 and Queen at H8 then the total number of pieces that an be killed is 3. H8-Q can kill B2-K, A1-P can kill B2-K, B2-K can kill A1-P</p>
+<p>A position on the chess board is represented as A1, A2… A8,B1.. H8</p>
+<p>Pieces are represented as</p>
+<ul>
+<li>(K) King can move in 8 direction by one place.</li>
+<li>(Q) Queen can move in 8 direction by any number of places, but can’t overtake another piece.</li>
+<li>(R) Rook can only move vertically or horitonzally, but can’t overtake another piece.</li>
+<li>(B) Bishop can only move diagonally, but can’t overtake another piece.</li>
+<li>(N) Knights can move to a square that is two squares horizontally and one square vertically <b>OR</b> one squares horizontally and two square vertically.</li>
+<li>(P) Pawn can only kill by moving diagonally upwards (towards higher number i.e. A -&gt; B, B-&gt;C and so on).</li>
+</ul>
+<h3>Input</h3>
+<p>The first line of the input gives the number of test cases, <b>T</b>. <b>T</b> Test cases follow. Each test case consists of the number of pieces , <b>N</b>. <b>N</b> lines follow, each line mentions where a piece is present followed by <b>-</b> with the piece type</p>
+<h3>Output</h3>
+<p>For each test case, output one line containing “Case #x: y”, where x is the test case number (starting from 1) and y is the the total number of different ways in which any piece can be killed.</p>
+<h3>Limits</h3>
+<p>1 ≤ <b>T</b> ≤ 100.</p>
+<h4>Small dataset</h4>
+<p>1 ≤ <b>N</b> ≤ 10.<br/>
+Pieces can include K, P</p>
+<h4>Large dataset</h4>
+<p>1 ≤ <b>N</b> ≤ 64.</p>
+<h3>Sample Input</h3>
+<pre class="brush:other">2
+2
+A1-K
+A8-Q
+
+3
+B2-K
+A1-P
+H8-Q</pre>
+<p>Sample Output</p>
+<pre class="brush:other">Case #1: 1
+Case #2: 3</pre>
+<p>题目大意：给定一个国际象棋的棋局，判断当前的局面总共多少种吃子的走法？不区别棋子的颜色。</p>
+<p>分析：模拟题目，并不难，注意一些技巧即可。</p>
+<pre class="brush:java">/**
+ * Created by GaoTong on 2014/11/9.
+ * copyright: www.acmerblog.com
+ */
+public class P4 {
+    static Scanner s = null;
+    //棋盘
+    static int map[][];
+    static int indexs[] = new int[256];
+    //简单的hash映射棋子的类型
+    static {
+        indexs['K'] = 1;indexs['Q'] = 2;indexs['R'] = 3;indexs['B'] = 4;indexs['N'] = 5;indexs['P'] = 6;
+    }
+    //棋子可走的方向
+    static int dirs[][][] = {
+            {},
+            {{0,1},{1,0},{0,-1},{-1,0},{1,1},{1,-1},{-1,1},{-1,-1}},
+            {{0,1},{1,0},{0,-1},{-1,0},{1,1},{1,-1},{-1,1},{-1,-1}},
+            {{0,1},{1,0},{0,-1},{-1,0}},
+            {{1,-1},{-1,1},{-1,-1},{1,1}},
+            {{2,1},{2,-1},{-2,1},{-2,-1},{1,2},{-1,2},{-1,-2},{1,-2}},
+            {{1,-1},{1,1}}
+
+    };
+    //棋子可走的距离
+    static int moves[] = {0,1,7,7,7,1,1,1};
+    public static void main(String args[]) throws FileNotFoundException {
+        s = new Scanner(new File("C:\\Users\\admin\\IdeaProjects\\JavaLearn\\data\\D-large.in"));
+        int c = s.nextInt();
+
+        OutputStream os = new FileOutputStream(new File("C:\\Users\\admin\\IdeaProjects\\JavaLearn\\data\\D-large.out"));
+        PrintWriter pw = new PrintWriter(os);
+
+        for (int k = 1; k &lt;= c; k++) {
+            map = new int[8][8];
+            int n = s.nextInt();
+            int positions[][] = new int[n][2];
+            for(int i=0; i&lt;n ; i++){
+                String str = s.next();
+                positions[i][0] = str.charAt(0)-'A';
+                positions[i][1] = str.charAt(1)-'1';
+                map[positions[i][0]][positions[i][1]] = indexs[str.charAt(3)];
+            }
+            int sum = 0;
+            for(int i=0; i&lt;n; i++){
+                sum += compute(positions[i][0],positions[i][1]);
+            }
+            System.out.println( "Case #" + k+": " +sum);
+            pw.println("Case #" + k+": " +sum);
+
+        }
+        pw.flush();;
+        pw.close();
+
+    }
+
+    static boolean checkxy(int x,int y){
+        return x&gt;=0 &amp;&amp; x&lt;map.length &amp;&amp; y &gt;=0 &amp;&amp; y&lt;map.length;
+    }
+
+    //计算位置（x,y）的棋子，有多少种走法可以吃掉其它棋子
+    static  int compute(int x,int y){
+        int cnt = 0;
+        int player = map[x][y];
+        int dir[][] = dirs[player];
+        for(int i=0; i&lt;dir.length; i++){
+            for(int len=1; len&lt;=moves[player]; len++){
+                int nextx = x + len*dir[i][0];
+                int nexty = y + len*dir[i][1];
+                if(checkxy(nextx, nexty)){
+                    if(map[nextx][nexty] &gt; 0){
+                        cnt++;
+                        break;
+                    }
+                }else{
+                    break; //越界
+                }
+            }
+        }
+        return cnt;
+    }
+}</pre>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-73324">
+<article class="comment" id="comment-73324">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919464566" rel="external nofollow">新用户598406</a></span> on <a href="http://www.acmerblog.com/problem-d-itz-chess-google-apac-6530.html#comment-73324" rel="nofollow"><time datetime="2017-04-11T22:05:33+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>呵呵呵，美漫三大吹，蓝秃绿胖OAA</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-73323">
+<article class="comment" id="comment-73323">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919464566" rel="external nofollow">新用户598406</a></span> on <a href="http://www.acmerblog.com/problem-d-itz-chess-google-apac-6530.html#comment-73323" rel="nofollow"><time datetime="2017-04-11T22:05:33+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>呵呵呵，美漫三大吹，蓝秃绿胖OAA</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-73322">
+<article class="comment" id="comment-73322">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919464566" rel="external nofollow">新用户598406</a></span> on <a href="http://www.acmerblog.com/problem-d-itz-chess-google-apac-6530.html#comment-73322" rel="nofollow"><time datetime="2017-04-11T22:05:33+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>呵呵呵，美漫三大吹，蓝秃绿胖OAA</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-73321">
+<article class="comment" id="comment-73321">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919464566" rel="external nofollow">新用户598406</a></span> on <a href="http://www.acmerblog.com/problem-d-itz-chess-google-apac-6530.html#comment-73321" rel="nofollow"><time datetime="2017-04-11T22:05:33+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>呵呵呵，美漫三大吹，蓝秃绿胖OAA</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-73320">
+<article class="comment" id="comment-73320">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919464566" rel="external nofollow">新用户598406</a></span> on <a href="http://www.acmerblog.com/problem-d-itz-chess-google-apac-6530.html#comment-73320" rel="nofollow"><time datetime="2017-04-11T22:05:33+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>呵呵呵，美漫三大吹，蓝秃绿胖OAA</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-73319">
+<article class="comment" id="comment-73319">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919464566" rel="external nofollow">新用户598406</a></span> on <a href="http://www.acmerblog.com/problem-d-itz-chess-google-apac-6530.html#comment-73319" rel="nofollow"><time datetime="2017-04-11T22:05:33+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>呵呵呵，美漫三大吹，蓝秃绿胖OAA</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-73318">
+<article class="comment" id="comment-73318">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919464566" rel="external nofollow">新用户598406</a></span> on <a href="http://www.acmerblog.com/problem-d-itz-chess-google-apac-6530.html#comment-73318" rel="nofollow"><time datetime="2017-04-11T22:05:33+00:00" pubdate="">2017年4月11日 at 下午10:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>呵呵呵，美漫三大吹，蓝秃绿胖OAA</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65304">
+<article class="comment" id="comment-65304">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://360meimei.com/" rel="external nofollow">性感美腿</a></span> on <a href="http://www.acmerblog.com/problem-d-itz-chess-google-apac-6530.html#comment-65304" rel="nofollow"><time datetime="2017-03-26T22:42:43+00:00" pubdate="">2017年3月26日 at 下午10:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e0/byz_org.gif"/> 丝袜宝贝 <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e0/byz_org.gif"/> 美胸少女美女穿比基尼图片性感泳装女生hTTp://T.cN/R6ihe62</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65295">
+<article class="comment" id="comment-65295">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.kaixin001.com/home/?uid=179409603" rel="external nofollow">毕珠宁</a></span> on <a href="http://www.acmerblog.com/problem-d-itz-chess-google-apac-6530.html#comment-65295" rel="nofollow"><time datetime="2017-03-26T07:47:40+00:00" pubdate="">2017年3月26日 at 上午7:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>精仿␸JACK WOLFSKIN(狼爪)Tiffany &amp; Co(蒂凡尼))olipai(欧力派)Guerlain(娇兰)TIFFANY(蒂芙尼)LD(露达琳)www.wx31.com</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65286">
+<article class="comment" id="comment-65286">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">丝袜吧</span> on <a href="http://www.acmerblog.com/problem-d-itz-chess-google-apac-6530.html#comment-65286" rel="nofollow"><time datetime="2017-03-25T17:08:52+00:00" pubdate="">2017年3月25日 at 下午5:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> 性感内衣丝袜 <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> 丝袜熟女 <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> 丝袜肥臀 <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> 丝袜生活照 <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> 丝袜自拍 <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> 丝袜写真 <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> 白色丝袜诱惑 <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/77/bofuxinhuiyileng_org.gif"/> <a href="http://www.meitui1.com" rel="nofollow">http://www.meitui1.com</a></p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65252">
+<article class="comment" id="comment-65252">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://360meimei.com/" rel="external nofollow">美女老师</a></span> on <a href="http://www.acmerblog.com/problem-d-itz-chess-google-apac-6530.html#comment-65252" rel="nofollow"><time datetime="2017-03-24T04:35:31+00:00" pubdate="">2017年3月24日 at 上午4:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>，尤女郎 <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/48/aliliu_org.gif"/> 性感晚礼服我爱上妹妹西西人体艺术摄影性感沙滩3下载哈尔滨个人写真meimei666.com</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65239">
+<article class="comment" id="comment-65239">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.kaixin001.com/home/?uid=179409445" rel="external nofollow">宁瑗</a></span> on <a href="http://www.acmerblog.com/problem-d-itz-chess-google-apac-6530.html#comment-65239" rel="nofollow"><time datetime="2017-03-23T12:04:46+00:00" pubdate="">2017年3月23日 at 下午12:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>ꔐ高仿 DKNY(唐可娜儿)Victoria Beckham(维多利亚·贝克汉姆)Hanmengli（韩梦丽）Gucci(古奇)柯马呢柯DIESEL(迪赛)yuandan.tk</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-65230">
+<article class="comment" id="comment-65230">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.kaixin001.com/home/?uid=179408056" rel="external nofollow">常雪</a></span> on <a href="http://www.acmerblog.com/problem-d-itz-chess-google-apac-6530.html#comment-65230" rel="nofollow"><time datetime="2017-03-23T03:23:49+00:00" pubdate="">2017年3月23日 at 上午3:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/f5/newl_org.gif"/> 美眉图ޡ天天av野兽的诱惑美女走光图av美女美女人体艺术图www.mm88.gq</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-65227">
+<article class="comment" id="comment-65227">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://360meimei.com/" rel="external nofollow">美女的胸</a></span> on <a href="http://www.acmerblog.com/problem-d-itz-chess-google-apac-6530.html#comment-65227" rel="nofollow"><time datetime="2017-03-23T02:13:50+00:00" pubdate="">2017年3月23日 at 上午2:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>AV女忧套图美女人体艺术写真总裁的妹妹情人电视剧回家的诱惑全集mm88.ml</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50857">
+<article class="comment" id="comment-50857">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hanyi</a></span> on <a href="http://www.acmerblog.com/problem-d-itz-chess-google-apac-6530.html#comment-50857" rel="nofollow"><time datetime="2015-07-16T00:24:43+00:00" pubdate="">2015年7月16日 at 上午12:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算法是程序的灵魂，算法分简单和复杂，如果不搞大数据类，程序员了解一下简单点的算法也是可以的，但是会算法的一定要会编程才行，程序员不一定要会算法，利于自己项目需要的可以简单了解。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33130">
+<article class="comment" id="comment-33130">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiao1108</a></span> on <a href="http://www.acmerblog.com/problem-d-itz-chess-google-apac-6530.html#comment-33130" rel="nofollow"><time datetime="2015-07-01T03:32:38+00:00" pubdate="">2015年7月1日 at 上午3:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嗯，是写错了，文中以更改。MAX ( L(X[0..m-2], Y[0..n-1]), L(X[0..m-1], Y[0..n-2])</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33126">
+<article class="comment" id="comment-33126">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">anthozoan77</a></span> on <a href="http://www.acmerblog.com/problem-d-itz-chess-google-apac-6530.html#comment-33126" rel="nofollow"><time datetime="2015-06-29T02:49:41+00:00" pubdate="">2015年6月29日 at 上午2:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这道题目重复了，删掉一个吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33127">
+<article class="comment" id="comment-33127">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hanyi</a></span> on <a href="http://www.acmerblog.com/problem-d-itz-chess-google-apac-6530.html#comment-33127" rel="nofollow"><time datetime="2015-06-19T13:39:03+00:00" pubdate="">2015年6月19日 at 下午1:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>清华也会出这么无聊的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50859">
+<article class="comment" id="comment-50859">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">HaibaraAi</a></span> on <a href="http://www.acmerblog.com/problem-d-itz-chess-google-apac-6530.html#comment-50859" rel="nofollow"><time datetime="2015-04-25T01:30:43+00:00" pubdate="">2015年4月25日 at 上午1:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我还有个问题想请教一下，就是感觉对于新手来说，递归理解起来有些困难，不知有没有什么好的方法或者什么好的建议？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-59508">
+<article class="comment" id="comment-59508">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jhxxszy</a></span> on <a href="http://www.acmerblog.com/problem-d-itz-chess-google-apac-6530.html#comment-59508" rel="nofollow"><time datetime="2015-04-24T21:13:27+00:00" pubdate="">2015年4月24日 at 下午9:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好厉害～</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-50860">
+<article class="comment" id="comment-50860">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NiKaWaLi</a></span> on <a href="http://www.acmerblog.com/problem-d-itz-chess-google-apac-6530.html#comment-50860" rel="nofollow"><time datetime="2015-04-14T19:37:37+00:00" pubdate="">2015年4月14日 at 下午7:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>博主，你这个是wordpress哪个主题啊，不错哦~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33129">
+<article class="comment" id="comment-33129">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Snarl_jsb</a></span> on <a href="http://www.acmerblog.com/problem-d-itz-chess-google-apac-6530.html#comment-33129" rel="nofollow"><time datetime="2015-03-18T01:27:26+00:00" pubdate="">2015年3月18日 at 上午1:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>失误失误，转载错了。已经改正，抱歉。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33131">
+<article class="comment" id="comment-33131">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1193658339</a></span> on <a href="http://www.acmerblog.com/problem-d-itz-chess-google-apac-6530.html#comment-33131" rel="nofollow"><time datetime="2015-03-06T17:12:22+00:00" pubdate="">2015年3月6日 at 下午5:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学算法中的数据结构学到一定程度会乐此不疲的，比如其中的2－3树，类似的红黑树，我甚至可以自己写个逻辑文件系统结构来。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33128">
+<article class="comment" id="comment-33128">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fiftyonejiao</a></span> on <a href="http://www.acmerblog.com/problem-d-itz-chess-google-apac-6530.html#comment-33128" rel="nofollow"><time datetime="2015-02-18T09:58:35+00:00" pubdate="">2015年2月18日 at 上午9:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一个真的要比较两次吗，换成else if 不可以吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33132">
+<article class="comment" id="comment-33132">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">spiderMan</a></span> on <a href="http://www.acmerblog.com/problem-d-itz-chess-google-apac-6530.html#comment-33132" rel="nofollow"><time datetime="2015-02-11T09:00:35+00:00" pubdate="">2015年2月11日 at 上午9:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>秒！~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-50858">
+<article class="comment" id="comment-50858">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jiakcstudio</a></span> on <a href="http://www.acmerblog.com/problem-d-itz-chess-google-apac-6530.html#comment-50858" rel="nofollow"><time datetime="2015-02-01T02:10:23+00:00" pubdate="">2015年2月1日 at 上午2:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嗯   分析得很到位，确实用模板编程能让面试官对你的印象更好。在设置辅助栈的时候可以这样：push时，比较要push的elem和辅助栈的栈顶，elem&lt;=min.top()，则min.push(elem).否则只要push（elem）就好。在pop的时候，比较stack.top()与min.top(),if(stack.top()&lt;=min.top()),则{stack.pop();min.pop();}，否则{stack.pop();}.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-33134">
+<article class="comment" id="comment-33134">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Supermaner</a></span> on <a href="http://www.acmerblog.com/problem-d-itz-chess-google-apac-6530.html#comment-33134" rel="nofollow"><time datetime="2015-01-22T03:12:37+00:00" pubdate="">2015年1月22日 at 上午3:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>思考人生吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-33133">
+<article class="comment" id="comment-33133">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sharp</a></span> on <a href="http://www.acmerblog.com/problem-d-itz-chess-google-apac-6530.html#comment-33133" rel="nofollow"><time datetime="2014-12-23T18:07:18+00:00" pubdate="">2014年12月23日 at 下午6:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>因为是要把从字符串s的start位到当前位在hash中重置，修改提交后能accept，但是不修改居然也能accept</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

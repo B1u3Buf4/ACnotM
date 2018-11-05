@@ -1,0 +1,182 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>09-17</div>
+<div class="tit"><h1 class="entry-title">HDU 4700-Flow-最小生成树-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph/mst" rel="category tag" title="查看最小生成树中的全部文章">最小生成树</a>, <a href="http://www.acmerblog.com/category/graph/connectivity" rel="category tag" title="查看连通性问题中的全部文章">连通性问题</a></span><span class="i4">围观72次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7745" href="http://www.acmerblog.com/hdu-4700-flow-7745.html#respond" title="《HDU 4700-Flow-最小生成树-[解题报告]HOJ》上的评论">留下评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Flow</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+<center><img alt="Editor" src="http://www.acmerblog.com/img/1447899206426.jpg" style="max-width:100%;"/></center> </div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3
+-1 2 2
+2 -1 2
+2 2 -1
+3
+-1 1 2
+1 -1 2
+2 2 -1</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+YES
+-1 1 1
+1 -1 1
+1 1 -1
+NO</pre>
+<p> <!-- problem end --></p>
+<p><span style="font-size:18px">题目链接：<a target="_blank">http://acm.hdu.edu.cn/showproblem.php?pid=4700</a><br/>
+</span></p>
+<p><span style="font-size:18px"><br/>
+</span></p>
+<p><span style="font-size:18px">题意：给出一张N个点的图的最小割矩阵，问能否构造出一个满足该矩阵的图</span></p>
+<p><span style="font-size:18px"><br/>
+</span></p>
+<p><span style="font-size:18px">思路：这题和之前长春区域赛的一道题有相似之处，考虑最终构造出一棵树，先将边降序排列，这样可以保证每次新加进去的边都是该生成树的瓶颈路，而瓶颈路恰限制住了两点间的流量，不过原图如果存在g[i][j] &lt; min(g[i][k], g[k][j])的情况则该图无法构出</span></p>
+<p>
+</p>
+<p><span style="font-size:18px"></span></p>
+<pre class="brush:cpp" name="code">#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+#include &lt;iostream&gt;
+#include &lt;algorithm&gt;
+#include &lt;vector&gt;
+#include &lt;utility&gt;
+#include &lt;cmath&gt;
+#include &lt;queue&gt;
+#include &lt;set&gt;
+#include &lt;map&gt;
+#include &lt;climits&gt;
+#include &lt;functional&gt;
+#include &lt;deque&gt;
+#include &lt;ctime&gt;
+#include &lt;string&gt;
+
+#define lson l, mid, rt &lt;&lt; 1
+#define rson mid + 1, r, rt &lt;&lt; 1 | 1
+#pragma comment(linker, "/STACK:102400000,102400000")
+
+using namespace std;
+
+const int maxn = 105;
+
+struct edge
+{
+    int u, v, w;
+    bool operator &lt; (const edge &amp;rhs) const
+    {
+        return w &gt; rhs.w;
+    }
+};
+
+int fa[maxn];
+int a[maxn][maxn];
+int ans[maxn][maxn];
+
+int Find(int x)
+{
+    if (x == fa[x]) return x;
+    return fa[x] = Find(fa[x]);
+}
+
+bool unite(int x, int y)
+{
+    int fx = Find(x);
+    int fy = Find(y);
+    if (fx == fy)
+        return false;
+    fa[fx] = fy;
+    return true;
+}
+
+vector &lt;edge&gt; g;
+
+int main()
+{
+    int n;
+    while (~scanf("%d", &amp;n))
+    {
+        g.clear();
+        memset(ans, 0, sizeof(ans));
+        for (int i = 1; i &lt;= n; i++)
+        {
+            fa[i] = i;
+            ans[i][i] = -1;
+            for (int j = 1; j &lt;= n; j++)
+            {
+                edge e;
+                e.u = i, e.v = j;
+                scanf("%d", &amp;e.w);
+                g.push_back(e);
+                a[i][j] = e.w;
+            }
+        }
+
+        int fl = 0;
+        for (int i = 1; i &lt;= n; i++)
+            for (int j = 1; j &lt;= n; j++)
+                for (int k = 1; k &lt;= n; k++)
+                {
+                    if (i == j || j == k || i == k) continue;
+                    if (a[i][j] &lt; min(a[i][k], a[k][j]))
+                        fl = 1;
+                }
+
+        if (fl)
+        {
+            puts("NO");
+            continue;
+        }
+        sort(g.begin(), g.end());
+//        for(int i = 0; i &lt; g.size(); i++)
+//            printf("%d %d %d\n", g[i].u, g[i].v, g[i].w);
+
+        for (int i = 0; i &lt; g.size(); i++)
+        {
+            edge e = g[i];
+            int u = e.u, v = e.v;
+            if (unite(u, v))
+                ans[u][v] = ans[v][u] = e.w;
+        }
+
+        puts("YES");
+        for (int i = 1; i &lt;= n; i++)
+        {
+            printf("%d", ans[i][1]);
+            for (int j = 2; j &lt;= n; j++)
+            {
+                printf(" %d", ans[i][j]);
+            }
+            printf("\n");
+        }
+    }
+    return 0;
+}</pre>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/fipped/article/details/47733949</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+</ol>

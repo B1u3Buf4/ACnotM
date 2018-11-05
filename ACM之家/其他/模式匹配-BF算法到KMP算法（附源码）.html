@@ -1,0 +1,574 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>02-22</div>
+<div class="tit"><h1 class="entry-title">模式匹配-BF算法到KMP算法（附源码）</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/zhuanti/algorithm" rel="category tag" title="查看算法分析中的全部文章">算法分析</a></span><span class="i4">围观1013次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4549" href="http://www.acmerblog.com/bf-kmp-4549.html#comments" title="《模式匹配-BF算法到KMP算法（附源码）》上的评论">26 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p> </p>
+<h1><span style="color: #ff0000;"><span style="font-size: 18px;"><span style="font-family: SimSun;">模式匹配</span></span></span></h1>
+<p><span style="font-family: SimSun; font-size: 14px;"><span style="color: #000099;">    </span>子串的定位操作通常称为<strong>串的模式匹配</strong>。模式匹配的应用很常见，比如在文字处理软件中经常用到的查找功能。我们用如下函数来表示对字串位置的定位：</span></p>
+<p style="text-align: center;"><strong><span style="font-family: SimSun; font-size: 14px;">int index(const string &amp;Tag,const string &amp;Ptn,int pos)</span></strong></p>
+<p style="text-align: left;"><span style="font-family: SimSun; font-size: 14px;">    其中，Tag为主串，Ptn为子串（模式串），如果在主串Tag的第pos个位置后存在与子串Ptn相同的子串，返回它在主串Tag中第pos个字符后第一次出现的位置，否则返回-1。</span></p>
+<h1><span style="font-family: SimSun; color: #ff0000;"><span style="font-size: 18px;">BF算法</span></span></h1>
+<p style="text-align: left;"><span style="font-family: SimSun;"><span style="font-size: 14px;">    我们先来看BF算法(<span style="line-height: 26px;">Brute-Force</span><span style="line-height: 26px;">，最基本的字符串匹配算法</span>)，BF算法的实现思想很简单：我们可以定义两个索引值i和j，分别指示主串Tag和子串Ptn当前正待比较的字符位置，从主串Tag的第pos个字符起和子串Ptn的第一个字符比较，若相等，则继续逐个比较后续字符，否则从主串Tag的下一个字符起再重新和子串Ptn的字符进行比较，重复执行，直到子串Ptn中的每个字符依次和主串Tag中的一个连续字符串相等，则匹配成功，函数返回该连续字符串的第一个字符在主串Tag中的位置，否则匹配不成功，函数返回-1。</span></span></p>
+<p style="text-align: left;"><span style="font-family: SimSun;"><span style="font-size: 14px;">    用C++代码实现如下：</span></span></p>
+<pre class="brush:cpp ">/*
+返回子串Ptn在主串Tag的第pos个字符后(含第pos个位置)第一次出现的位置，若不存在，则返回-1
+采用BF算法，这里的位置全部以从0开始计算为准，其中T非空，0&lt;=pos&lt;=Tlen
+*/
+int index(const string &amp;Tag,const string &amp;Ptn,int pos)
+{
+	int i = pos;  //主串当前正待比较的位置，初始为pos
+	int j = 0;   //子串当前正待比较的位置，初始为0
+	int Tlen = Tag.size();  //主串长度
+	int Plen = Ptn.size();  //子串长度
+
+	while(i&lt;Tlen &amp;&amp; j&lt;Plen)
+	{
+		if(Tag[i] == Ptn[j])   //如果当前字符相同，则继续向下比较
+		{   
+			i++;
+			j++;
+		}
+		else   //如果当前字符不同，则i和j回退，重新进行匹配
+		{   
+			//用now_pos表示每次重新进行匹配时开始比较的位置，则
+			//i=now_pos+后移量，j=0+后移量
+			//则i-j+1=now_pos+1,即为Tag中下一轮开始比较的位置
+			i = i-j+1;
+			//Ptn退回到子串开始处
+			j = 0;
+		}
+	}
+
+	if(j &gt;= Plen)
+		return i - Plen;
+	else
+		return -1;
+}</pre>
+<p><span style="font-family: SimSun;"><span style="font-size: 14px;">    调用上面的函数，采用如下代码测试：</span></span></p>
+<p> </p>
+<pre class="brush:cpp ">int main()
+{
+	char ch;
+	do{
+		string Tag,Ptn;  
+		int pos;
+		cout&lt;&lt;"输入主串：";
+		cin&gt;&gt;Tag;
+		cout&lt;&lt;"输入子串：";
+		cin&gt;&gt;Ptn;
+		cout&lt;&lt;"输入主串中开始进行匹配的位置（首字符位置为0）：";
+		cin&gt;&gt;pos;
+
+		int result = kmp_index(Tag,Ptn,pos);
+		if(result != -1)
+			cout&lt;&lt;"主串与子串在主串的第"&lt;&lt;result&lt;&lt;"个字符（首字符的位置为0）处首次匹配"&lt;&lt;endl;
+		else
+			cout&lt;&lt;"无匹配子串"&lt;&lt;endl;
+
+		cout&lt;&lt;"是否继续测试（输入y或Y继续，任意其他键结束）：";
+		cin&gt;&gt;ch;
+	}while(ch == 'y' || ch == 'Y');
+	return 0;
+}</pre>
+<p><span style="font-family: SimSun;"><span style="font-size: 14px;">    测试结果如下：</span></span></p>
+<p style="text-align: center;"><span style="font-family: SimSun;"><span style="font-size: 14px;"><img alt="" src="http://cdn.acmerblog.com/img/1393051642103.jpg"/><br/>
+</span></span></p>
+<p><span style="font-family: SimSun;"><span style="font-size: 14px;">    以上算法完全可以实现要求的功能 ，而且<strong>在字符重复概率不大的情况下，时间复杂度也不是很大，一般为O（Plen+Tlen）</strong>。但是一旦出现如下情况，时间复杂度便会很高，如：子串为“111111110”，而主串为 “111111111111111111111111110” ，由于子串的前8个字符全部为‘1’，而主串的的前面一大堆字符也都为1，这样每轮比较都在子串的最后一个字符处出现不等，因此每轮比较都是在子串的最后一个字符进行匹配前回溯，这种情况便是此算法比较时出现的最坏情况。<strong><span style="color: #ff0000;">因此该算法在最坏情况下的时间复杂度为O（Plen*Tlen），另外该算法的空间复杂度为O（1）。</span></strong></span></span></p>
+<p><span style="font-family: SimSun;"><span style="font-size: 14px;"><strong> </strong></span></span></p>
+<p> </p>
+<h1 style="font-weight: bold;"><span style="font-size: 18px;"><span style="font-family: SimSun; color: #ff0000;">KMP算法</span><span style="color: #ff0000;">  </span></span><span style="font-size: 14px; color: #ff0000;"> </span></h1>
+<h2 style="font-weight: bold;"><span style="color: #000066;"><span style="font-size: 14px;">        KMP算法的主要思想</span></span></h2>
+<p><span style="font-family: SimSun;"><span style="font-size: 14px;">    上述算法的时间复杂度之所以大，是由于索引指针的回溯引起的，针对以上不足，便有了KMP算法<span style="color: #ff0000;">。</span><strong><span style="color: #ff0000;">KMP算法可以在O（Plen+Tlen）的时间数量级上完成串的模式匹配操作。其改进之处在于：每一趟比较重出现字符不等时，不需要回溯索引指针</span><span style="color: #ff0000;">i，而是利用已经得到的部分匹配的结果将子串向右滑动尽可能远的距离，继续进行比较。它的时间复杂度为<span style="color: #ff0000; font-family: SimSun;"><strong>O（Plen+Tlen），空间复杂度为O（Plen），这从后面的代码中可以看出。</strong></span></span></strong></span></span></p>
+<p><span style="font-size: 14px;"><span style="font-family: SimSun; color: #ff0000;">    </span><span style="font-family: SimSun;">以下面两个字符串的匹配情况来分析</span></span></p>
+<p style="text-align: center;"><span style="font-family: SimSun;"><strong><span style="font-size: 14px;">主串：ababcabcacbab</span></strong></span></p>
+<p style="text-align: center;"><span style="font-family: SimSun;"><strong><span style="font-size: 14px;">子串：abcac</span></strong></span></p>
+<p><span style="font-family: SimSun;"><span style="font-size: 14px;"><span style="font-family: SimSun;">    </span><span style="font-family: SimSun;">如果采用简单的BF算法，则每趟比较i都要回退，而采用KMP算法，每趟比较时，i保持不变，只需将j向右滑动即可，也即是减少了中间一些趟次的比较。KMP算法匹配以上两个字符的过程如下（黄色部分表示匹配成功的位置，黄色部分的第一个字符表示该趟比较开始匹配的第一个字符，红色部分表示匹配失败的位置，绿色表示尚未进行比较的位置）：</span></span></span></p>
+<p><span style="font-family: SimSun;"><span style="font-size: 14px;">    第一趟比较：在i=2和j=2处出现不匹配，如下图中红色部分所示</span></span></p>
+<div style="text-align: center;"><span style="font-size: 14px;"><img alt="" src="http://cdn.acmerblog.com/img/1393051642249.jpg" style="font-family: SimSun;"/></span></div>
+<p><span style="font-family: SimSun;"><span style="font-size: 14px;"><span style="font-family: SimSun;">    第二趟比较：i不变，依然在主串的第2个字符处，子串向右滑动，相当于j回退，此趟比较从i=2和j=0处开始，在i=6和j=4处出现不匹配，如下图中红色部分所示</span><br/>
+</span></span></p>
+<p style="text-align: center;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-size: 14px;"><img alt="" src="http://cdn.acmerblog.com/img/1393051642408.jpg"/><br/>
+</span></span></span></p>
+<p><span style="font-family: SimSun;"><span style="font-size: 14px;"><span style="font-family: SimSun;">    第三趟比较：i依然在主串的第6个字符处，子串向右滑动，此趟比较从i=6和j=1处开始，最终匹配成功</span><br/>
+</span></span></p>
+<p style="text-align: center;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-size: 14px;"><img alt="" src="http://cdn.acmerblog.com/img/1393051642583.jpg"/><br/>
+</span></span></span></p>
+<p><span style="font-family: SimSun;"><span style="font-size: 14px;">    我们可以看到，只用3趟就可以完成匹配，而采用BF算法则要6趟才能完成。为什么可以这样移动呢？我们从第一趟比较的结果得知，主串的第2个字符为b，而子串的第一个字符为a，因此，因此可以直接将BF算法的第二趟比较省去，而直接进入第三趟比较，也就是KMP算法的第二趟比较，再往后面，通过该趟比较，我们又知道主串的第4、5、6个字符必然是bca，它们无须再与子串的第一个字符比较，这样便可以直接从<span style="font-family: SimSun;">i=6和j=1处进行比较。</span></span></span></p>
+<p><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-size: 14px;">    这里的关键问题：每趟匹配过程中产生失配时，子串该向右滑动多远，换句话说，当主串的第i个字符和子串的第j个字符失配时，下一趟比较开始时，主串的第i个字符应该与子串的哪个字符再去比较。这个问题我们在后面讨论，我们先将KMP算法的代码给出，我们假设失配时，主串的第i个字符与子串中的第next[j]个字符进行比较，并令j=0时，<span style="font-family: SimSun;">即在第一个字符处适时，</span>next[j]=-1,则那么我们可以写出KMP算法的代码如下：</span></span></span></p>
+<p> </p>
+<pre class="brush:cpp ">/*
+返回子串Ptn在主串Tag的第pos个字符后(含第pos个位置)第一次出现的位置，若不存在，则返回-1
+采用KMP算法，这里的位置全部以从0开始计算为准，其中T非空，0&lt;=pos&lt;=Tlen
+*/
+int kmp_index(const string &amp;Tag,const string &amp;Ptn,int pos)
+{
+	int i = pos;  //主串当前正待比较的位置，初始为pos
+	int j = 0;   //子串当前正待比较的位置，初始为0
+	int Tlen = Tag.size();  //主串长度
+	int Plen = Ptn.size();  //子串长度
+
+	while(i&lt;Tlen &amp;&amp; j&lt;Plen)
+	{
+		if(j==-1 || Tag[i] == Ptn[j])   
+		{   //如果当前字符相同，或者在子串的第一个字符处失配，则继续向下比较
+			i++;
+			j++;
+		}
+		else   //如果当前字符不同，则i保持不变，j变为下一个开始比较的位置
+		{   
+			//next数组是KMP算法的关键，i不回退，
+			//而是继续与子串中的nex[j]位置的字符进行比较
+			j = next[j];
+		}
+	}
+
+	if(j &gt;= Plen)
+		return i - Plen;
+	else
+		return -1;
+}</pre>
+<p><span style="font-family: SimSun;"><span style="color: #ff0000;"><span style="font-size: 14px;">   </span></span></span></p>
+<h2><span style="font-size: 14px;"><span style="font-family: SimSun;"><span style="color: #000066;">   前缀数组next的求解</span> </span><span style="font-family: SimSun;"> </span></span></h2>
+<p><span style="font-family: SimSun;"><span style="font-size: 14px;">    以上代码很简单，也很容易理解，<span style="font-family: SimSun;">对照BF算法，并没有该几行代码，关键在于如何求next数组（也叫前缀数组），下面我们着重来看next数组的求法。</span></span></span></p>
+<p><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-size: 14px;">    我们假设主串为“T0T1…Tn-1”,子串为“P0P1…Pm-1”在失配后，主串中的第i个字符应与子串中的第k（0&lt;k&lt;j，且是可以移动的最大值）个字符继续比较，则子串中的前k-1个字符必须要满足如下关系式：</span></span></span></p>
+<p style="text-align: center;"><span style="font-size: 14px;"><span style="font-family: SimSun;"><strong>P0 P1 … Pk-1 = Ti-k Ti-k+1 … Ti-1</strong></span><br/>
+</span></p>
+<p style="text-align: left;"><span style="font-family: SimSun;"><span style="font-size: 14px;"><strong>    </strong>而我们由上一趟的比较，已经得到了如下匹配结果：</span></span></p>
+<p style="text-align: center;"><span style="font-family: SimSun;"><span style="font-size: 14px;"><span style="font-family: SimSun; text-align: center;"><strong>P0 P1 … Pj-1 = Ti-j Ti-j+1 … Ti-1</strong></span><br/>
+</span></span></p>
+<p style="text-align: left;"><span style="font-family: SimSun;"><span style="font-family: SimSun; text-align: center;"><span style="font-size: 14px;"><strong>    </strong>我们取其中的部分匹配结果，如下：</span></span></span></p>
+<p style="text-align: center;"><span style="font-size: 14px;"><span style="font-family: SimSun;"><strong>Pj-k Pj-k+1 … Pj-1 = Ti-k Ti-k+1 … Ti-1</strong></span><br/>
+</span></p>
+<p><span style="font-family: SimSun;"><span style="font-size: 14px;">    比较第一个公式和第三个公式，我们便可以得出如下结果：</span></span></p>
+<p style="text-align: center;"><span style="font-family: SimSun;"><span style="font-size: 14px;"><span style="color: #ff0000;"><strong><span style="font-family: SimSun; text-align: center;">P0 P1 … Pk-1</span> = <span style="font-family: SimSun; text-align: center;">Pj-k Pj-k+1 … Pj-1</span></strong></span><br/>
+</span></span></p>
+<p><span style="font-family: SimSun;"><span style="text-align: center;"><span style="font-size: 14px;"><strong>    这样，所有的问题就转移到子串Ptn上了，因此next数组元素的值只与子串的形式有关，而与主串没有任何关系。</strong>如果在子串中存在满足上式的的两个子字符串，则在失配后，下一趟比较仅需从子串Ptn的第k个字符与主串Tag的第i个字符开始。于是可以令next[j]的表达式如以下三种情况所示：</span></span></span></p>
+<p><span style="color: #ff0000;"><span style="font-weight: bold;"><span style="font-size: 14px;"><span style="font-family: SimSun; text-align: center;">    （1）当j&gt;0时，next[j] = Max{k|k满足 0&lt;k&lt;j 且 <span style="font-family: SimSun;">P0 P1 … Pk-1</span><span style="font-family: SimSun; text-align: center;"> = </span><span style="font-family: SimSun; text-align: center;">Pj-k Pj-k+1 … Pj-1</span></span><span style="font-family: SimSun; text-align: center;">}</span></span></span></span></p>
+<p style="text-align: left;"><span style="color: #ff0000;"><span style="font-weight: bold;"><span style="font-size: 14px;"><span style="font-family: SimSun; text-align: center;">    <span style="font-family: SimSun; text-align: center;">（2）</span>当j=0时，next[j] = -1</span><br/>
+</span></span></span></p>
+<p style="text-align: left;"><span style="font-family: SimSun; text-align: center;"><span style="color: #ff0000;"><strong><span style="font-size: 14px;">    <span style="font-family: SimSun; text-align: center;">（3）</span>当j&gt;0且又不存在满足 <span style="font-family: SimSun;">P0 P1 … Pk-1</span><span style="font-family: SimSun; text-align: center;"> = </span><span style="font-family: SimSun; text-align: center;">Pj-k Pj-k+1 … Pj-1 的k时，next[j] = 0</span></span></strong></span></span></p>
+<div style="text-align: left;"><span style="font-family: SimSun;"><span style="font-size: 14px;">    </span></span></div>
+<div style="text-align: left;"><span style="font-family: SimSun;"><span style="font-size: 14px;">    先来看如何手算next数组的值，再看如何用程序求解next数组的值。</span></span></div>
+<div style="text-align: left;"><span style="font-family: SimSun;"><span style="font-size: 14px;"> </span></span></div>
+<div style="text-align: left;"><span style="font-family: SimSun;"><span style="font-size: 14px;">    <span style="color: #000099;">首先看如何手算next数组各元素值。</span></span></span></div>
+<div style="text-align: left;"><span style="font-size: 14px;"><span style="font-family: SimSun;">    我们来看如下字符串：</span><br/>
+</span></div>
+<div style="text-align: center;"><span style="font-family: SimSun;"><strong><span style="font-size: 14px;">abaabcac</span></strong></span></div>
+<div style="text-align: left;">
+<ul>
+<li><span style="font-family: SimSun;"><span style="font-size: 14px;">对于第0个字符a，根据情况2，next[0] = -1；</span></span></li>
+<li><span style="font-family: SimSun;"><span style="font-size: 14px;"><span style="font-family: SimSun;">对于第1个字符b，由于其前面只有1个字符a，故根据情况3，next[1] = 0；</span><br/>
+</span></span></li>
+<li><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-size: 14px;">对于第2个字符a，其前面有2个字符ab，不存在与b或ab相等的字符，因此根据情况3，<span style="font-family: SimSun;">next[2] = 0；</span></span></span></span></li>
+<li><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-size: 14px;"><span style="font-family: SimSun;">对于第3个字符a，其前面有3个字符aba，最长只有字符（第0个）和第2个字符a（紧跟第3个字符）相等，因此根据情况1，</span><span style="font-family: SimSun;">next[3] = 1；</span><br/>
+</span></span></span></span></li>
+<li><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-size: 14px;"><span style="font-family: SimSun;">对于第4个字符b，其前面有4个字符abaa，最长只有字符（第0、2个）和第3个字符a<span style="font-family: SimSun;">（紧跟第4个字符）</span>相等，因此根据情况1，</span><span style="font-family: SimSun;">next[4] = 1；</span><br/>
+</span></span></span></span></span></li>
+<li><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-size: 14px;"><span style="font-family: SimSun;">对于第5个字符c，其前面有5个字符abaab，最长有子串ab（第0、第1个字符的组合）和第3、第4个字符的组合ab（紧跟第5个字符）相等，因此根据情况1，</span><span style="font-family: SimSun;">next[5] = 2；</span><br/>
+</span></span></span></span></span></span></li>
+<li><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-size: 14px;"><span style="font-family: SimSun;">对于第6个字符a，其前面有6个字符abaabc，没有子串与含有c（紧跟第6个字符）的字串相等，因此根据情况3，</span><span style="font-family: SimSun;">next[6] = 0；</span><br/>
+</span></span></span></span></span></span></span></li>
+<li><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-size: 14px;"><span style="font-family: SimSun;">对于第7个字符c，其前面有7个字符abaabca，最长只有字符与第6个字符a（紧跟着第7个字符）相等，因此根据情况1，</span><span style="font-family: SimSun;">next[7] = 1；</span><br/>
+</span></span></span></span></span></span></span></span></li>
+</ul>
+</div>
+<div style="text-align: left;"><span style="font-size: 14px;"><span style="font-family: SimSun;">    只要子串不是很长，可以一眼求出next数组中各元素的值。</span><br/>
+</span></div>
+<div style="text-align: center;"><span style="font-size: 14px;"> </span></div>
+<p style="text-align: left;"><span style="font-size: 14px;"><span style="font-family: SimSun;">    <span style="color: #000099;">下面看如何用程序来求next数组的值。</span></span><br/>
+</span></p>
+<p style="text-align: left;"><span style="font-family: SimSun;"><span style="font-size: 14px;">    如果已有next[j] = k（假设k为已知），这说明在子串的前j个字符中，存在前面推论出来的关系式：</span></span></p>
+<p style="text-align: center;"><span style="font-family: SimSun;"><strong><span style="font-size: 14px;"><span style="font-family: SimSun;">P0 P1 … Pk-1</span><span style="font-family: SimSun; text-align: center;"> = </span><span style="font-family: SimSun; text-align: center;">Pj-k Pj-k+1 … Pj-1</span></span></strong></span></p>
+<p style="text-align: left;"><span style="font-family: SimSun;"><span style="font-family: SimSun; text-align: center;"><span style="font-size: 14px;">    下面我们继续求next[j+1]，这就要分两种情况开看：</span></span></span></p>
+<p style="text-align: left;"><span style="font-family: SimSun;"><span style="font-family: SimSun; text-align: center;"><span style="font-size: 14px;">    1、若Pk = Pj，则表明在子串中，有如下关系式：</span></span></span></p>
+<p style="text-align: left;">
+</p><p style="text-align: center;"><span style="font-family: SimSun;"><strong><span style="font-size: 14px;">P0 P1 … Pk != Pj-k Pj-k+1 … Pj</span></strong></span></p>
+<p style="text-align: left;"><span style="font-family: SimSun;"><span style="font-family: SimSun; text-align: center;"><span style="font-family: SimSun; text-align: center;"><span style="font-size: 14px;">    那么就有next[j+1] = k+1,即next[j+1] = next[j] + 1.</span></span></span></span></p>
+<p style="text-align: left;"><span style="font-family: SimSun;"><span style="font-family: SimSun; text-align: center;"><span style="font-family: SimSun; text-align: center;"><span style="font-size: 14px;">    2、若<span style="font-family: SimSun; text-align: center;">Pk != Pj，则表明在子串中，</span></span></span></span></span></p>
+<p style="text-align: center;"><span style="font-family: SimSun;"><span style="font-size: 14px;"><span style="font-family: SimSun; text-align: center;"><strong>P0 P1 … Pk != Pj-k Pj-k+1 … Pj</strong></span><br/>
+</span></span></p>
+<p style="text-align: left;"><span style="font-family: SimSun;"><span style="font-family: SimSun; text-align: center;"><span style="font-size: 14px;"><strong>    </strong>此时，我们同样可以将其看做是一个模式匹配的过程（子串与主串均为Ptn），由于<span style="font-family: SimSun; text-align: center;">Pk != Pj，首次出现不匹配，那么应该取子串的第next[k]个字符与主串的第j个字符再做比较。</span></span></span></span></p>
+<p style="text-align: left;"><span style="font-family: SimSun;"><span style="font-family: SimSun; text-align: center;"><span style="font-family: SimSun; text-align: center;"><span style="font-size: 14px;">    我们假设next[k] = t，重复上面的比较，如果<span style="font-family: SimSun; text-align: center;">Pt = Pj，则next[j+1] = t + 1 = next[k] + 1，而如果<span style="font-family: SimSun; text-align: center;">Pt != Pj，则继续讲子串向右滑动，取其第next[t]个字符与子串的第j个字符再做比较，直到Pj和子串中的某个字符匹配成功，此时next[j+1]即为求得的值，或不存满足上述等式的k，此时<span style="font-family: SimSun; text-align: center;">next[j+1] = 0.</span></span></span></span></span></span></span></p>
+<p style="text-align: left;"><span style="font-family: SimSun;"><span style="font-family: SimSun; text-align: center;"><span style="font-family: SimSun; text-align: center;"><span style="font-family: SimSun; text-align: center;"><span style="font-family: SimSun; text-align: center;"><span style="font-family: SimSun; text-align: center;"><span style="font-size: 14px;">    同样以如下字符串为例进行计算：</span></span></span></span></span></span></span></p>
+<p style="text-align: center;"><span style="font-family: SimSun; text-align: center;"><strong><span style="font-size: 14px;">abaabcac</span></strong></span></p>
+<ul>
+<li><span style="font-size: 14px;"><span style="font-family: SimSun; text-align: center;">对于第0个字符a，根据情况2，next[0] = -1；</span><br/>
+</span></li>
+<li><span style="font-family: SimSun; text-align: center;"><span style="font-size: 14px;">对于第1个字符b，由于其前面的字符串a中不存在满足上面等式的k，因此根据情况3，<span style="font-family: SimSun; text-align: center;">next[1] = 0；</span></span></span></li>
+<li><span style="font-family: SimSun; text-align: center;"><span style="font-family: SimSun; text-align: center;"><span style="font-size: 14px;"><span style="font-family: SimSun; text-align: center;">对于第2个字符a，由于其前面的字符串ab中不存在满足上面等式的k，<span style="font-family: SimSun; text-align: center;">因此根据情况3，</span></span><span style="font-family: SimSun;">next[2] = 0；</span><br/>
+</span></span></span></li>
+<li><span style="font-size: 14px;"><span style="font-family: SimSun; text-align: center;"><span style="font-family: SimSun; text-align: center;"><span style="font-family: SimSun;"><span style="font-family: SimSun;">对于第3个字符a，其前面的字符串为aba，由于</span></span></span></span><span style="font-family: SimSun; text-align: center;">P0=P2，</span><span style="font-family: SimSun; text-align: center;">因此next[3] = 1；</span></span></li>
+<li><span style="font-family: SimSun; text-align: center;"><span style="font-size: 14px;">对于第4个字符b，其前面的字符串为abaa，由于next[3]=1，而P3!=P1，则需要比较P3和P0（next[1]=0），而P3=P0，因此next[3] = next[1]+1 = 1；</span></span></li>
+<li><span style="font-family: SimSun; text-align: center;"><span style="font-size: 14px;">对于第5个字符c，其前面的字符串为abaab，由于next[4]=1，而P4=P1，因此next[5] = next[4]+1 = 2；</span></span></li>
+<li><span style="font-family: SimSun; text-align: center;"><span style="font-size: 14px;"><span style="font-family: SimSun; text-align: center;">对于第6个字符a，其前面的字符串为abaabc，由于next[5]=2，而P5!=P2，<span style="font-family: SimSun; text-align: center;">则需要比较P5和P0（next[2]=0），由于P5!=P0，因此不存在任何k值满足上面的等式，next[6]=0；</span></span><br/>
+</span></span></li>
+<li><span style="font-family: SimSun; text-align: center;"><span style="font-family: SimSun; text-align: center;"><span style="font-family: SimSun; text-align: center;"><span style="font-size: 14px;">对于第7个字符c，其前面的字符串为abaabc，由于next[6]=0，且P6=P0，因此next[7] = next[6]+1 = 1；</span></span></span></span></li>
+</ul>
+<p><span style="font-family: SimSun; text-align: center;"><span style="font-size: 14px;">    依照KMP算法，我们可以得到求next数组的算法，代码如下：</span></span></p>
+<p> </p>
+<pre class="brush:cpp ">/*
+求next数组中各元素的值，保存在长为len的next数组中
+*/
+void get_next(const string &amp;Ptn,int *next,int len)
+{
+	int j = 0;
+	int k = -1;
+	next[0] = -1;
+
+	while(j&lt;len-1)
+	{
+		if(k == -1 || Ptn[j] == Ptn[k])
+		{   //如果满足上面分析的Pk = Pj的情况，则继续比较下一个字符，
+			//并得next[j+1]=next[j]+1
+			j++;
+			k++;
+			next[j] = k;
+		}
+		else
+		{   //如果符合上面分析的第2种情况，则依据next[k]继续寻找下一个比较的位置
+			k = next[k];
+		}
+	}
+}</pre>
+<p style="text-align: left;"><span style="font-family: SimSun; text-align: center;"><span style="font-size: 14px;">    我们在程序中加入输出next数组的代码，测试KMP算法，得到的结果如下：</span></span></p>
+<p style="text-align: left;">
+</p><p style="text-align: center;"><span style="font-family: SimSun; font-size: 14px;"><strong><img alt="" src="http://cdn.acmerblog.com/img/1393051642796.jpg"/></strong></span></p>
+<p style="text-align: center;"><span style="font-family: SimSun; font-size: 14px;"><strong> </strong></span></p>
+<h2><span style="font-size: 14px;"><span style="font-family: SimSun;"><span style="color: #000066;">   前缀数组next的改进</span> </span><span style="font-family: SimSun;"> </span></span></h2>
+<p><span style="font-family: SimSun;"><span style="font-size: 14px;">    上面定义的next数组在某些情况下是可以继续改进的。考虑如下两个字符串：</span></span></p>
+<p style="text-align: center;"><span style="font-family: SimSun;"><strong><span style="font-size: 14px;">主串：aaabaaaab</span></strong></span></p>
+<p style="text-align: center;"><span style="font-family: SimSun;"><strong><span style="font-size: 14px;">子串：aaaab</span></strong></span></p>
+<p style="text-align: left;"><span style="font-size: 14px;"><span style="font-family: SimSun;"><strong>    </strong>通过手算，我们可以看出子串的next数组的各元素为：-1、0、1、2、3。</span><span style="font-family: SimSun;">当主串和子串在第3个字符处出现不匹配时，即Tag[3]!=Ptn[3]，则由next[3]=2，因此需要比较<span style="font-family: SimSun;">Tag[3]和Ptn[2]，再根据next[2]=1，接下来需要继续比较<span style="font-family: SimSun;">Tag[3]和Ptn[1]，再比较Tag[3]和Ptn[0]。而实际上，由于子串中的Ptn[0]、<span style="font-family: SimSun;">Ptn[1]和<span style="font-family: SimSun;">Ptn[2]这3个字符和主串中的<span style="font-family: SimSun;">Tag[3]相等，因此不需要再一一进行比较，可以直接进行Tag[4]和Ptn[0]的比较。</span></span></span></span></span></span></span></p>
+<p style="text-align: left;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-family: SimSun;"><span style="font-size: 14px;">    针对普遍情况而言，若next[j] = k,且子串中Ptn[j] = Ptn[k]，则当Tag[i]!=Ptn[j]时，不需要再将Tag[i]和Ptn[k]进行比较，而可以直接和Ptn[next[k]]进行比较，也即是，next[j]=next[k]，而不是next[j]+1。因此上面求next数组的代码可以修改如下：</span><br/>
+</span></span></span></span></span></span></p>
+<p style="text-align: left;">
+</p><pre class="brush:cpp ">/*
+求next数组的改进数组中各元素的值，保存在长为len的nextval数组中
+*/
+void get_nextval(const string &amp;Ptn,int *nextval,int len)
+{
+	int j = 0;
+	int k = -1;
+	nextval[0] = -1;
+
+	while(j&lt;len-1)
+	{
+		if(k == -1 || Ptn[j] == Ptn[k])
+		{   //如果满足上面分析的Pk = Pj的情况，则继续比较下一个字符，
+			//并得next[j+1]=next[j]+1
+			j++;
+			k++;
+			if(Ptn[j] != Ptn[k])
+				nextval[j] = k;
+			else  //Ptn[j]与Ptn[k]相等时，直接跳到netval[k]
+				nextval[j] = nextval[k];
+		}
+		else
+		{   //如果符合上面分析的第2种情况，则依据next[k]继续寻找下一个比较的位置
+			k = nextval[k];
+		}
+	}
+}</pre>
+<p><span style="font-size: 14px;">    这样，子串<span style="font-family: SimSun; text-align: center;">aaaab的nextval数组的各元素为：-1、-1、-1、-1、3。</span></span></p>
+<h1 style="text-align: left;"><span style="color: #ff0000;"><span style="font-size: 18px;"><span style="font-family: SimSun;">完整代码下载</span></span></span></h1>
+<p style="text-align: left;"><span style="font-family: Comic Sans MS;"><span style="font-size: 14px;">  </span><span style="font-size: 14px;">  </span></span><strong><span style="font-family: Comic Sans MS; font-size: 14px;">完整的C++实现代码下载地址：<span style="color: #663366;">http://download.csdn.net/detail/mmc_maodun/6937813</span></span></strong></p>
+<p><span style="font-size: 14px;">    转自：http://blog.csdn.net/ns_code/article/details/19286279</span></p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-81322">
+<article class="comment" id="comment-81322">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514248" rel="external nofollow">新用户940426</a></span> on <a href="http://www.acmerblog.com/bf-kmp-4549.html#comment-81322" rel="nofollow"><time datetime="2017-04-12T18:13:49+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>sad story…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-81320">
+<article class="comment" id="comment-81320">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514248" rel="external nofollow">新用户940426</a></span> on <a href="http://www.acmerblog.com/bf-kmp-4549.html#comment-81320" rel="nofollow"><time datetime="2017-04-12T18:13:49+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>sad story…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-81319">
+<article class="comment" id="comment-81319">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514248" rel="external nofollow">新用户940426</a></span> on <a href="http://www.acmerblog.com/bf-kmp-4549.html#comment-81319" rel="nofollow"><time datetime="2017-04-12T18:13:49+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>sad story…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-81318">
+<article class="comment" id="comment-81318">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514248" rel="external nofollow">新用户940426</a></span> on <a href="http://www.acmerblog.com/bf-kmp-4549.html#comment-81318" rel="nofollow"><time datetime="2017-04-12T18:13:49+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>sad story…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-81317">
+<article class="comment" id="comment-81317">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514248" rel="external nofollow">新用户940426</a></span> on <a href="http://www.acmerblog.com/bf-kmp-4549.html#comment-81317" rel="nofollow"><time datetime="2017-04-12T18:13:49+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>sad story…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-81316">
+<article class="comment" id="comment-81316">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514248" rel="external nofollow">新用户940426</a></span> on <a href="http://www.acmerblog.com/bf-kmp-4549.html#comment-81316" rel="nofollow"><time datetime="2017-04-12T18:13:49+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>sad story…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-81315">
+<article class="comment" id="comment-81315">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514248" rel="external nofollow">新用户940426</a></span> on <a href="http://www.acmerblog.com/bf-kmp-4549.html#comment-81315" rel="nofollow"><time datetime="2017-04-12T18:13:49+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>sad story…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-81314">
+<article class="comment" id="comment-81314">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514248" rel="external nofollow">新用户940426</a></span> on <a href="http://www.acmerblog.com/bf-kmp-4549.html#comment-81314" rel="nofollow"><time datetime="2017-04-12T18:13:49+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>sad story…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-81313">
+<article class="comment" id="comment-81313">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514248" rel="external nofollow">新用户940426</a></span> on <a href="http://www.acmerblog.com/bf-kmp-4549.html#comment-81313" rel="nofollow"><time datetime="2017-04-12T18:13:49+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>sad story…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-81312">
+<article class="comment" id="comment-81312">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514248" rel="external nofollow">新用户940426</a></span> on <a href="http://www.acmerblog.com/bf-kmp-4549.html#comment-81312" rel="nofollow"><time datetime="2017-04-12T18:13:49+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>sad story…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-81311">
+<article class="comment" id="comment-81311">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514248" rel="external nofollow">新用户940426</a></span> on <a href="http://www.acmerblog.com/bf-kmp-4549.html#comment-81311" rel="nofollow"><time datetime="2017-04-12T18:13:49+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>sad story…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-81310">
+<article class="comment" id="comment-81310">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514248" rel="external nofollow">新用户940426</a></span> on <a href="http://www.acmerblog.com/bf-kmp-4549.html#comment-81310" rel="nofollow"><time datetime="2017-04-12T18:13:49+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>sad story…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-81309">
+<article class="comment" id="comment-81309">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514248" rel="external nofollow">新用户940426</a></span> on <a href="http://www.acmerblog.com/bf-kmp-4549.html#comment-81309" rel="nofollow"><time datetime="2017-04-12T18:13:49+00:00" pubdate="">2017年4月12日 at 下午6:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>sad story…</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-25707">
+<article class="comment" id="comment-25707">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">geoksz</a></span> on <a href="http://www.acmerblog.com/bf-kmp-4549.html#comment-25707" rel="nofollow"><time datetime="2015-05-17T20:34:58+00:00" pubdate="">2015年5月17日 at 下午8:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个方法是错的，不信你试试：<br/>
+20 5<br/>
+1 A:9<br/>
+1 A:9<br/>
+1 A:9<br/>
+1 A:6<br/>
+1 A:4<br/>
+正确答案应该是19，这个答案是18</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-25709">
+<article class="comment" id="comment-25709">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">GDUTtian</a></span> on <a href="http://www.acmerblog.com/bf-kmp-4549.html#comment-25709" rel="nofollow"><time datetime="2015-04-24T05:36:44+00:00" pubdate="">2015年4月24日 at 上午5:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正解，我的方法占用的内存更多些</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-57619">
+<article class="comment" id="comment-57619">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Ailing</a></span> on <a href="http://www.acmerblog.com/bf-kmp-4549.html#comment-57619" rel="nofollow"><time datetime="2015-04-21T23:04:31+00:00" pubdate="">2015年4月21日 at 下午11:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>先从简单的做起，归并排序，二叉树相关的遍历等</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-25703">
+<article class="comment" id="comment-25703">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jixiangniao993</a></span> on <a href="http://www.acmerblog.com/bf-kmp-4549.html#comment-25703" rel="nofollow"><time datetime="2015-04-15T07:47:27+00:00" pubdate="">2015年4月15日 at 上午7:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>int half(int *array,int len,int key)<br/>
+{<br/>
+    int l=0,r=len;<br/>
+    while(l&lt;r)<br/>
+    {<br/>
+        int m=(l+r)&gt;&gt;1;<br/>
+        if(key&gt;array <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/98/weibom_org.gif"/> )l=m+1;<br/>
+        else if(key&lt;array <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/98/weibom_org.gif"/> )r=m;<br/>
+        else return m;<br/>
+    }<br/>
+    return -1;<br/>
+}<br/>
+这种就能避免一些Bug<br/>
+l,m,r<br/>
+左边是l,m;右边就是m+1,r;</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment byuser comment-author-hongfieyu odd alt thread-odd thread-alt depth-1" id="li-comment-2891">
+<article class="comment" id="comment-2891">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">红绯鱼</span> on <a href="http://www.acmerblog.com/bf-kmp-4549.html#comment-2891" rel="nofollow"><time datetime="2015-03-07T10:15:07+00:00" pubdate="">2015年3月7日 at 上午10:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>红绯鱼：<br/>
+牛逼牛逼</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-25712">
+<article class="comment" id="comment-25712">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Aifan</a></span> on <a href="http://www.acmerblog.com/bf-kmp-4549.html#comment-25712" rel="nofollow"><time datetime="2015-02-06T09:38:10+00:00" pubdate="">2015年2月6日 at 上午9:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真考人啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-25706">
+<article class="comment" id="comment-25706">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">water160</a></span> on <a href="http://www.acmerblog.com/bf-kmp-4549.html#comment-25706" rel="nofollow"><time datetime="2014-12-23T00:38:01+00:00" pubdate="">2014年12月23日 at 上午12:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Java真是解决大数的利器</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-25710">
+<article class="comment" id="comment-25710">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zzzzzz</a></span> on <a href="http://www.acmerblog.com/bf-kmp-4549.html#comment-25710" rel="nofollow"><time datetime="2014-11-09T05:44:56+00:00" pubdate="">2014年11月9日 at 上午5:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为\n\n</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-25711">
+<article class="comment" id="comment-25711">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hanyi</a></span> on <a href="http://www.acmerblog.com/bf-kmp-4549.html#comment-25711" rel="nofollow"><time datetime="2014-08-08T13:19:12+00:00" pubdate="">2014年8月8日 at 下午1:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-25704">
+<article class="comment" id="comment-25704">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">michaelwen</a></span> on <a href="http://www.acmerblog.com/bf-kmp-4549.html#comment-25704" rel="nofollow"><time datetime="2014-07-07T08:21:46+00:00" pubdate="">2014年7月7日 at 上午8:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>此题的样例描述不正确</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-57620">
+<article class="comment" id="comment-57620">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ycaxgjd</a></span> on <a href="http://www.acmerblog.com/bf-kmp-4549.html#comment-57620" rel="nofollow"><time datetime="2014-06-01T19:37:20+00:00" pubdate="">2014年6月1日 at 下午7:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>前排支持</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-25708">
+<article class="comment" id="comment-25708">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">calvert1991</a></span> on <a href="http://www.acmerblog.com/bf-kmp-4549.html#comment-25708" rel="nofollow"><time datetime="2014-04-26T10:15:06+00:00" pubdate="">2014年4月26日 at 上午10:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>题目需要求解的是最小值，而且没有考虑可能存在环</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-25705">
+<article class="comment" id="comment-25705">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">GordonTJ</a></span> on <a href="http://www.acmerblog.com/bf-kmp-4549.html#comment-25705" rel="nofollow"><time datetime="2014-03-21T14:21:47+00:00" pubdate="">2014年3月21日 at 下午2:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>楼主你能把scanf( "%d%*" ,&amp;T );中%*的用法详细说明吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,566 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>06-26</div>
+<div class="tit"><h1 class="entry-title">拓扑排序-图论</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/graph" rel="category tag" title="查看图论中的全部文章">图论</a>, <a href="http://www.acmerblog.com/category/zhuanti/algorithm" rel="category tag" title="查看算法分析中的全部文章">算法分析</a></span><span class="i4">围观1595次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5896" href="http://www.acmerblog.com/topological-sorting-5896.html#comments" title="《拓扑排序-图论》上的评论">38 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p>假设我们有一组任务要完成，并且有些任务要在其它任务完成之后才能开始，所以我们必须非常小心这些任务的执行顺序。<br/>
+如果这些任务的执行顺序足够简单的话，我们可以用链表来存储它们，这是一个很好的方案，让我们可以准确知道任务的执行顺序。问题是有时候不同任务之间的关系是非常复杂的，有些任务依赖于两个甚至更多的任务，或者反过来很多任务依赖自己。<br/>
+因此我们不能通过链表或者树的数据结构来对这个问题建模。对这类问题唯一合理的数据结构就是图。我们需要哪种图呢？很显然，我们需要有向图来描述这种关系，而且是不能循环的有向图，我们称之为有向无环图。要通过拓扑排序对图形进行排序，这些图必须是不能循环和有向的。为什么这些图不能循环呢？答案很明显，如果图形是循环的，我们无法知道哪个任务该优先执行，也不可能对任务进行排序。现在我们一要做的是对图中的每个节点排序，组成一条条边（u，v），u在v之前执行。然后我们就可以得到所有任务的线性顺序，并按这种顺序执行任务就一切都OK了。</p>
+<p>例如,下面的图的一个拓扑排序是“5 4 2 3 1 0”。一个图可以有多个拓扑排序。<br/>
+另一个拓扑排序是“4 5 2 3 1 0”。拓扑排序的第一个顶点总是入度为0。</p>
+<p><a href="http://cdn.acmerblog.com/wp-content/uploads/2014/06/graph.png"><img alt="graph" class="alignnone wp-image-5898" height="365" src="http://cdn.acmerblog.com/wp-content/uploads/2014/06/graph.png" width="452"/></a></p>
+<p><strong>方法一</strong><br/>
+现在我们可以得到这个算法的基本步骤：</p>
+<pre class="brush:other">1.构造空列表 L和S；
+2.把所有没有依赖节点(入度为0)的节点放入L；
+3.当L还有节点的时候，执行下面步骤：
+3.1  	L中拿出一个节点ｎ（从L中remove掉），并放入S
+3.2  		对每一个邻近n的节点m，
+3.2.1 			去掉边（n,m）;（表示加入最终结果集S）
+3.2.2 			如果m没有依赖节点（入度为零），把m放入L;</pre>
+<p>核心就是：每次都选取入度为0的节点，再更新其相邻的节点的入度 。</p>
+<p>这个是相对比较直观的算法，也是常见的一种算法。我们用一个数组degree[]记录所有顶点的入度。删除点时更新该数组。<br/>
+参考下面代码函数：topologicalSort1()</p>
+<p><strong>方法二</strong><br/>
+另外一种方法是参考DFS，对图的深度优先遍历做些修改。我们确信在有向图中如果存在一条边（u，v），那么顶点u会先于顶点v进入列表中。因此在深度遍历时，用栈来存储遍历的顺序。参考下面代码的函数：topologicalSort2()</p>
+<p>C++实现</p>
+<pre class="brush:cpp">// C++实现的拓扑排序算法
+#include&lt;iostream&gt;
+#include &lt;list&gt;
+#include &lt;stack&gt;
+using namespace std;
+
+// 图类
+class Graph
+{
+    int V;    //顶点个数
+
+    // 邻接表
+    list&lt;int&gt; *adj;
+    // 拓扑排序方法 2的辅助函数
+    void topologicalSortRecall(int v, bool visited[], stack&lt;int&gt; &amp;Stack);
+
+public:
+    Graph(int V);
+
+     // 添加边
+    void addEdge(int v, int w);
+
+    //拓扑排序普通方法
+    void topologicalSort1();
+
+    // 拓扑排序方法二
+    void topologicalSort2();
+};
+
+Graph::Graph(int V)
+{
+    this-&gt;V = V;
+    adj = new list&lt;int&gt;[V];
+}
+
+void Graph::addEdge(int v, int w)
+{
+    adj[v].push_back(w); //
+}
+
+//类似深度优先遍历，将和V相邻的顶点（且为访问过的）放入栈中
+void Graph::topologicalSortRecall(int v, bool visited[], stack&lt;int&gt; &amp;stk)
+{
+    //标记v为访问过的
+    visited[v] = true;
+
+    // 对每个顶点进行递归调用
+    list&lt;int&gt;::iterator i;
+    for (i = adj[v].begin(); i != adj[v].end(); ++i)
+        if (!visited[*i])
+            topologicalSortRecall(*i, visited, stk);
+
+    // 保存顶点
+    stk.push(v);
+}
+
+// 方法二，使用递归调用实现拓扑排序
+void Graph::topologicalSort2()
+{
+    stack&lt;int&gt; stk;
+    bool *visited = new bool[V];
+    for (int i = 0; i &lt; V; i++)
+        visited[i] = false;
+
+    //每个顶点都调用一次
+    for (int i = 0; i &lt; V; i++)
+      if (visited[i] == false)
+        topologicalSortRecall(i, visited, stk);
+
+    // 打印
+    while (stk.empty() == false)
+    {
+        cout &lt;&lt; stk.top() &lt;&lt; " ";
+        stk.pop();
+    }
+}
+
+// 方法一
+void Graph::topologicalSort1()
+{
+	list&lt;int&gt;::iterator j;
+	int degree[V];
+	//遍历所有的边，计算入度
+	for(int i=0; i&lt;V; i++){
+		degree[i] = 0;
+		for (j = adj[i].begin(); j != adj[i].end(); ++j){
+			degree[*j]++;
+		}
+	}
+	list&lt;int&gt; zeroNodes;//所有入度为0的点
+	list&lt;int&gt; result;//所有入度为0的点
+	for(int i=0; i&lt;V; i++){
+		if(degree[i] == 0){
+			zeroNodes.push_back(i);
+		}
+	}
+	while(zeroNodes.size() &gt; 0){
+		int top = zeroNodes.back();
+		zeroNodes.pop_back();
+		result.push_back(top);
+		for (j = adj[top].begin(); j != adj[top].end(); ++j){
+			degree[*j]--;//删除和top相邻的边，并更新其它顶点的入度
+			if(degree[*j] == 0) zeroNodes.push_back(*j);
+		}
+	}
+
+	//打印结果
+	for(j= result.begin(); j != result.end(); j++)
+		cout &lt;&lt; (*j) &lt;&lt; " ";
+}
+
+int main()
+{
+    // 创建文中所以的图
+    Graph g(6);
+    g.addEdge(5, 2);
+    g.addEdge(5, 0);
+    g.addEdge(4, 0);
+    g.addEdge(4, 1);
+    g.addEdge(2, 3);
+    g.addEdge(3, 1);
+
+    cout &lt;&lt; "Following is a Topological Sort of the given graph using  topologicalSort1\n";
+    g.topologicalSort1();
+    cout &lt;&lt; endl;
+    cout &lt;&lt; "Following is a Topological Sort of the given graph using  topologicalSort2\n";
+    g.topologicalSort2();
+    return 0;
+}</pre>
+<p>参考：http://www.geeksforgeeks.org/topological-sorting/</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75439">
+<article class="comment" id="comment-75439">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521095" rel="external nofollow">新用户926458</a></span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-75439" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把技能点在了箭上</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75438">
+<article class="comment" id="comment-75438">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521095" rel="external nofollow">新用户926458</a></span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-75438" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把技能点在了箭上</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75437">
+<article class="comment" id="comment-75437">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521095" rel="external nofollow">新用户926458</a></span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-75437" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把技能点在了箭上</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75436">
+<article class="comment" id="comment-75436">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521095" rel="external nofollow">新用户926458</a></span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-75436" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把技能点在了箭上</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75435">
+<article class="comment" id="comment-75435">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521095" rel="external nofollow">新用户926458</a></span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-75435" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把技能点在了箭上</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75434">
+<article class="comment" id="comment-75434">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521095" rel="external nofollow">新用户926458</a></span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-75434" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把技能点在了箭上</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75433">
+<article class="comment" id="comment-75433">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521095" rel="external nofollow">新用户926458</a></span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-75433" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把技能点在了箭上</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75432">
+<article class="comment" id="comment-75432">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521095" rel="external nofollow">新用户926458</a></span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-75432" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把技能点在了箭上</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75431">
+<article class="comment" id="comment-75431">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521095" rel="external nofollow">新用户926458</a></span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-75431" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把技能点在了箭上</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75430">
+<article class="comment" id="comment-75430">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521095" rel="external nofollow">新用户926458</a></span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-75430" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把技能点在了箭上</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75429">
+<article class="comment" id="comment-75429">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521095" rel="external nofollow">新用户926458</a></span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-75429" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>把技能点在了箭上</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64986">
+<article class="comment" id="comment-64986">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">hXbQB</span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-64986" rel="nofollow"><time datetime="2016-12-24T20:56:02+00:00" pubdate="">2016年12月24日 at 下午8:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个更刺ｃ激，准备好手纸哦 A 片。。 ２８８ｄ．ｐｗ <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64911">
+<article class="comment" id="comment-64911">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">UJvbT</span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-64911" rel="nofollow"><time datetime="2016-11-27T01:09:10+00:00" pubdate="">2016年11月27日 at 上午1:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>男人的天堂、高清s萝舞，电动s棒棒各种耍 <a href="http://uVU.cc/iqVo" rel="nofollow">http://uVU.cc/iqVo</a></p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64854">
+<article class="comment" id="comment-64854">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">ldszP</span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-64854" rel="nofollow"><time datetime="2016-11-12T03:34:56+00:00" pubdate="">2016年11月12日 at 上午3:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>精彩大片你懂，htTP://uVU.Cc/ijW6 <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64841">
+<article class="comment" id="comment-64841">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">JSsGa</span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-64841" rel="nofollow"><time datetime="2016-11-07T10:06:40+00:00" pubdate="">2016年11月7日 at 上午10:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>打开 ｕｖｕ.ｃｃ/ir7p都是 浪美眉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64802">
+<article class="comment" id="comment-64802">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">请留言</span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-64802" rel="nofollow"><time datetime="2016-10-24T15:08:23+00:00" pubdate="">2016年10月24日 at 下午3:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>两种方法好像都没有对有向图作有无环的判断啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64800">
+<article class="comment" id="comment-64800">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">小鬼</span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-64800" rel="nofollow"><time datetime="2016-10-24T14:59:11+00:00" pubdate="">2016年10月24日 at 下午2:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>DFS的那个方法好像不能处理带环的有向图啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64798">
+<article class="comment" id="comment-64798">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">小鬼</span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-64798" rel="nofollow"><time datetime="2016-10-24T14:48:35+00:00" pubdate="">2016年10月24日 at 下午2:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>兄弟,是出度为0吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64780">
+<article class="comment" id="comment-64780">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">xRpgx</span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-64780" rel="nofollow"><time datetime="2016-10-21T05:47:25+00:00" pubdate="">2016年10月21日 at 上午5:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>万 ｃ部 A 片　高ｃ清 国产.日韩 <a href="http://uVU.cc/ir7q" rel="nofollow">http://uVU.cc/ir7q</a></p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64721">
+<article class="comment" id="comment-64721">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">SEHmE</span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-64721" rel="nofollow"><time datetime="2016-10-10T07:12:02+00:00" pubdate="">2016年10月10日 at 上午7:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>万 ｃ部 A 片　高ｃ清 国产.日韩 <a href="http://uVU.cc/ir7q" rel="nofollow">http://uVU.cc/ir7q</a></p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64566">
+<article class="comment" id="comment-64566">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">苦海</span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-64566" rel="nofollow"><time datetime="2016-03-16T19:24:17+00:00" pubdate="">2016年3月16日 at 下午7:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>必须是有向图采用排序这一说法</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64565">
+<article class="comment" id="comment-64565">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://t.qq.com/djx975569223" rel="external nofollow">丁建雄</a></span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-64565" rel="nofollow"><time datetime="2016-03-14T10:56:03+00:00" pubdate="">2016年3月14日 at 上午10:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实关键约束条件是5231，50，40，41，只有这四个组合不能颠倒顺序，其他都是随意颠倒顺序的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64564">
+<article class="comment" id="comment-64564">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://t.qq.com/djx975569223" rel="external nofollow">丁建雄</a></span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-64564" rel="nofollow"><time datetime="2016-03-14T10:55:05+00:00" pubdate="">2016年3月14日 at 上午10:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>兄弟我错了，我对topo理解不深，您的算法是正确的！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64563">
+<article class="comment" id="comment-64563">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://t.qq.com/djx975569223" rel="external nofollow">丁建雄</a></span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-64563" rel="nofollow"><time datetime="2016-03-14T10:44:02+00:00" pubdate="">2016年3月14日 at 上午10:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>兄弟，算法1是有问题的，算法2没问题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49414">
+<article class="comment" id="comment-49414">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">MyHome</a></span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-49414" rel="nofollow"><time datetime="2015-05-21T00:54:44+00:00" pubdate="">2015年5月21日 at 上午12:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嗯，是写错了，文中以更改。MAX ( L(X[0..m-2], Y[0..n-1]), L(X[0..m-1], Y[0..n-2])</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30461">
+<article class="comment" id="comment-30461">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">anthozoan77</a></span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-30461" rel="nofollow"><time datetime="2015-04-13T13:30:35+00:00" pubdate="">2015年4月13日 at 下午1:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>代码过于复杂了吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-3213">
+<article class="comment" id="comment-3213">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">fyj</span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-3213" rel="nofollow"><time datetime="2015-04-12T23:51:48+00:00" pubdate="">2015年4月12日 at 下午11:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>在方法1里面：</p>
+<p>    //遍历所有的边，计算入度<br/>
+    for(int i=0; i&lt;V; i++)<br/>
+  {<br/>
+        degree <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/>  = 0;<br/>
+        for (j = adj <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .begin(); j != adj <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .end(); ++j)<br/>
+       {<br/>
+            degree[*j]++;<br/>
+        }<br/>
+    }</p>
+<p>为什么每遍历一条链表，要首先将每个链表头的顶点的入度置为0呢？<br/>
+比如顶点5，若在顶点1、2、3、4的链表中出现过顶点5，那么要增加顶点5的入度，但是在遍历顶点5的链表时，又将顶点5的入度置为0了，那之前的从顶点1234到顶点5的边不是都没了吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49418">
+<article class="comment" id="comment-49418">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hunangangli</a></span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-49418" rel="nofollow"><time datetime="2015-04-12T21:16:28+00:00" pubdate="">2015年4月12日 at 下午9:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>swap写成内联函数会不会好一些</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58809">
+<article class="comment" id="comment-58809">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fermi</a></span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-58809" rel="nofollow"><time datetime="2015-03-26T09:11:50+00:00" pubdate="">2015年3月26日 at 上午9:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>说的就是无向图啊，有向图的算法也是类似的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49413">
+<article class="comment" id="comment-49413">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">JcZ</a></span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-49413" rel="nofollow"><time datetime="2015-03-20T18:39:15+00:00" pubdate="">2015年3月20日 at 下午6:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>无需用转移方程也可以解决，哈哈</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58810">
+<article class="comment" id="comment-58810">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">verycourage</a></span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-58810" rel="nofollow"><time datetime="2014-10-30T01:00:16+00:00" pubdate="">2014年10月30日 at 上午1:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很赞的解答</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49416">
+<article class="comment" id="comment-49416">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Rosamondwu</a></span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-49416" rel="nofollow"><time datetime="2014-10-28T06:56:43+00:00" pubdate="">2014年10月28日 at 上午6:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>wt[n - 1]没错，因为下标是[0...n-1]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-902">
+<article class="comment" id="comment-902">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://t.qq.com/y126126227" rel="external nofollow">YY</a></span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-902" rel="nofollow"><time datetime="2014-09-26T12:36:11+00:00" pubdate="">2014年9月26日 at 下午12:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不太明白DFS的方法</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-793">
+<article class="comment" id="comment-793">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">taoxin</span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-793" rel="nofollow"><time datetime="2014-09-05T13:07:41+00:00" pubdate="">2014年9月5日 at 下午1:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>DFS方法的原理还是不太清楚啊</p>
+</div>
+</article><!-- #comment-## -->
+<ul class="children">
+<li class="comment byuser comment-author-admin bypostauthor even depth-2" id="li-comment-794">
+<article class="comment" id="comment-794">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://weibo.com/itong2055" rel="external nofollow">管理员</a></span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-794" rel="nofollow"><time datetime="2014-09-05T13:09:49+00:00" pubdate="">2014年9月5日 at 下午1:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可以参考算法导论中的时间戳。就是结束访问时间，最后结束的顶点肯定是入度为0的顶点，因为DFS要回溯</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ul><!-- .children -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-even depth-1" id="li-comment-49415">
+<article class="comment" id="comment-49415">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">lsdtc1225</a></span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-49415" rel="nofollow"><time datetime="2014-07-25T00:30:02+00:00" pubdate="">2014年7月25日 at 上午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>看来学好代数很重要啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-odd thread-alt depth-1" id="li-comment-58811">
+<article class="comment" id="comment-58811">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tangzhihua</a></span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-58811" rel="nofollow"><time datetime="2014-07-16T09:58:58+00:00" pubdate="">2014年7月16日 at 上午9:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/d8/good_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-even depth-1" id="li-comment-49417">
+<article class="comment" id="comment-49417">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ycaxgjd</a></span> on <a href="http://www.acmerblog.com/topological-sorting-5896.html#comment-49417" rel="nofollow"><time datetime="2014-07-06T04:00:47+00:00" pubdate="">2014年7月6日 at 上午4:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>
+	welcome!</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

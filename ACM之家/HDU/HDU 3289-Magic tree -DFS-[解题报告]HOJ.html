@@ -1,0 +1,467 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-13</div>
+<div class="tit"><h1 class="entry-title">HDU 3289-Magic tree -DFS-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/dfs" rel="category tag" title="查看DFS搜索中的全部文章">DFS搜索</a>, <a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/data-struct/indexed-trees" rel="category tag" title="查看树状数组中的全部文章">树状数组</a></span><span class="i4">围观687次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5184" href="http://www.acmerblog.com/hdu-3289-magic-tree-5184.html#comments" title="《HDU 3289-Magic tree -DFS-[解题报告]HOJ》上的评论">24 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Magic tree </h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Sailormoon girls have a beautiful garden, though there is only a tree in it. The tree is quite magic that it will grow different fruits to fit gilrs’ demands (xq likes bananas best, wj prefers to kiwi fruits and lff loves tomatoes).<br/>Besides these, the tree has N forks which are connected by branches, girls mark the forks by 1 to N and the root is always marked by 1. Fruits will grow on the forks and every fork will grow several fruits. But the tree is too strange that it has many branches(even between two nodes may have more than one branch). In order to pick fruits more convenient and watch more clearly, Sailormoon girls want to cut extra branches by using minimum cost, after that, they also want to know how many fruits are there in a sub-tree. The trouble is that the tree will grow new fruits and girls will pick up some ones from the tree. Can you help them? </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+Input contains multiple cases. Each case contains several lines.<br/>The first line contains two integers N, M(N&lt;=100,000, M&lt;=151,000), representing the number of forks and the number of branches in the tree. <br/>The following M lines each has three integers u, v and c, which means fork u and fork v are connected by a branch, if you want to cut it, you have to cost c (arbitrary two c will be different, c&lt;=200,000).<br/>The next line contains an integer P, representing the operations following.<br/>"G x y" which means the fork x will grow y more fruits ;<br/>"C x" which means girls will pick all fruits on the fork x;<br/>"Q x" which means girls want to know the number of fruits in the sub-tree above the fork x, including the fruits (if exists) on the fork x.<br/>Note the tree is empty at the beginning, every number will not exceed the range of integer. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+Input contains multiple cases. Each case contains several lines.<br/>The first line contains two integers N, M(N&lt;=100,000, M&lt;=151,000), representing the number of forks and the number of branches in the tree. <br/>The following M lines each has three integers u, v and c, which means fork u and fork v are connected by a branch, if you want to cut it, you have to cost c (arbitrary two c will be different, c&lt;=200,000).<br/>The next line contains an integer P, representing the operations following.<br/>"G x y" which means the fork x will grow y more fruits ;<br/>"C x" which means girls will pick all fruits on the fork x;<br/>"Q x" which means girls want to know the number of fruits in the sub-tree above the fork x, including the fruits (if exists) on the fork x.<br/>Note the tree is empty at the beginning, every number will not exceed the range of integer.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3 2
+1 2 4
+1 3 5
+7
+G 1 1
+G 2 1
+G 3 1
+Q 1
+C 2
+Q 2
+Q 3</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+3
+0
+1</pre>
+<p> <!-- problem end --></p>
+<p>题意：对一棵树上的点进行实时的增减权值和询问子树的权值和</p>
+<p>首先：单点修改以及子树查询。对整棵树dfs一遍，记录下欧拉序列。这样有一个好处，就是每一棵子树在这个序列中都是连续的，同时记录下每一棵子树的起始序列号，这样，对子树的查询就变成了一个连续区间的查询了，运用树状数组就可以解决了。</p>
+<p>那最大生成树呢？“Sailormoon girls want to cut extra branches by using minimum cost, after that…”额，这里要将多余的边减掉，用最小cost，也就是减掉之后，变成了一棵最大生成树。郁闷呀，一开始以为题目所给的cost是没用…………</p>
+<p><img alt="Magic tree " id="code_img_closed_8de63c7d-5790-4fe8-a543-1c02a02ebd41" src="/img/1395044047203.gif"/><img alt="Magic tree " id="code_img_opened_8de63c7d-5790-4fe8-a543-1c02a02ebd41" onclick="cnblogs_code_hide('8de63c7d-5790-4fe8-a543-1c02a02ebd41',event)" src="/img/1395044047288.gif" style="display: none;"/><span>View Code </span></p>
+<pre class="brush:cpp ">#include&lt;iostream&gt;
+#include&lt;algorithm&gt;
+#include&lt;queue&gt;
+#include&lt;vector&gt;
+using namespace std;
+const int MAXN = 100010;
+int spos[MAXN],epos[MAXN],sum[MAXN],w[MAXN];
+int n,f[MAXN],index;
+bool vis[MAXN];
+struct edge
+{
+    int u,v,w;
+    edge(int a=0,int b=0,int c=0):u(a),v(b),w(c){}
+    bool friend operator&lt;(const edge a,const edge b)
+    {
+        return a.w&lt;b.w;
+    }
+};
+priority_queue&lt;edge&gt; Q;
+vector&lt;int&gt; g[MAXN];
+void init()
+{
+    for(int i=0;i&lt;=n;i++)
+    {
+        f[i]=i;
+        w[i]=sum[i]=0;
+        g[i].clear();
+    }
+}
+int find(int x)
+{
+    if(x==f[x])
+        return f[x];
+    f[x]=find(f[x]);
+    return f[x];
+}
+void Union(int x,int y)
+{
+    int a=find(x);
+    int b=find(y);
+    if(a==b) return ;
+    f[a]=b;
+    g[x].push_back(y);//重新构建树
+    g[y].push_back(x);
+}
+void Kruskal()//将所有边压入优先队列，再取出所有边合并，求最大生成树
+{
+    while(!Q.empty())
+    {
+        Union(Q.top().u,Q.top().v);
+        Q.pop();
+    }
+}
+int lowbit(int x)//这里往下三个函数就是树状数组的模板函数了，就不多说了
+{
+    return x&amp;(-x);
+}
+void modify(int x,int add)
+{
+    while(x&lt;=n)
+    {
+        sum[x]+=add;
+        x+=lowbit(x);
+    }
+}
+int get_sum(int x)
+{
+    int ret=0;
+    while(x!=0)
+    {
+        ret+=sum[x];
+        x-=lowbit(x);
+    }
+    return ret;
+}
+void dfs(int u)
+{
+    spos[u]=index;//记录子树的起始位置
+    vis[u]=true;
+    for(int i=0;i&lt;g[u].size();i++)
+    {
+        int v=g[u][i];
+        if(!vis[v])
+        {
+            index++;
+            dfs(v);
+        }
+    }
+    epos[u]=index;//记录子树的终点位置
+}
+int main()
+{
+    int m,k,a,b,c;
+    char str[5];
+    while(scanf("%d %d",&amp;n,&amp;m)==2)
+    {
+        init();
+        while(m--)
+        {
+            scanf("%d %d %d",&amp;a,&amp;b,&amp;c);
+            Q.push(edge(a,b,c));
+        }
+        Kruskal();
+        index=1;
+        memset(vis,false,sizeof(vis));
+        dfs(1);
+        scanf("%d",&amp;m);
+        while(m--)
+        {
+            scanf("%s",str);
+            if(str[0]=='G')
+            {
+                scanf("%d %d",&amp;a,&amp;c);
+                modify(spos[a],c);
+                w[a]+=c;
+            }
+            else if(str[0]=='C')
+            {
+                scanf("%d",&amp;a);
+                modify(spos[a],-w[a]);
+                w[a]=0;
+            }
+            else {
+                scanf("%d",&amp;a);
+                int ans=get_sum(epos[a])-get_sum(spos[a]-1);
+                printf("%d\n",ans);
+            }
+        }
+    }
+    return 0;
+}</pre>
+<p> </p>
+<p>参考：http://www.cnblogs.com/nanke/archive/2012/02/26/2368818.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-77912">
+<article class="comment" id="comment-77912">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517987" rel="external nofollow">新用户604045</a></span> on <a href="http://www.acmerblog.com/hdu-3289-magic-tree-5184.html#comment-77912" rel="nofollow"><time datetime="2017-04-12T10:53:28+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我这个是说的101,不是说你，只是回复的时候少打了个它。好吧，我来解释下事情的前因后果。忘记在哪个帖子了，他贴了那一大堆的各种对国家、ZF不满的话题回复我，然后把，我就回复了“呵呵，你这个我在其他论坛也看到了，就不要再贴到这里了。”然后，他就说我是五毛啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77911">
+<article class="comment" id="comment-77911">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517987" rel="external nofollow">新用户604045</a></span> on <a href="http://www.acmerblog.com/hdu-3289-magic-tree-5184.html#comment-77911" rel="nofollow"><time datetime="2017-04-12T10:53:28+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我这个是说的101,不是说你，只是回复的时候少打了个它。好吧，我来解释下事情的前因后果。忘记在哪个帖子了，他贴了那一大堆的各种对国家、ZF不满的话题回复我，然后把，我就回复了“呵呵，你这个我在其他论坛也看到了，就不要再贴到这里了。”然后，他就说我是五毛啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77910">
+<article class="comment" id="comment-77910">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517987" rel="external nofollow">新用户604045</a></span> on <a href="http://www.acmerblog.com/hdu-3289-magic-tree-5184.html#comment-77910" rel="nofollow"><time datetime="2017-04-12T10:53:28+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我这个是说的101,不是说你，只是回复的时候少打了个它。好吧，我来解释下事情的前因后果。忘记在哪个帖子了，他贴了那一大堆的各种对国家、ZF不满的话题回复我，然后把，我就回复了“呵呵，你这个我在其他论坛也看到了，就不要再贴到这里了。”然后，他就说我是五毛啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77909">
+<article class="comment" id="comment-77909">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517987" rel="external nofollow">新用户604045</a></span> on <a href="http://www.acmerblog.com/hdu-3289-magic-tree-5184.html#comment-77909" rel="nofollow"><time datetime="2017-04-12T10:53:28+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我这个是说的101,不是说你，只是回复的时候少打了个它。好吧，我来解释下事情的前因后果。忘记在哪个帖子了，他贴了那一大堆的各种对国家、ZF不满的话题回复我，然后把，我就回复了“呵呵，你这个我在其他论坛也看到了，就不要再贴到这里了。”然后，他就说我是五毛啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77908">
+<article class="comment" id="comment-77908">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517987" rel="external nofollow">新用户604045</a></span> on <a href="http://www.acmerblog.com/hdu-3289-magic-tree-5184.html#comment-77908" rel="nofollow"><time datetime="2017-04-12T10:53:28+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我这个是说的101,不是说你，只是回复的时候少打了个它。好吧，我来解释下事情的前因后果。忘记在哪个帖子了，他贴了那一大堆的各种对国家、ZF不满的话题回复我，然后把，我就回复了“呵呵，你这个我在其他论坛也看到了，就不要再贴到这里了。”然后，他就说我是五毛啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77907">
+<article class="comment" id="comment-77907">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517987" rel="external nofollow">新用户604045</a></span> on <a href="http://www.acmerblog.com/hdu-3289-magic-tree-5184.html#comment-77907" rel="nofollow"><time datetime="2017-04-12T10:53:28+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我这个是说的101,不是说你，只是回复的时候少打了个它。好吧，我来解释下事情的前因后果。忘记在哪个帖子了，他贴了那一大堆的各种对国家、ZF不满的话题回复我，然后把，我就回复了“呵呵，你这个我在其他论坛也看到了，就不要再贴到这里了。”然后，他就说我是五毛啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77906">
+<article class="comment" id="comment-77906">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517987" rel="external nofollow">新用户604045</a></span> on <a href="http://www.acmerblog.com/hdu-3289-magic-tree-5184.html#comment-77906" rel="nofollow"><time datetime="2017-04-12T10:53:28+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我这个是说的101,不是说你，只是回复的时候少打了个它。好吧，我来解释下事情的前因后果。忘记在哪个帖子了，他贴了那一大堆的各种对国家、ZF不满的话题回复我，然后把，我就回复了“呵呵，你这个我在其他论坛也看到了，就不要再贴到这里了。”然后，他就说我是五毛啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77905">
+<article class="comment" id="comment-77905">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517987" rel="external nofollow">新用户604045</a></span> on <a href="http://www.acmerblog.com/hdu-3289-magic-tree-5184.html#comment-77905" rel="nofollow"><time datetime="2017-04-12T10:53:28+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我这个是说的101,不是说你，只是回复的时候少打了个它。好吧，我来解释下事情的前因后果。忘记在哪个帖子了，他贴了那一大堆的各种对国家、ZF不满的话题回复我，然后把，我就回复了“呵呵，你这个我在其他论坛也看到了，就不要再贴到这里了。”然后，他就说我是五毛啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77904">
+<article class="comment" id="comment-77904">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517987" rel="external nofollow">新用户604045</a></span> on <a href="http://www.acmerblog.com/hdu-3289-magic-tree-5184.html#comment-77904" rel="nofollow"><time datetime="2017-04-12T10:53:28+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我这个是说的101,不是说你，只是回复的时候少打了个它。好吧，我来解释下事情的前因后果。忘记在哪个帖子了，他贴了那一大堆的各种对国家、ZF不满的话题回复我，然后把，我就回复了“呵呵，你这个我在其他论坛也看到了，就不要再贴到这里了。”然后，他就说我是五毛啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-77903">
+<article class="comment" id="comment-77903">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517987" rel="external nofollow">新用户604045</a></span> on <a href="http://www.acmerblog.com/hdu-3289-magic-tree-5184.html#comment-77903" rel="nofollow"><time datetime="2017-04-12T10:53:28+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我这个是说的101,不是说你，只是回复的时候少打了个它。好吧，我来解释下事情的前因后果。忘记在哪个帖子了，他贴了那一大堆的各种对国家、ZF不满的话题回复我，然后把，我就回复了“呵呵，你这个我在其他论坛也看到了，就不要再贴到这里了。”然后，他就说我是五毛啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-77902">
+<article class="comment" id="comment-77902">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919517987" rel="external nofollow">新用户604045</a></span> on <a href="http://www.acmerblog.com/hdu-3289-magic-tree-5184.html#comment-77902" rel="nofollow"><time datetime="2017-04-12T10:53:28+00:00" pubdate="">2017年4月12日 at 上午10:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我这个是说的101,不是说你，只是回复的时候少打了个它。好吧，我来解释下事情的前因后果。忘记在哪个帖子了，他贴了那一大堆的各种对国家、ZF不满的话题回复我，然后把，我就回复了“呵呵，你这个我在其他论坛也看到了，就不要再贴到这里了。”然后，他就说我是五毛啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28540">
+<article class="comment" id="comment-28540">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zhiqiang</a></span> on <a href="http://www.acmerblog.com/hdu-3289-magic-tree-5184.html#comment-28540" rel="nofollow"><time datetime="2015-03-29T02:22:45+00:00" pubdate="">2015年3月29日 at 上午2:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很不错！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28541">
+<article class="comment" id="comment-28541">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">sam_justin</a></span> on <a href="http://www.acmerblog.com/hdu-3289-magic-tree-5184.html#comment-28541" rel="nofollow"><time datetime="2015-01-08T01:13:43+00:00" pubdate="">2015年1月8日 at 上午1:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个..  真没看出来</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28542">
+<article class="comment" id="comment-28542">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">testnew</a></span> on <a href="http://www.acmerblog.com/hdu-3289-magic-tree-5184.html#comment-28542" rel="nofollow"><time datetime="2015-01-02T01:19:13+00:00" pubdate="">2015年1月2日 at 上午1:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28543">
+<article class="comment" id="comment-28543">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lanifer</a></span> on <a href="http://www.acmerblog.com/hdu-3289-magic-tree-5184.html#comment-28543" rel="nofollow"><time datetime="2014-12-20T14:18:20+00:00" pubdate="">2014年12月20日 at 下午2:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#include &lt;stdio.h&gt;<br/>
+int main()<br/>
+{<br/>
+    int n,p,t[100]={1};<br/>
+    for(int i=1;i&lt;100;i++)<br/>
+        t <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> =i;<br/>
+    while(scanf("%d",&amp;n)&amp;&amp;n!=0){<br/>
+        if(n==1)<br/>
+        printf("Printing order for 1 pages:nSheet 1, front: Blank, 1n");<br/>
+        else {<br/>
+        if(n%4) p=n/4+1;<br/>
+        else p=n/4;<br/>
+        int q=4*p;<br/>
+        printf("Printing order for %d pages:n",n);<br/>
+        for(int i=0;i&lt;p;i++){<br/>
+            printf("Sheet %d, front: ",i+1);<br/>
+            if(q&gt;n) {printf("Blank, %dn",t[2*i+1]);}<br/>
+            else {printf("%d, %dn",q,t[2*i+1]);}<br/>
+            q–;//打印表前<br/>
+            printf("Sheet %d, back : ",i+1);<br/>
+            if(q&gt;n) {printf("%d, Blankn",t[2*i+2]);}<br/>
+            else {printf("%d, %dn",t[2*i+2],q);}<br/>
+            q–;//打印表后<br/>
+           }<br/>
+        }<br/>
+    }<br/>
+    return 0;<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58264">
+<article class="comment" id="comment-58264">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">130920099</a></span> on <a href="http://www.acmerblog.com/hdu-3289-magic-tree-5184.html#comment-58264" rel="nofollow"><time datetime="2014-11-09T05:22:16+00:00" pubdate="">2014年11月9日 at 上午5:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28539">
+<article class="comment" id="comment-28539">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">BGPY243956</a></span> on <a href="http://www.acmerblog.com/hdu-3289-magic-tree-5184.html#comment-28539" rel="nofollow"><time datetime="2014-11-08T05:54:04+00:00" pubdate="">2014年11月8日 at 上午5:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>网站不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63309">
+<article class="comment" id="comment-63309">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">acmclown</a></span> on <a href="http://www.acmerblog.com/hdu-3289-magic-tree-5184.html#comment-63309" rel="nofollow"><time datetime="2014-09-09T00:18:22+00:00" pubdate="">2014年9月9日 at 上午12:18</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>nice!!!</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-28544">
+<article class="comment" id="comment-28544">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">piaoyi</a></span> on <a href="http://www.acmerblog.com/hdu-3289-magic-tree-5184.html#comment-28544" rel="nofollow"><time datetime="2014-09-08T21:38:44+00:00" pubdate="">2014年9月8日 at 下午9:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>
+	Hello Web Admin, I noticed that your On-Page SEO is is missing a few factors, for one you do not use all three H tags in your post, also I notice that you are not using bold or italics properly in your SEO optimization. On-Page SEO means more now than ever since the new Google update: Panda. No longer are backlinks and simply pinging or sending out a RSS feed the key to getting Google PageRank or Alexa Rankings, You now NEED On-Page SEO. So what is good On-Page SEO?First your keyword must appear in the title.Then it must appear in the URL.You have to optimize your keyword and make sure that it has a nice keyword density of 3-5% in your article with relevant LSI (Latent Semantic Indexing). Then you should spread all H1,H2,H3 tags in your article.Your Keyword should appear in your first paragraph and in the last sentence of the page. You should have relevant usage of Bold and italics of your keyword.There should be one internal link to a page on your blog and you should have one image with an alt tag that has your keyword….wait there's even more Now what if i told you there was a simple WordPress plugin that does all the On-Page SEO, and automatically for you? That's right AUTOMATICALLY, just watch this 4minute video for more information at.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28537">
+<article class="comment" id="comment-28537">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jxfactor</a></span> on <a href="http://www.acmerblog.com/hdu-3289-magic-tree-5184.html#comment-28537" rel="nofollow"><time datetime="2014-09-01T11:20:11+00:00" pubdate="">2014年9月1日 at 上午11:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感谢~速度真快，我很喜欢这个网站，从基础看起。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58266">
+<article class="comment" id="comment-58266">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gladuo</a></span> on <a href="http://www.acmerblog.com/hdu-3289-magic-tree-5184.html#comment-58266" rel="nofollow"><time datetime="2014-06-16T09:13:21+00:00" pubdate="">2014年6月16日 at 上午9:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>88行是多余的，可以删除</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28545">
+<article class="comment" id="comment-28545">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wynk0804</a></span> on <a href="http://www.acmerblog.com/hdu-3289-magic-tree-5184.html#comment-28545" rel="nofollow"><time datetime="2014-05-14T11:08:08+00:00" pubdate="">2014年5月14日 at 上午11:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>一开始就规定不相邻节点颜色相同，可能得不到最优解。我想个类似的算法，也不确定是否总能得到最优解：先着一个点，随机挑一个相邻点，着第二色，继续随机选一个点，但必须至少有一个边和已着点相邻，着上不同色，当然尽量不增加新色，直到完成。我还找不到反例验证他的错误。。希望LZ也帮想想, 有想法欢迎来邮件。谢谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58265">
+<article class="comment" id="comment-58265">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">BGPY</a></span> on <a href="http://www.acmerblog.com/hdu-3289-magic-tree-5184.html#comment-58265" rel="nofollow"><time datetime="2014-04-11T18:43:18+00:00" pubdate="">2014年4月11日 at 下午6:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算法是程序的灵魂，算法分简单和复杂，如果不搞大数据类，程序员了解一下简单点的算法也是可以的，但是会算法的一定要会编程才行，程序员不一定要会算法，利于自己项目需要的可以简单了解。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-28538">
+<article class="comment" id="comment-28538">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hsp_77_abc</a></span> on <a href="http://www.acmerblog.com/hdu-3289-magic-tree-5184.html#comment-28538" rel="nofollow"><time datetime="2014-03-29T09:52:48+00:00" pubdate="">2014年3月29日 at 上午9:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>打字员路过。。。。。。算法是啥。。。能干嘛。。。。。。。。能吃么。。哎</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

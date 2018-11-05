@@ -1,0 +1,389 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-06</div>
+<div class="tit"><h1 class="entry-title">HDU 3156-Repair Depots-计算几何-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/search" rel="category tag" title="查看搜索中的全部文章">搜索</a>, <a href="http://www.acmerblog.com/category/geometry/analytic-geometry" rel="category tag" title="查看解析几何中的全部文章">解析几何</a></span><span class="i4">围观373次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4990" href="http://www.acmerblog.com/hdu-3156-repair-depots-4990.html#comments" title="《HDU 3156-Repair Depots-计算几何-[解题报告]HOJ》上的评论">9 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Repair Depots</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+RoboCorp Oregon has already deployed several of its PoliceBots throughout the state, and suddenly they have remembered the importance of being able to repair these bots when they break. They are willing to build only a limited number of repair depots in the state, and they want to locate these depots so that each PoliceBot’s city is within a given distance of some depot.
+<p></p><center><img alt="Symbolic Logic Mechanization" src="/img/1394454452496.jpg"/></center><br/>You are given the locations of where the <b>n</b> (1 &lt;= <b>n</b> &lt;= 16) PoliceBots have been deployed, and the maximum number (1 &lt;= <b>c</b> &lt;= <b>n</b>) of repair depots that RoboCorp is willing to construct. Your job is to locate these repair depots to minimize the distance any bot has to be transported for repair, and return what that maximum distance is. You can assume that any bot can be repaired at any depot. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line contains the integer <b>t</b> (1 &lt;= <b>t</b> &lt;= 350), the number of cases. Each case starts with a line containing <b>n</b> and <b>c</b>. Following this line is one line per deployed bot; that line contains two floating point values, separated by a single space, giving the Cartesian coordinates of the bot. Each such value will be between 0.0 and 10.0, inclusive (NOTE: the Sample Input shows integer values for brevity). </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The first line contains the integer <b>t</b> (1 &lt;= <b>t</b> &lt;= 350), the number of cases. Each case starts with a line containing <b>n</b> and <b>c</b>. Following this line is one line per deployed bot; that line contains two floating point values, separated by a single space, giving the Cartesian coordinates of the bot. Each such value will be between 0.0 and 10.0, inclusive (NOTE: the Sample Input shows integer values for brevity).</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+9 3
+1 1
+1 2
+1 3
+2 1
+2 2
+2 3
+3 1
+3 2
+3 3
+4 2
+0 0
+1 1
+2 4
+3 9</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+1.000000
+2.236068</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp "># include&lt;stdio.h&gt;
+ # include&lt;string.h&gt;
+ # include&lt;stdlib.h&gt;
+ # include&lt;math.h&gt;
+ const int CCC=20;
+ const int RR=400;
+ const int V=8000;
+ const double eps=1e-7;
+ const int N=65550;
+ bool hash[N];
+ int st[N];
+ const double pi = acos(-1.0);
+ int U[V],D[V];
+ int L[V],R[V];
+ int C[V];
+ int size,S[CCC],H[RR],n,m;
+ int dir[17]={1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192,16384,32768,65536};
+ struct node{
+     double x,y;
+ }s[20];
+ struct point{
+     double x,y;
+ }cnt,cnt1;
+ double Dis(point a,point b){
+     return sqrt((a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y));
+ }
+ 
+ //向量的旋转 //底边线段ab 绕a逆时针旋转角度A，b-&gt;b1，sinl是sinA的值。 
+ point Whirl(double cosl, double sinl, point a, point b)
+ {    
+     b.x -= a.x; b.y -= a.y;
+     point c;
+     c.x = b.x * cosl - b.y * sinl + a.x;
+     c.y = b.x * sinl + b.y * cosl + a.y;
+     return c;
+ }
+ 
+ //求两直线的交点（先判断相交） 
+ point inst(point u1,point u2,point v1,point v2)
+ {
+     point ans = u1;
+     double t = ((u1.x - v1.x)*(v1.y - v2.y) - (u1.y - v1.y)*(v1.x - v2.x))/
+                 ((u1.x - u2.x)*(v1.y - v2.y) - (u1.y - u2.y)*(v1.x - v2.x));
+     ans.x += (u2.x - u1.x)*t;
+     ans.y += (u2.y - u1.y)*t;
+     return ans;
+ }
+ //求不平行两直线的交点
+ point fun(point a,point b,double r)
+ {
+     double l=Dis(a,b);
+     double ans=acos((l/2)/r);//弧度
+     point k1=Whirl(cos(ans),sin(ans),a,b);
+     point k2=Whirl(cos(ans),-sin(ans),b,a);
+     point cent=inst(a,k1,b,k2);
+     return cent;
+ }
+ void Link(int r,int c)
+ {
+     S[c]++;C[size]=c;
+     U[size]=U[c];D[U[c]]=size;
+     D[size]=c;U[c]=size;
+     if(H[r]==-1) H[r]=L[size]=R[size]=size;
+     else
+     {
+         L[size]=L[H[r]];R[L[H[r]]]=size;
+         R[size]=H[r];L[H[r]]=size;
+     }
+     size++;
+ }
+ void remove(int c)
+ {
+     int i;
+     for(i=D[c];i!=c;i=D[i])
+         L[R[i]]=L[i],R[L[i]]=R[i];
+ }
+ void resume(int c)
+ {
+     int i;
+     for(i=U[c];i!=c;i=U[i])
+         L[R[i]]=R[L[i]]=i;
+ }
+ int h()
+ {
+     int i,j,k,count=0;
+     bool visit[20];
+     memset(visit,0,sizeof(visit));
+     for(i=R[0];i;i=R[i])
+     {
+         if(visit[i]) continue;
+         count++;
+         visit[i]=1;
+         for(j=D[i];j!=i;j=D[j])
+         {
+             for(k=R[j];k!=j;k=R[k])
+                 visit[C[k]]=1;
+         }
+     }
+     return count;
+ }
+ int Dance(int k)
+ {
+     int i,j,Min,c;
+     if(k+h()&gt;m) return 0;
+     if(!R[0]) return 1;
+     for(Min=RR,i=R[0];i;i=R[i])
+         if(S[i]&lt;Min) Min=S[i],c=i;
+         for(i=D[c];i!=c;i=D[i])
+         {
+             remove(i);
+             for(j=R[i];j!=i;j=R[j])
+             {
+                 remove(j);
+             }
+             if(Dance(k+1)) return 1;
+             for(j=L[i];j!=i;j=L[j])
+                 resume(j);
+             resume(i);
+         }
+         return 0;
+ }
+ double dis(double x1,double y1,double x2,double y2)
+ {
+     return sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1));
+ }
+ int cmp(const void *a,const void *b)
+ {
+     return *(int *)a - *(int *)b;
+ }
+ int main()
+ {
+     int i,j,ncase,r,k,bit,sum;
+     double left,right,mid,ansx,ansy,ans,num;
+     point a,b;
+     scanf("%d",&amp;ncase);
+     while(ncase--)
+     {
+         scanf("%d%d",&amp;n,&amp;m);
+         for(i=1;i&lt;=n;i++)
+             scanf("%lf%lf",&amp;s[i].x,&amp;s[i].y);
+         left=0.0;
+         right=7.1;
+         ans=7.1;
+         while(right&gt;=left)
+         {
+             for(i=0;i&lt;=n;i++)
+             {
+                 S[i]=0;
+                 U[i]=D[i]=i;
+                 L[i+1]=i;R[i]=i+1;
+             }R[n]=0;
+             size=n+1;
+             memset(H,-1,sizeof(H));
+             memset(hash,0,sizeof(hash));
+             mid=(left+right)/2;
+             r=0;
+             sum=0;
+             for(i=1;i&lt;=n;i++)
+             {
+                 ansx=s[i].x;ansy=s[i].y;
+                 bit=0;//存一种状态
+                 for(j=1;j&lt;=n;j++)
+                     if(dis(s[j].x,s[j].y,ansx,ansy)&lt;=mid) bit+=dir[j-1];
+                     if(!hash[bit]) {hash[bit]=1;st[++sum]=bit;}
+             }
+             //开始的时候先把以每个点为圆心的加进来，防止m灰常大的情况
+             for(i=1;i&lt;=n;i++)
+             {
+                 for(j=i+1;j&lt;=n;j++)
+                 {
+                     num=dis(s[i].x,s[i].y,s[j].x,s[j].y);
+                     if(num&lt;2*mid)
+                     {
+                         a.x=s[i].x;a.y=s[i].y;
+                         b.x=s[j].x;b.y=s[j].y;
+                         cnt=fun(a,b,mid);//第一个圆心
+                         ansx=(a.x+b.x)/2;
+                         ansy=(a.y+b.y)/2;
+                         cnt1.x=2*ansx-cnt.x;
+                         cnt1.y=2*ansy-cnt.y;//第二个圆心
+                         bit=0;
+                         for(k=1;k&lt;=n;k++)
+                         {
+                             if(k==i) {bit+=dir[i-1];continue;}
+                             if(k==j) {bit+=dir[j-1];continue;}//这个地方特别注意，必须把这两种情况特别考虑，因为i和j到圆心的距离刚好是mid
+                             //但是由于存在精度问题，这个距离会比mid小，也就是不满足下式。。
+                             if(dis(s[k].x,s[k].y,cnt.x,cnt.y)&lt;=mid) bit+=dir[k-1];
+                         }
+                         if(!hash[bit]) {hash[bit]=1;st[++sum]=bit;}
+                         bit=0;
+                         for(k=1;k&lt;=n;k++)
+                         {
+                             if(k==i) {bit+=dir[i-1];continue;}
+                             if(k==j) {bit+=dir[j-1];continue;}
+                             if(dis(s[k].x,s[k].y,cnt1.x,cnt1.y)&lt;=mid) bit+=dir[k-1];
+                         }
+                         if(!hash[bit]) {hash[bit]=1;st[++sum]=bit;}
+                     }
+                     else if(num==2*mid)//只有一个圆心的情况
+                     {
+                         ansx=(s[i].x+s[j].x)/2;
+                         ansy=(s[i].y+s[j].y)/2;
+                         bit=0;
+                         for(k=1;k&lt;=n;k++)
+                         {
+                             if(k==i) {bit+=dir[i-1];continue;}
+                             if(k==j) {bit+=dir[j-1];continue;}
+                             if(dis(s[k].x,s[k].y,ansx,ansy)&lt;=mid) bit+=dir[k-1];
+                         }
+                         if(!hash[bit]) {hash[bit]=1;st[++sum]=bit;}
+                     }
+                 }
+             }
+             qsort(st+1,sum,sizeof(st[1]),cmp);
+             for(i=sum;i&gt;=1;i--)
+             {
+                 for(j=1;j&lt;=n;j++)
+                     if(st[i]&amp;dir[j-1]) hash[st[i]-dir[j-1]]=0;//这里只是标记了一部分子集
+                 if(hash[st[i]]==0) continue;
+                 r++;
+                 for(j=1;j&lt;=n;j++)
+                     if(st[i]&amp;dir[j-1]) {Link(r,j);hash[dir[j-1]]=0;}//再标记一部分子集
+             }
+             if(Dance(0)) {ans=mid;right=mid-eps;}
+             else left=mid+eps;
+         }
+         printf("%.6lf\n",ans);
+     }
+     return 0;
+ }</pre>
+<p>参考：http://www.cnblogs.com/183zyz/archive/2011/08/09/2132767.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-78733">
+<article class="comment" id="comment-78733">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521648" rel="external nofollow">新用户544901</a></span> on <a href="http://www.acmerblog.com/hdu-3156-repair-depots-4990.html#comment-78733" rel="nofollow"><time datetime="2017-04-12T12:30:19+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>瘦了1.5斤……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58037">
+<article class="comment" id="comment-58037">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">lintong</a></span> on <a href="http://www.acmerblog.com/hdu-3156-repair-depots-4990.html#comment-58037" rel="nofollow"><time datetime="2015-05-30T16:08:26+00:00" pubdate="">2015年5月30日 at 下午4:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>分析的很专业！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47896">
+<article class="comment" id="comment-47896">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xuelanghu</a></span> on <a href="http://www.acmerblog.com/hdu-3156-repair-depots-4990.html#comment-47896" rel="nofollow"><time datetime="2014-12-09T11:17:20+00:00" pubdate="">2014年12月9日 at 上午11:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>aha, welcome!</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58038">
+<article class="comment" id="comment-58038">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wuzirui</a></span> on <a href="http://www.acmerblog.com/hdu-3156-repair-depots-4990.html#comment-58038" rel="nofollow"><time datetime="2014-11-29T19:53:44+00:00" pubdate="">2014年11月29日 at 下午7:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很有意思，可惜我很菜啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47898">
+<article class="comment" id="comment-47898">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tkdzyl2013</a></span> on <a href="http://www.acmerblog.com/hdu-3156-repair-depots-4990.html#comment-47898" rel="nofollow"><time datetime="2014-11-23T16:51:36+00:00" pubdate="">2014年11月23日 at 下午4:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>楼主放题时候没注意下？xxx定律见：<br/>
+hdoj3782：http://acm.hdu.edu.cn/showproblem.php?pid=3782</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-47899">
+<article class="comment" id="comment-47899">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hao555sky</a></span> on <a href="http://www.acmerblog.com/hdu-3156-repair-depots-4990.html#comment-47899" rel="nofollow"><time datetime="2014-11-01T23:54:17+00:00" pubdate="">2014年11月1日 at 下午11:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>We do not harbor that I couldn’t remove other individuals’ problems whenever this arrived at.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47900">
+<article class="comment" id="comment-47900">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yesMan</a></span> on <a href="http://www.acmerblog.com/hdu-3156-repair-depots-4990.html#comment-47900" rel="nofollow"><time datetime="2014-10-27T05:44:35+00:00" pubdate="">2014年10月27日 at 上午5:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好，注释很详细啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-47897">
+<article class="comment" id="comment-47897">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wangzhenvs123</a></span> on <a href="http://www.acmerblog.com/hdu-3156-repair-depots-4990.html#comment-47897" rel="nofollow"><time datetime="2014-06-23T11:41:30+00:00" pubdate="">2014年6月23日 at 上午11:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>题目需要求解的是最小值，而且没有考虑可能存在环</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-27558">
+<article class="comment" id="comment-27558">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wizcabbit</a></span> on <a href="http://www.acmerblog.com/hdu-3156-repair-depots-4990.html#comment-27558" rel="nofollow"><time datetime="2014-04-05T03:40:09+00:00" pubdate="">2014年4月5日 at 上午3:40</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有两个重复的话结果是正确的，但解法不够严谨，后面重复的覆盖掉前面的，由于题目数据限制也比较严，所以能提交通过。已更新算法</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,310 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-26</div>
+<div class="tit"><h1 class="entry-title">hdu 1956 Sightseeing tour-DFS-[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/dfs" rel="category tag" title="查看DFS搜索中的全部文章">DFS搜索</a>, <a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/search/backtracking" rel="category tag" title="查看回溯和剪枝中的全部文章">回溯和剪枝</a></span><span class="i4">围观1264次</span><span class="i3"><a class="ds-thread-count" data-thread-key="3030" href="http://www.acmerblog.com/hdu-1956-Sightseeing-tour-3030.html#comments" title="《hdu 1956 Sightseeing tour-DFS-[解题报告]C++》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Sightseeing tour</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+The city executive board in Lund wants to construct a sightseeing tour by bus in Lund, so that tourists can see every corner of the beautiful city. They want to construct the tour so that every street in the city is visited exactly once. The bus should also start and end at the same junction. As in any city, the streets are either one-way or two-way, traffic rules that must be obeyed by the tour bus. Help the executive board and determine if it’s possible to construct a sightseeing tour under these constraints. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+On the first line of the input is a single positive integer n, telling the number of test scenarios to follow. Each scenario begins with a line containing two positive integers m and s, 1&lt;=m&lt;=200, 1&lt;=s&lt;=1000 being the number of junctions and streets, respectively. The following s lines contain the streets. Each street is described with three integers, xi, yi, and di, 1&lt;=xi,yi&lt;=m, 0&lt;=di&lt;=1, where xi and yi are the junctions connected by a street. If di=1, then the street is a one-way street (going from xi to yi), otherwise it’s a two-way street. You may assume that there exists a junction from where all other junctions can be reached. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+On the first line of the input is a single positive integer n, telling the number of test scenarios to follow. Each scenario begins with a line containing two positive integers m and s, 1&lt;=m&lt;=200, 1&lt;=s&lt;=1000 being the number of junctions and streets, respectively. The following s lines contain the streets. Each street is described with three integers, xi, yi, and di, 1&lt;=xi,yi&lt;=m, 0&lt;=di&lt;=1, where xi and yi are the junctions connected by a street. If di=1, then the street is a one-way street (going from xi to yi), otherwise it’s a two-way street. You may assume that there exists a junction from where all other junctions can be reached.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+4
+5 8
+2 1 0
+1 3 0
+4 1 1
+1 5 0
+5 4 1
+3 4 0
+4 2 1
+2 2 0
+4 4
+1 2 1
+2 3 0
+3 4 0
+1 4 1
+3 3
+1 2 0
+2 3 0
+3 2 0
+3 4
+1 2 0
+2 3 1
+1 2 0
+3 2 0</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+possible
+impossible
+impossible
+possible</pre>
+<p> <!-- problem end --></p>
+<p>看到题目很容易想到要用DFS，但写出来之后发现TLE了。以为要用其它的算法，百度了下之后发现这题的考点就在于剪枝。</p>
+<p>刚开始我只用了两个剪枝：各木棍之和是否能被4整除；是否有木棍的长度大于正方形的边长。</p>
+<p>但事实证明还不够。关键的两个剪枝在DFS里面。具体看代码及注释吧。</p>
+<p>注意：每一次递归进去，开始搜索的位置的选择，经常是可以进行重要优化的！</p>
+<pre class="brush:cpp ">//DFS+剪枝优化
+#include &lt;iostream&gt;
+#include &lt;cstdio&gt;
+#include &lt;memory.h&gt;
+#include &lt;algorithm&gt;
+using namespace std;
+int numbers[25];
+bool used[25];
+int side;
+int num;
+bool cmp(int a,int b)
+{
+    return a&gt;b;
+}
+bool dfs(int tsum,int cur,int leave)    //tsum:这个边已经组了多长；cur：正在组的是第几条边；leave:组这条边已经用了几根棒
+{
+    if(tsum==side)
+    {
+        cur++;
+        tsum=0;
+    }
+    if(cur==4)return true;
+
+    for(int i=leave; i&lt;num; i++)   //i从leave开始。因为对棒已经降序排过序了，再搜索只需要对leave之后的棒进行搜索，它之前的肯定是不会符合的。
+    {
+        if(i&amp;&amp;numbers[i]==numbers[i-1]&amp;&amp;!used[i-1])//相邻的相等的前者没有加入，则这个也不行。
+            continue;
+
+        if(used[i]==0)
+        {
+            if(tsum+numbers[i]&lt;side)
+            {
+                used[i]=1;
+                if(dfs(tsum+numbers[i],cur,i+1))return true; //搜索的起始点很重要。i+1传入了下层递归搜索的起始点
+                used[i]=0;
+            }
+            if(tsum+numbers[i]==side)
+            {
+                used[i]=1;
+                if(dfs(0,cur+1,0))
+                return true;
+
+                used[i]=0;
+            }
+            if(tsum==0)break;
+        }
+    }
+
+    return false;
+}
+
+int main()
+{
+    int t;
+    scanf("%d",&amp;t);
+    while(t--)
+    {
+        int sum=0;
+        scanf("%d",&amp;num);
+        for(int i=0; i&lt;num; i++)
+        {
+            scanf("%d",&amp;numbers[i]);
+            sum+=numbers[i];
+        }
+        if(sum%4!=0)   //从全局剪枝。
+        {
+            printf("no\n");
+            continue;
+        }
+        side=sum/4;
+        sort(numbers,numbers+num,cmp);  //按降序排序。这样保证了只需要在搜索的起始点后面找棒，起始点前面的棒就不用再搜了。
+        if(numbers[0]&gt;(side)) //从全局剪枝。
+        {
+            printf("no\n");
+            continue;
+        }
+
+        memset(used,0,sizeof(used));
+
+
+        if(dfs(0,1,0))
+        {
+            printf("yes\n");
+        }
+        else printf("no\n");
+
+    }
+    return 0;
+}</pre>
+<p>解题转自：http://blog.csdn.net/zhuang19922011/article/details/7935977</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-62153">
+<article class="comment" id="comment-62153">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hong0220</a></span> on <a href="http://www.acmerblog.com/hdu-1956-Sightseeing-tour-3030.html#comment-62153" rel="nofollow"><time datetime="2015-07-03T02:29:50+00:00" pubdate="">2015年7月3日 at 上午2:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>[…] 如果此题没有要求 相对位置不变，可以参考文章：http://www.acmerblog.com/interview-9-2427/ […]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-18053">
+<article class="comment" id="comment-18053">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">HaibaraAi</a></span> on <a href="http://www.acmerblog.com/hdu-1956-Sightseeing-tour-3030.html#comment-18053" rel="nofollow"><time datetime="2015-06-28T05:34:48+00:00" pubdate="">2015年6月28日 at 上午5:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个..  真没看出来</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-18051">
+<article class="comment" id="comment-18051">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zwj0571</a></span> on <a href="http://www.acmerblog.com/hdu-1956-Sightseeing-tour-3030.html#comment-18051" rel="nofollow"><time datetime="2015-05-30T03:48:32+00:00" pubdate="">2015年5月30日 at 上午3:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>说的就是无向图啊，有向图的算法也是类似的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-55978">
+<article class="comment" id="comment-55978">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">chengleisheng</a></span> on <a href="http://www.acmerblog.com/hdu-1956-Sightseeing-tour-3030.html#comment-55978" rel="nofollow"><time datetime="2015-05-27T02:13:50+00:00" pubdate="">2015年5月27日 at 上午2:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>great work！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-43418">
+<article class="comment" id="comment-43418">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">CCCat</a></span> on <a href="http://www.acmerblog.com/hdu-1956-Sightseeing-tour-3030.html#comment-43418" rel="nofollow"><time datetime="2015-05-23T04:29:24+00:00" pubdate="">2015年5月23日 at 上午4:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>方法4中使用hash表，只要用出现次数作为Value，就可以解决重复元素的问题了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-43421">
+<article class="comment" id="comment-43421">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">linyanjin</a></span> on <a href="http://www.acmerblog.com/hdu-1956-Sightseeing-tour-3030.html#comment-43421" rel="nofollow"><time datetime="2015-04-04T19:08:58+00:00" pubdate="">2015年4月4日 at 下午7:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>88行是多余的，可以删除</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-55976">
+<article class="comment" id="comment-55976">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">congve1</a></span> on <a href="http://www.acmerblog.com/hdu-1956-Sightseeing-tour-3030.html#comment-55976" rel="nofollow"><time datetime="2015-04-03T18:21:30+00:00" pubdate="">2015年4月3日 at 下午6:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>5.1处，反了；“上一个操作符的优先级比操作符ch的优先级大，或栈是空的就入栈。”如代码所述，应为“上一个操作符的优先级比操作符ch的优先级小，或栈是空的就入栈。”</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-18052">
+<article class="comment" id="comment-18052">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Amber</a></span> on <a href="http://www.acmerblog.com/hdu-1956-Sightseeing-tour-3030.html#comment-18052" rel="nofollow"><time datetime="2015-02-12T06:58:53+00:00" pubdate="">2015年2月12日 at 上午6:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>隐藏最深的bug是(start+end)/2有可能上溢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-55975">
+<article class="comment" id="comment-55975">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fermi</a></span> on <a href="http://www.acmerblog.com/hdu-1956-Sightseeing-tour-3030.html#comment-55975" rel="nofollow"><time datetime="2014-12-30T00:33:49+00:00" pubdate="">2014年12月30日 at 上午12:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，再多来的CF上面的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-43420">
+<article class="comment" id="comment-43420">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">asdass</a></span> on <a href="http://www.acmerblog.com/hdu-1956-Sightseeing-tour-3030.html#comment-43420" rel="nofollow"><time datetime="2014-12-19T06:02:30+00:00" pubdate="">2014年12月19日 at 上午6:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>从数学角度确实是C(n,r)，能给个递推关系式吗，从分治的角度不好理解</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-55977">
+<article class="comment" id="comment-55977">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">CCat</a></span> on <a href="http://www.acmerblog.com/hdu-1956-Sightseeing-tour-3030.html#comment-55977" rel="nofollow"><time datetime="2014-07-06T02:12:34+00:00" pubdate="">2014年7月6日 at 上午2:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>其实国内大部分公司对算法都不够重视。特别是中小型公司老板根本都不懂技术，也不懂什么是算法，从而也不要求程序员懂什么算法，做程序从来不考虑性能问题，只要页面能显示出来就是好程序，这是国内的现状，很无奈。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-43419">
+<article class="comment" id="comment-43419">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jintianya</a></span> on <a href="http://www.acmerblog.com/hdu-1956-Sightseeing-tour-3030.html#comment-43419" rel="nofollow"><time datetime="2014-06-10T16:03:41+00:00" pubdate="">2014年6月10日 at 下午4:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感觉这里的评分标准没啥作用阿，反而显得显得赘余，还不如直接去掉好了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-18049">
+<article class="comment" id="comment-18049">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">final</a></span> on <a href="http://www.acmerblog.com/hdu-1956-Sightseeing-tour-3030.html#comment-18049" rel="nofollow"><time datetime="2014-01-02T16:50:45+00:00" pubdate="">2014年1月2日 at 下午4:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>图像处理那题解题报告在哪儿呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-18050">
+<article class="comment" id="comment-18050">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">feifei003603</a></span> on <a href="http://www.acmerblog.com/hdu-1956-Sightseeing-tour-3030.html#comment-18050" rel="nofollow"><time datetime="2013-12-29T09:06:39+00:00" pubdate="">2013年12月29日 at 上午9:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>真心不错，力顶作者</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

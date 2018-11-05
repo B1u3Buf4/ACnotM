@@ -1,0 +1,496 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>04-14</div>
+<div class="tit"><h1 class="entry-title">HDU 3974-Assign the task-线段树-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/data-struct" rel="category tag" title="查看数据结构中的全部文章">数据结构</a>, <a href="http://www.acmerblog.com/category/data-struct/trees" rel="category tag" title="查看树形结构中的全部文章">树形结构</a></span><span class="i4">围观419次</span><span class="i3"><a class="ds-thread-count" data-thread-key="6977" href="http://www.acmerblog.com/hdu-3974-assign-the-task-6977.html#comments" title="《HDU 3974-Assign the task-线段树-[解题报告]HOJ》上的评论">25 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Assign the task</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+There is a company that has N employees(numbered from 1 to N),every employee in the company has a immediate boss (except for the leader of whole company).If you are the immediate boss of someone,that person is your subordinate, and all his subordinates are your subordinates as well. If you are nobody’s boss, then you have no subordinates,the employee who has no immediate boss is the leader of whole company.So it means the N employees form a tree.
+<p>The company usually assigns some tasks to some employees to finish.When a task is assigned to someone,He/She will assigned it to all his/her subordinates.In other words,the person and all his/her subordinates received a task in the same time. Furthermore,whenever a employee received a task,he/she will stop the current task(if he/she has) and start the new one.</p>
+<p>Write a program that will help in figuring out some employee’s current task after the company assign some tasks to some employee. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line contains a single positive integer T( T &lt;= 10 ), indicates the number of test cases.
+<p>For each test case:</p>
+<p>The first line contains an integer N (N ≤ 50,000) , which is the number of the employees.</p>
+<p>The following N – 1 lines each contain two integers u and v, which means the employee v is the immediate boss of employee u(1&lt;=u,v&lt;=N).</p>
+<p>The next line contains an integer M (M ≤ 50,000).</p>
+<p>The following M lines each contain a message which is either</p>
+<p>"C x" which means an inquiry for the current task of employee x</p>
+<p>or</p>
+<p>"T x y"which means the company assign task y to employee x.</p>
+<p>(1&lt;=x&lt;=N,0&lt;=y&lt;=10^9) </p></div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The first line contains a single positive integer T( T &lt;= 10 ), indicates the number of test cases.
+<p>For each test case:</p>
+<p>The first line contains an integer N (N ≤ 50,000) , which is the number of the employees.</p>
+<p>The following N – 1 lines each contain two integers u and v, which means the employee v is the immediate boss of employee u(1&lt;=u,v&lt;=N).</p>
+<p>The next line contains an integer M (M ≤ 50,000).</p>
+<p>The following M lines each contain a message which is either</p>
+<p>"C x" which means an inquiry for the current task of employee x</p>
+<p>or</p>
+<p>"T x y"which means the company assign task y to employee x.</p>
+<p>(1&lt;=x&lt;=N,0&lt;=y&lt;=10^9)</p></div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1 
+5 
+4 3 
+3 2 
+1 3 
+5 2 
+5 
+C 3 
+T 2 1
+ C 3 
+T 3 2 
+C 3</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case #1:
+-1 
+1 
+2</pre>
+<p> <!-- problem end --></p>
+<p>http://acm.hdu.edu.cn/showproblem.php?pid=3974<br/>
+题意： 给定一棵树，50000个节点，50000个操作，C x表示查询x节点的值，T x y表示更新x节点及其子节点的值为y。。。</p>
+<p>分析： 很明显的时间戳类型线段树。。。通过一个dfs给树中各节点重新分配一个遍历的序号。。写的过程中写着写着写乱了，所以写了好久，甚至一度以为是错的。。。悲剧，还是太水啊。。。<br/>
+ps：此题的数据太弱了实际上乱暴力都可以过。。。.。。。。</p>
+<p>代码：
+</p>
+<pre class="brush:cpp" name="code">#include &lt;string.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;algorithm&gt;
+#include &lt;cmath&gt;
+#include &lt;vector&gt;
+#include &lt;map&gt;
+#include &lt;iostream&gt;
+using namespace std;
+
+const int N=100010;
+struct node
+{
+	int l, r, mid;
+	int value, lazy, parent;
+} tr[N*4];
+int n, m, up, l[N], r[N], first[N], edge[N], next[N], f[N];
+int value;
+
+void add(int x, int y)
+{
+	f[x] = y;
+	edge[up] = x;
+	next[up] = first[y];
+	first[y] = up++;
+}
+int findset(int i)
+{
+	while(f[i]!=i)
+		i = f[i];
+	return i;
+}
+void dfs(int p)
+{
+	int i;
+	i = first[p];
+	l[p] = up;
+	while(i!=-1)
+	{
+		dfs(edge[i]);
+		i = next[i];
+	}
+	r[p] = up++;
+}
+void build(int l, int r, int p)
+{
+	tr[p].l = l;
+	tr[p].r = r;
+	tr[p].value = -1;
+	tr[p].lazy = -1;
+	tr[p].parent = -1;
+	tr[p].mid = (l+r)&gt;&gt;1;
+	if(l==r)
+		return;
+	build(l, tr[p].mid, p*2);
+	build(tr[p].mid+1, r, p*2+1);
+}
+void down(int p)
+{
+	if(tr[p].lazy!=-1)
+	{
+		tr[p*2].value = tr[p].lazy;
+		tr[p*2].lazy = tr[p].lazy;
+		tr[p*2].parent = tr[p].lazy;
+		tr[p*2+1].value = tr[p].lazy;
+		tr[p*2+1].lazy = tr[p].lazy;
+		tr[p*2+1].parent = tr[p].lazy;
+		tr[p].lazy = -1;
+	}
+}
+void update(int l, int r, int p)
+{
+	if(l==tr[p].l &amp;&amp; r==tr[p].r)
+	{
+		tr[p].value = value;
+		tr[p].lazy = value;
+		return ;
+	}
+	down(p);
+	if(r&lt;=tr[p].mid)
+		update(l, r, p*2);
+	else if(l&gt;tr[p].mid)
+		update(l, r, p*2+1);
+	else
+	{
+		update(l, tr[p].mid, p*2);
+		update(tr[p].mid+1, r, p*2+1);
+	}
+}
+int query(int l, int r, int p)
+{
+	if(l==tr[p].l &amp;&amp; r==tr[p].r)
+		return tr[p].value;
+	down(p);
+	if(r&lt;=tr[p].mid)
+		return query(l, r, p*2);
+	else if(l&gt;tr[p].mid)
+		return query(l, r, p*2+1);
+	else
+	{
+		return tr[p*2].parent;
+	}
+}
+int main()
+{
+	char s[20];
+	int i, j, x, y, cas, cas1, root;
+	
+	scanf("%d", &amp;cas);
+	cas1 = 1;
+	while(cas--)
+	{
+		scanf("%d", &amp;n);
+		for(i=1; i&lt;=n; i++)
+		{
+			first[i] = -1;
+			f[i] = i;
+		}
+		
+		up = 1;
+		for(i=1; i&lt;n; i++)
+		{
+			scanf("%d %d", &amp;x, &amp;y);
+			add(x, y);
+		}
+
+		root = findset(1);
+		up = 1;
+		dfs(root);
+		up--;
+		//for(i=1; i&lt;=5; i++)
+		//	printf("i=%d...%d %d...\n", i, l[i],  r[i]);
+
+		build(1, up, 1);
+		printf("Case #%d:\n", cas1++);
+		scanf("%d", &amp;m);
+		while(m--)
+		{
+			scanf("%s", s);
+			if(s[0]=='C')
+			{
+				scanf("%d", &amp;x);
+				printf("%d\n", query(r[x], r[x], 1));
+			}
+			else
+			{
+				scanf("%d %d", &amp;x, &amp;value);
+				update(l[x], r[x], 1);
+			}
+		}
+	}
+	return 0;
+}</pre>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/ggggiqnypgjg/article/details/6723585</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-100047">
+<article class="comment" id="comment-100047">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518988" rel="external nofollow">新用户761655</a></span> on <a href="http://www.acmerblog.com/hdu-3974-assign-the-task-6977.html#comment-100047" rel="nofollow"><time datetime="2017-04-20T21:02:06+00:00" pubdate="">2017年4月20日 at 下午9:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>进了大学，我都忘记有多久没写过文字了，看着别人的故事，自己只剩唏嘘</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-71167">
+<article class="comment" id="comment-71167">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518840" rel="external nofollow">新用户512023</a></span> on <a href="http://www.acmerblog.com/hdu-3974-assign-the-task-6977.html#comment-71167" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>‘</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-71166">
+<article class="comment" id="comment-71166">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518840" rel="external nofollow">新用户512023</a></span> on <a href="http://www.acmerblog.com/hdu-3974-assign-the-task-6977.html#comment-71166" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>‘</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-71165">
+<article class="comment" id="comment-71165">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518840" rel="external nofollow">新用户512023</a></span> on <a href="http://www.acmerblog.com/hdu-3974-assign-the-task-6977.html#comment-71165" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>‘</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-71164">
+<article class="comment" id="comment-71164">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518840" rel="external nofollow">新用户512023</a></span> on <a href="http://www.acmerblog.com/hdu-3974-assign-the-task-6977.html#comment-71164" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>‘</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-71163">
+<article class="comment" id="comment-71163">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518840" rel="external nofollow">新用户512023</a></span> on <a href="http://www.acmerblog.com/hdu-3974-assign-the-task-6977.html#comment-71163" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>‘</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-71172">
+<article class="comment" id="comment-71172">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518840" rel="external nofollow">新用户512023</a></span> on <a href="http://www.acmerblog.com/hdu-3974-assign-the-task-6977.html#comment-71172" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>‘</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-71171">
+<article class="comment" id="comment-71171">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518840" rel="external nofollow">新用户512023</a></span> on <a href="http://www.acmerblog.com/hdu-3974-assign-the-task-6977.html#comment-71171" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>‘</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-71170">
+<article class="comment" id="comment-71170">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518840" rel="external nofollow">新用户512023</a></span> on <a href="http://www.acmerblog.com/hdu-3974-assign-the-task-6977.html#comment-71170" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>‘</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-71169">
+<article class="comment" id="comment-71169">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518840" rel="external nofollow">新用户512023</a></span> on <a href="http://www.acmerblog.com/hdu-3974-assign-the-task-6977.html#comment-71169" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>‘</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-71168">
+<article class="comment" id="comment-71168">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919518840" rel="external nofollow">新用户512023</a></span> on <a href="http://www.acmerblog.com/hdu-3974-assign-the-task-6977.html#comment-71168" rel="nofollow"><time datetime="2017-04-11T15:16:34+00:00" pubdate="">2017年4月11日 at 下午3:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>‘</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-59966">
+<article class="comment" id="comment-59966">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">acmer29</a></span> on <a href="http://www.acmerblog.com/hdu-3974-assign-the-task-6977.html#comment-59966" rel="nofollow"><time datetime="2015-07-13T12:34:42+00:00" pubdate="">2015年7月13日 at 下午12:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>此网站甚是喜欢，潜力巨大，请问站长，如何加入开发团队~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59967">
+<article class="comment" id="comment-59967">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ygwx</a></span> on <a href="http://www.acmerblog.com/hdu-3974-assign-the-task-6977.html#comment-59967" rel="nofollow"><time datetime="2015-07-11T00:38:38+00:00" pubdate="">2015年7月11日 at 上午12:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>贴的有些代码的头文件不见了，这是为啥</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-64186">
+<article class="comment" id="comment-64186">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fermi</a></span> on <a href="http://www.acmerblog.com/hdu-3974-assign-the-task-6977.html#comment-64186" rel="nofollow"><time datetime="2015-07-05T10:26:56+00:00" pubdate="">2015年7月5日 at 上午10:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Thanks for using the time to examine this, I truly feel strongly about it and enjoy finding out far more on this subject matter. If achievable, as you achieve knowledge</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35095">
+<article class="comment" id="comment-35095">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fanxianxian</a></span> on <a href="http://www.acmerblog.com/hdu-3974-assign-the-task-6977.html#comment-35095" rel="nofollow"><time datetime="2015-07-04T02:31:40+00:00" pubdate="">2015年7月4日 at 上午2:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>补充：此算法求出的不一定是最优解，之前理解错了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35093">
+<article class="comment" id="comment-35093">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">anthozoan77</a></span> on <a href="http://www.acmerblog.com/hdu-3974-assign-the-task-6977.html#comment-35093" rel="nofollow"><time datetime="2015-07-01T12:26:46+00:00" pubdate="">2015年7月1日 at 下午12:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>swap写成内联函数会不会好一些</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35097">
+<article class="comment" id="comment-35097">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">starcuan</a></span> on <a href="http://www.acmerblog.com/hdu-3974-assign-the-task-6977.html#comment-35097" rel="nofollow"><time datetime="2015-06-10T05:39:38+00:00" pubdate="">2015年6月10日 at 上午5:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有意思，有难度</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-59969">
+<article class="comment" id="comment-59969">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lin</a></span> on <a href="http://www.acmerblog.com/hdu-3974-assign-the-task-6977.html#comment-59969" rel="nofollow"><time datetime="2015-05-30T11:34:55+00:00" pubdate="">2015年5月30日 at 上午11:34</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>原来欧几里德定理应用这么多</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-64185">
+<article class="comment" id="comment-64185">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ruoshui</a></span> on <a href="http://www.acmerblog.com/hdu-3974-assign-the-task-6977.html#comment-64185" rel="nofollow"><time datetime="2015-05-20T01:31:08+00:00" pubdate="">2015年5月20日 at 上午1:31</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>递归还真是一门学问，学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35092">
+<article class="comment" id="comment-35092">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">biantiao</a></span> on <a href="http://www.acmerblog.com/hdu-3974-assign-the-task-6977.html#comment-35092" rel="nofollow"><time datetime="2015-05-05T06:22:20+00:00" pubdate="">2015年5月5日 at 上午6:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学习了！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-59968">
+<article class="comment" id="comment-59968">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">MCIT</a></span> on <a href="http://www.acmerblog.com/hdu-3974-assign-the-task-6977.html#comment-59968" rel="nofollow"><time datetime="2015-05-02T22:14:21+00:00" pubdate="">2015年5月2日 at 下午10:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这怎么用Catalan数啊？求解答！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35094">
+<article class="comment" id="comment-35094">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Miracle-cc</a></span> on <a href="http://www.acmerblog.com/hdu-3974-assign-the-task-6977.html#comment-35094" rel="nofollow"><time datetime="2015-04-24T23:13:28+00:00" pubdate="">2015年4月24日 at 下午11:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。第2题，TCP不支持多播，多播和广播仅应用于UDP。所以B选项是不对的。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35098">
+<article class="comment" id="comment-35098">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xin</a></span> on <a href="http://www.acmerblog.com/hdu-3974-assign-the-task-6977.html#comment-35098" rel="nofollow"><time datetime="2015-04-22T16:09:25+00:00" pubdate="">2015年4月22日 at 下午4:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可以根据二叉排序树的定义进行严格的排序树创建和后序遍历操作。如果形成的排序树相同，其树的前、中、后序遍历是相同的，但在此处不能使用中序遍历，因为，中序遍历的结果就是排序的结果。经在九度测试，运行时间90ms，比楼主的要快。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-35096">
+<article class="comment" id="comment-35096">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">reking</a></span> on <a href="http://www.acmerblog.com/hdu-3974-assign-the-task-6977.html#comment-35096" rel="nofollow"><time datetime="2015-04-21T20:21:57+00:00" pubdate="">2015年4月21日 at 下午8:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>确实有点难度，搞了好久。int溢出要注意</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-35099">
+<article class="comment" id="comment-35099">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">abguorui0928</a></span> on <a href="http://www.acmerblog.com/hdu-3974-assign-the-task-6977.html#comment-35099" rel="nofollow"><time datetime="2015-04-21T09:19:26+00:00" pubdate="">2015年4月21日 at 上午9:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错，现在就缺少新的资料</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

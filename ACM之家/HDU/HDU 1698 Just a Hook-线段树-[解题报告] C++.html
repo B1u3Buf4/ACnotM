@@ -1,0 +1,455 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-21</div>
+<div class="tit"><h1 class="entry-title">HDU 1698 Just a Hook-线段树-[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/data-struct/trees" rel="category tag" title="查看树形结构中的全部文章">树形结构</a></span><span class="i4">围观1175次</span><span class="i3"><a class="ds-thread-count" data-thread-key="2660" href="http://www.acmerblog.com/hdu-1698-Just-a-Hook-2660.html#comments" title="《HDU 1698 Just a Hook-线段树-[解题报告] C++》上的评论">12 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Just a Hook</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+In the game of DotA, Pudge’s meat hook is actually the most horrible thing for most of the heroes. The hook is made up of several consecutive metallic sticks which are of the same length.
+<p></p><center><img src="http://acm.hdu.edu.cn/showproblem.php/../../../data/images/C116-1010-1.JPG"/></center>
+<p>Now Pudge wants to do some operations on the hook.</p>
+<p>Let us number the consecutive metallic sticks of the hook from 1 to N. For each operation, Pudge can change the consecutive metallic sticks, numbered from X to Y, into cupreous sticks, silver sticks or golden sticks.<br/>The total value of the hook is calculated as the sum of values of N metallic sticks. More precisely, the value for each kind of stick is calculated as follows:</p>
+<p>For each cupreous stick, the value is 1.<br/>For each silver stick, the value is 2.<br/>For each golden stick, the value is 3.</p>
+<p>Pudge wants to know the total value of the hook after performing the operations.<br/>You may consider the original hook is made up of cupreous sticks. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input consists of several test cases. The first line of the input is the number of the cases. There are no more than 10 cases.<br/>For each case, the first line contains an integer N, 1&lt;=N&lt;=100,000, which is the number of the sticks of Pudge’s meat hook and the second line contains an integer Q, 0&lt;=Q&lt;=100,000, which is the number of the operations.<br/>Next Q lines, each line contains three integers X, Y, 1&lt;=X&lt;=Y&lt;=N, Z, 1&lt;=Z&lt;=3, which defines an operation: change the sticks numbered from X to Y into the metal kind Z, where Z=1 represents the cupreous kind, Z=2 represents the silver kind and Z=3 represents the golden kind. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+For each case, print a number in a line representing the total value of the hook after the operations. Use the format in the example.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+10
+2
+1 5 2
+5 9 3</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Case 1: The total value of the hook is 24.</pre>
+<p> <!-- problem end --></p>
+<p>个人的标准写法。</p>
+<pre class="brush:cpp ">/*
+ 线段树+修改区间+询问区间
+ */
+ #include&lt;stdio.h&gt;
+ #include&lt;string.h&gt;
+ #include&lt;stdlib.h&gt;
+ #include&lt;algorithm&gt;
+ #include&lt;iostream&gt;
+ #include&lt;queue&gt;
+ #include&lt;vector&gt;
+ #include&lt;map&gt;
+ #include&lt;math.h&gt;
+ typedef long long ll;
+ //typedef __int64 int64;
+ const int maxn = 100005;
+ const int maxm = 1005;
+ const int inf = 0x7FFFFFFF;
+ const double pi = acos(-1.0);
+ const double eps = 1e-8;
+ using namespace std;
+ #define LEFT( x ) (x&lt;&lt;1)
+ #define RIGHT( x ) ((x&lt;&lt;1)+1)
+ struct node{
+     int l,r,sum;
+     int flag;
+ }tree[ maxn&lt;&lt;2 ];
+ int data[ maxn ];
+ void pushup( int n ){
+     tree[ n ].sum = tree[ LEFT( n ) ].sum+tree[ RIGHT( n ) ].sum;
+     return ;
+ }
+ void pushdown( int n,int m ){//下标为n，这段区间有m个数
+     if( tree[ n ].flag!=0 ){
+         tree[ LEFT( n ) ].flag = tree[ RIGHT( n ) ].flag = tree[ n ].flag;
+         tree[ LEFT( n ) ].sum =  tree[ n ].flag*(m-m/2);//tree[ n ].flag*((m+1)/2);
+         tree[ RIGHT( n ) ].sum = tree[ n ].flag*(m/2);//tree[ n ].flag*( m-(m+1)/2 );
+         tree[ n ].flag = 0;
+     }
+     return;
+ }
+ void build( int l,int r,int n ){
+     if( l==r ){
+         tree[ n ].sum = data[ l ];
+         tree[ n ].flag = 0;
+         tree[ n ].l=tree[ n ].r = l;
+         return ;
+     }
+     tree[ n ].flag = 0;
+     tree[ n ].l = l;
+     tree[ n ].r = r;
+     int mid;
+     mid = (l+r)&gt;&gt;1;
+     build( l,mid,LEFT( n ) );
+     build( mid+1,r,RIGHT( n ) );
+     pushup( n );
+     return;
+ }
+ void update( int a,int b,int c,int l,int r,int n ){
+     if( a==l&amp;&amp;b==r ){
+         tree[ n ].flag = c;
+         tree[ n ].sum = (r-l+1)*c;
+         return ;
+     }
+     pushdown( n,r-l+1 );
+     //printf("test\n");
+     int mid;
+     mid = (l+r)&gt;&gt;1;
+     if( mid&gt;=b ) update( a,b,c,l,mid,LEFT( n ) );
+     else if( mid&lt;a ) update( a,b,c,mid+1,r,RIGHT( n ));
+     else {
+         update( a,mid,c,l,mid,LEFT( n ) );
+         update( mid+1,b,c,mid+1,r,RIGHT( n ) );
+     }
+     pushup( n );
+     return ;
+ }
+ int query( int a,int b,int l,int r,int n ){
+     if( a==l&amp;&amp;b==r ){
+         return tree[ n ].sum;
+     }
+     pushdown( n,r-l+1 );
+     int mid;
+     mid = (l+r)&gt;&gt;1;
+     if( mid&gt;=b ) return query( a,b,l,mid,LEFT( n ) );
+     else if( mid&lt;a ) return query( a,b,mid+1,r,RIGHT( n ));
+     else return query( a,mid,l,mid,LEFT( n ) )+query( mid+1,b,mid+1,r,RIGHT( n ));
+ }
+ int main(){
+     int ca;
+     scanf("%d",&amp;ca);
+     for( int t=1;t&lt;=ca;t++ ){
+         int n;
+         scanf("%d",&amp;n);
+         for( int i=1;i&lt;=n;i++ ){
+             data[ i ] = 1;
+         }
+         build( 1,n,1 );
+         int op;
+         scanf("%d",&amp;op);
+         while( op-- ){
+             int a,b,c;
+             scanf("%d%d%d",&amp;a,&amp;b,&amp;c);
+             update( a,b,c,1,n,1 );
+         }
+         printf("Case %d: The total value of the hook is %d.\n",t,tree[ 1 ].sum);
+     }
+     return 0;
+ }</pre>
+<p> 另一种写法。</p>
+<pre class="brush:cpp ">/*
+ 线段树
+ 成段更新
+ */
+ #include&lt;stdio.h&gt;
+ const int maxn = 100005;
+ int sum[ maxn&lt;&lt;2 ];
+ int col[ maxn&lt;&lt;2 ];
+ #define lson l,mid,rt&lt;&lt;1
+ #define rson mid+1,r,rt&lt;&lt;1|1
+ 
+ void PushUp( int rt ){
+     sum[ rt ]=sum[ rt&lt;&lt;1 ]+sum[ rt&lt;&lt;1|1 ];
+     return ;
+ }
+ void PushDown( int rt,int m ){
+     if( col[ rt ] ){
+         col[ rt&lt;&lt;1 ]=col[ rt&lt;&lt;1|1 ]=col[ rt ];
+         sum[ rt&lt;&lt;1 ]=(m-m/2)*col[ rt ];
+         sum[ rt&lt;&lt;1|1 ]=(m/2)*col[ rt ];
+         col[ rt ]=0;
+     }
+ }        
+ 
+ void build( int l,int r,int rt ){
+     sum[ rt ]=1;
+     col[ rt ]=0;
+     if( l==r ){
+         return ;
+     }
+     int mid;
+     mid=(l+r)&gt;&gt;1;
+     build( lson );
+     build( rson );
+     PushUp( rt );
+     return ;
+ }
+ 
+ void update( int a,int b,int c,int l,int r,int rt ){
+     if( a&lt;=l &amp;&amp; b&gt;=r ){
+         col[ rt ]=c;
+         sum[ rt ]=(r-l+1)*c;
+         return ;
+     }
+     PushDown( rt,r-l+1 );
+     int mid;
+     mid=(l+r)&gt;&gt;1;
+     if( a&lt;=mid ) update( a,b,c,lson );
+     if( b&gt;mid ) update( a,b,c,rson );
+     PushUp( rt );
+     return ;
+ }
+ /*
+ int query( int a,int b,int l,int r,int rt ){
+     if( a==l &amp;&amp; b==r ){
+         return sum[ rt ];
+     }
+     int mid;
+     mid=(l+r)&gt;&gt;1;
+     int t1,t2;
+     if( b&lt;=mid ) return query( a,b,lson );
+     else if( a&gt;mid ) return query( a,b,rson );
+     else return query( a,mid,lson )+query( mid+1,b,rson );
+ }        
+ */
+ int main(){
+     int T;
+     scanf("%d",&amp;T);
+     for(int i=1;i&lt;=T;i++ ){
+         int n;
+         scanf("%d",&amp;n);
+         build( 1,n,1 );
+         int t;
+         scanf("%d",&amp;t);
+         int a,b,c;
+         while( t-- ){
+             scanf("%d%d%d",&amp;a,&amp;b,&amp;c);
+             update( a,b,c,1,n,1 );
+             //for( int j=1;j&lt;=25;j++ )printf("j:%d  %d\n",j,sum[j]);
+         }
+         printf("Case %d: The total value of the hook is %d.\n",i,sum[ 1 ]/*query( 1,n,1,n,1 )*/ );
+     }
+     return 0;
+ }</pre>
+<p> </p>
+<p>解题报告转自：http://www.cnblogs.com/justforgl/archive/2013/04/15/3023055.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-42660">
+<article class="comment" id="comment-42660">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yelawolf</a></span> on <a href="http://www.acmerblog.com/hdu-1698-Just-a-Hook-2660.html#comment-42660" rel="nofollow"><time datetime="2015-04-05T08:38:22+00:00" pubdate="">2015年4月5日 at 上午8:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对于第一题，我的直觉告诉我换不换都一样，求指教</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-55636">
+<article class="comment" id="comment-55636">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Sacomplex</a></span> on <a href="http://www.acmerblog.com/hdu-1698-Just-a-Hook-2660.html#comment-55636" rel="nofollow"><time datetime="2015-03-30T06:57:37+00:00" pubdate="">2015年3月30日 at 上午6:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可以参考算法导论中的时间戳。就是结束访问时间，最后结束的顶点肯定是入度为0的顶点，因为DFS要回溯</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-61968">
+<article class="comment" id="comment-61968">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">we</a></span> on <a href="http://www.acmerblog.com/hdu-1698-Just-a-Hook-2660.html#comment-61968" rel="nofollow"><time datetime="2015-02-25T10:38:39+00:00" pubdate="">2015年2月25日 at 上午10:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>问题3是不是应该为1/4  .因为截取的三段，无论是否能组成三角形， x， y-x ，1-y,都应大于0，所以  x&lt;y,基础应该是一个大三角形。小三角是大三角的 1/4.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-42661">
+<article class="comment" id="comment-42661">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Bob</a></span> on <a href="http://www.acmerblog.com/hdu-1698-Just-a-Hook-2660.html#comment-42661" rel="nofollow"><time datetime="2014-12-28T05:37:15+00:00" pubdate="">2014年12月28日 at 上午5:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个程序编译都通不过， int L[m+1][n+1];这样定义出错，应该换成具体的数字ac</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-55637">
+<article class="comment" id="comment-55637">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaoriqiang2</a></span> on <a href="http://www.acmerblog.com/hdu-1698-Just-a-Hook-2660.html#comment-55637" rel="nofollow"><time datetime="2014-12-17T02:09:20+00:00" pubdate="">2014年12月17日 at 上午2:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第36行，struct node **head_ref，怎么理解，那个函数感觉不是很懂啊！？？弱渣求助</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-16669">
+<article class="comment" id="comment-16669">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">stamwoo</a></span> on <a href="http://www.acmerblog.com/hdu-1698-Just-a-Hook-2660.html#comment-16669" rel="nofollow"><time datetime="2014-12-17T00:33:53+00:00" pubdate="">2014年12月17日 at 上午12:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>先从简单的做起，归并排序，二叉树相关的遍历等</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-42659">
+<article class="comment" id="comment-42659">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">April</a></span> on <a href="http://www.acmerblog.com/hdu-1698-Just-a-Hook-2660.html#comment-42659" rel="nofollow"><time datetime="2014-11-29T19:43:30+00:00" pubdate="">2014年11月29日 at 下午7:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>后面的是python代码啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-16671">
+<article class="comment" id="comment-16671">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wuzirui</a></span> on <a href="http://www.acmerblog.com/hdu-1698-Just-a-Hook-2660.html#comment-16671" rel="nofollow"><time datetime="2014-11-02T16:17:14+00:00" pubdate="">2014年11月2日 at 下午4:17</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#include &lt;cstdio&gt;<br/>
+#include &lt;cstring&gt;</p>
+<p>const int MAXSIZE=256;<br/>
+//char store[MAXSIZE];<br/>
+char str1[MAXSIZE];<br/>
+/*<br/>
+void init(char *store) {<br/>
+    int i;<br/>
+    store['A']=’V', store['B']=’W',store['C']=’X',store['D']=’Y',store['E']=’Z';<br/>
+    for(i=’F';i&lt;=’Z';++i) store <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> =i-5;<br/>
+}<br/>
+*/<br/>
+int main() {<br/>
+    //freopen("input.txt","r",stdin);<br/>
+    //init(store);<br/>
+    char *p;<br/>
+    while(fgets(str1,MAXSIZE,stdin) &amp;&amp; strcmp(str1,"STARTn")==0) {<br/>
+        if(p=fgets(str1,MAXSIZE,stdin)) {<br/>
+            for(;*p;++p) {<br/>
+				//*p=store[*p]<br/>
+                if(*p&lt;’A’ || *p&gt;’Z') continue;<br/>
+                if(*p&gt;’E') *p=*p-5;<br/>
+                else *p=*p+21;<br/>
+            }<br/>
+            printf("%s",str1);<br/>
+        }<br/>
+        fgets(str1,MAXSIZE,stdin);<br/>
+    }<br/>
+    return 0;<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-16668">
+<article class="comment" id="comment-16668">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dream</a></span> on <a href="http://www.acmerblog.com/hdu-1698-Just-a-Hook-2660.html#comment-16668" rel="nofollow"><time datetime="2014-06-27T23:07:30+00:00" pubdate="">2014年6月27日 at 下午11:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>能不能说一下tmp数组和solve都是干嘛的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-55639">
+<article class="comment" id="comment-55639">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">OrangeGuy</a></span> on <a href="http://www.acmerblog.com/hdu-1698-Just-a-Hook-2660.html#comment-55639" rel="nofollow"><time datetime="2014-06-03T03:39:00+00:00" pubdate="">2014年6月3日 at 上午3:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>/*<br/>
+ * =====================================================================================<br/>
+ *<br/>
+ *       Filename:  1366.cc<br/>
+ *<br/>
+ *    Description:<br/>
+ *<br/>
+ *        Version:  1.0<br/>
+ *        Created:  2014年01月06日 14时52分14秒<br/>
+ *       Revision:  none<br/>
+ *       Compiler:  gcc<br/>
+ *<br/>
+ *         Author:  Wenxian Ni (Hello World~), <a href="mailto:niwenxianq@qq.com">niwenxianq@qq.com</a><br/>
+ *   Organization:  AMS/ICT<br/>
+ *<br/>
+ * =====================================================================================<br/>
+ */</p>
+<p>#include<br/>
+#include </p>
+<p>using namespace std;</p>
+<p>int main()<br/>
+{<br/>
+    stack st;<br/>
+    int n,i,j;<br/>
+    int test;<br/>
+    int a[100001];<br/>
+    int b[100001];<br/>
+    while(cin&gt;&gt;n)<br/>
+    {<br/>
+       for(i=1;i&gt;a[i];<br/>
+       for(i=1;i&gt;b[i];<br/>
+        //st.clear();<br/>
+        while(!st.empty())<br/>
+            st.pop();<br/>
+        i = 1;<br/>
+        j = 1;</p>
+<p>        while(in)<br/>
+                break;<br/>
+            }<br/>
+            while(!st.empty()&amp;&amp;st.top()==b[j])<br/>
+            {<br/>
+                st.pop();<br/>
+                j++;<br/>
+            }<br/>
+        }<br/>
+        if(st.empty())<br/>
+            cout&lt;&lt;"YES"&lt;&lt;endl;<br/>
+        else<br/>
+            cout&lt;&lt;"NO"&lt;&lt;endl;<br/>
+    }<br/>
+    return 0;<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-16670">
+<article class="comment" id="comment-16670">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">piaoyi</a></span> on <a href="http://www.acmerblog.com/hdu-1698-Just-a-Hook-2660.html#comment-16670" rel="nofollow"><time datetime="2014-05-27T07:19:16+00:00" pubdate="">2014年5月27日 at 上午7:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很棒的网站，加油！⛽️</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-55638">
+<article class="comment" id="comment-55638">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wangzhenvs123</a></span> on <a href="http://www.acmerblog.com/hdu-1698-Just-a-Hook-2660.html#comment-55638" rel="nofollow"><time datetime="2014-01-09T18:45:32+00:00" pubdate="">2014年1月9日 at 下午6:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正解，已改正。应该都是protected</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

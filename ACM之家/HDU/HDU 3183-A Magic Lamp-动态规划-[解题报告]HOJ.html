@@ -1,0 +1,373 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>03-06</div>
+<div class="tit"><h1 class="entry-title">HDU 3183-A Magic Lamp-动态规划-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a></span><span class="i4">围观688次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5017" href="http://www.acmerblog.com/hdu-3183-a-magic-lamp-5017.html#comments" title="《HDU 3183-A Magic Lamp-动态规划-[解题报告]HOJ》上的评论">20 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">A Magic Lamp</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Kiki likes traveling. One day she finds a magic lamp, unfortunately the genie in the lamp is not so kind. Kiki must answer a question, and then the genie will realize one of her dreams. <br/>The question is: give you an integer, you are allowed to delete exactly m digits. The left digits will form a new integer. You should make it minimum.<br/>You are not allowed to change the order of the digits. Now can you help Kiki to realize her dream? </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+There are several test cases.<br/>Each test case will contain an integer you are given (which may at most contains 1000 digits.) and the integer m (if the integer contains n digits, m will not bigger then n). The given integer will not contain leading zero. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+There are several test cases.<br/>Each test case will contain an integer you are given (which may at most contains 1000 digits.) and the integer m (if the integer contains n digits, m will not bigger then n). The given integer will not contain leading zero.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+178543 4 
+1000001 1
+100001 2
+12345 2
+54321 2</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+13
+1
+0
+123
+321</pre>
+<p> <!-- problem end --></p>
+<p><span style="font-size:24px"><a href="http://acm.hdu.edu.cn/showproblem.php?pid=3183" target="_blank">http://acm.hdu.edu.cn/showproblem.php?pid=3183</a></span></p>
+<p><span style="font-size:24px">题意：对于一个序列num[1...n]，一共n个数，除去m个数使剩下的数组成的整数最小。<br/>
+解题思路：<br/>
+用RMQ求剩下的n-m个数,第1个数肯定在区间[1,m+1]中最小的那个数(下标为index),那么第2个数就在区间[index+1,index+1+m-(index-1)]中，从而求出剩下的n-m个数<br/>
+RMQ算法：(ST算法，复杂度O(nlogn))<br/>
+RMQ是区间最值查询，对于长度为n的数列A，回答若干询问RMQ（A,i,j）(i,j&lt;=n)，返回数列A中下标在i，j之间的最小/大值。<br/>
+首先是预处理initRMQ，用动态规划（DP）解决。设num[i]是要求区间最值的数列，f[i, j]表示从第i个数起连续2^j个数中的最大值。例如数列3 2 4 5 6 8 1 2 9 7，f[1，0]表示第1个数起，长度为2^0=1的最大值，其实就是3这个数。 f[1，2]=5，f[1，3]=8，f[2，0]=2，f[2，1]=4……从这里可以看出f[i,0]其实就等于num[i]。这样，DP的状态、初值都已经有了，剩下的就是状态转移方程。我们把f[i，j]平均分成两段（因为f[i，j]一定是偶数个数字），从i到i+2^(j-1)-1为一段，i+2^(j-1)到i+2^j-1为一段(长度都为2^（j-1）)。用上例说明，当i=1，j=3时就是3,2,4,5<br/>
+ 和 6,8,1,2这两段。f[i，j]就是这两段的最大值中的最大值。<br/>
+于是我们得到了动态规划方程f[i, j]=max（f[i，j-1], f[i + 2^(j-1)，j-1]）。<br/>
+然后是查询。取k=[log2(j-i+1)]，则有：RMQ(A, i, j)=min{f[i,k],f[j-2^k+1,k]}。 举例说明，要求区间[2，8]的最大值，就要把它分成[2,5]和[5,8]两个区间，因为这两个区间的最大值我们可以直接由f[2，2]和f[5，2]得到。</span>
+</p>
+<p><span style="font-size:24px"></span></p>
+<pre class="brush:cpp ">#include&lt;stdio.h&gt;
+#include&lt;string.h&gt;
+#include&lt;stdlib.h&gt;
+#include&lt;math.h&gt;
+#include&lt;iostream&gt;
+#include&lt;algorithm&gt;
+#include&lt;queue&gt;
+#include&lt;stack&gt;
+#include&lt;vector&gt;
+#include&lt;map&gt;
+#include&lt;set&gt;
+#include&lt;bitset&gt;
+#define ll __int64
+using namespace std;
+#define N 1005
+int num[N];//区间数值
+int f[N][20];//f[i,j]表示从第i个数起连续2^j个数中的最小值,所以第二维大小应至少log(N)/log(2)
+void initRMQ(int n)//初始化RMQ (nlogn)
+{
+    for(int i=1;i&lt;=n;i++)
+    {f[i][0]=num[i];}
+    for(int j=1;j&lt;=log(n)/log(2);j++)
+    for(int i=1;i&lt;=n+1-(1&lt;&lt;j);i++)
+    {f[i][j]=min(f[i][j-1],f[i+(1&lt;&lt;(j-1))][j-1]);}
+}
+int RMQ(int i,int j)//查询RMQ
+{
+    int k=log(j-i+1)/log(2);
+    return min(f[i][k],f[j-(1&lt;&lt;k)+1][k]);
+}
+int find(int from,int to,int x)//num[from,to]区间找最左边的值x
+{
+    for(int i=from;i&lt;=to;i++)
+    {
+        if(num[i]==x)
+        {return i;}
+    }
+}
+int main()
+{
+    int i,j,k;
+    int n,m,t;
+    char ch[N];
+    while(scanf("%s%d",ch,&amp;m)!=EOF)
+    {
+        for(i=0;i&lt;strlen(ch);i++)
+        {num[i+1]=ch[i]-'0';}
+        if(m==strlen(ch))
+        {
+            printf("0\n");
+            continue;
+        }
+        initRMQ(strlen(ch));
+        queue&lt;int&gt;Q;
+        int from=1,to=m+1;
+        for(i=1;i&lt;=strlen(ch)-m;i++)
+        {
+            int now=RMQ(from,to);
+            Q.push(now);
+            int index=find(from,to,now);
+            from=index+1;
+            to=from+m-(index-i);
+        }
+        int judge=0;
+        while(!Q.empty())
+        {
+            int now=Q.front();
+            Q.pop();
+            if(now==0)
+            {
+                if(judge==1)
+                {printf("0");}
+            }
+            else
+            {
+                printf("%d",now);
+                judge=1;
+            }
+        }
+        if(judge==0)
+        {printf("0");}
+        printf("\n");
+    }
+}
+/*
+input:
+178543 4
+1000001 1
+100001 2
+12345 2
+54321 2
+output:
+13
+1
+0
+123
+321
+*/</pre>
+<p>参考资料：</p>
+<p><span style="font-size:24px"><a href="http://dongxicheng.org/structure/lca-rmq/" target="_blank">http://dongxicheng.org/structure/lca-rmq/</a></span></p>
+<p><span style="font-size:24px"><br/>
+</span></p>
+<p>参考：http://blog.csdn.net/john159151/article/details/19370113</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-78583">
+<article class="comment" id="comment-78583">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527084" rel="external nofollow">新用户721137</a></span> on <a href="http://www.acmerblog.com/hdu-3183-a-magic-lamp-5017.html#comment-78583" rel="nofollow"><time datetime="2017-04-12T12:30:18+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>介明明就是拼接的一栋楼嘛      我智商高不解释</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78582">
+<article class="comment" id="comment-78582">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527084" rel="external nofollow">新用户721137</a></span> on <a href="http://www.acmerblog.com/hdu-3183-a-magic-lamp-5017.html#comment-78582" rel="nofollow"><time datetime="2017-04-12T12:30:18+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>介明明就是拼接的一栋楼嘛      我智商高不解释</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-78581">
+<article class="comment" id="comment-78581">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527084" rel="external nofollow">新用户721137</a></span> on <a href="http://www.acmerblog.com/hdu-3183-a-magic-lamp-5017.html#comment-78581" rel="nofollow"><time datetime="2017-04-12T12:30:18+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>介明明就是拼接的一栋楼嘛      我智商高不解释</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78580">
+<article class="comment" id="comment-78580">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527084" rel="external nofollow">新用户721137</a></span> on <a href="http://www.acmerblog.com/hdu-3183-a-magic-lamp-5017.html#comment-78580" rel="nofollow"><time datetime="2017-04-12T12:30:18+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>介明明就是拼接的一栋楼嘛      我智商高不解释</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-78579">
+<article class="comment" id="comment-78579">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527084" rel="external nofollow">新用户721137</a></span> on <a href="http://www.acmerblog.com/hdu-3183-a-magic-lamp-5017.html#comment-78579" rel="nofollow"><time datetime="2017-04-12T12:30:18+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>介明明就是拼接的一栋楼嘛      我智商高不解释</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-78578">
+<article class="comment" id="comment-78578">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919527084" rel="external nofollow">新用户721137</a></span> on <a href="http://www.acmerblog.com/hdu-3183-a-magic-lamp-5017.html#comment-78578" rel="nofollow"><time datetime="2017-04-12T12:30:18+00:00" pubdate="">2017年4月12日 at 下午12:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>介明明就是拼接的一栋楼嘛      我智商高不解释</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63217">
+<article class="comment" id="comment-63217">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fiftyonejiao</a></span> on <a href="http://www.acmerblog.com/hdu-3183-a-magic-lamp-5017.html#comment-63217" rel="nofollow"><time datetime="2015-07-18T07:16:54+00:00" pubdate="">2015年7月18日 at 上午7:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>能不能说一下tmp数组和solve都是干嘛的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58065">
+<article class="comment" id="comment-58065">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">acmer29</a></span> on <a href="http://www.acmerblog.com/hdu-3183-a-magic-lamp-5017.html#comment-58065" rel="nofollow"><time datetime="2015-06-05T13:28:16+00:00" pubdate="">2015年6月5日 at 下午1:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/d8/good_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/c9/geili_org.gif"/> </p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58066">
+<article class="comment" id="comment-58066">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangdilj</a></span> on <a href="http://www.acmerblog.com/hdu-3183-a-magic-lamp-5017.html#comment-58066" rel="nofollow"><time datetime="2015-04-20T12:33:38+00:00" pubdate="">2015年4月20日 at 下午12:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>顶一个 赞一个</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27794">
+<article class="comment" id="comment-27794">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">geoksz</a></span> on <a href="http://www.acmerblog.com/hdu-3183-a-magic-lamp-5017.html#comment-27794" rel="nofollow"><time datetime="2015-04-17T04:21:02+00:00" pubdate="">2015年4月17日 at 上午4:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>思考人生吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47964">
+<article class="comment" id="comment-47964">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fwhappy</a></span> on <a href="http://www.acmerblog.com/hdu-3183-a-magic-lamp-5017.html#comment-47964" rel="nofollow"><time datetime="2015-04-01T13:55:10+00:00" pubdate="">2015年4月1日 at 下午1:55</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>题目需要求解的是最小值，而且没有考虑可能存在环</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27793">
+<article class="comment" id="comment-27793">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">calvert1991</a></span> on <a href="http://www.acmerblog.com/hdu-3183-a-magic-lamp-5017.html#comment-27793" rel="nofollow"><time datetime="2015-03-15T16:15:15+00:00" pubdate="">2015年3月15日 at 下午4:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>88行是多余的，可以删除</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47963">
+<article class="comment" id="comment-47963">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">linzzzz</a></span> on <a href="http://www.acmerblog.com/hdu-3183-a-magic-lamp-5017.html#comment-47963" rel="nofollow"><time datetime="2015-02-02T05:21:36+00:00" pubdate="">2015年2月2日 at 上午5:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正在学习搜索，很好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-47961">
+<article class="comment" id="comment-47961">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zoe_music</a></span> on <a href="http://www.acmerblog.com/hdu-3183-a-magic-lamp-5017.html#comment-47961" rel="nofollow"><time datetime="2014-10-29T19:15:43+00:00" pubdate="">2014年10月29日 at 下午7:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-27792">
+<article class="comment" id="comment-27792">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">youpushipop</a></span> on <a href="http://www.acmerblog.com/hdu-3183-a-magic-lamp-5017.html#comment-27792" rel="nofollow"><time datetime="2014-08-20T20:59:45+00:00" pubdate="">2014年8月20日 at 下午8:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>问题3是不是应该为1/4  .因为截取的三段，无论是否能组成三角形， x， y-x ，1-y,都应大于0，所以  x&lt;y,基础应该是一个大三角形。小三角是大三角的 1/4.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-27795">
+<article class="comment" id="comment-27795">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zoe_music</a></span> on <a href="http://www.acmerblog.com/hdu-3183-a-magic-lamp-5017.html#comment-27795" rel="nofollow"><time datetime="2014-07-01T14:50:48+00:00" pubdate="">2014年7月1日 at 下午2:50</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好，注释很详细啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-47962">
+<article class="comment" id="comment-47962">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">vintion</a></span> on <a href="http://www.acmerblog.com/hdu-3183-a-magic-lamp-5017.html#comment-47962" rel="nofollow"><time datetime="2014-06-08T20:35:52+00:00" pubdate="">2014年6月8日 at 下午8:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>和编译器有关吧，我用的g++正常。头文件可能还需要一个&lt;string.h&gt;</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-47959">
+<article class="comment" id="comment-47959">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">piaoyi</a></span> on <a href="http://www.acmerblog.com/hdu-3183-a-magic-lamp-5017.html#comment-47959" rel="nofollow"><time datetime="2014-05-16T08:53:29+00:00" pubdate="">2014年5月16日 at 上午8:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这道题目重复了，删掉一个吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-27796">
+<article class="comment" id="comment-27796">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Riddick</a></span> on <a href="http://www.acmerblog.com/hdu-3183-a-magic-lamp-5017.html#comment-27796" rel="nofollow"><time datetime="2014-04-12T19:20:37+00:00" pubdate="">2014年4月12日 at 下午7:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#!/usr/bin/env python def cou(n): arr =  [1]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-47960">
+<article class="comment" id="comment-47960">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">nsoi_onion</a></span> on <a href="http://www.acmerblog.com/hdu-3183-a-magic-lamp-5017.html#comment-47960" rel="nofollow"><time datetime="2014-03-30T01:22:54+00:00" pubdate="">2014年3月30日 at 上午1:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已更正。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

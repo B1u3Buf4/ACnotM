@@ -1,0 +1,318 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>01-05</div>
+<div class="tit"><h1 class="entry-title">hdu 2392 Robotic Invasion-BFS[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/bfs" rel="category tag" title="查看BFS搜索中的全部文章">BFS搜索</a>, <a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观1294次</span><span class="i3"><a class="ds-thread-count" data-thread-key="3607" href="http://www.acmerblog.com/hdu-2392-robotic-invasion-3607.html#comments" title="《hdu 2392 Robotic Invasion-BFS[解题报告]C++》上的评论">13 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Robotic Invasion</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+The pacifistic people of planet Pax are at war with the evil guys from planet Googol. Although they are strictly pacifistic they have means of defense. Their cryptographers are able to routinely decrypt the commands sent to Googol’s robots and they can � using huge amounts of energy � construct bogus commands. It is the job of the Tactical Unit Defense (TUD) to find the best way to interfere with the command transmission from Googol.
+<p>You are given a string of movements (each being a step to the north, east, south or west) and a map containing an invading robot from Googol and, possibly, several obstacles and traps.<br/>Your task is to find a way to overcome the threat by changing as few movements as possible and guiding the robot into a trap. A single change replaces a step by another direction or no movement at all.<br/>A robot will move in the given direction if the position is not blocked or outside the given map. If given such a direction, the robot does not move instead. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The first line contains the number of scenarios. For each scenario a line containing two integers 1 &lt;= w; h &lt;= 100 separated by a single space is given, followed by h lines each containing w characters. This is a map of the area.<br/>Exactly one character is a R which is the starting position of the invading robot. Other characters are ‘.’ to denote free positions, X to denote blocked positions and + to denote traps.<br/>This is followed by a line containing an integer 0 &lt;= c &lt;= 100 and another line containing c characters of communication. Each character is either N, E, S or W to denote a command to move one position up, right, down or left, respectively. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The first line contains the number of scenarios. For each scenario a line containing two integers 1 &lt;= w; h &lt;= 100 separated by a single space is given, followed by h lines each containing w characters. This is a map of the area.<br/>Exactly one character is a R which is the starting position of the invading robot. Other characters are ‘.’ to denote free positions, X to denote blocked positions and + to denote traps.<br/>This is followed by a line containing an integer 0 &lt;= c &lt;= 100 and another line containing c characters of communication. Each character is either N, E, S or W to denote a command to move one position up, right, down or left, respectively.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3
+3 2
+R+.
+...
+3
+EEE
+3 3
+R..
+.X+
+...
+3
+SSE
+3 3
+R..
+..+
+...
+3
+SSE</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Scenario #1:
+EEE
+
+Scenario #2:
+EES
+
+Scenario #3:
+ESE</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp">#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#define INF (1 &lt;&lt; 30)
+char fx[5] = {'N', 'E', 'S', 'W', 'X'};
+int yd[5][2] = {0, -1,
+                1, 0,
+                0, 1,
+                -1, 0,
+                0, 0};
+typedef struct {
+    int x, y, z;
+}Point;
+char map[110][110], s[110];
+int dp[100][100][100], lj[100][100][100], dl[1000000], beg, endx;
+int n, m, stp, endint;
+Point source, end;
+void getPath(int x,int y,int s,char str[]){
+    int d;
+    if(s==0) return;
+    getPath(x-yd[d][0],y-yd[d][1],s-1,str);
+    str[s-1]=fx[d];
+    str[s]=0;
+}
+void bfs() {
+    int i;
+    endint = INF;
+    for(int i = 0; i &lt; n; ++i) {
+        for(int j = 0; j &lt; m; ++j) {
+            for(int l = 0; l &lt; 100; ++l) {
+                dp[i][j][l] = INF;
+            }
+        }
+    }
+    char nows[100], nexts[100];
+    Point now, next;
+    int tmp;
+    dl[0] = (source.x &lt;&lt; 20) + (source.y &lt;&lt; 10) + 0;
+    beg = endx = 0;
+    while(beg &lt;= endx) {
+        now.x = (dl[0] &gt;&gt; 20);
+        now.y = (dl[0] &gt;&gt; 10) &amp; 1023;
+        now.z = dl[0] &amp; 1023;
+        for(i = 0; i &lt; 5; ++i) {
+            next.x = now.x + yd[i][0]; 
+            next.y = now.y + yd[i][1];
+            next.z = now.z + 1;
+            tmp = dp[now.x][now.y][now.z]; 
+            if(s[now.z] != fx[i]) tmp++;
+            if(map[next.x][next.y] != 'X') {
+                if(dp[next.x][next.y][next.z] &gt; tmp) {
+                    if(dp[next.x][next.y][next.z] != INF) {
+                        dl[++endx] = dl[0] = (next.x &lt;&lt; 20) + (next.y &lt;&lt; 10) + next.z;
+                    }
+                    dp[next.x][next.y][next.z] = tmp;
+                    lj[next.x][next.y][next.z] = i;
+                } else if(dp[next.x][next.y][next.z] == tmp) {
+                    getPath(next.x, next.y, next.z, nows);
+                    
+                    getPath(now.x, now.y, now.z, nexts);
+                    nexts[now.z - 1] = fx[i];
+                    nexts[now.z] = 0;
+                    
+                    if(strcmp(nows, nexts) &gt; 0) {
+                        lj[next.x][next.y][next.z] = i;
+                    }
+                }
+                if(map[next.x][next.y] != '+') {
+                    if(dp[next.x][next.y][next.z] &lt; endint) {
+                        endint = dp[next.x][next.y][next.z];
+                        end.x = next.x;
+                        end.y = next.y;
+                        end.z = next.z;
+                    } else if(dp[next.x][next.y][next.z] == endint) {
+                        getPath(next.x, next.y, next.z, nows);
+                        getPath(end.x, end.y, end.z, nexts);   
+                        if(strcmp(nows, nexts) &gt; 0) {
+                            endint = dp[next.x][next.y][next.z];
+                            end.x = next.x;
+                            end.y = next.y;
+                            end.z = next.z;
+                        }                  
+                    }
+                }
+            }
+        }
+        beg++;
+    }
+}
+
+int main() {
+    int t;
+    scanf("%d", &amp;t);
+    for(int tt = 0; tt &lt; t; ++tt) {
+        scanf("%d %d", &amp;m, &amp;n);
+        for(int i = 0; i &lt; n; ++i) scanf("%s", map[i]);
+        scanf("%d", &amp;stp);
+        scanf("%s", s);
+        for(int i = 0; i &lt; n; ++i) {
+            for(int j = 0; j &lt; m; ++j) {
+                if(map[i][j] == 'R') {
+                    source.x = i;
+                    source.y = j;
+                    source.z = 0;
+                    break;
+                }
+            }
+        }
+        bfs();
+        
+    }
+    return 0;
+}</pre>
+<p> </p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-44942">
+<article class="comment" id="comment-44942">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NiKaWaLi2015</a></span> on <a href="http://www.acmerblog.com/hdu-2392-robotic-invasion-3607.html#comment-44942" rel="nofollow"><time datetime="2015-05-21T02:36:33+00:00" pubdate="">2015年5月21日 at 上午2:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>gcc环境</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-44946">
+<article class="comment" id="comment-44946">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">biantiao</a></span> on <a href="http://www.acmerblog.com/hdu-2392-robotic-invasion-3607.html#comment-44946" rel="nofollow"><time datetime="2015-04-15T14:52:06+00:00" pubdate="">2015年4月15日 at 下午2:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>示例程序中的代码不够稳健，没有考虑到输入了非法字符或者不合理输入的情况。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-21342">
+<article class="comment" id="comment-21342">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">PriceKiller</a></span> on <a href="http://www.acmerblog.com/hdu-2392-robotic-invasion-3607.html#comment-21342" rel="nofollow"><time datetime="2015-02-25T07:05:34+00:00" pubdate="">2015年2月25日 at 上午7:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为避免精度问题，PI值请使用arccos(-1)。应该是acos</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-21343">
+<article class="comment" id="comment-21343">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">123456789_xd</a></span> on <a href="http://www.acmerblog.com/hdu-2392-robotic-invasion-3607.html#comment-21343" rel="nofollow"><time datetime="2015-01-27T09:07:04+00:00" pubdate="">2015年1月27日 at 上午9:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>great work！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-44944">
+<article class="comment" id="comment-44944">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mr-zhang2011</a></span> on <a href="http://www.acmerblog.com/hdu-2392-robotic-invasion-3607.html#comment-44944" rel="nofollow"><time datetime="2014-12-24T15:02:31+00:00" pubdate="">2014年12月24日 at 下午3:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>此网站甚是喜欢，潜力巨大，请问站长，如何加入开发团队~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-44940">
+<article class="comment" id="comment-44940">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Tree</a></span> on <a href="http://www.acmerblog.com/hdu-2392-robotic-invasion-3607.html#comment-44940" rel="nofollow"><time datetime="2014-11-27T11:19:48+00:00" pubdate="">2014年11月27日 at 上午11:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的思路，可以借鉴</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-44945">
+<article class="comment" id="comment-44945">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xun.gong</a></span> on <a href="http://www.acmerblog.com/hdu-2392-robotic-invasion-3607.html#comment-44945" rel="nofollow"><time datetime="2014-07-07T05:21:21+00:00" pubdate="">2014年7月7日 at 上午5:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚开始学习，为啥会报错了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-44941">
+<article class="comment" id="comment-44941">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">AC_Grazy</a></span> on <a href="http://www.acmerblog.com/hdu-2392-robotic-invasion-3607.html#comment-44941" rel="nofollow"><time datetime="2014-07-04T08:00:47+00:00" pubdate="">2014年7月4日 at 上午8:00</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>博主的C++功底真是好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-62494">
+<article class="comment" id="comment-62494">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zx123456</a></span> on <a href="http://www.acmerblog.com/hdu-2392-robotic-invasion-3607.html#comment-62494" rel="nofollow"><time datetime="2014-06-10T19:53:52+00:00" pubdate="">2014年6月10日 at 下午7:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>输入样例作为一个整体输入，带回车</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-62493">
+<article class="comment" id="comment-62493">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yelawolf</a></span> on <a href="http://www.acmerblog.com/hdu-2392-robotic-invasion-3607.html#comment-62493" rel="nofollow"><time datetime="2014-04-17T21:49:22+00:00" pubdate="">2014年4月17日 at 下午9:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>mark, 备用</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-44947">
+<article class="comment" id="comment-44947">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mr_zhang2011</a></span> on <a href="http://www.acmerblog.com/hdu-2392-robotic-invasion-3607.html#comment-44947" rel="nofollow"><time datetime="2014-04-09T23:09:52+00:00" pubdate="">2014年4月9日 at 下午11:09</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>目测会火</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-21344">
+<article class="comment" id="comment-21344">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">MCIT</a></span> on <a href="http://www.acmerblog.com/hdu-2392-robotic-invasion-3607.html#comment-21344" rel="nofollow"><time datetime="2014-04-04T18:21:40+00:00" pubdate="">2014年4月4日 at 下午6:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>示例程序中的代码不够稳健，没有考虑到输入了非法字符或者不合理输入的情况。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-44943">
+<article class="comment" id="comment-44943">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zx123456</a></span> on <a href="http://www.acmerblog.com/hdu-2392-robotic-invasion-3607.html#comment-44943" rel="nofollow"><time datetime="2014-02-10T19:30:45+00:00" pubdate="">2014年2月10日 at 下午7:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>算法是程序的灵魂，算法分简单和复杂，如果不搞大数据类，程序员了解一下简单点的算法也是可以的，但是会算法的一定要会编程才行，程序员不一定要会算法，利于自己项目需要的可以简单了解。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,294 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2013<br/>12-23</div>
+<div class="tit"><h1 class="entry-title">HDU 1814 Peaceful Commission-DFS-[解题报告] C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/search/dfs" rel="category tag" title="查看DFS搜索中的全部文章">DFS搜索</a>, <a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a></span><span class="i4">围观838次</span><span class="i3"><a class="ds-thread-count" data-thread-key="2786" href="http://www.acmerblog.com/hdu-1814-Peaceful-Commission-2786.html#comments" title="《HDU 1814 Peaceful Commission-DFS-[解题报告] C++》上的评论">14 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Peaceful Commission</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+The Public Peace Commission should be legislated in Parliament of The Democratic Republic of Byteland according to The Very Important Law. Unfortunately one of the obstacles is the fact that some deputies do not get on with some others. 
+<p>The Commission has to fulfill the following conditions: <br/>1.Each party has exactly one representative in the Commission, <br/>2.If two deputies do not like each other, they cannot both belong to the Commission. </p>
+<p>Each party has exactly two deputies in the Parliament. All of them are numbered from 1 to 2n. Deputies with numbers 2i-1 and 2i belong to the i-th party . </p>
+<p>Task <br/>Write a program, which: <br/>1.reads from the text file SPO.IN the number of parties and the pairs of deputies that are not on friendly terms, <br/>2.decides whether it is possible to establish the Commission, and if so, proposes the list of members, <br/>3.writes the result in the text file SPO.OUT.  </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+In the first line of the text file SPO.IN there are two non-negative integers n and m. They denote respectively: the number of parties, 1 &lt;= n &lt;= 8000, and the number of pairs of deputies, who do not like each other, 0 &lt;= m &lt;=2 0000. In each of the following m lines there is written one pair of integers a and b, 1 &lt;= a &lt; b &lt;= 2n, separated by a single space. It means that the deputies a and b do not like each other. <br/>There are multiple test cases. Process to end of file.  </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The text file SPO.OUT should contain one word NIE (means NO in Polish), if the setting up of the Commission is impossible. In case when setting up of the Commission is possible the file SPO.OUT should contain n integers from the interval from 1 to 2n, written in the ascending order, indicating numbers of deputies who can form the Commission. Each of these numbers should be written in a separate line. If the Commission can be formed in various ways, your program may write mininum number sequence. </div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3 2
+1 3
+2 4</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+1
+4
+5</pre>
+<p> <!-- problem end --></p>
+<p>模版题，按给定边直接建图</p>
+<p>若有解输出最小字典序解</p>
+<p> </p>
+<p>注意此模版求的就是最小字典序解</p>
+<pre class="brush:cpp ">#include&lt;stdio.h&gt;
+#include&lt;string.h&gt;
+#include&lt;iostream&gt;
+#include&lt;algorithm&gt;
+#include&lt;math.h&gt;
+
+#define ll double
+#define eps 1e-5
+
+using namespace std;
+
+inline ll Max(ll a,ll b){return a&gt;b?a:b;}
+inline ll Min(ll a,ll b){return a&lt;b?a:b;}
+
+
+#define N 8010*2
+#define M 40000+5
+
+struct Edge{
+	int to, nex;
+}edge[M];
+
+int head[N], edgenum;
+void addedge(int u, int v){
+	Edge E = {v, head[u]};
+	edge[edgenum] = E;
+	head[u] = edgenum ++;
+}
+
+bool mark[N];
+int Stack[N], top;
+void init(){
+	memset(head, -1, sizeof(head)); edgenum = 0;
+	memset(mark, 0, sizeof(mark));
+}
+
+bool dfs(int x){
+	if(mark[x^1])return false;//一定是拆点的点先判断
+	if(mark[x])return true;
+
+	mark[x] = true;
+	Stack[top++] = x;
+
+	for(int i = head[x]; i != -1; i = edge[i].nex)
+		if(!dfs(edge[i].to)) return false;
+
+	return true;
+}
+
+bool solve(int n){
+	for(int i = 0; i &lt; n; i+=2)
+		if(!mark[i] &amp;&amp; !mark[i^1])
+		{
+			top = 0;
+			if(!dfs(i))//dfs(i) 假设i成立 
+			{//当i不成立时，把所有因i成立的点都取消标记
+				while( top ) mark[ Stack[--top] ] = false;
+				if(!dfs(i^1))
+					return false;//若i的对立面也不成立则i点无解
+			}
+		}
+		return true;
+}
+
+int main(){
+	int n, i, j, m;
+	while(~scanf("%d%d",&amp;n,&amp;m)){
+		n &lt;&lt;= 1;
+		init();
+
+		while(m--)
+		{
+			int u,v;
+			scanf("%d %d",&amp;u,&amp;v); u--, v--;
+			addedge(u,v^1);
+			addedge(v,u^1);
+		}
+
+		if(solve(n))
+		{
+			for(i=0;i&lt;n;i++)
+				if(mark[i])printf("%d\n",i+1);
+		}
+		else
+			printf("NIE\n");
+
+	}
+	return 0;
+}</pre>
+<p>
+ </p>
+<p>解题报告转自：http://blog.csdn.net/acmmmm/article/details/14169475</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-42921">
+<article class="comment" id="comment-42921">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">lintong</a></span> on <a href="http://www.acmerblog.com/hdu-1814-Peaceful-Commission-2786.html#comment-42921" rel="nofollow"><time datetime="2015-07-02T08:21:36+00:00" pubdate="">2015年7月2日 at 上午8:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>处凡愚而不减，在圣贤而不增；<br/>住烦恼而不乱，居禅定而不寂。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-42924">
+<article class="comment" id="comment-42924">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fermi</a></span> on <a href="http://www.acmerblog.com/hdu-1814-Peaceful-Commission-2786.html#comment-42924" rel="nofollow"><time datetime="2015-06-25T05:08:48+00:00" pubdate="">2015年6月25日 at 上午5:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>整理的很好，多谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-42929">
+<article class="comment" id="comment-42929">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">abguorui0928</a></span> on <a href="http://www.acmerblog.com/hdu-1814-Peaceful-Commission-2786.html#comment-42929" rel="nofollow"><time datetime="2015-05-09T22:45:23+00:00" pubdate="">2015年5月9日 at 下午10:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>题本身没错，但是HDOJ放题目的时候，前面有个题目解释了什么是XXX定律。<br/>
+这里直接放了这个题目，肯定没几个人明白是干啥</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-42925">
+<article class="comment" id="comment-42925">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">211206421</a></span> on <a href="http://www.acmerblog.com/hdu-1814-Peaceful-Commission-2786.html#comment-42925" rel="nofollow"><time datetime="2015-02-03T16:13:11+00:00" pubdate="">2015年2月3日 at 下午4:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不错的网站，建议添加些比赛信息</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-42920">
+<article class="comment" id="comment-42920">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">we</a></span> on <a href="http://www.acmerblog.com/hdu-1814-Peaceful-Commission-2786.html#comment-42920" rel="nofollow"><time datetime="2014-11-02T15:27:28+00:00" pubdate="">2014年11月2日 at 下午3:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-55768">
+<article class="comment" id="comment-55768">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">starcuan</a></span> on <a href="http://www.acmerblog.com/hdu-1814-Peaceful-Commission-2786.html#comment-55768" rel="nofollow"><time datetime="2014-10-05T04:44:25+00:00" pubdate="">2014年10月5日 at 上午4:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>是穷举，但是代码有优化（v数组），并不是2^n。测试数据应该没问题，之前有超时的代码。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-42926">
+<article class="comment" id="comment-42926">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tonight</a></span> on <a href="http://www.acmerblog.com/hdu-1814-Peaceful-Commission-2786.html#comment-42926" rel="nofollow"><time datetime="2014-09-09T18:58:04+00:00" pubdate="">2014年9月9日 at 下午6:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可以用公式。主要为了说明动态规划，如果要打表的话，这种方法也是较简单和高效的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-42922">
+<article class="comment" id="comment-42922">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">feifei003603</a></span> on <a href="http://www.acmerblog.com/hdu-1814-Peaceful-Commission-2786.html#comment-42922" rel="nofollow"><time datetime="2014-06-15T09:11:59+00:00" pubdate="">2014年6月15日 at 上午9:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>居然是机试，还和13年重复。题目不难</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-17236">
+<article class="comment" id="comment-17236">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">645198</a></span> on <a href="http://www.acmerblog.com/hdu-1814-Peaceful-Commission-2786.html#comment-17236" rel="nofollow"><time datetime="2014-04-17T01:23:02+00:00" pubdate="">2014年4月17日 at 上午1:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很高兴你会喜欢这个网站。目前还没有一个开发团队，网站是我一个人在维护，都是用的开源系统，也没有太多需要开发的部分，主要是内容整理。非常感谢你的关注。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-42919">
+<article class="comment" id="comment-42919">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hanyi</a></span> on <a href="http://www.acmerblog.com/hdu-1814-Peaceful-Commission-2786.html#comment-42919" rel="nofollow"><time datetime="2014-03-22T03:01:13+00:00" pubdate="">2014年3月22日 at 上午3:01</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序是对的。有些地方用了C++的写法</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-42928">
+<article class="comment" id="comment-42928">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">PriceKiller</a></span> on <a href="http://www.acmerblog.com/hdu-1814-Peaceful-Commission-2786.html#comment-42928" rel="nofollow"><time datetime="2014-03-20T08:44:33+00:00" pubdate="">2014年3月20日 at 上午8:44</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>博主的C++功底真是好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-42927">
+<article class="comment" id="comment-42927">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dongxi</a></span> on <a href="http://www.acmerblog.com/hdu-1814-Peaceful-Commission-2786.html#comment-42927" rel="nofollow"><time datetime="2014-02-25T12:24:39+00:00" pubdate="">2014年2月25日 at 下午12:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>已修正</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-42923">
+<article class="comment" id="comment-42923">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zclzcllove</a></span> on <a href="http://www.acmerblog.com/hdu-1814-Peaceful-Commission-2786.html#comment-42923" rel="nofollow"><time datetime="2014-02-10T17:49:16+00:00" pubdate="">2014年2月10日 at 下午5:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为nn</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-42930">
+<article class="comment" id="comment-42930">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ygwx</a></span> on <a href="http://www.acmerblog.com/hdu-1814-Peaceful-Commission-2786.html#comment-42930" rel="nofollow"><time datetime="2014-01-16T16:52:54+00:00" pubdate="">2014年1月16日 at 下午4:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>正有此意，欢迎更多的建议~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

@@ -1,0 +1,489 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>06-23</div>
+<div class="tit"><h1 class="entry-title">线段树入门-求给定区间的和</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/data-struct/trees" rel="category tag" title="查看树形结构中的全部文章">树形结构</a>, <a href="http://www.acmerblog.com/category/zhuanti/algorithm" rel="category tag" title="查看算法分析中的全部文章">算法分析</a></span><span class="i4">围观968次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5886" href="http://www.acmerblog.com/segment-tree-sum-of-given-range-5886.html#comments" title="《线段树入门-求给定区间的和》上的评论">25 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p>考虑以下问题来理解线段树。有一个[0...n-1]的数组，现有一些的操作：<br/>
+1) 查询：求 下标从 l 到 r ( 0 &lt;= l &lt;= r &lt;= n-1) 区间内所有元素的和<br/>
+2) 更新：更新数组中任一个元素的值</p>
+<p>最直接的解法方法是执行一个循环，求得l到r的总和。更新的话就很简单了，直接操作。时间复杂度分别为O(n)和O(1)。</p>
+<p>另一中解法方法是：创建另一个数组sumarr[], 存储从第一个元素到第i个的总和。例如sumarr[3]表示[0...3]区间内元素的总和。现在两个操作的时间复杂度为分别为：O(1)和O(n)。如果查询的次数远多于更新的次数，可以用这种方法。</p>
+<p>如果查询和更新的操作数量是相等的呢？这时可以用线段树来解决，两个操作都在O（logN）时间内。</p>
+<p><strong>线段树的表示</strong><br/>
+线段树（Segment Tree）是一种二叉搜索树，它将一个区间划分成一些单元区间，每个单元区间对应线段树中的一个叶结点。<br/>
+1. 页节点即输入数组的所有元素<br/>
+2. 内部节点表示的是部分合并的叶节点.  (合并的方式需要根据不同的问题，对于这个问题，合并就是求和.)</p>
+<p><a href="http://cdn.acmerblog.com/wp-content/uploads/2014/06/segment-tree1.png"><img alt="segment-tree1" class="alignnone wp-image-6051" height="355" src="http://cdn.acmerblog.com/wp-content/uploads/2014/06/segment-tree1.png" width="510"/></a></p>
+<p><strong>如何构造线段树对于给定的数组？</strong><br/>
+我们从arr[0 ...n-1]开始，每次我们将当前数组段分为两半(如果长度大于1), 然后递归调用者两半, 并存储这两个子区间的总和。<br/>
+可以发现,树将是满二叉树,因为我们在每一层，都是把区间分为两个部分。由于树总的叶子节点为n,因此有 n – 1个 内部节点。因此节点总数为2*n – 1,树的高度为 log(n).由于这是一个满二叉树，而每一个节点存储的元素都是单一的值。因此完全可以用数组可以模拟二叉树，而不是构成传统的二叉树。<br/>
+对于线段树中的每一个非叶子节点[a,b]，它的左儿子表示的区间为[a,(a+b)/2]，右儿子表示的区间为[(a+b)/2+1,b]。因此线段树是平衡二叉树，最后的子节点数目为N，即整个线段区间的长度。<br/>
+使用线段树可以快速的查找某一个节点在若干条线段中出现的次数，时间复杂度为O(logN）。而未优化的空间复杂度为2N，因此有时需要离散化让空间压缩。</p>
+<p><strong>查询操作</strong><br/>
+递归的进行查询，流程如下</p>
+<pre class="brush:other">int getSum(node, l, r)
+{
+   if(如果节点node表示的区间 属于 l and r)
+        return value in node
+   else if (如果节点node表示的区间  完全不输于属于 l and r)
+        return 0
+   else
+   return getSum(node's left child, l, r) +
+           getSum(node's right child, l, r)
+}</pre>
+<p><strong>更新操作</strong></p>
+<p>和查询操作类似，也是递归的完成。不是直接更新某个值，而是给出 diff 表示某个值需要增加多少，可以为负。然后递归的增加到子区间内。</p>
+<p><strong>C语言实现</strong><br/>
+下面的代码实现了更新和查询操作，使用数组模拟树。</p>
+<pre class="brush:cpp">#include &lt;stdio.h&gt;
+#include &lt;math.h&gt;
+
+//取中位数
+int getMid(int s, int e) {  return s + (e -s)/2;  }
+
+/*
+    st    --&gt; 线段树的指针
+    index --&gt; 当前节点在线段树中的下标. 初始为 0，因为根节点的下标是0
+    ss &amp; se  --&gt; 当前节点st[index]做表示的区间 [ss .... se]
+    qs &amp; qe  --&gt; 要查询的区间 起始坐标 */
+int getSumRecall(int *st, int ss, int se, int qs, int qe, int index)
+{
+    // 如果查询的区间 属于当前节点表示的区间
+    if (qs &lt;= ss &amp;&amp; qe &gt;= se)
+        return st[index];
+
+    // 完全不属于
+    if (se &lt; qs || ss &gt; qe)
+        return 0;
+
+    // 部分属于
+    int mid = getMid(ss, se);
+    return getSumRecall(st, ss, mid, qs, qe, 2*index+1) +
+           getSumRecall(st, mid+1, se, qs, qe, 2*index+2);
+}
+
+/*
+    st, index, ss 和 se 和函数getSumRecall 相同
+    i    --&gt; 要更新的元素下标.(原始数组中的下标)
+   diff --&gt; 需要增加的值。 所有包含i的区间都会更新  */
+void updateValueRecall(int *st, int ss, int se, int i, int diff, int index)
+{
+    if (i &lt; ss || i &gt; se)
+        return;
+
+    st[index] = st[index] + diff;
+    if (se != ss)
+    {
+        int mid = getMid(ss, se);
+        updateValueRecall(st, ss, mid, i, diff, 2*index + 1);
+        updateValueRecall(st, mid+1, se, i, diff, 2*index + 2);
+    }
+}
+
+// 更新i为新的值new_val，主要是调用updateValueRecall
+void updateValue(int arr[], int *st, int n, int i, int new_val)
+{
+    if (i &lt; 0 || i &gt; n-1)
+    {
+        printf("Invalid Input");
+        return;
+    }
+
+    int diff = new_val - arr[i];
+    arr[i] = new_val;
+    // 更新线段树
+    updateValueRecall(st, 0, n-1, i, diff, 0);
+}
+
+//查询，主要是调用getSumRecall
+int getSum(int *st, int n, int qs, int qe)
+{
+    if (qs &lt; 0 || qe &gt; n-1 || qs &gt; qe)
+    {
+        printf("Invalid Input");
+        return -1;
+    }
+
+    return getSumRecall(st, 0, n-1, qs, qe, 0);
+}
+
+// 递归来构建区间为 [ss..se] 的线段树 (st[si])
+// si 当前节点在线段树中的下标
+// return: 当前区间的总和
+int constructSTRecall(int arr[], int ss, int se, int *st, int si)
+{
+    // 如果只有一个元素，说明到达了叶子节点
+    if (ss == se)
+    {
+        st[si] = arr[ss];
+        return arr[ss];
+    }
+
+    // 递归的构建左右区间(子线段树)
+    int mid = getMid(ss, se);
+    st[si] =  constructSTRecall(arr, ss, mid, st, si*2+1) +
+    		constructSTRecall(arr, mid+1, se, st, si*2+2);
+    return st[si];
+}
+
+/*构建线段树，主要是调用递归函数 constructSTRecall 完成 */
+int *constructST(int arr[], int n)
+{
+    // 分配内存
+    int *st = new int[n * 2];
+
+    // 构建线段树
+    constructSTRecall(arr, 0, n-1, st, 0);
+    return st;
+}
+
+//测试
+int main()
+{
+    int arr[] = {1, 3, 5, 7, 9, 11};
+    int n = sizeof(arr)/sizeof(arr[0]);
+
+    // 构建线段树
+    int *st = constructST(arr, n);
+
+    printf("Sum of values in given range = %d\n", getSum(st, n, 1, 3));
+
+    // 更新:  arr[1] = 10 and 更新相应的区间
+    updateValue(arr, st, n, 1, 10);
+
+    printf("Updated sum of values in given range = %d\n",
+                                                  getSum(st, n, 1, 3));
+
+    return 0;
+}</pre>
+<p>输出：</p>
+<pre class="brush:cpp">Sum of values in given range = 15
+Updated sum of values in given range = 22</pre>
+<p><strong>时间复杂度分析</strong></p>
+<p>树的构建复杂度为 O(n)，因为树的节点总数位 2n-1个，每个节点只会被计算一次。</p>
+<p>查询和更新的操作都为O(Logn)， 由树的高度决定。</p>
+<p>参考：<a href="http://www.cse.iitk.ac.in/users/aca/lop12/slides/06.pdf" target="_blank">http://www.cse.iitk.ac.in/users/aca/lop12/slides/06.pdf</a></p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75417">
+<article class="comment" id="comment-75417">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520413" rel="external nofollow">新用户679356</a></span> on <a href="http://www.acmerblog.com/segment-tree-sum-of-given-range-5886.html#comment-75417" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>呵呵，还真赶了个早呀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75416">
+<article class="comment" id="comment-75416">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520413" rel="external nofollow">新用户679356</a></span> on <a href="http://www.acmerblog.com/segment-tree-sum-of-given-range-5886.html#comment-75416" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>呵呵，还真赶了个早呀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75415">
+<article class="comment" id="comment-75415">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520413" rel="external nofollow">新用户679356</a></span> on <a href="http://www.acmerblog.com/segment-tree-sum-of-given-range-5886.html#comment-75415" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>呵呵，还真赶了个早呀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75414">
+<article class="comment" id="comment-75414">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520413" rel="external nofollow">新用户679356</a></span> on <a href="http://www.acmerblog.com/segment-tree-sum-of-given-range-5886.html#comment-75414" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>呵呵，还真赶了个早呀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75413">
+<article class="comment" id="comment-75413">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520413" rel="external nofollow">新用户679356</a></span> on <a href="http://www.acmerblog.com/segment-tree-sum-of-given-range-5886.html#comment-75413" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>呵呵，还真赶了个早呀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75412">
+<article class="comment" id="comment-75412">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520413" rel="external nofollow">新用户679356</a></span> on <a href="http://www.acmerblog.com/segment-tree-sum-of-given-range-5886.html#comment-75412" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>呵呵，还真赶了个早呀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75411">
+<article class="comment" id="comment-75411">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520413" rel="external nofollow">新用户679356</a></span> on <a href="http://www.acmerblog.com/segment-tree-sum-of-given-range-5886.html#comment-75411" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>呵呵，还真赶了个早呀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75410">
+<article class="comment" id="comment-75410">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520413" rel="external nofollow">新用户679356</a></span> on <a href="http://www.acmerblog.com/segment-tree-sum-of-given-range-5886.html#comment-75410" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>呵呵，还真赶了个早呀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75409">
+<article class="comment" id="comment-75409">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520413" rel="external nofollow">新用户679356</a></span> on <a href="http://www.acmerblog.com/segment-tree-sum-of-given-range-5886.html#comment-75409" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>呵呵，还真赶了个早呀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-75408">
+<article class="comment" id="comment-75408">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520413" rel="external nofollow">新用户679356</a></span> on <a href="http://www.acmerblog.com/segment-tree-sum-of-given-range-5886.html#comment-75408" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>呵呵，还真赶了个早呀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-75407">
+<article class="comment" id="comment-75407">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919520413" rel="external nofollow">新用户679356</a></span> on <a href="http://www.acmerblog.com/segment-tree-sum-of-given-range-5886.html#comment-75407" rel="nofollow"><time datetime="2017-04-12T05:46:04+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>呵呵，还真赶了个早呀</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30445">
+<article class="comment" id="comment-30445">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">1520006273</a></span> on <a href="http://www.acmerblog.com/segment-tree-sum-of-given-range-5886.html#comment-30445" rel="nofollow"><time datetime="2015-05-25T16:06:10+00:00" pubdate="">2015年5月25日 at 下午4:06</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>受益匪浅！！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30446">
+<article class="comment" id="comment-30446">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">lintong</a></span> on <a href="http://www.acmerblog.com/segment-tree-sum-of-given-range-5886.html#comment-30446" rel="nofollow"><time datetime="2015-05-23T14:25:13+00:00" pubdate="">2015年5月23日 at 下午2:25</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>.net中char类型不是两个字节么</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30447">
+<article class="comment" id="comment-30447">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ruoshui</a></span> on <a href="http://www.acmerblog.com/segment-tree-sum-of-given-range-5886.html#comment-30447" rel="nofollow"><time datetime="2015-04-30T15:39:29+00:00" pubdate="">2015年4月30日 at 下午3:39</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这种二分还是比较经典！mark</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-3199">
+<article class="comment" id="comment-3199">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn">wangying1357</span> on <a href="http://www.acmerblog.com/segment-tree-sum-of-given-range-5886.html#comment-3199" rel="nofollow"><time datetime="2015-04-07T14:29:24+00:00" pubdate="">2015年4月7日 at 下午2:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>“可以发现,树将是满二叉树,”这句话不对吧，构造的树应该是“完全二叉树”，而非“满二叉树”。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30443">
+<article class="comment" id="comment-30443">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">skyand</a></span> on <a href="http://www.acmerblog.com/segment-tree-sum-of-given-range-5886.html#comment-30443" rel="nofollow"><time datetime="2015-03-29T17:11:40+00:00" pubdate="">2015年3月29日 at 下午5:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>多谢提醒，是漏掉了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30441">
+<article class="comment" id="comment-30441">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zjd1988</a></span> on <a href="http://www.acmerblog.com/segment-tree-sum-of-given-range-5886.html#comment-30441" rel="nofollow"><time datetime="2015-02-23T23:47:55+00:00" pubdate="">2015年2月23日 at 下午11:47</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嗯，尽量吧。题目太多了，很多解题报告是用程序自动发布的，所以就只有代码了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-58808">
+<article class="comment" id="comment-58808">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">howhaw</a></span> on <a href="http://www.acmerblog.com/segment-tree-sum-of-given-range-5886.html#comment-58808" rel="nofollow"><time datetime="2015-01-26T22:52:20+00:00" pubdate="">2015年1月26日 at 下午10:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>L（X [0 .. M-1]，Y [0 .. N-1]）= 1 + L（X [0 .. M-2]，Y [0 .. N-1]）这个地方也也有笔误<br/>
+应改为L（X [0 .. M-1]，Y [0 .. N-1]）= 1 + L（X [0 .. M-2]，Y [0 .. N-2]）</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30442">
+<article class="comment" id="comment-30442">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zhiqiang</a></span> on <a href="http://www.acmerblog.com/segment-tree-sum-of-given-range-5886.html#comment-30442" rel="nofollow"><time datetime="2014-12-27T21:42:01+00:00" pubdate="">2014年12月27日 at 下午9:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>清华也会出这么无聊的题</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30439">
+<article class="comment" id="comment-30439">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rick</a></span> on <a href="http://www.acmerblog.com/segment-tree-sum-of-given-range-5886.html#comment-30439" rel="nofollow"><time datetime="2014-12-20T12:21:32+00:00" pubdate="">2014年12月20日 at 下午12:21</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>可以参考算法导论中的时间戳。就是结束访问时间，最后结束的顶点肯定是入度为0的顶点，因为DFS要回溯</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30436">
+<article class="comment" id="comment-30436">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bcys</a></span> on <a href="http://www.acmerblog.com/segment-tree-sum-of-given-range-5886.html#comment-30436" rel="nofollow"><time datetime="2014-10-04T01:48:17+00:00" pubdate="">2014年10月4日 at 上午1:48</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>博主的C++功底真是好</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30440">
+<article class="comment" id="comment-30440">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaoriqiang</a></span> on <a href="http://www.acmerblog.com/segment-tree-sum-of-given-range-5886.html#comment-30440" rel="nofollow"><time datetime="2014-09-26T08:43:58+00:00" pubdate="">2014年9月26日 at 上午8:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我没看懂题目<br/>
+2<br/>
+5 6 -1 5 4 -7<br/>
+7 0 6 -1 1 -6 7 -5<br/>
+我觉得第一个应该是5 6 -1 5 4 输出是19 5 4<br/>
+第二个是7 0 6 -1 1 -6 7输出是14 7 7<br/>
+不知道题目例子是怎么得出来的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30438">
+<article class="comment" id="comment-30438">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">room306</a></span> on <a href="http://www.acmerblog.com/segment-tree-sum-of-given-range-5886.html#comment-30438" rel="nofollow"><time datetime="2014-08-23T08:14:00+00:00" pubdate="">2014年8月23日 at 上午8:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>/*<br/>
+ * =====================================================================================<br/>
+ *<br/>
+ *       Filename:  1366.cc<br/>
+ *<br/>
+ *    Description:<br/>
+ *<br/>
+ *        Version:  1.0<br/>
+ *        Created:  2014年01月06日 14时52分14秒<br/>
+ *       Revision:  none<br/>
+ *       Compiler:  gcc<br/>
+ *<br/>
+ *         Author:  Wenxian Ni (Hello World~), <a href="mailto:niwenxianq@qq.com">niwenxianq@qq.com</a><br/>
+ *   Organization:  AMS/ICT<br/>
+ *<br/>
+ * =====================================================================================<br/>
+ */</p>
+<p>#include<br/>
+#include </p>
+<p>using namespace std;</p>
+<p>int main()<br/>
+{<br/>
+    stack st;<br/>
+    int n,i,j;<br/>
+    int test;<br/>
+    int a[100001];<br/>
+    int b[100001];<br/>
+    while(cin&gt;&gt;n)<br/>
+    {<br/>
+       for(i=1;i&gt;a[i];<br/>
+       for(i=1;i&gt;b[i];<br/>
+        //st.clear();<br/>
+        while(!st.empty())<br/>
+            st.pop();<br/>
+        i = 1;<br/>
+        j = 1;</p>
+<p>        while(in)<br/>
+                break;<br/>
+            }<br/>
+            while(!st.empty()&amp;&amp;st.top()==b[j])<br/>
+            {<br/>
+                st.pop();<br/>
+                j++;<br/>
+            }<br/>
+        }<br/>
+        if(st.empty())<br/>
+            cout&lt;&lt;"YES"&lt;&lt;endl;<br/>
+        else<br/>
+            cout&lt;&lt;"NO"&lt;&lt;endl;<br/>
+    }<br/>
+    return 0;<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30444">
+<article class="comment" id="comment-30444">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Ding Qiangyuan</a></span> on <a href="http://www.acmerblog.com/segment-tree-sum-of-given-range-5886.html#comment-30444" rel="nofollow"><time datetime="2014-08-02T08:32:15+00:00" pubdate="">2014年8月2日 at 上午8:32</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>int L[m+1][n+1];这样定义出错，这个在gcc上可以编译通过 在VS上不行 应该改为new 或者vector</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30437">
+<article class="comment" id="comment-30437">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">skyand</a></span> on <a href="http://www.acmerblog.com/segment-tree-sum-of-given-range-5886.html#comment-30437" rel="nofollow"><time datetime="2014-07-15T15:07:02+00:00" pubdate="">2014年7月15日 at 下午3:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>能不能说一下tmp数组和solve都是干嘛的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

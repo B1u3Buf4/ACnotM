@@ -1,0 +1,325 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>04-08</div>
+<div class="tit"><h1 class="entry-title">基数排序(Radix Sorting)</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/gaotong2055" rel="author" title="由dragon发布">dragon</a></span><span class="i1"><a href="http://www.acmerblog.com/category/basis/sort" rel="category tag" title="查看排序中的全部文章">排序</a>, <a href="http://www.acmerblog.com/category/zhuanti/algorithm" rel="category tag" title="查看算法分析中的全部文章">算法分析</a></span><span class="i4">围观1461次</span><span class="i3"><a class="ds-thread-count" data-thread-key="5601" href="http://www.acmerblog.com/radix-sorting-5601.html#comments" title="《基数排序(Radix Sorting)》上的评论">15 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p><strong>基数排序（radix sorting）</strong>将所有待比较数值(正整数)统一为同样的数位长度，数位较短的数前面补零。 然后 从最低位开始，依次进行一次排序。这样从最低位排序一直到最高位排序完成以后， 数列就变成一个有序序列。具体过程可以<a href="http://blogimg.chinaunix.net/blog/upfile/070912120349.swf">参考动画演示</a>。</p>
+<p>假设我们有一些二元组(a,b)，要对它们进行以a为首要关键字，b的次要关键字的排序。我们可以先把它们先按照首要关键字排序，分成首要关键字相同的若干堆。然后，在按照次要关键值分别对每一堆进行单独排序。最后再把这些堆串连到一起，使首要关键字较小的一堆排在上面。按这种方式的基数排序称为<strong>MSD(Most Significant Dight)</strong>排序。第二种方式是从最低有效关键字开始排序，称为<strong>LSD(Least Significant Dight)</strong>排序。首先对所有的数据按照次要关键字排序，然后对所有的数据按照首要关键字排序。要注意的是，使用的排序算法必须是稳定的，否则就会取消前一次排序的结果。由于不需要分堆对每堆单独排序，LSD方法往往比MSD简单而开销小。下文介绍的方法全部是基于LSD的。</p>
+<p>基数排序的简单描述就是将数字拆分为个位十位百位，每个位依次排序。因为这对算法稳定要求高，所以我们对数位排序用到上一个排序方法计数排序。因为基数排序要经过d (数据长度)次排序， 每次使用计数排序， 计数排序的复杂度为 On),  d 相当于常量和N无关，所以<strong>基数排序也是 O(n)。</strong>基数排序虽然是线性复杂度， 即对n个数字处理了n次，但是每一次代价都比较高， 而且<strong>使用计数排序的基数排序不能进行原地排序，需要更多的内存</strong>， 并且快速排序可能更好地利用硬件的缓存， 所以比较起来，像快速排序这些原地排序算法更可取<strong>。对于一个位数有限的十进制数，我们可以把它看作一个多元组，从高位到低位关键字重要程度依次递减。<strong>可以使用基数排序对一些位数有限的十进制数排序</strong>。</strong></p>
+<p>例如我们将一个三位数分成，个位，十位，百位三部分。我们要对七个三位数来进行排序，依次对其个位，十位，百位进行排序，如下图：</p>
+<p><a href="http://cdn.acmerblog.com/wp-content/uploads/2014/04/radix-sorting.jpg"><img alt="radix sorting" class="alignnone size-medium wp-image-5604" height="232" src="http://cdn.acmerblog.com/wp-content/uploads/2014/04/radix-sorting-300x232.jpg" width="300"/></a></p>
+<p>很显然，每一位的数的大小都在[0，9]中，对于每一位的排序用<a href="http://www.acmerblog.com/counting-sort-5594.html">计数排序</a>再适合不过。</p>
+<p>Java代码实现：</p>
+<pre class="brush:java">package sort;
+
+//基数排序：稳定排序
+public class RadixSorting {
+
+	// d为数据长度
+	private static void radixSorting(int[] arr, int d) {
+		// arr = countingSort(arr, 0);
+		for (int i = 0; i &lt; d; i++) {
+			arr = countingSort(arr, i); // 依次对各位数字排序（直接用计数排序的变体）
+			print(arr, i + 1, d);
+		}
+	}
+
+	// 把每次按位排序的结果打印出来
+	static void print(int[] arr, int k, int d) {
+		if (k == d)
+			System.out.println("最终排序结果为：");
+		else
+			System.out.println("按第" + k + "位排序后，结果为：");
+		for (int t : arr) {
+			System.out.print(t + " ");
+		}
+		System.out.println();
+	}
+
+	// 利用计数排序对元素的每一位进行排序
+	private static int[] countingSort(int[] arr, int expIndex) {
+		int k = 9;
+		int[] b = new int[arr.length];
+		int[] c = new int[k + 1]; // 这里比较特殊：数的每一位最大数为9
+
+		for (int i = 0; i &lt; k; i++) {
+			c[i] = 0;
+		}
+		for (int i = 0; i &lt; arr.length; i++) {
+			int d = getBitData(arr[i], expIndex);
+			c[d]++;
+		}
+		for (int i = 1; i &lt;= k; i++) {
+			c[i] += c[i - 1];
+		}
+		for (int i = arr.length - 1; i &gt;= 0; i--) {
+			int d = getBitData(arr[i], expIndex);
+			b[c[d] - 1] = arr[i];// C[d]-1 就代表小于等于元素d的元素个数，就是d在B的位置
+			c[d]--;
+		}
+		return b;
+	}
+
+	// 获取data指定位的数
+	private static int getBitData(int data, int expIndex) {
+		while (data != 0 &amp;&amp; expIndex &gt; 0) {
+			data /= 10;
+			expIndex--;
+		}
+		return data % 10;
+	}
+
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		int[] arr = new int[] { 326, 453, 608, 835, 751, 435, 704, 690, 88, 79,
+				79 };// { 333, 956, 175, 345, 212, 542, 99, 87 };
+		System.out.println("基数排序前为：");
+		for (int t : arr) {
+			System.out.print(t + " ");
+		}
+		System.out.println();
+		radixSorting(arr, 4);
+	}
+
+}</pre>
+<p>输出：</p>
+<pre class="brush:other">基数排序前为：
+326 453 608 835 751 435 704 690 88 79 79 
+按第1位排序后，结果为：
+690 751 453 704 835 435 326 608 88 79 79 
+按第2位排序后，结果为：
+704 608 326 835 435 751 453 79 79 88 690 
+按第3位排序后，结果为：
+79 79 88 326 435 453 608 690 704 751 835 
+最终排序结果为：
+79 79 88 326 435 453 608 690 704 751 835</pre>
+<p>效率</p>
+<p>基数排序的时间复杂度是 O(<i>k</i>·<i>n</i>)，其中<i>n</i>是排序元素个数，<i>k</i>是数字位数。注意这不是说这个时间复杂度一定优于O(<i>n</i>·log(<i>n</i>))，因为<i>k</i>的大小一般会受到 n 的影响。 以排序<i>n</i>个不同整数来举例，假定这些整数以<i>B</i>为底，这样每位数都有<i>B</i>个不同的数字，<i>k</i>就一定不小于log<sub><i>B</i></sub>(<i>n</i>)。由于有<i>B</i>个不同的数字，所以就需要<i>B</i>个不同的桶，在每一轮比较的时候都需要平均<i>n</i>·log<sub>2</sub>(<i>B</i>) 次比较来把整数放到合适的桶中去，所以就有：</p>
+<ul>
+<li><i>k</i> 大于或等于 log<sub><i>B</i></sub>(<i>n</i>)</li>
+<li>每一轮(平均)需要 <i>n</i>·log<sub>2</sub>(<i>B</i>) 次比较</li>
+</ul>
+<p>所以，基数排序的平均时间T就是：</p>
+<dl>
+<dd><i>T</i> ≥ log<sub>B</sub>(<i>n</i>)·<i>n</i>·log<sub>2</sub>(<i>B</i>) = log<sub>2</sub>(<i>n</i>)·log<sub>B</sub>(<i>2</i>)·<i>n</i>·log<sub>2</sub>(<i>B</i>) = log<sub>2</sub>(n)·n·log<sub><i>B</i></sub>(2)·log<sub>2</sub>(<i>B</i>) = <i>n</i>·log<sub>2</sub>(<i>n</i>)</dd>
+</dl>
+<p>所以和比较排序相似，基数排序需要的比较次数：<i>T</i> ≥ <i>n</i>·log<sub>2</sub>(<i>n</i>)。 故其时间复杂度为 Ω(<i>n</i>·log<sub>2</sub>(<i>n</i>)) = Ω(<i>n</i>·log <i>n</i>) 。</p>
+<p>参考：http://zh.wikipedia.org/wiki/%E5%9F%BA%E6%95%B0%E6%8E%92%E5%BA%8F</p>
+<p>http://www.cnblogs.com/ttltry-air/archive/2012/08/04/2623302.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-75987">
+<article class="comment" id="comment-75987">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919464203" rel="external nofollow">新用户882190</a></span> on <a href="http://www.acmerblog.com/radix-sorting-5601.html#comment-75987" rel="nofollow"><time datetime="2017-04-12T05:46:05+00:00" pubdate="">2017年4月12日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>对，赞成，生存是第一位呵呵，男人嘛，就要对自己狠一点儿</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30128">
+<article class="comment" id="comment-30128">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Mitrenick</a></span> on <a href="http://www.acmerblog.com/radix-sorting-5601.html#comment-30128" rel="nofollow"><time datetime="2015-07-02T06:49:13+00:00" pubdate="">2015年7月2日 at 上午6:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为避免精度问题，PI值请使用arccos(-1)。应该是acos</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-49234">
+<article class="comment" id="comment-49234">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ForgetVay</a></span> on <a href="http://www.acmerblog.com/radix-sorting-5601.html#comment-49234" rel="nofollow"><time datetime="2015-06-08T10:22:01+00:00" pubdate="">2015年6月8日 at 上午10:22</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>站长好。我是一个准备创业的互联网小白,我们打算做一个有关国*际*游*学的平台。手上也有了一些境外资源。现阶段的团队现在没有cto.原意出让一些管理股寻找一个靠谱的技术专家做合伙人, 不知道是不是能得到您的帮助。发个帖子或者其他方式。期待您的回应。可以加我微信tianxielemon聊聊。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-49235">
+<article class="comment" id="comment-49235">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">HaibaraAi</a></span> on <a href="http://www.acmerblog.com/radix-sorting-5601.html#comment-49235" rel="nofollow"><time datetime="2015-05-04T06:26:03+00:00" pubdate="">2015年5月4日 at 上午6:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>妈呀！这个模板好长OwQ！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58727">
+<article class="comment" id="comment-58727">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">chengleisheng</a></span> on <a href="http://www.acmerblog.com/radix-sorting-5601.html#comment-58727" rel="nofollow"><time datetime="2015-04-20T22:12:55+00:00" pubdate="">2015年4月20日 at 下午10:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>非常好，初学者就应该先理解递归</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63552">
+<article class="comment" id="comment-63552">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaotong2055</a></span> on <a href="http://www.acmerblog.com/radix-sorting-5601.html#comment-63552" rel="nofollow"><time datetime="2015-04-06T16:58:46+00:00" pubdate="">2015年4月6日 at 下午4:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二种解法如果数组有重复元素 就不正确</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-58728">
+<article class="comment" id="comment-58728">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">windy</a></span> on <a href="http://www.acmerblog.com/radix-sorting-5601.html#comment-58728" rel="nofollow"><time datetime="2014-12-07T22:03:45+00:00" pubdate="">2014年12月7日 at 下午10:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法很不错啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30127">
+<article class="comment" id="comment-30127">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Spike</a></span> on <a href="http://www.acmerblog.com/radix-sorting-5601.html#comment-30127" rel="nofollow"><time datetime="2014-10-10T21:12:38+00:00" pubdate="">2014年10月10日 at 下午9:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>[…] 答案：http://www.acmerblog.com/interview-2-1549/ […]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30129">
+<article class="comment" id="comment-30129">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bluesky</a></span> on <a href="http://www.acmerblog.com/radix-sorting-5601.html#comment-30129" rel="nofollow"><time datetime="2014-10-04T08:12:58+00:00" pubdate="">2014年10月4日 at 上午8:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>编辑的时候有些不小心了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63551">
+<article class="comment" id="comment-63551">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiao1108</a></span> on <a href="http://www.acmerblog.com/radix-sorting-5601.html#comment-63551" rel="nofollow"><time datetime="2014-09-24T16:12:04+00:00" pubdate="">2014年9月24日 at 下午4:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>&amp;amp;这是C语言？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63553">
+<article class="comment" id="comment-63553">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">bobkentt</a></span> on <a href="http://www.acmerblog.com/radix-sorting-5601.html#comment-63553" rel="nofollow"><time datetime="2014-08-01T13:07:55+00:00" pubdate="">2014年8月1日 at 下午1:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>/*<br/>
+ * =====================================================================================<br/>
+ *<br/>
+ *       Filename:  1366.cc<br/>
+ *<br/>
+ *    Description:<br/>
+ *<br/>
+ *        Version:  1.0<br/>
+ *        Created:  2014年01月06日 14时52分14秒<br/>
+ *       Revision:  none<br/>
+ *       Compiler:  gcc<br/>
+ *<br/>
+ *         Author:  Wenxian Ni (Hello World~), <a href="mailto:niwenxianq@qq.com">niwenxianq@qq.com</a><br/>
+ *   Organization:  AMS/ICT<br/>
+ *<br/>
+ * =====================================================================================<br/>
+ */</p>
+<p>#include<br/>
+#include </p>
+<p>using namespace std;</p>
+<p>int main()<br/>
+{<br/>
+    stack st;<br/>
+    int n,i,j;<br/>
+    int test;<br/>
+    int a[100001];<br/>
+    int b[100001];<br/>
+    while(cin&gt;&gt;n)<br/>
+    {<br/>
+       for(i=1;i&gt;a[i];<br/>
+       for(i=1;i&gt;b[i];<br/>
+        //st.clear();<br/>
+        while(!st.empty())<br/>
+            st.pop();<br/>
+        i = 1;<br/>
+        j = 1;</p>
+<p>        while(in)<br/>
+                break;<br/>
+            }<br/>
+            while(!st.empty()&amp;&amp;st.top()==b[j])<br/>
+            {<br/>
+                st.pop();<br/>
+                j++;<br/>
+            }<br/>
+        }<br/>
+        if(st.empty())<br/>
+            cout&lt;&lt;"YES"&lt;&lt;endl;<br/>
+        else<br/>
+            cout&lt;&lt;"NO"&lt;&lt;endl;<br/>
+    }<br/>
+    return 0;<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-30126">
+<article class="comment" id="comment-30126">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wynk0804</a></span> on <a href="http://www.acmerblog.com/radix-sorting-5601.html#comment-30126" rel="nofollow"><time datetime="2014-07-19T00:38:08+00:00" pubdate="">2014年7月19日 at 上午12:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法挺不错。NewHead代表新的头节点，通过递归找到最后一个节点之后，就把这个节点赋给NewHead，然后一直返回返回，中途这个值是没有变化的，一边返回一边把相应的指针方向颠倒，最后结束时返回新的头节点到主函数。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-30130">
+<article class="comment" id="comment-30130">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaotongtest</a></span> on <a href="http://www.acmerblog.com/radix-sorting-5601.html#comment-30130" rel="nofollow"><time datetime="2014-06-16T09:20:31+00:00" pubdate="">2014年6月16日 at 上午9:20</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>什么破题，题意好难懂啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-63550">
+<article class="comment" id="comment-63550">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gyouxu</a></span> on <a href="http://www.acmerblog.com/radix-sorting-5601.html#comment-63550" rel="nofollow"><time datetime="2014-05-04T05:41:03+00:00" pubdate="">2014年5月4日 at 上午5:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个程序编译都通不过， int L[m+1][n+1];这样定义出错，应该换成具体的数字ac</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-63549">
+<article class="comment" id="comment-63549">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xuelanghu</a></span> on <a href="http://www.acmerblog.com/radix-sorting-5601.html#comment-63549" rel="nofollow"><time datetime="2014-04-27T10:08:00+00:00" pubdate="">2014年4月27日 at 上午10:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>什么破题，题意好难懂啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

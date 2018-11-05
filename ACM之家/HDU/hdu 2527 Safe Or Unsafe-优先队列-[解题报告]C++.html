@@ -1,0 +1,451 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>02-09</div>
+<div class="tit"><h1 class="entry-title">hdu 2527 Safe Or Unsafe-优先队列-[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/data-struct/linear" rel="category tag" title="查看线性结构中的全部文章">线性结构</a>, <a href="http://www.acmerblog.com/category/basis/tanxin" rel="category tag" title="查看贪心中的全部文章">贪心</a></span><span class="i4">围观1113次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4063" href="http://www.acmerblog.com/hdu-2527-safe-or-unsafe-4063.html#comments" title="《hdu 2527 Safe Or Unsafe-优先队列-[解题报告]C++》上的评论">25 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Safe Or Unsafe</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Javac++ 一天在看计算机的书籍的时候，看到了一个有趣的东西！每一串字符都可以被编码成一些数字来储存信息，但是不同的编码方式得到的储存空间是不一样的！并且当储存空间大于一定的值的时候是不安全的！所以Javac++ 就想是否有一种方式是可以得到字符编码最小的空间值！显然这是可以的，因为书上有这一块内容–哈夫曼编码(Huffman Coding)；一个字母的权值等于该字母在字符串中出现的频率。所以Javac++ 想让你帮忙，给你安全数值和一串字符串，并让你判断这个字符串是否是安全的？ </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+输入有多组case，首先是一个数字n表示有n组数据，然后每一组数据是有一个数值m(integer)，和一串字符串没有空格只有包含小写字母组成！ </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+输入有多组case，首先是一个数字n表示有n组数据，然后每一组数据是有一个数值m(integer)，和一串字符串没有空格只有包含小写字母组成！</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+12
+helloworld
+66
+ithinkyoucandoit</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+no
+yes</pre>
+<p> <!-- problem end --></p>
+<h2>题目描述</h2>
+<div>        <a href="http://acm.hdu.edu.cn/showproblem.php?pid=2527" target="_blank">HDU 2527</a></div>
+<h2>分析</h2>
+<div>        霍夫曼编码的应用。</div>
+<div>        本题没有必要构造一棵完整的霍夫曼树。只需利用霍夫曼编码的原理，每次挑选频率最低的两个元素进行合并。（显然，可以利用优先级队列，这里用数组来模拟）</div>
+<h2>源码</h2>
+<pre class="brush:cpp ">//每次挑出现频率最小的两个元素，应该用优先级队列！！！！！！！！！！
+
+#include &lt;stdio.h&gt;
+#include &lt;limits.h&gt;
+#include &lt;string.h&gt;
+int unionFre(int fre[26]);
+
+int main()
+{
+	int frequency[26];    //记录每个字母出现的频率
+	int n;
+	int m;
+	char input[10000];
+	int letterNum;     //出现的小写字母的个数
+	int len;
+	int result;
+	int i, j;
+
+	scanf("%d", &amp;n);
+	while (n --)
+	{
+		scanf("%d", &amp;m);
+		scanf("%s", &amp;input);
+		//初始化
+		memset(frequency, 0, sizeof(frequency));
+
+		//统计每个字母出现的次数
+		len = strlen(input);
+		for (i = 0; i &lt; len; i ++)
+		{
+			frequency[input[i]-'a'] ++;
+		}
+		//没出现的字母频率均设为最大值
+		letterNum = 26;
+		for (i = 0; i &lt; 26; i ++)
+		{
+			if (frequency[i] == 0)
+			{
+				letterNum --;
+				frequency[i] = INT_MAX;
+			}
+		}
+
+		//如果字符串只由一个字母组成
+		if (letterNum == 1)
+		{
+			result = frequency[input[0]-97];
+			if (result &lt;= m)
+				printf("yes\n");
+			else
+				printf("no\n");
+
+			continue;
+		}
+
+		//循环(letterNum-1)次，每次挑选出现频率最低的两个元素进行合并
+		//并更新result值，加上被合并的两个元素的频率和
+		result = 0;
+		for (i = 0; i &lt; letterNum-1; i ++)
+		{
+			result = result + unionFre(frequency);
+		}
+
+		if (result &lt;= m)
+			printf("yes\n");
+		else
+			printf("no\n");
+	}
+
+	return 0;
+}
+
+//合并函数
+int unionFre(int fre[26])
+{
+	int min, secondMin;
+	int minIndex, secondMinIndex;
+	int temp;
+	int i;
+
+	min = fre[0];
+	minIndex = 0;
+	secondMin = fre[1];
+	secondMinIndex = 1;
+
+	if (min &gt; secondMin)
+	{
+		temp = min;
+		min = secondMin;
+		secondMin = temp;
+
+		temp = minIndex;
+		minIndex = secondMinIndex;
+		secondMinIndex = temp;
+	}
+
+	//找出频率最低的两个元素
+	for (i = 2; i &lt; 26; i ++)
+	{
+		if (fre[i] &lt; min)
+		{
+			secondMin = min;
+			secondMinIndex = minIndex;
+
+			min = fre[i];
+			minIndex = i;
+		}
+		else if (fre[i] &lt; secondMin)
+		{
+			secondMin = fre[i];
+			secondMinIndex = i;
+		}
+	}
+
+	//合并两个元素
+	fre[minIndex] = min + secondMin;
+	fre[secondMinIndex] = INT_MAX;
+
+	return (min + secondMin);
+}</pre>
+<div>
+</div>
+<p>解题转自：http://blog.csdn.net/cgz372619/article/details/10232009</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-84055">
+<article class="comment" id="comment-84055">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514833" rel="external nofollow">新用户903582</a></span> on <a href="http://www.acmerblog.com/hdu-2527-safe-or-unsafe-4063.html#comment-84055" rel="nofollow"><time datetime="2017-04-12T23:52:07+00:00" pubdate="">2017年4月12日 at 下午11:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>今天一查盒子也到3了，goolge真够体贴的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-84054">
+<article class="comment" id="comment-84054">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514833" rel="external nofollow">新用户903582</a></span> on <a href="http://www.acmerblog.com/hdu-2527-safe-or-unsafe-4063.html#comment-84054" rel="nofollow"><time datetime="2017-04-12T23:52:07+00:00" pubdate="">2017年4月12日 at 下午11:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>今天一查盒子也到3了，goolge真够体贴的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-84053">
+<article class="comment" id="comment-84053">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514833" rel="external nofollow">新用户903582</a></span> on <a href="http://www.acmerblog.com/hdu-2527-safe-or-unsafe-4063.html#comment-84053" rel="nofollow"><time datetime="2017-04-12T23:52:07+00:00" pubdate="">2017年4月12日 at 下午11:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>今天一查盒子也到3了，goolge真够体贴的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-84052">
+<article class="comment" id="comment-84052">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514833" rel="external nofollow">新用户903582</a></span> on <a href="http://www.acmerblog.com/hdu-2527-safe-or-unsafe-4063.html#comment-84052" rel="nofollow"><time datetime="2017-04-12T23:52:07+00:00" pubdate="">2017年4月12日 at 下午11:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>今天一查盒子也到3了，goolge真够体贴的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-84051">
+<article class="comment" id="comment-84051">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514833" rel="external nofollow">新用户903582</a></span> on <a href="http://www.acmerblog.com/hdu-2527-safe-or-unsafe-4063.html#comment-84051" rel="nofollow"><time datetime="2017-04-12T23:52:07+00:00" pubdate="">2017年4月12日 at 下午11:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>今天一查盒子也到3了，goolge真够体贴的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-84050">
+<article class="comment" id="comment-84050">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514833" rel="external nofollow">新用户903582</a></span> on <a href="http://www.acmerblog.com/hdu-2527-safe-or-unsafe-4063.html#comment-84050" rel="nofollow"><time datetime="2017-04-12T23:52:07+00:00" pubdate="">2017年4月12日 at 下午11:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>今天一查盒子也到3了，goolge真够体贴的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-84049">
+<article class="comment" id="comment-84049">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514833" rel="external nofollow">新用户903582</a></span> on <a href="http://www.acmerblog.com/hdu-2527-safe-or-unsafe-4063.html#comment-84049" rel="nofollow"><time datetime="2017-04-12T23:52:07+00:00" pubdate="">2017年4月12日 at 下午11:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>今天一查盒子也到3了，goolge真够体贴的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-84048">
+<article class="comment" id="comment-84048">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514833" rel="external nofollow">新用户903582</a></span> on <a href="http://www.acmerblog.com/hdu-2527-safe-or-unsafe-4063.html#comment-84048" rel="nofollow"><time datetime="2017-04-12T23:52:07+00:00" pubdate="">2017年4月12日 at 下午11:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>今天一查盒子也到3了，goolge真够体贴的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-84047">
+<article class="comment" id="comment-84047">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514833" rel="external nofollow">新用户903582</a></span> on <a href="http://www.acmerblog.com/hdu-2527-safe-or-unsafe-4063.html#comment-84047" rel="nofollow"><time datetime="2017-04-12T23:52:07+00:00" pubdate="">2017年4月12日 at 下午11:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>今天一查盒子也到3了，goolge真够体贴的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-84046">
+<article class="comment" id="comment-84046">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514833" rel="external nofollow">新用户903582</a></span> on <a href="http://www.acmerblog.com/hdu-2527-safe-or-unsafe-4063.html#comment-84046" rel="nofollow"><time datetime="2017-04-12T23:52:07+00:00" pubdate="">2017年4月12日 at 下午11:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>今天一查盒子也到3了，goolge真够体贴的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-84045">
+<article class="comment" id="comment-84045">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919514833" rel="external nofollow">新用户903582</a></span> on <a href="http://www.acmerblog.com/hdu-2527-safe-or-unsafe-4063.html#comment-84045" rel="nofollow"><time datetime="2017-04-12T23:52:07+00:00" pubdate="">2017年4月12日 at 下午11:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>今天一查盒子也到3了，goolge真够体贴的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-22805">
+<article class="comment" id="comment-22805">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangdilj</a></span> on <a href="http://www.acmerblog.com/hdu-2527-safe-or-unsafe-4063.html#comment-22805" rel="nofollow"><time datetime="2015-04-13T00:14:42+00:00" pubdate="">2015年4月13日 at 上午12:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序员会算法，等于一个古惑仔带了zhi抢啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22804">
+<article class="comment" id="comment-22804">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">reking</a></span> on <a href="http://www.acmerblog.com/hdu-2527-safe-or-unsafe-4063.html#comment-22804" rel="nofollow"><time datetime="2015-03-23T13:10:24+00:00" pubdate="">2015年3月23日 at 下午1:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>printf这个函数在计算的时候是从右到左，打印是从左到右。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-22801">
+<article class="comment" id="comment-22801">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">tangxiansheng</a></span> on <a href="http://www.acmerblog.com/hdu-2527-safe-or-unsafe-4063.html#comment-22801" rel="nofollow"><time datetime="2015-03-12T00:14:09+00:00" pubdate="">2015年3月12日 at 上午12:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>大致看了下，算法的时间复杂度没有很本性的提升，算不上高效。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22808">
+<article class="comment" id="comment-22808">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hsp_77_abc</a></span> on <a href="http://www.acmerblog.com/hdu-2527-safe-or-unsafe-4063.html#comment-22808" rel="nofollow"><time datetime="2015-03-04T13:05:15+00:00" pubdate="">2015年3月4日 at 下午1:05</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>能告诉我为什么对于每一个m，cnt的值不用更新吗?这儿我想不通啊，谢谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-22799">
+<article class="comment" id="comment-22799">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">melody12ab</a></span> on <a href="http://www.acmerblog.com/hdu-2527-safe-or-unsafe-4063.html#comment-22799" rel="nofollow"><time datetime="2015-03-01T12:33:56+00:00" pubdate="">2015年3月1日 at 下午12:33</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>原来如此 了解了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22810">
+<article class="comment" id="comment-22810">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lin</a></span> on <a href="http://www.acmerblog.com/hdu-2527-safe-or-unsafe-4063.html#comment-22810" rel="nofollow"><time datetime="2015-01-14T15:19:22+00:00" pubdate="">2015年1月14日 at 下午3:19</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序只能输出一个子序列</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-22811">
+<article class="comment" id="comment-22811">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">CCat</a></span> on <a href="http://www.acmerblog.com/hdu-2527-safe-or-unsafe-4063.html#comment-22811" rel="nofollow"><time datetime="2014-08-19T12:56:39+00:00" pubdate="">2014年8月19日 at 下午12:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这是往年的笔试题，非在线，主要考察基础，Java会在面试时问到</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22806">
+<article class="comment" id="comment-22806">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">nsoi_onion</a></span> on <a href="http://www.acmerblog.com/hdu-2527-safe-or-unsafe-4063.html#comment-22806" rel="nofollow"><time datetime="2014-07-29T19:30:56+00:00" pubdate="">2014年7月29日 at 下午7:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>A猴子认识的所有猴子和B猴子认识的所有猴子都能认识，这句话用《爱屋及乌》描述比较容易理解……</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-22803">
+<article class="comment" id="comment-22803">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">magichu</a></span> on <a href="http://www.acmerblog.com/hdu-2527-safe-or-unsafe-4063.html#comment-22803" rel="nofollow"><time datetime="2014-07-19T02:11:08+00:00" pubdate="">2014年7月19日 at 上午2:11</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我没看懂题目<br/>
+2<br/>
+5 6 -1 5 4 -7<br/>
+7 0 6 -1 1 -6 7 -5<br/>
+我觉得第一个应该是5 6 -1 5 4 输出是19 5 4<br/>
+第二个是7 0 6 -1 1 -6 7输出是14 7 7<br/>
+不知道题目例子是怎么得出来的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22809">
+<article class="comment" id="comment-22809">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">AE</a></span> on <a href="http://www.acmerblog.com/hdu-2527-safe-or-unsafe-4063.html#comment-22809" rel="nofollow"><time datetime="2014-07-06T02:49:10+00:00" pubdate="">2014年7月6日 at 上午2:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>前排支持</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-22802">
+<article class="comment" id="comment-22802">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiao597896577</a></span> on <a href="http://www.acmerblog.com/hdu-2527-safe-or-unsafe-4063.html#comment-22802" rel="nofollow"><time datetime="2014-06-11T16:37:28+00:00" pubdate="">2014年6月11日 at 下午4:37</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>好网站，肯定会火的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22807">
+<article class="comment" id="comment-22807">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ygxqqx</a></span> on <a href="http://www.acmerblog.com/hdu-2527-safe-or-unsafe-4063.html#comment-22807" rel="nofollow"><time datetime="2014-06-06T03:03:37+00:00" pubdate="">2014年6月6日 at 上午3:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#!/usr/bin/env python def cou(n): arr =  [1]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-22800">
+<article class="comment" id="comment-22800">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">489365227</a></span> on <a href="http://www.acmerblog.com/hdu-2527-safe-or-unsafe-4063.html#comment-22800" rel="nofollow"><time datetime="2014-04-23T05:13:44+00:00" pubdate="">2014年4月23日 at 上午5:13</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚开始学习，为啥会报错了，你试过了吗</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-22812">
+<article class="comment" id="comment-22812">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">20122256</a></span> on <a href="http://www.acmerblog.com/hdu-2527-safe-or-unsafe-4063.html#comment-22812" rel="nofollow"><time datetime="2014-04-04T03:36:59+00:00" pubdate="">2014年4月4日 at 上午3:36</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>在方法1里面：</p>
+<p>    //遍历所有的边，计算入度<br/>
+    for(int i=0; i&lt;V; i++)<br/>
+  {<br/>
+        degree <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/>  = 0;<br/>
+        for (j = adj <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .begin(); j != adj <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .end(); ++j)<br/>
+       {<br/>
+            degree[*j]++;<br/>
+        }<br/>
+    }</p>
+<p>为什么每遍历一条链表，要首先将每个链表头的顶点的入度置为0呢？<br/>
+比如顶点5，若在顶点1、2、3、4的链表中出现过顶点5，那么要增加顶点5的入度，但是在遍历顶点5的链表时，又将顶点5的入度置为0了，那之前的从顶点1234到顶点5的边不是都没了吗？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

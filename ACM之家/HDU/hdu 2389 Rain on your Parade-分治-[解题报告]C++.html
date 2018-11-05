@@ -1,0 +1,464 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>01-05</div>
+<div class="tit"><h1 class="entry-title">hdu 2389 Rain on your Parade-分治-[解题报告]C++</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/graph/bipartite-graph" rel="category tag" title="查看二分图中的全部文章">二分图</a>, <a href="http://www.acmerblog.com/category/basis/recursion" rel="category tag" title="查看递归和分治中的全部文章">递归和分治</a></span><span class="i4">围观1265次</span><span class="i3"><a class="ds-thread-count" data-thread-key="3604" href="http://www.acmerblog.com/hdu-2389-rain-on-your-parade-3604.html#comments" title="《hdu 2389 Rain on your Parade-分治-[解题报告]C++》上的评论">23 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Rain on your Parade</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+You’re giving a party in the garden of your villa by the sea. The party is a huge success, and everyone is here. It’s a warm, sunny evening, and a soothing wind sends fresh, salty air from the sea. The evening is progressing just as you had imagined. It could be the perfect end of a beautiful day.<br/>But nothing ever is perfect. One of your guests works in weather forecasting. He suddenly yells, “I know that breeze! It means its going to rain heavily in just a few minutes!” Your guests all wear their best dresses and really would not like to get wet, hence they stand terrified when hearing the bad news.<br/>You have prepared a few umbrellas which can protect a few of your guests. The umbrellas are small, and since your guests are all slightly snobbish, no guest will share an umbrella with other guests. The umbrellas are spread across your (gigantic) garden, just like your guests. To complicate matters even more, some of your guests can’t run as fast as the others.<br/>Can you help your guests so that as many as possible find an umbrella before it starts to pour? 
+<p>Given the positions and speeds of all your guests, the positions of the umbrellas, and the time until it starts to rain, find out how many of your guests can at most reach an umbrella. Two guests do not want to share an umbrella, however.  </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input starts with a line containing a single integer, the number of test cases.<br/>Each test case starts with a line containing the time t in minutes until it will start to rain (1 &lt;=t &lt;= 5). The next line contains the number of guests m (1 &lt;= m &lt;= 3000), followed by m lines containing x- and y-coordinates as well as the speed si in units per minute (1 &lt;= s<sub>i</sub> &lt;= 3000) of the guest as integers,  separated by spaces. After the guests, a single line contains n (1 &lt;= n &lt;= 3000), the number of umbrellas, followed by n lines containing the integer coordinates of each umbrella, separated by a space.<br/>The absolute value of all coordinates is less than 10000. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input starts with a line containing a single integer, the number of test cases.<br/>Each test case starts with a line containing the time t in minutes until it will start to rain (1 &lt;=t &lt;= 5). The next line contains the number of guests m (1 &lt;= m &lt;= 3000), followed by m lines containing x- and y-coordinates as well as the speed si in units per minute (1 &lt;= s<sub>i</sub> &lt;= 3000) of the guest as integers,  separated by spaces. After the guests, a single line contains n (1 &lt;= n &lt;= 3000), the number of umbrellas, followed by n lines containing the integer coordinates of each umbrella, separated by a space.<br/>The absolute value of all coordinates is less than 10000.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+2
+1
+2
+1 0 3
+3 0 3
+2
+4 0
+6 0
+1
+2
+1 1 2
+3 3 2
+2
+2 2
+4 4</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+Scenario #1:
+2
+
+Scenario #2:
+2</pre>
+<p> <!-- problem end --></p>
+<pre class="brush:cpp ">#include &lt;stdio.h&gt;
+#include &lt;algorithm&gt;
+#include &lt;iostream&gt;
+#include &lt;string.h&gt;
+#include &lt;vector&gt;
+#include &lt;queue&gt;
+using namespace std;
+/* *******************************
+ * 二分图匹配（Hopcroft-Carp算法）
+ * 复杂度O(sqrt(n)*E)
+ * 邻接表存图，vector实现
+ * vector先初始化，然后假如边
+ * uN 为左端的顶点数，使用前赋值(点编号0开始)
+ */
+const int MAXN = 3030;
+const int INF = 0x3f3f3f3f;
+vector&lt;int&gt;G[MAXN];
+int uN;
+
+int Mx[MAXN],My[MAXN];
+int dx[MAXN],dy[MAXN];
+int dis;
+bool used[MAXN];
+bool SearchP()
+{
+    queue&lt;int&gt;Q;
+    dis = INF;
+    memset(dx,-1,sizeof(dx));
+    memset(dy,-1,sizeof(dy));
+    for(int i = 0 ; i &lt; uN; i++)
+        if(Mx[i] == -1)
+        {
+            Q.push(i);
+            dx[i] = 0;
+        }
+    while(!Q.empty())
+    {
+        int u = Q.front();
+        Q.pop();
+        if(dx[u] &gt; dis)break;
+        int sz = G[u].size();
+        for(int i = 0;i &lt; sz;i++)
+        {
+            int v = G[u][i];
+            if(dy[v] == -1)
+            {
+                dy[v] = dx[u] + 1;
+                if(My[v] == -1)dis = dy[v];
+                else
+                {
+                    dx[My[v]] = dy[v] + 1;
+                    Q.push(My[v]);
+                }
+            }
+        }
+    }
+    return dis != INF;
+}
+bool DFS(int u)
+{
+    int sz = G[u].size();
+    for(int i = 0;i &lt; sz;i++)
+    {
+        int v = G[u][i];
+        if(!used[v] &amp;&amp; dy[v] == dx[u] + 1)
+        {
+            used[v] = true;
+            if(My[v] != -1 &amp;&amp; dy[v] == dis)continue;
+            if(My[v] == -1 || DFS(My[v]))
+            {
+                My[v] = u;
+                Mx[u] = v;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+int MaxMatch()
+{
+    int res = 0;
+    memset(Mx,-1,sizeof(Mx));
+    memset(My,-1,sizeof(My));
+    while(SearchP())
+    {
+        memset(used,false,sizeof(used));
+        for(int i = 0;i &lt; uN;i++)
+            if(Mx[i] == -1 &amp;&amp; DFS(i))
+                res++;
+    }
+    return res;
+}
+
+struct Point
+{
+    int x,y,s;
+    void input1()
+    {
+        scanf("%d%d%d",&amp;x,&amp;y,&amp;s);
+    }
+    void input2()
+    {
+        scanf("%d%d",&amp;x,&amp;y);
+    }
+};
+int dis2(Point a,Point b)
+{
+    return (a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y);
+}
+Point p1[MAXN],p2[MAXN];
+
+int main()
+{
+    int T;
+    int t;
+    int iCase = 0;
+    int n,m;
+    scanf("%d",&amp;T);
+    while(T--)
+    {
+        iCase++;
+        scanf("%d",&amp;t);
+        scanf("%d",&amp;n);
+        for(int i = 0;i &lt; n;i++)
+            p1[i].input1();
+        scanf("%d",&amp;m);
+        for(int i = 0;i &lt; m;i++)
+            p2[i].input2();
+        for(int i = 0;i &lt; n;i++)
+            G[i].clear();
+        uN = n;
+        for(int i = 0;i &lt; n;i++)
+            for(int j = 0;j &lt; m;j++)
+                if(dis2(p1[i],p2[j]) &lt;= p1[i].s*p1[i].s*t*t)
+                    G[i].push_back(j);
+        printf("Scenario #%d:\n",iCase);
+        printf("%d\n\n",MaxMatch());
+    }
+    return 0;
+}</pre>
+<p>解题转自：http://www.cnblogs.com/kuangbin/archive/2013/07/29/3224091.html</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-85468">
+<article class="comment" id="comment-85468">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919531785" rel="external nofollow">新用户504931</a></span> on <a href="http://www.acmerblog.com/hdu-2389-rain-on-your-parade-3604.html#comment-85468" rel="nofollow"><time datetime="2017-04-13T03:10:07+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>佟佳念雪就是个傻逼，被骂是应该的，你要感谢我们</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-85467">
+<article class="comment" id="comment-85467">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919531785" rel="external nofollow">新用户504931</a></span> on <a href="http://www.acmerblog.com/hdu-2389-rain-on-your-parade-3604.html#comment-85467" rel="nofollow"><time datetime="2017-04-13T03:10:07+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>佟佳念雪就是个傻逼，被骂是应该的，你要感谢我们</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-85466">
+<article class="comment" id="comment-85466">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919531785" rel="external nofollow">新用户504931</a></span> on <a href="http://www.acmerblog.com/hdu-2389-rain-on-your-parade-3604.html#comment-85466" rel="nofollow"><time datetime="2017-04-13T03:10:07+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>佟佳念雪就是个傻逼，被骂是应该的，你要感谢我们</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-85465">
+<article class="comment" id="comment-85465">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919531785" rel="external nofollow">新用户504931</a></span> on <a href="http://www.acmerblog.com/hdu-2389-rain-on-your-parade-3604.html#comment-85465" rel="nofollow"><time datetime="2017-04-13T03:10:07+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>佟佳念雪就是个傻逼，被骂是应该的，你要感谢我们</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-85464">
+<article class="comment" id="comment-85464">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919531785" rel="external nofollow">新用户504931</a></span> on <a href="http://www.acmerblog.com/hdu-2389-rain-on-your-parade-3604.html#comment-85464" rel="nofollow"><time datetime="2017-04-13T03:10:07+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>佟佳念雪就是个傻逼，被骂是应该的，你要感谢我们</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-85463">
+<article class="comment" id="comment-85463">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919531785" rel="external nofollow">新用户504931</a></span> on <a href="http://www.acmerblog.com/hdu-2389-rain-on-your-parade-3604.html#comment-85463" rel="nofollow"><time datetime="2017-04-13T03:10:07+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>佟佳念雪就是个傻逼，被骂是应该的，你要感谢我们</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-85462">
+<article class="comment" id="comment-85462">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919531785" rel="external nofollow">新用户504931</a></span> on <a href="http://www.acmerblog.com/hdu-2389-rain-on-your-parade-3604.html#comment-85462" rel="nofollow"><time datetime="2017-04-13T03:10:07+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>佟佳念雪就是个傻逼，被骂是应该的，你要感谢我们</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-85461">
+<article class="comment" id="comment-85461">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919531785" rel="external nofollow">新用户504931</a></span> on <a href="http://www.acmerblog.com/hdu-2389-rain-on-your-parade-3604.html#comment-85461" rel="nofollow"><time datetime="2017-04-13T03:10:07+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>佟佳念雪就是个傻逼，被骂是应该的，你要感谢我们</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-85460">
+<article class="comment" id="comment-85460">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919531785" rel="external nofollow">新用户504931</a></span> on <a href="http://www.acmerblog.com/hdu-2389-rain-on-your-parade-3604.html#comment-85460" rel="nofollow"><time datetime="2017-04-13T03:10:07+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>佟佳念雪就是个傻逼，被骂是应该的，你要感谢我们</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-85459">
+<article class="comment" id="comment-85459">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919531785" rel="external nofollow">新用户504931</a></span> on <a href="http://www.acmerblog.com/hdu-2389-rain-on-your-parade-3604.html#comment-85459" rel="nofollow"><time datetime="2017-04-13T03:10:07+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>佟佳念雪就是个傻逼，被骂是应该的，你要感谢我们</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-85458">
+<article class="comment" id="comment-85458">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919531785" rel="external nofollow">新用户504931</a></span> on <a href="http://www.acmerblog.com/hdu-2389-rain-on-your-parade-3604.html#comment-85458" rel="nofollow"><time datetime="2017-04-13T03:10:07+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>佟佳念雪就是个傻逼，被骂是应该的，你要感谢我们</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-44931">
+<article class="comment" id="comment-44931">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">litaotao</a></span> on <a href="http://www.acmerblog.com/hdu-2389-rain-on-your-parade-3604.html#comment-44931" rel="nofollow"><time datetime="2015-05-28T06:15:01+00:00" pubdate="">2015年5月28日 at 上午6:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>即为打印出的组合的个数C(n,r)，假设print函数复杂度为O(1)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-56664">
+<article class="comment" id="comment-56664">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hwp</a></span> on <a href="http://www.acmerblog.com/hdu-2389-rain-on-your-parade-3604.html#comment-56664" rel="nofollow"><time datetime="2015-05-24T00:24:08+00:00" pubdate="">2015年5月24日 at 上午12:24</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有点意思</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-21322">
+<article class="comment" id="comment-21322">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">liluvu</a></span> on <a href="http://www.acmerblog.com/hdu-2389-rain-on-your-parade-3604.html#comment-21322" rel="nofollow"><time datetime="2015-04-04T01:30:21+00:00" pubdate="">2015年4月4日 at 上午1:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>补充：此算法求出的不一定是最优解，之前理解错了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-21326">
+<article class="comment" id="comment-21326">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ycaxgjd</a></span> on <a href="http://www.acmerblog.com/hdu-2389-rain-on-your-parade-3604.html#comment-21326" rel="nofollow"><time datetime="2015-03-22T20:15:05+00:00" pubdate="">2015年3月22日 at 下午8:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二个方法挺不错。NewHead代表新的头节点，通过递归找到最后一个节点之后，就把这个节点赋给NewHead，然后一直返回返回，中途这个值是没有变化的，一边返回一边把相应的指针方向颠倒，最后结束时返回新的头节点到主函数。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-21321">
+<article class="comment" id="comment-21321">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dongxi</a></span> on <a href="http://www.acmerblog.com/hdu-2389-rain-on-your-parade-3604.html#comment-21321" rel="nofollow"><time datetime="2015-03-09T06:16:19+00:00" pubdate="">2015年3月9日 at 上午6:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>51行错了，改为：void Union(struct subset subsets[], int x, int y)</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-21325">
+<article class="comment" id="comment-21325">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">mr-zhang2011</a></span> on <a href="http://www.acmerblog.com/hdu-2389-rain-on-your-parade-3604.html#comment-21325" rel="nofollow"><time datetime="2014-12-18T04:03:07+00:00" pubdate="">2014年12月18日 at 上午4:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>#include &lt;cstdio&gt;<br/>
+#include &lt;algorithm&gt;</p>
+<p>struct LWPair{<br/>
+    int l,w;<br/>
+};</p>
+<p>int main() {<br/>
+    //freopen("input.txt","r",stdin);<br/>
+    const int MAXSIZE=5000, MAXVAL=10000;<br/>
+    LWPair sticks[MAXSIZE];<br/>
+    int store[MAXSIZE];<br/>
+    int ncase, nstick, length,width, tmp, time, i,j;<br/>
+    if(scanf("%d",&amp;ncase)!=1) return -1;<br/>
+    while(ncase– &amp;&amp; scanf("%d",&amp;nstick)==1) {<br/>
+        for(i=0;i&lt;nstick;++i) scanf("%d%d",&amp;sticks <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .l,&amp;sticks <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .w);<br/>
+        std::sort(sticks,sticks+nstick,[](const LWPair &amp;lhs, const LWPair &amp;rhs) { return lhs.l&gt;rhs.l || lhs.l==rhs.l &amp;&amp; lhs.w&gt;rhs.w; });<br/>
+        for(time=-1,i=0;i&lt;nstick;++i) {<br/>
+            tmp=sticks <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> .w;<br/>
+            for(j=time;j&gt;=0 &amp;&amp; store <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> &gt;=tmp;–j) ; // search from right to left<br/>
+            if(j==time) { store[++time]=tmp; }<br/>
+            else { store[j+1]=tmp; }<br/>
+        }<br/>
+        printf("%dn",time+1);<br/>
+    }<br/>
+    return 0;<br/>
+}</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-21319">
+<article class="comment" id="comment-21319">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">acmer29</a></span> on <a href="http://www.acmerblog.com/hdu-2389-rain-on-your-parade-3604.html#comment-21319" rel="nofollow"><time datetime="2014-11-24T09:35:35+00:00" pubdate="">2014年11月24日 at 上午9:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>非常好，初学者就应该先理解递归</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-44930">
+<article class="comment" id="comment-44930">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">gaoriqiang2</a></span> on <a href="http://www.acmerblog.com/hdu-2389-rain-on-your-parade-3604.html#comment-44930" rel="nofollow"><time datetime="2014-10-25T22:08:41+00:00" pubdate="">2014年10月25日 at 下午10:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>学习了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-56663">
+<article class="comment" id="comment-56663">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">20134055016</a></span> on <a href="http://www.acmerblog.com/hdu-2389-rain-on-your-parade-3604.html#comment-56663" rel="nofollow"><time datetime="2014-07-19T08:04:53+00:00" pubdate="">2014年7月19日 at 上午8:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一句可以忽略不计了吧。从第二句开始分析，说明这个花色下的所有牌都会在其它里面出现，那么还剩下♠️和♦️。第三句，可以排除2和7，因为在两种花色里有。现在是第四句，因为♠️还剩下多个，只有是♦️B才能知道答案。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-21324">
+<article class="comment" id="comment-21324">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">renke</a></span> on <a href="http://www.acmerblog.com/hdu-2389-rain-on-your-parade-3604.html#comment-21324" rel="nofollow"><time datetime="2014-05-10T01:29:40+00:00" pubdate="">2014年5月10日 at 上午1:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>请不要灌水，多谢！</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-21323">
+<article class="comment" id="comment-21323">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">zwj0571</a></span> on <a href="http://www.acmerblog.com/hdu-2389-rain-on-your-parade-3604.html#comment-21323" rel="nofollow"><time datetime="2014-02-02T23:35:45+00:00" pubdate="">2014年2月2日 at 下午11:35</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>不同的编译器，printf(),执行的顺序不同，所以结果也就不同，建议不要那么写</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-21320">
+<article class="comment" id="comment-21320">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">liuk</a></span> on <a href="http://www.acmerblog.com/hdu-2389-rain-on-your-parade-3604.html#comment-21320" rel="nofollow"><time datetime="2014-01-11T04:04:12+00:00" pubdate="">2014年1月11日 at 上午4:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>[…] 如果此题没有要求 相对位置不变，可以参考文章：http://www.acmerblog.com/interview-9-2427/ […]</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

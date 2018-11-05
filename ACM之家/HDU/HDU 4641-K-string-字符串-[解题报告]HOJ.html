@@ -1,0 +1,386 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2015<br/>09-17</div>
+<div class="tit"><h1 class="entry-title">HDU 4641-K-string-字符串-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/basis/string" rel="category tag" title="查看字符串处理中的全部文章">字符串处理</a>, <a href="http://www.acmerblog.com/category/data-struct/trees" rel="category tag" title="查看树形结构中的全部文章">树形结构</a></span><span class="i4">围观64次</span><span class="i3"><a class="ds-thread-count" data-thread-key="7686" href="http://www.acmerblog.com/hdu-4641-k-string-7686.html#comments" title="《HDU 4641-K-string-字符串-[解题报告]HOJ》上的评论">17 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">K-string</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+Given a string S. K-string is the sub-string of S and it appear in the S at least K times.It means there are at least K different pairs (i,j) so that S<sub>i</sub>,S<sub>i+1</sub>… S<sub>j</sub> equal to this K-string. Given m operator or query:1.add a letter to the end of S; 2.query how many different K-string currently.For each query ,count the number of different K-string currently. </div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+The input consists of multiple test cases. <br/>Each test case begins with a line containing three integers n, m and K(1&lt;=n,K&lt;=50000,1&lt;=m&lt;=200000), denoting the length of string S, the number of operator or question and the least number of occurrences of K-string in the S.<br/>The second line consists string S,which only contains lowercase letters. <br/>The next m lines describe the operator or query.The description of the operator looks as two space-separated integers t c (t = 1; c is lowercase letter).The description of the query looks as one integer t (t = 2). </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+The input consists of multiple test cases. <br/>Each test case begins with a line containing three integers n, m and K(1&lt;=n,K&lt;=50000,1&lt;=m&lt;=200000), denoting the length of string S, the number of operator or question and the least number of occurrences of K-string in the S.<br/>The second line consists string S,which only contains lowercase letters. <br/>The next m lines describe the operator or query.The description of the operator looks as two space-separated integers t c (t = 1; c is lowercase letter).The description of the query looks as one integer t (t = 2).</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+3 5 2
+abc
+2
+1 a
+2
+1 a
+2</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+0
+1
+1</pre>
+<p> <!-- problem end --></p>
+<p>每次给字符串加一个字符，并询问当时出现至少k次的子串有多少</p>
+<p>貌似数据特别水，看网上题解都是暴力过的，所以自然要给出一个不会超时的算法</p>
+<p>当初考的时候，觉得很难维护，因为每次相当于在后缀树上拆一条边，并加点进去，并维护当根路径上的值，好像只能动态树之类的，即便离线，貌似也要用树链剖分，因此当时就没管了</p>
+<p>回过头来看，其实还是挺好维护的，甚至只要离线在dfs序上处理就可以了</p>
+<p>考虑先把后缀树建好，然后每次操作在后缀自动机上走去修改后缀树上的值。考虑这样离线做的合法性，每次走到一个节点，去把他的祖先们全部加1，首先这些祖先所代表的字符串都是当前串的后缀，因此一定是之前出现过的，然后，自己这个节点所能接受的所有子串是(len[rt[i]],len[i]]，而我们走到这个节点所经过的长度也正好是len[i]，所以这个节点所能接受的所有子串都是需要加1的，因此这个做法正确性是有保障的</p>
+<p>然后考虑怎么好的实现，我们可以考虑用一些指针指出最上的不被接受的节点是哪些，显然随着插入操作的增加，这些指针会单调往下走，均摊就是线性的，而且修改的时候也只会影响到一个指针，考虑怎样快速找到一个指针，这个操作我们可以在dfs序上实现，每次分出一个指针，相当于在一段区间上覆盖上一个值，因此就是一个区间修改，单点查询的线段树，然后每次我们要知道又要询问其权值是否大于等于k才能考虑是否下放指针，这个又可以在dfs序上用一个单点修改，区间查询的线段树实现</p>
+<p>复杂度o(nlogn)</p>
+<p>线段树部分用zkw线段树写出来十分简短</p>
+<pre class="brush:cpp" name="code">#include &lt;cstdio&gt;
+#include &lt;cstdlib&gt;
+#include &lt;cstring&gt;
+#include &lt;iostream&gt;
+#include &lt;algorithm&gt;
+using namespace std;
+int next[500000][26];
+int net[2000000],sora[2000000];
+int rt[500000],l[500000],op[500000],ed[500000],tail[500000];
+char ch[500000];
+long long ans;
+int n,m,ss,s1,cm,k,m1,w_time,top;
+int b[1048576],t[1048576],s[1048576];
+int q[500000];
+void suffix_sam(int &amp;last,int chr)
+{
+	int x,y;
+	s1++,l[s1]=l[last]+1;
+	for (x=last,last=s1;x &amp;&amp; (!next[x][chr]);x=rt[x]) next[x][chr]=s1;
+	y=next[x][chr];
+	if (!y) next[x][chr]=s1,rt[s1]=0;
+	else if (l[x]+1==l[y]) rt[s1]=y;
+	else {
+		s1++,l[s1]=l[x]+1;
+		for (int j=0;j&lt;='z'-'a';j++) next[s1][j]=next[y][j];
+		rt[s1]=rt[y],rt[y]=s1,rt[last]=s1;
+		for (;x &amp;&amp; (next[x][chr]==y);x=rt[x]) next[x][chr]=s1;
+		if (next[x][chr]==y) next[x][chr]=s1;
+	}
+}
+void origin()
+{
+	for (int i=0;i&lt;=s1;i++) {
+		for (int j=0;j&lt;='z'-'a';j++)
+			next[i][j]=0;
+	}
+	for (int i=1;i&lt;=m1+m1;i++) b[i]=t[i]=s[i]=0;
+	s1=0,ss=0,m1=0;
+}
+void link(int x,int y)
+{
+	++ss,net[tail[x]]=ss,tail[x]=ss,sora[ss]=y,net[ss]=0;
+}
+void dfs(int s)
+{
+	++top,op[s]=top;
+	for (int i=s,ne;net[i];) {
+		i=net[i],ne=sora[i];
+		dfs(ne);
+	}
+	ed[s]=top;
+}
+void change(int l,int r,int x)
+{
+	++w_time;
+	l+=m1-1,r+=m1+1;
+	for (;!((l^r)==1);l&gt;&gt;=1,r&gt;&gt;=1) {
+		if ((l&amp;1)==0) b[l+1]=x,t[l+1]=w_time;
+		if ((r&amp;1)==1) b[r-1]=x,t[r-1]=w_time;
+	}
+}
+int ask(int x)
+{
+	int b1=0,t1=0;
+	for (x+=m1;x;x&gt;&gt;=1)
+		if (t[x]&gt;t1) b1=b[x],t1=t[x];
+	return b1;
+}
+void modify(int x)
+{
+	for (x+=m1;x;x&gt;&gt;=1) s[x]++;
+}
+int query(int l,int r)
+{
+	int sum=0;
+	l+=m1-1,r+=m1+1;
+	for (;!((l^r)==1);l&gt;&gt;=1,r&gt;&gt;=1) {
+		if ((l&amp;1)==0) sum+=s[l+1];
+		if ((r&amp;1)==1) sum+=s[r-1];
+	}
+	return sum;
+}
+void pushdown(int x)
+{
+	ans+=l[x]-l[rt[x]];
+	for (int i=x,ne;net[i];) {
+		i=net[i],ne=sora[i];
+		int cnt=query(op[ne],ed[ne]);
+		if (cnt&gt;=k) pushdown(ne);
+		else change(op[ne],ed[ne],ne);
+	}
+}
+void doit(int x)
+{
+	modify(op[x]);
+	int y=ask(op[x]);
+	int cnt=query(op[y],ed[y]);
+	if (cnt&gt;=k) pushdown(y);
+}
+char c[20];
+int main()
+{
+	for (;scanf("%d%d%d",&amp;n,&amp;m,&amp;k)==3;) {
+		origin();
+		scanf("%s",ch+1);
+		cm=0;
+		for (int i=1;i&lt;=m;i++) {
+			scanf("%d",&amp;q[i]);
+			if (q[i]==1) {
+				scanf("%s",c+1);
+				++cm;
+				ch[cm+n]=c[1];
+			}
+		}
+		int last=0;
+		for (int i=1;i&lt;=n+cm;i++) suffix_sam(last,ch[i]-'a');
+		ss=s1;
+		for (int i=0;i&lt;=s1;i++) tail[i]=i,net[i]=0;
+		for (m1=1;m1&lt;=s1+2;m1&lt;&lt;=1) ;
+		for (int i=1;i&lt;=s1;i++) {
+			link(rt[i],i);
+		}
+		for (int i=0;i&lt;=s1;i++) op[i]=ed[i]=0;
+		top=0;
+		dfs(0);
+		int s=0;
+		ans=0;
+		w_time=0;
+		for (int i=1;i&lt;=n;i++) {
+			s=next[s][ch[i]-'a'];
+			doit(s);
+		}
+		cm=0;
+		for (int i=1;i&lt;=m;i++) {
+			if (q[i]==2) {
+				printf("%lld\n",ans);
+			}
+			else {
+				cm++;
+				s=next[s][ch[n+cm]-'a'];
+				doit(s);
+			}
+		}
+	}
+	return 0;
+} </pre>
+<div style="padding-top:20px">
+<p style="font-size:12px;">版权声明：本文为博主原创文章，未经博主允许不得转载。</p>
+</div>
+<p>参考：http://blog.csdn.net/huyuncong/article/details/14647611</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-97364">
+<article class="comment" id="comment-97364">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524460" rel="external nofollow">新用户753410</a></span> on <a href="http://www.acmerblog.com/hdu-4641-k-string-7686.html#comment-97364" rel="nofollow"><time datetime="2017-04-20T05:15:15+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我六十多了，80年代初期见过一次区人大代表选票，我不了解这个组织推荐的人，没有去选，从那以后再没见过选票。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-97363">
+<article class="comment" id="comment-97363">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524460" rel="external nofollow">新用户753410</a></span> on <a href="http://www.acmerblog.com/hdu-4641-k-string-7686.html#comment-97363" rel="nofollow"><time datetime="2017-04-20T05:15:15+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我六十多了，80年代初期见过一次区人大代表选票，我不了解这个组织推荐的人，没有去选，从那以后再没见过选票。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-97362">
+<article class="comment" id="comment-97362">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524460" rel="external nofollow">新用户753410</a></span> on <a href="http://www.acmerblog.com/hdu-4641-k-string-7686.html#comment-97362" rel="nofollow"><time datetime="2017-04-20T05:15:15+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我六十多了，80年代初期见过一次区人大代表选票，我不了解这个组织推荐的人，没有去选，从那以后再没见过选票。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-97361">
+<article class="comment" id="comment-97361">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524460" rel="external nofollow">新用户753410</a></span> on <a href="http://www.acmerblog.com/hdu-4641-k-string-7686.html#comment-97361" rel="nofollow"><time datetime="2017-04-20T05:15:15+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我六十多了，80年代初期见过一次区人大代表选票，我不了解这个组织推荐的人，没有去选，从那以后再没见过选票。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-97360">
+<article class="comment" id="comment-97360">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524460" rel="external nofollow">新用户753410</a></span> on <a href="http://www.acmerblog.com/hdu-4641-k-string-7686.html#comment-97360" rel="nofollow"><time datetime="2017-04-20T05:15:15+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我六十多了，80年代初期见过一次区人大代表选票，我不了解这个组织推荐的人，没有去选，从那以后再没见过选票。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-97359">
+<article class="comment" id="comment-97359">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524460" rel="external nofollow">新用户753410</a></span> on <a href="http://www.acmerblog.com/hdu-4641-k-string-7686.html#comment-97359" rel="nofollow"><time datetime="2017-04-20T05:15:15+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我六十多了，80年代初期见过一次区人大代表选票，我不了解这个组织推荐的人，没有去选，从那以后再没见过选票。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-97358">
+<article class="comment" id="comment-97358">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524460" rel="external nofollow">新用户753410</a></span> on <a href="http://www.acmerblog.com/hdu-4641-k-string-7686.html#comment-97358" rel="nofollow"><time datetime="2017-04-20T05:15:15+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我六十多了，80年代初期见过一次区人大代表选票，我不了解这个组织推荐的人，没有去选，从那以后再没见过选票。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-97357">
+<article class="comment" id="comment-97357">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524460" rel="external nofollow">新用户753410</a></span> on <a href="http://www.acmerblog.com/hdu-4641-k-string-7686.html#comment-97357" rel="nofollow"><time datetime="2017-04-20T05:15:15+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我六十多了，80年代初期见过一次区人大代表选票，我不了解这个组织推荐的人，没有去选，从那以后再没见过选票。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-97356">
+<article class="comment" id="comment-97356">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919524460" rel="external nofollow">新用户753410</a></span> on <a href="http://www.acmerblog.com/hdu-4641-k-string-7686.html#comment-97356" rel="nofollow"><time datetime="2017-04-20T05:15:15+00:00" pubdate="">2017年4月20日 at 上午5:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我六十多了，80年代初期见过一次区人大代表选票，我不了解这个组织推荐的人，没有去选，从那以后再没见过选票。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-66332">
+<article class="comment" id="comment-66332">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513676" rel="external nofollow">新用户498915</a></span> on <a href="http://www.acmerblog.com/hdu-4641-k-string-7686.html#comment-66332" rel="nofollow"><time datetime="2017-04-10T22:27:49+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你有生之年能看完的话作者早死了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-66331">
+<article class="comment" id="comment-66331">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513676" rel="external nofollow">新用户498915</a></span> on <a href="http://www.acmerblog.com/hdu-4641-k-string-7686.html#comment-66331" rel="nofollow"><time datetime="2017-04-10T22:27:49+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你有生之年能看完的话作者早死了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-66330">
+<article class="comment" id="comment-66330">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513676" rel="external nofollow">新用户498915</a></span> on <a href="http://www.acmerblog.com/hdu-4641-k-string-7686.html#comment-66330" rel="nofollow"><time datetime="2017-04-10T22:27:49+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你有生之年能看完的话作者早死了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-66329">
+<article class="comment" id="comment-66329">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513676" rel="external nofollow">新用户498915</a></span> on <a href="http://www.acmerblog.com/hdu-4641-k-string-7686.html#comment-66329" rel="nofollow"><time datetime="2017-04-10T22:27:49+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你有生之年能看完的话作者早死了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-66328">
+<article class="comment" id="comment-66328">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513676" rel="external nofollow">新用户498915</a></span> on <a href="http://www.acmerblog.com/hdu-4641-k-string-7686.html#comment-66328" rel="nofollow"><time datetime="2017-04-10T22:27:49+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你有生之年能看完的话作者早死了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-66327">
+<article class="comment" id="comment-66327">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513676" rel="external nofollow">新用户498915</a></span> on <a href="http://www.acmerblog.com/hdu-4641-k-string-7686.html#comment-66327" rel="nofollow"><time datetime="2017-04-10T22:27:49+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你有生之年能看完的话作者早死了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-66326">
+<article class="comment" id="comment-66326">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513676" rel="external nofollow">新用户498915</a></span> on <a href="http://www.acmerblog.com/hdu-4641-k-string-7686.html#comment-66326" rel="nofollow"><time datetime="2017-04-10T22:27:49+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你有生之年能看完的话作者早死了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-66325">
+<article class="comment" id="comment-66325">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919513676" rel="external nofollow">新用户498915</a></span> on <a href="http://www.acmerblog.com/hdu-4641-k-string-7686.html#comment-66325" rel="nofollow"><time datetime="2017-04-10T22:27:49+00:00" pubdate="">2017年4月10日 at 下午10:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>你有生之年能看完的话作者早死了。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

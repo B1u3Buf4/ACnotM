@@ -1,0 +1,627 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>02-17</div>
+<div class="tit"><h1 class="entry-title">HDU 2820-Permutaion-状态压缩-[解题报告]HOJ</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/spiderman" rel="author" title="由蜘蛛侠发布">蜘蛛侠</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/hdu" rel="category tag" title="查看HDU-杭电中的全部文章">HDU-杭电</a>, <a href="http://www.acmerblog.com/category/dp2/line-dp" rel="category tag" title="查看线性DP中的全部文章">线性DP</a>, <a href="http://www.acmerblog.com/category/graph/connectivity" rel="category tag" title="查看连通性问题中的全部文章">连通性问题</a></span><span class="i4">围观701次</span><span class="i3"><a class="ds-thread-count" data-thread-key="4463" href="http://www.acmerblog.com/hdu-2820-permutaion-4463.html#comments" title="《HDU 2820-Permutaion-状态压缩-[解题报告]HOJ》上的评论">22 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<div>
+<h1 class="mytitle mybigtile">Permutaion</h1>
+</div>
+<div>
+<p class="mytitle"> 问题描述 :</p>
+</div>
+<div class="mypanel">
+As we known, there are N! permutations of {1,2,…N}. Now you are requested to find how many permutations satisfying that, the difference of every two adjacent numbers is not more than K. Because the answer may be quite large, you only need to output the answer module (%) 1,000,000,007.
+<p>You can assume 2 &lt;= N &lt;= 50 and 0 &lt;= K &lt;= 4. </p></div>
+<div>
+<p class="mytitle"> 输入:</p>
+</div>
+<div class="mypanel">
+There are several lines of the input. Each line indicates one test case, and contains two numbers N and K. </div>
+<div>
+<p class="mytitle"> 输出:</p>
+</div>
+<div class="mypanel">
+There are several lines of the input. Each line indicates one test case, and contains two numbers N and K.</div>
+<div>
+<p class="mytitle"> 样例输入:</p>
+</div>
+<pre class="mypanel iopanel">
+4 2</pre>
+<div>
+<p class="mytitle"> 样例输出:</p>
+</div>
+<pre class="mypanel iopanel">
+12</pre>
+<p> <!-- problem end --></p>
+<p>这题的题意很好看懂，我的做法是基于连通性的状态压缩动态规划。</p>
+<p>想到这个做法是我看到K这一维只有4</p>
+<p> 我把这个构成一个N个点的图，两个点有边当且仅当在排列中两个数能相邻。</p>
+<p>每一个可行的排列对应一个图上的有方向的通路</p>
+<p>一条通路每个点都有前结点和后结点（除首尾外）</p>
+<p>这和论文上的那个生成树计数的那个题很像。</p>
+<p>轮廓线上有K个点，记录每个点所在的连通分量（有4个值）和是否有前结点和后结点（有4个值）</p>
+<p>每个状态用4位存</p>
+<p>从(m)-(m+k-1)到(m+1)-(m+k)转移时注意第(m+1)到(m+k)中一定要的点和(m)在同一个连通分量中</p>
+<p>我的代码写的不好，是JAVA的</p>
+<p>
+</p>
+<pre class="brush:java ">import java.util.*;
+
+
+public class Main{
+	static long mod=1000000007;
+	static TreeMap&lt;Integer,Long&gt; tree=new TreeMap&lt;Integer,Long&gt;();
+	static int n,k;
+	static long to4(int a)
+	{
+		int[] z=new int[100];
+		for(int q=0;q&lt;100;q++)
+		{
+			z[q]=a&amp;3;
+			a&gt;&gt;=2;
+		}
+		long s=0;
+		for(int q=99;q&gt;=0;q--)
+		{
+			s*=10;
+			s+=z[q];
+		}
+		return s;
+	}
+	static void init(int idx,int st,long num)
+	{
+		int[] z=new int[10];
+		int[] x=new int[10];
+		int s=st;
+		int max=-1;
+		for(int q=1;q&lt;=k;q++)
+		{
+			z[q]=s&amp;3;
+			s&gt;&gt;=2;
+			x[q]=s&amp;3;
+			s&gt;&gt;=2;
+			if(x[q]&gt;max)
+				max=x[q];
+		}
+		int[] c=z.clone();
+		int[] v=x.clone();
+		for(int q=-1;q&lt;=max;q++)
+			for(int w=-1;w&lt;=max;w++)
+			{
+				z=c.clone();
+				x=v.clone();
+				if(!(q==w&amp;&amp;q&gt;=0&amp;&amp;w&gt;=0))
+				{
+					if(q==-1&amp;&amp;w==-1)
+					{
+						z[idx]=3;
+						x[idx]=max+1;
+					}
+					if(q&gt;=0&amp;&amp;w&gt;=0)
+					{
+						z[idx]=0;
+						x[idx]=q;
+						boolean t=false,y=false;
+						for(int e=1;e&lt;idx;e++)
+							if(x[e]==q&amp;&amp;(z[e]==1||z[e]==3))
+							{
+								z[e]-=1;
+								t=true;
+							}
+						for(int e=1;e&lt;idx;e++)
+							if(x[e]==w&amp;&amp;(z[e]==2||z[e]==3))
+							{
+								z[e]-=2;
+								y=true;
+							}
+						for(int e=1;e&lt;idx;e++)
+							if(x[e]==w)
+								x[e]=q;
+					}
+					if(q==-1&amp;&amp;w&gt;=0)
+					{
+						z[idx]=2;
+						x[idx]=w;
+						boolean t=false;
+						for(int e=1;e&lt;idx;e++)
+							if(x[e]==w&amp;&amp;(z[e]==2||z[e]==3))
+							{
+								z[e]-=2;
+								t=true;
+							}
+						if(!t)
+							continue;
+					}
+					if(q&gt;=0&amp;&amp;w==-1)
+					{
+						z[idx]=1;
+						x[idx]=q;
+						boolean t=false;
+						for(int e=1;e&lt;idx;e++)
+							if(x[e]==q&amp;&amp;(z[e]==1||z[e]==3))
+							{
+								t=true;
+								z[e]-=1;
+							}
+						if(!t)
+							continue;
+					}
+					int ma=-1;
+					for(int e=1;e&lt;=idx;e++)
+						x[e]+=10;
+					for(int e=1;e&lt;=idx;e++)
+					{
+						if(x[e]==ma+1)
+							ma++;
+						if(x[e]&gt;ma+1)
+						{
+							for(int r=e+1;r&lt;=idx;r++)
+								if(x[r]==x[e])
+								x[r]=ma+1;
+							x[e]=ma+1;
+							ma++;
+						}
+					}
+		st=0;
+		for(int e=idx;e&gt;=1;e--)
+		{
+			st&lt;&lt;=2;
+			st|=x[e];
+			st&lt;&lt;=2;
+			st|=z[e];
+		}
+		if(tree.containsKey(st))
+			tree.put(st,num+tree.get(st));
+		else
+			tree.put(st,num);
+				}
+			}
+	}
+	static void work(int st,long num)
+	{
+		int[] z=new int[10];
+		int[] x=new int[10];
+		int s=st;
+		int max=0;
+		for(int q=1;q&lt;=k;q++)
+		{
+			z[q]=s&amp;3;
+			s&gt;&gt;=2;
+			x[q]=s&amp;3;
+			s&gt;&gt;=2;
+			if(x[q]&gt;max)
+				max=x[q];
+		}
+		s=st;
+		int[] c=z.clone();
+		int[] v=x.clone();
+		for(int q=-1;q&lt;=max;q++)
+			for(int w=-1;w&lt;=max;w++)
+			{
+				z=c.clone();
+				x=v.clone();
+				if(!(q==w&amp;&amp;q&gt;=0&amp;&amp;w&gt;=0))
+				{
+					if(q==-1&amp;&amp;w==-1)
+					{
+						z[k+1]=3;
+						x[k+1]=max+1;
+					}
+					if(q&gt;=0&amp;&amp;w&gt;=0)
+					{
+						z[k+1]=0;
+						x[k+1]=q;
+						boolean t=false,y=false;
+						for(int e=1;e&lt;k+1;e++)
+							if(x[e]==q&amp;&amp;(z[e]==1||z[e]==3))
+							{
+								z[e]-=1;
+								t=true;
+							}
+						for(int e=1;e&lt;k+1;e++)
+							if(x[e]==w&amp;&amp;(z[e]==2||z[e]==3))
+							{
+								z[e]-=2;
+								y=true;
+							}
+						for(int e=1;e&lt;k+1;e++)
+							if(x[e]==w)
+								x[e]=q;
+						if(t==false||y==false)
+							continue;
+					}
+					if(q==-1&amp;&amp;w&gt;=0)
+					{
+						z[k+1]=2;
+						x[k+1]=w;
+						boolean t=false;
+						for(int e=1;e&lt;k+1;e++)
+							if(x[e]==w&amp;&amp;(z[e]==2||z[e]==3))
+							{
+								z[e]-=2;
+								t=true;
+							}
+						if(!t)
+							continue;
+					}
+					if(q&gt;=0&amp;&amp;w==-1)
+					{
+						z[k+1]=1;
+						x[k+1]=q;
+						boolean t=false;
+						for(int e=1;e&lt;k+1;e++)
+							if(x[e]==q&amp;&amp;(z[e]==1||z[e]==3))
+							{
+								t=true;
+								z[e]-=1;
+							}
+						if(!t)
+							continue;
+					}
+					boolean t=false;
+					for(int e=2;e&lt;=k+1;e++)
+						if(x[e]==x[1])
+							t=true;
+					if(!t)
+						continue;
+					
+					
+					
+					
+					for(int e=1;e&lt;=k;e++)
+					{
+						x[e]=10+x[e+1];
+						z[e]=z[e+1];
+					}
+					int ma=-1;
+					for(int e=1;e&lt;=k;e++)
+					{
+						if(x[e]==ma+1)
+							ma++;
+						if(x[e]&gt;ma+1)
+						{
+							for(int r=e+1;r&lt;=k;r++)
+								if(x[r]==x[e])
+								x[r]=ma+1;
+							x[e]=ma+1;
+							ma++;
+						}
+					}
+					st=0;
+					for(int e=k;e&gt;=1;e--)
+					{
+						st&lt;&lt;=2;
+						st|=x[e];
+						st&lt;&lt;=2;
+						st|=z[e];
+					}
+					if(tree.containsKey(st))
+						tree.put(st,(num+tree.get(st))%mod);
+					else
+						tree.put(st,num);
+				}
+			}
+	}
+	public static void main(String[] args) {
+		Scanner scan=new Scanner(System.in);
+		for(;scan.hasNext();)
+		{
+		n=scan.nextInt();
+		k=scan.nextInt();
+		if(k&gt;n-1)
+			k=n-1;
+		if(k==0)
+		{
+			System.out.println(0);
+			continue;
+		}
+		if(k==1)
+		{
+			System.out.println(2);
+			continue;
+		}
+		tree.clear();
+		tree.put(3,1l);
+		int[] z=new int[10000];
+		long[] x=new long[10000];
+		int num=0;
+		for(int q=2;q&lt;=k;q++)
+		{
+			num=0;
+			int a=-1;
+			for(;a!=tree.lastKey();)
+			{
+				a=tree.higherKey(a);
+				z[num]=a;
+				x[num]=tree.get(a);
+				num++;
+			}
+			tree.clear();
+			for(int w=0;w&lt;num;w++)
+				init(q,z[w],x[w]);
+		}
+		for(int p=k+1;p&lt;=n;p++)
+		{
+			num=0;
+			int a=-1;
+			for(;a!=tree.lastKey();)
+			{
+				a=tree.higherKey(a);
+				z[num]=a;
+				x[num]=tree.get(a);
+				num++;
+			}
+			tree.clear();
+			for(int q=0;q&lt;num;q++)
+				work(z[q],x[q]);
+		}
+		num=0;
+		long sum=0;
+		int a=-1;
+		int[] c=new int[10];
+		for(;a!=tree.lastKey();)
+		{
+			a=tree.higherKey(a);
+			z[num]=a;
+			x[num]=tree.get(a);
+			int u=z[num];
+			boolean i=true;
+			for(int q=0;q&lt;k;q++)
+			{
+				u&gt;&gt;=2;
+				c[q]=u&amp;3;
+				u&gt;&gt;=2;
+				if(c[q]!=0)
+					i=false;
+			}
+			if(i)
+			{
+				sum+=x[num];
+				sum%=mod;
+			}
+			num++;
+		}
+		System.out.println(sum);
+		}
+	}
+
+}</pre>
+<p>解题参考：http://blog.csdn.net/fnozoszzt/article/details/9415047</p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-81810">
+<article class="comment" id="comment-81810">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521272" rel="external nofollow">新用户979272</a></span> on <a href="http://www.acmerblog.com/hdu-2820-permutaion-4463.html#comment-81810" rel="nofollow"><time datetime="2017-04-12T19:45:07+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>严格来说 任何同人都没啥版权。美帝因为这个跟本子扯了好久</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-81809">
+<article class="comment" id="comment-81809">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521272" rel="external nofollow">新用户979272</a></span> on <a href="http://www.acmerblog.com/hdu-2820-permutaion-4463.html#comment-81809" rel="nofollow"><time datetime="2017-04-12T19:45:07+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>严格来说 任何同人都没啥版权。美帝因为这个跟本子扯了好久</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-81808">
+<article class="comment" id="comment-81808">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521272" rel="external nofollow">新用户979272</a></span> on <a href="http://www.acmerblog.com/hdu-2820-permutaion-4463.html#comment-81808" rel="nofollow"><time datetime="2017-04-12T19:45:07+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>严格来说 任何同人都没啥版权。美帝因为这个跟本子扯了好久</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-81807">
+<article class="comment" id="comment-81807">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521272" rel="external nofollow">新用户979272</a></span> on <a href="http://www.acmerblog.com/hdu-2820-permutaion-4463.html#comment-81807" rel="nofollow"><time datetime="2017-04-12T19:45:07+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>严格来说 任何同人都没啥版权。美帝因为这个跟本子扯了好久</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-81806">
+<article class="comment" id="comment-81806">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521272" rel="external nofollow">新用户979272</a></span> on <a href="http://www.acmerblog.com/hdu-2820-permutaion-4463.html#comment-81806" rel="nofollow"><time datetime="2017-04-12T19:45:07+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>严格来说 任何同人都没啥版权。美帝因为这个跟本子扯了好久</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-81805">
+<article class="comment" id="comment-81805">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521272" rel="external nofollow">新用户979272</a></span> on <a href="http://www.acmerblog.com/hdu-2820-permutaion-4463.html#comment-81805" rel="nofollow"><time datetime="2017-04-12T19:45:07+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>严格来说 任何同人都没啥版权。美帝因为这个跟本子扯了好久</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-81804">
+<article class="comment" id="comment-81804">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521272" rel="external nofollow">新用户979272</a></span> on <a href="http://www.acmerblog.com/hdu-2820-permutaion-4463.html#comment-81804" rel="nofollow"><time datetime="2017-04-12T19:45:07+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>严格来说 任何同人都没啥版权。美帝因为这个跟本子扯了好久</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-81803">
+<article class="comment" id="comment-81803">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521272" rel="external nofollow">新用户979272</a></span> on <a href="http://www.acmerblog.com/hdu-2820-permutaion-4463.html#comment-81803" rel="nofollow"><time datetime="2017-04-12T19:45:07+00:00" pubdate="">2017年4月12日 at 下午7:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>严格来说 任何同人都没啥版权。美帝因为这个跟本子扯了好久</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-24915">
+<article class="comment" id="comment-24915">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Rocky</a></span> on <a href="http://www.acmerblog.com/hdu-2820-permutaion-4463.html#comment-24915" rel="nofollow"><time datetime="2015-06-11T01:26:58+00:00" pubdate="">2015年6月11日 at 上午1:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>这个问题其实还可以找循环节。参照欧拉定理（也就是费马定理的推广）,a^(phi(m)) mod m = 1</p>
+<p><a href="http://zh.wikipedia.org/wiki/%E6%AC%A7%E6%8B%89%E5%AE%9A%E7%90%86_(%E6%95%B0%E8%AE%BA)" rel="nofollow">http://zh.wikipedia.org/wiki/%E6%AC%A7%E6%8B%89%E5%AE%9A%E7%90%86_(%E6%95%B0%E8%AE%BA)</a></p>
+<p>所以先算b mod phi(10)，这个部分都是可以约掉的。基本上O(1)的时间就出解了。当然，这也是因为这个问题模数太小的原因。</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-57485">
+<article class="comment" id="comment-57485">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">yelawolf</a></span> on <a href="http://www.acmerblog.com/hdu-2820-permutaion-4463.html#comment-57485" rel="nofollow"><time datetime="2015-06-07T17:28:58+00:00" pubdate="">2015年6月7日 at 下午5:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有的，已更新</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-24914">
+<article class="comment" id="comment-24914">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jhxxszy</a></span> on <a href="http://www.acmerblog.com/hdu-2820-permutaion-4463.html#comment-24914" rel="nofollow"><time datetime="2015-03-24T00:14:50+00:00" pubdate="">2015年3月24日 at 上午12:14</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>代码过于复杂了吧</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-24921">
+<article class="comment" id="comment-24921">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rewrite</a></span> on <a href="http://www.acmerblog.com/hdu-2820-permutaion-4463.html#comment-24921" rel="nofollow"><time datetime="2015-02-22T11:04:14+00:00" pubdate="">2015年2月22日 at 上午11:04</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第36行，struct node **head_ref，怎么理解，那个函数感觉不是很懂啊！？？弱渣求助</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-24916">
+<article class="comment" id="comment-24916">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Miracle-cc</a></span> on <a href="http://www.acmerblog.com/hdu-2820-permutaion-4463.html#comment-24916" rel="nofollow"><time datetime="2015-01-28T06:29:48+00:00" pubdate="">2015年1月28日 at 上午6:29</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>感谢分享 学习了`(*∩_∩*)′</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-24923">
+<article class="comment" id="comment-24923">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">303589828</a></span> on <a href="http://www.acmerblog.com/hdu-2820-permutaion-4463.html#comment-24923" rel="nofollow"><time datetime="2014-12-25T00:27:46+00:00" pubdate="">2014年12月25日 at 上午12:27</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很好的题，还是能做出几道的，嘿嘿</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-24922">
+<article class="comment" id="comment-24922">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">oneal</a></span> on <a href="http://www.acmerblog.com/hdu-2820-permutaion-4463.html#comment-24922" rel="nofollow"><time datetime="2014-12-24T07:51:39+00:00" pubdate="">2014年12月24日 at 上午7:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>good !</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-24917">
+<article class="comment" id="comment-24917">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fiftyonejiao</a></span> on <a href="http://www.acmerblog.com/hdu-2820-permutaion-4463.html#comment-24917" rel="nofollow"><time datetime="2014-09-24T01:57:17+00:00" pubdate="">2014年9月24日 at 上午1:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很棒的网站，加油！⛽️</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-24918">
+<article class="comment" id="comment-24918">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">fastislow</a></span> on <a href="http://www.acmerblog.com/hdu-2820-permutaion-4463.html#comment-24918" rel="nofollow"><time datetime="2014-09-22T05:46:21+00:00" pubdate="">2014年9月22日 at 上午5:46</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>目测会火</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46649">
+<article class="comment" id="comment-46649">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">HaibaraAi</a></span> on <a href="http://www.acmerblog.com/hdu-2820-permutaion-4463.html#comment-46649" rel="nofollow"><time datetime="2014-08-06T15:57:57+00:00" pubdate="">2014年8月6日 at 下午3:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很赞的解答</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-46651">
+<article class="comment" id="comment-46651">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Silence.L</a></span> on <a href="http://www.acmerblog.com/hdu-2820-permutaion-4463.html#comment-46651" rel="nofollow"><time datetime="2014-07-02T15:15:49+00:00" pubdate="">2014年7月2日 at 下午3:15</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第一题还是比较考验智商~</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-46650">
+<article class="comment" id="comment-46650">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">hunangangli</a></span> on <a href="http://www.acmerblog.com/hdu-2820-permutaion-4463.html#comment-46650" rel="nofollow"><time datetime="2014-04-22T15:12:26+00:00" pubdate="">2014年4月22日 at 下午3:12</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有些说不通吧，只有1个孩子肯定是男孩了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-24920">
+<article class="comment" id="comment-24920">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">NiKaWaLi</a></span> on <a href="http://www.acmerblog.com/hdu-2820-permutaion-4463.html#comment-24920" rel="nofollow"><time datetime="2014-04-01T10:59:08+00:00" pubdate="">2014年4月1日 at 上午10:59</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第15行代码，/n/n，应该改为\n\n</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-24919">
+<article class="comment" id="comment-24919">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jiakcstudio</a></span> on <a href="http://www.acmerblog.com/hdu-2820-permutaion-4463.html#comment-24919" rel="nofollow"><time datetime="2014-02-27T17:57:25+00:00" pubdate="">2014年2月27日 at 下午5:57</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>Thanks for using the time to examine this, I truly feel strongly about it and enjoy finding out far more on this subject matter. If achievable, as you achieve knowledge</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>
