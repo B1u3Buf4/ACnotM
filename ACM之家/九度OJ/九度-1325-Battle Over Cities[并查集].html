@@ -1,0 +1,284 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>01-13</div>
+<div class="tit"><h1 class="entry-title">九度-1325-Battle Over Cities[并查集]</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/jdoj" rel="category tag" title="查看九度OJ中的全部文章">九度OJ</a>, <a href="http://www.acmerblog.com/category/data-struct/union-find" rel="category tag" title="查看并查集中的全部文章">并查集</a></span><span class="i4">围观1512次</span><span class="i3"><a class="ds-thread-count" data-thread-key="3733" href="http://www.acmerblog.com/jodu-1325-battle-over-cities-3733.html#comments" title="《九度-1325-Battle Over Cities[并查集]》上的评论">13 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<h3 style="text-align: center;"><strong>题目1325：Battle Over Cities</strong></h3>
+<dl>
+<dt><b>题目描述：</b></dt>
+<dd>
+<div id="problemContent">
+<p>It is vitally important to have all the cities connected by highways in a war. If a city is occupied by the enemy, all the highways from/toward that city are closed. We must know immediately if we need to repair any other highways to keep the rest of the cities connected. Given the map of cities which have all the remaining highways marked, you are supposed to tell the number of highways need to be repaired, quickly.</p>
+<p>For example, if we have 3 cities and 2 highways connecting city<sub><span style="font-size: small;">1</span></sub>-city<sub><span style="font-size: small;">2</span></sub> and city<sub><span style="font-size: small;">1</span></sub>-city<sub><span style="font-size: small;">3</span></sub>. Then if city<sub><span style="font-size: small;">1</span></sub> is occupied by the enemy, we must have 1 highway repaired, that is the highway city<sub><span style="font-size: small;">2</span></sub>-city<sub><span style="font-size: small;">3</span></sub>.</p>
+</div>
+</dd>
+</dl>
+<dl>
+<dt><b>输入：</b></dt>
+<dd>Each input file contains one test case. Each case starts with a line containing 3 numbers N (&lt;1000), M and K, which are the total number of cities, the number of remaining highways, and the number of cities to be checked, respectively. Then M lines follow, each describes a highway by 2 integers, which are the numbers of the cities the highway connects. The cities are numbered from 1 to N. Finally there is a line containing K numbers, which represent the cities we concern.</dd>
+</dl>
+<dl>
+<dt><b>输出：</b></dt>
+<dd>For each of the K cities, output in a line the number of highways need to be repaired if that city is lost.</dd>
+</dl>
+<dl>
+<dt><b>样例输入：</b></dt>
+<dd>
+<pre>3 2 3
+1 2
+1 3
+1 2 3</pre>
+</dd>
+</dl>
+<dl>
+<dt><b>样例输出：</b></dt>
+<dd>
+<pre>1
+0
+0</pre>
+</dd>
+</dl>
+<p>分析：</p>
+<p>其实基本思路是并查集。<br/>
+当敌人控制一个城市的时候，这个城市和其他城市的路就断掉了。<br/>
+也就是这个城市和其他和它有关联的城市都不在一个集合之内了。<br/>
+做法主要是：<br/>
+1、存储最原先的数据。<br/>
+2、在循环k个城市的时候，判断a和b都不被控制，那么就把二者<br/>
+放在一个集合之内，否则的话什么都不做。<br/>
+3、求并查集的个数。总的集合的个数减去1就是需要修的路。</p>
+<p>Java代码如下：</p>
+<pre class="brush:java"> //author:wzqwsrf
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.StreamTokenizer;
+import java.util.HashSet;
+import java.util.Set;
+
+public class Main {
+    /*
+     * 1325
+     */
+    public static void main(String[] args) throws IOException {
+        StreamTokenizer st = new StreamTokenizer(new BufferedReader(
+                new InputStreamReader(System.in)));
+        while (st.nextToken() != StreamTokenizer.TT_EOF) {
+            int n = (int)st.nval;
+            st.nextToken();
+            int m = (int)st.nval;
+            st.nextToken();
+            int k = (int)st.nval;
+            int connectArr[][] = new int[m][2];
+            for (int i = 0; i &lt; m; i++) {
+                int array[] = new int[2];
+                st.nextToken();
+                array[0] = (int)st.nval;
+                st.nextToken();
+                array[1] = (int)st.nval;
+                connectArr[i] = array;
+            }
+
+            int[] parent = new int[n + 1];
+
+            for (int i = 0; i &lt; k; i++) {
+                for (int j = 1; j &lt;= n; j++) {
+                    parent[j] = j;
+                }
+                st.nextToken();
+                int city = (int)st.nval;
+                for (int j = 0; j &lt; m; j++) {
+                    int array[] = connectArr[j];
+                    if (array[0] != city &amp;&amp; array[1] != city) {
+                        union(array[0], array[1], parent);
+                    }
+                }
+
+                for (int j = 1; j &lt; n + 1; j++) {
+                    parent[j] = findParent(j, parent);
+                }
+                Set&lt;Integer&gt; numSet = new HashSet&lt;Integer&gt;();
+                for (int j = 1; j &lt; n + 1; j++) {
+                    numSet.add(parent[j]);
+                }
+                System.out.println(numSet.size() - 2);
+            }
+
+        }
+    }
+
+    private static void union(int f, int t, int[] parent) {
+
+        int a = findParent(f, parent);
+        int b = findParent(t, parent);
+        if (a == b)
+            return;
+        if (a &gt; b) {
+            parent[a] = b;
+        } else {
+            parent[b] = a;
+        }
+    }
+
+    private static int findParent(int f, int[] parent) {
+        while (parent[f] != f) {
+            f = parent[f];
+        }
+        return f;
+    }
+}</pre>
+<p> </p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-85286">
+<article class="comment" id="comment-85286">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://www.renren.com/profile.do?id=919521995" rel="external nofollow">新用户788128</a></span> on <a href="http://www.acmerblog.com/jodu-1325-battle-over-cities-3733.html#comment-85286" rel="nofollow"><time datetime="2017-04-13T03:10:05+00:00" pubdate="">2017年4月13日 at 上午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>“”转基因的害处目前无从判定，就算会让人得病，降低人口平均年龄虽说不是什么好事，但反而有助于减轻中国目前的人口压力。政府在缺粮动荡和人口平均年龄降低之间只能两害取其轻，永远不要忘记政治的黑暗性，牺牲一部分人的健康来保持国家长久稳定听上去是不那么光彩，但很有</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-21593">
+<article class="comment" id="comment-21593">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">jiakcstudio</a></span> on <a href="http://www.acmerblog.com/jodu-1325-battle-over-cities-3733.html#comment-21593" rel="nofollow"><time datetime="2015-05-26T12:45:13+00:00" pubdate="">2015年5月26日 at 下午12:45</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为避免精度问题，PI值请使用arccos(-1)。应该是acos</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-62531">
+<article class="comment" id="comment-62531">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">magichu</a></span> on <a href="http://www.acmerblog.com/jodu-1325-battle-over-cities-3733.html#comment-62531" rel="nofollow"><time datetime="2015-05-17T15:30:02+00:00" pubdate="">2015年5月17日 at 下午3:30</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>终于AC了！next数组还是不好理解啊，mark</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-21589">
+<article class="comment" id="comment-21589">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">crazymage</a></span> on <a href="http://www.acmerblog.com/jodu-1325-battle-over-cities-3733.html#comment-21589" rel="nofollow"><time datetime="2015-04-19T14:49:59+00:00" pubdate="">2015年4月19日 at 下午2:49</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>嗯，是写错了，文中以更改。MAX ( L(X[0..m-2], Y[0..n-1]), L(X[0..m-1], Y[0..n-2])</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-21587">
+<article class="comment" id="comment-21587">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Amber</a></span> on <a href="http://www.acmerblog.com/jodu-1325-battle-over-cities-3733.html#comment-21587" rel="nofollow"><time datetime="2015-01-19T16:07:52+00:00" pubdate="">2015年1月19日 at 下午4:07</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>想问下computeLSPArray那里，if(len!=0) len=lps[len-1]是什么意思</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-21588">
+<article class="comment" id="comment-21588">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xun.gong</a></span> on <a href="http://www.acmerblog.com/jodu-1325-battle-over-cities-3733.html#comment-21588" rel="nofollow"><time datetime="2015-01-02T07:43:37+00:00" pubdate="">2015年1月2日 at 上午7:43</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>if(j){<br/>
+                    int ans=a <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/af/newj_org.gif"/> ;<br/>
+                    for(int x=j-1;x&gt;=0;x–){<br/>
+                        if(!a <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/d7/newx_org.gif"/> ) break;<br/>
+                        ans=min(ans,a <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/e6/weiboi_org.gif"/> <img src="http://img.t.sinajs.cn/t35/style/images/common/face/ext/normal/d7/newx_org.gif"/> );<br/>
+                        sum+=ans;<br/>
+                    }<br/>
+                }<br/>
+求解释，，dp的思路是什么呢？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-56710">
+<article class="comment" id="comment-56710">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">silianbo</a></span> on <a href="http://www.acmerblog.com/jodu-1325-battle-over-cities-3733.html#comment-56710" rel="nofollow"><time datetime="2014-08-26T08:03:06+00:00" pubdate="">2014年8月26日 at 上午8:03</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>具体实现上有所差别，但思路是一样的</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-21590">
+<article class="comment" id="comment-21590">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">huangduanjing</a></span> on <a href="http://www.acmerblog.com/jodu-1325-battle-over-cities-3733.html#comment-21590" rel="nofollow"><time datetime="2014-08-13T20:56:32+00:00" pubdate="">2014年8月13日 at 下午8:56</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>信息不全</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-62532">
+<article class="comment" id="comment-62532">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">985836927</a></span> on <a href="http://www.acmerblog.com/jodu-1325-battle-over-cities-3733.html#comment-62532" rel="nofollow"><time datetime="2014-07-24T21:42:12+00:00" pubdate="">2014年7月24日 at 下午9:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很强大啊，佩服</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-21592">
+<article class="comment" id="comment-21592">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">modstart</a></span> on <a href="http://www.acmerblog.com/jodu-1325-battle-over-cities-3733.html#comment-21592" rel="nofollow"><time datetime="2014-06-09T12:58:26+00:00" pubdate="">2014年6月9日 at 下午12:58</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>刚开始学习，为啥会报错了</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-45047">
+<article class="comment" id="comment-45047">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">ygwx</a></span> on <a href="http://www.acmerblog.com/jodu-1325-battle-over-cities-3733.html#comment-45047" rel="nofollow"><time datetime="2014-05-25T08:51:29+00:00" pubdate="">2014年5月25日 at 上午8:51</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>排版</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-62530">
+<article class="comment" id="comment-62530">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">rick</a></span> on <a href="http://www.acmerblog.com/jodu-1325-battle-over-cities-3733.html#comment-62530" rel="nofollow"><time datetime="2014-05-23T08:10:46+00:00" pubdate="">2014年5月23日 at 上午8:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>第二种解法如果数组有重复元素 就不正确</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-21591">
+<article class="comment" id="comment-21591">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">crazymage</a></span> on <a href="http://www.acmerblog.com/jodu-1325-battle-over-cities-3733.html#comment-21591" rel="nofollow"><time datetime="2014-01-23T20:26:31+00:00" pubdate="">2014年1月23日 at 下午8:26</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>厉害，支持</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>

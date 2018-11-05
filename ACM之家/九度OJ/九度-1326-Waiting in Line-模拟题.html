@@ -1,0 +1,287 @@
+<div class="c-top2" id="post-55">
+<div class="datetime">2014<br/>01-16</div>
+<div class="tit"><h1 class="entry-title">九度-1326-Waiting in Line-模拟题</h1>
+<div class="entry-meta iititle2">
+<span class="i2"><a href="http://www.acmerblog.com/author/admin" rel="author" title="由coder发布">coder</a></span><span class="i1"><a href="http://www.acmerblog.com/category/problemset/jdoj" rel="category tag" title="查看九度OJ中的全部文章">九度OJ</a>, <a href="http://www.acmerblog.com/category/basis/simulate" rel="category tag" title="查看模拟法中的全部文章">模拟法</a></span><span class="i4">围观1460次</span><span class="i3"><a class="ds-thread-count" data-thread-key="3761" href="http://www.acmerblog.com/jiudu-1326-waiting-in-line-3761.html#comments" title="《九度-1326-Waiting in Line-模拟题》上的评论">13 条评论</a></span>
+</div>
+</div>
+<div class="cls"></div>
+</div><div class="entry-content">
+<p>里面来自：2011年九度互动社区IT名企招聘上机考试热身赛</p>
+<h3 style="text-align: center;"><strong>题目1326：Waiting in Line</strong></h3>
+<dl>
+<dt><b>题目描述：</b></dt>
+<dd>Suppose a bank has N windows open for service. There is a yellow line in front of the windows which devides the waiting area into two parts. The rules for the customers to wait in line are:
+<ul>
+<li>The space inside the yellow line in front of each window is enough to contain a line with M customers. Hence when all the N lines are full, all the customers after (and including) the (NM+1)st one will have to wait in a line behind the yellow line.</li>
+<li>Each customer will choose the shortest line to wait in when crossing the yellow line. If there are two or more lines with the same length, the customer will always choose the window with the smallest number.</li>
+<li>Customer[i] will take T[i] minutes to have his/her transaction processed.</li>
+<li>The first N customers are assumed to be served at 8:00am.</li>
+</ul>
+<p>Now given the processing time of each customer, you are supposed to tell the exact time at which a customer has his/her business done.</p>
+<p>For example, suppose that a bank has 2 windows and each window may have 2 custmers waiting inside the yellow line. There are 5 customers waiting with transactions taking 1, 2, 6, 4 and 3 minutes, respectively. At 08:00 in the morning, customer<sub>1</sub> is served at window<sub>1</sub> while customer<sub>2</sub> is served at window<sub>2</sub>. Customer<sub>3</sub> will wait in front of window<sub>1</sub> and customer<sub>4</sub> will wait in front of window<sub>2</sub>. Customer<sub>5</sub> will wait behind the yellow line.</p>
+<p>At 08:01, customer<sub>1</sub> is done and customer<sub>5</sub> enters the line in front of window<sub>1</sub> since that line seems shorter now. Customer<sub>2</sub> will leave at 08:02, customer<sub>4</sub> at 08:06, customer<sub>3</sub> at 08:07, and finally customer<sub>5</sub> at 08:10.</p>
+</dd>
+</dl>
+<dl>
+<dt><b>输入：</b></dt>
+<dd>Each input file contains one test case. Each case starts with a line containing 4 positive integers: N (&lt;=20, number of windows), M (&lt;=10, the maximum capacity of each line inside the yellow line), K (&lt;=1000, number of customers), and Q (&lt;=1000, number of customer queries).
+<p>The next line contains K positive integers, which are the processing time of the K customers.</p>
+<p>The last line contains Q positive integers, which represent the customers who are asking about the time they can have their transactions done. The customers are numbered from 1 to K.</p>
+</dd>
+</dl>
+<dl>
+<dt><b>输出：</b></dt>
+<dd>For each of the Q customers, print in one line the time at which his/her transaction is finished, in the format HH:MM where HH is in [08, 17] and MM is in [00, 59]. Note that since the bank is closed everyday after 17:00, for those customers who cannot be served before 17:00, you must output “Sorry” instead.
+</dd>
+</dl>
+<dl>
+<dt><b>样例输入：</b></dt>
+<dd>
+<pre>2 2 7 5
+1 2 6 4 3 534 2
+3 4 5 6 7</pre>
+</dd>
+</dl>
+<dl>
+<dt><b>样例输出：</b></dt>
+<dd>
+<pre>08:07
+08:06
+08:10
+17:00
+Sorry</pre>
+</dd>
+</dl>
+<p>题目大意：</p>
+<p>有K个客户去银行办理业务，黄线内可以排队M个人。黄线外的人会优先选择人数少的队去排。 每个人花费的时间是不一样的。问每个人业务结束的时间。稍微有些繁琐的模拟。即使是17点之前开始办业务，17点之后仍然没有办完就是sorry。</p>
+<p> </p>
+<pre class="brush:cpp">#include &lt;stdio.h&gt;
+#include &lt;iostream&gt;
+#include &lt;string&gt;
+#include &lt;vector&gt;
+#include &lt;map&gt;
+#include &lt;queue&gt;
+#include &lt;algorithm&gt;
+
+using namespace std;
+
+bool _gDebug;
+#define _P(a)  if (_gDebug) cout &lt;&lt; #a":" &lt;&lt; a &lt;&lt; " "
+#define _P2(a, b)   if (_gDebug) cout &lt;&lt; #a":" &lt;&lt; a &lt;&lt; " "#b":" &lt;&lt; b &lt;&lt; endl
+#define _P3(a, b, c) if (_gDebug) {\
+    cout &lt;&lt; #a":" &lt;&lt; a &lt;&lt; " "#b":" &lt;&lt; b &lt;&lt; " "#c":" &lt;&lt; c &lt;&lt; endl;}
+
+#define INF 100000
+queue&lt;pair&lt;int, int&gt; &gt; wd[30];
+int ans[1005];
+int N, M, K, Q;
+int ki;
+int tt;
+
+void insert(int id, int t) {
+    static int i = 0;
+    _P3(i, id, t);
+    wd[i++].push(make_pair(id, t));
+    if (i == N) i = 0;
+}
+int getMin() {
+    int mid = 0;
+    int mt = wd[0].front().second;
+    for (int i = 1; i &lt; N; ++i) {
+        if (wd[i].front().second &lt; mt) {
+            mt = wd[i].front().second;
+            mid = i;
+        }
+    }
+    for (int i = 0; i &lt; N; ++i) {
+        wd[i].front().second -= mt;
+        _P3(i, wd[i].front().first, wd[i].front().second);
+    }
+    tt += mt;
+    ans[wd[mid].front().first] = tt;
+    wd[mid].pop();
+    return mid;
+}
+
+int main(int argc, char *argv[]) {
+    if (argc &gt; 1) _gDebug = true;
+    cin &gt;&gt; N &gt;&gt; M &gt;&gt; K &gt;&gt; Q;
+    int tmp;
+    for (ki = 0; ki&lt;K &amp;&amp; ki&lt;N*M; ++ki) {
+        cin &gt;&gt; tmp;
+        insert(ki, tmp);
+    }
+    while (ki &lt; K) {
+        int mid = getMin();
+        cin &gt;&gt; tmp;
+        _P3(ki, mid, tmp);
+        wd[mid].push(make_pair(ki, tmp));
+        ++ki;
+    }
+    _P2(tmp, tt);
+    for (int i = 0; i &lt; N; ++i) {
+        tmp =  tt;
+        while (! wd[i].empty()) {
+            tmp += wd[i].front().second;
+            ans[wd[i].front().first] = tmp;
+            wd[i].pop();
+        }
+    }
+    for (int i = 0; i &lt; Q; ++i) {
+        cin &gt;&gt; tmp;
+        tmp = ans[tmp-1];
+        if (tmp &lt;= 9*60) {
+            int hh = 8 + tmp/60; 
+            int mm = tmp % 60;
+            printf("%02d:%02d\n", hh, mm);
+        } else {
+            printf("Sorry\n");
+        }
+    }
+
+    return 0;
+}</pre>
+<p> </p>
+<div>
+</script>
+<!-- acm-hf-01 -->
+<ins class="adsbygoogle" data-ad-client="ca-pub-9460629317209118" data-ad-slot="5011774182" style="display:inline-block;width:728px;height:90px"></ins>
+
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div class="bdsharebuttonbox"><a class="bds_more" data-cmd="more" href="#"></a><a class="bds_qzone" data-cmd="qzone" href="#" title="分享到QQ空间"></a><a class="bds_tsina" data-cmd="tsina" href="#" title="分享到新浪微博"></a><a class="bds_tqq" data-cmd="tqq" href="#" title="分享到腾讯微博"></a><a class="bds_renren" data-cmd="renren" href="#" title="分享到人人网"></a><a class="bds_weixin" data-cmd="weixin" href="#" title="分享到微信"></a></div>
+
+</div><ol id="commentlist">
+<li class="comment even thread-even depth-1" id="li-comment-21632">
+<article class="comment" id="comment-21632">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">130920099</a></span> on <a href="http://www.acmerblog.com/jiudu-1326-waiting-in-line-3761.html#comment-21632" rel="nofollow"><time datetime="2015-06-26T04:53:29+00:00" pubdate="">2015年6月26日 at 上午4:53</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>为什么暴力求解方法循环到sqrt(n) 就可以了呢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-45072">
+<article class="comment" id="comment-45072">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">xiao597896577</a></span> on <a href="http://www.acmerblog.com/jiudu-1326-waiting-in-line-3761.html#comment-45072" rel="nofollow"><time datetime="2015-04-03T16:08:02+00:00" pubdate="">2015年4月3日 at 下午4:08</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有没有C++编译的？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-21631">
+<article class="comment" id="comment-21631">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">dream</a></span> on <a href="http://www.acmerblog.com/jiudu-1326-waiting-in-line-3761.html#comment-21631" rel="nofollow"><time datetime="2015-04-01T09:23:31+00:00" pubdate="">2015年4月1日 at 上午9:23</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有谁知道直接遍历的方法中第8行是什么意思嘛？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-21634">
+<article class="comment" id="comment-21634">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">2013283119</a></span> on <a href="http://www.acmerblog.com/jiudu-1326-waiting-in-line-3761.html#comment-21634" rel="nofollow"><time datetime="2015-03-17T20:02:42+00:00" pubdate="">2015年3月17日 at 下午8:02</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>很有意思，可惜我很菜啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-56720">
+<article class="comment" id="comment-56720">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Anne</a></span> on <a href="http://www.acmerblog.com/jiudu-1326-waiting-in-line-3761.html#comment-56720" rel="nofollow"><time datetime="2014-12-26T06:38:33+00:00" pubdate="">2014年12月26日 at 上午6:38</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>使用代码高亮的插件，再修改下css</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-45074">
+<article class="comment" id="comment-45074">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">edward2414</a></span> on <a href="http://www.acmerblog.com/jiudu-1326-waiting-in-line-3761.html#comment-45074" rel="nofollow"><time datetime="2014-11-17T15:54:57+00:00" pubdate="">2014年11月17日 at 下午3:54</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>什么破题，题意好难懂啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-45071">
+<article class="comment" id="comment-45071">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Lanifer</a></span> on <a href="http://www.acmerblog.com/jiudu-1326-waiting-in-line-3761.html#comment-45071" rel="nofollow"><time datetime="2014-10-05T15:10:52+00:00" pubdate="">2014年10月5日 at 下午3:10</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>程序员会算法，等于一个古惑仔带了zhi抢啊</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-56718">
+<article class="comment" id="comment-56718">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">Rocky</a></span> on <a href="http://www.acmerblog.com/jiudu-1326-waiting-in-line-3761.html#comment-56718" rel="nofollow"><time datetime="2014-08-08T02:16:27+00:00" pubdate="">2014年8月8日 at 上午2:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>simple, however efficient. A lot of instances it is difficult to get that a??perfect balancea?? among usability and appearance. I must say that youa??ve done a exceptional task with this. Also, the blog masses quite fast for me on Web explore.</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-45073">
+<article class="comment" id="comment-45073">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">testnew</a></span> on <a href="http://www.acmerblog.com/jiudu-1326-waiting-in-line-3761.html#comment-45073" rel="nofollow"><time datetime="2014-07-16T01:42:16+00:00" pubdate="">2014年7月16日 at 上午1:42</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>有谁知道直接遍历的方法中第8行是什么意思嘛？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-21630">
+<article class="comment" id="comment-21630">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">michaelwen</a></span> on <a href="http://www.acmerblog.com/jiudu-1326-waiting-in-line-3761.html#comment-21630" rel="nofollow"><time datetime="2014-05-18T18:16:23+00:00" pubdate="">2014年5月18日 at 下午6:16</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>看见的晚了，只能提交一次唉</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-21633">
+<article class="comment" id="comment-21633">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">wuzirui</a></span> on <a href="http://www.acmerblog.com/jiudu-1326-waiting-in-line-3761.html#comment-21633" rel="nofollow"><time datetime="2014-04-23T09:52:01+00:00" pubdate="">2014年4月23日 at 上午9:52</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>整理的很好，多谢</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment odd alt thread-odd thread-alt depth-1" id="li-comment-45070">
+<article class="comment" id="comment-45070">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">H.Watson</a></span> on <a href="http://www.acmerblog.com/jiudu-1326-waiting-in-line-3761.html#comment-45070" rel="nofollow"><time datetime="2014-03-20T09:28:06+00:00" pubdate="">2014年3月20日 at 上午9:28</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>我还有个问题想请教一下，就是感觉对于新手来说，递归理解起来有些困难，不知有没有什么好的方法或者什么好的建议？</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+<li class="comment even thread-even depth-1" id="li-comment-56719">
+<article class="comment" id="comment-56719">
+<footer class="comment-meta">
+<cite class="comment-author vcard">
+<span class="fn"><a class="url" href="http://fdsf" rel="external nofollow">HenrryCheng</a></span> on <a href="http://www.acmerblog.com/jiudu-1326-waiting-in-line-3761.html#comment-56719" rel="nofollow"><time datetime="2014-02-09T22:41:10+00:00" pubdate="">2014年2月9日 at 下午10:41</time></a> <span class="says">said:</span> </cite><!-- .comment-author .vcard -->
+</footer>
+<div class="comment-content"><p>swap写成内联函数会不会好一些</p>
+</div>
+</article><!-- #comment-## -->
+</li><!-- #comment-## -->
+</ol>
